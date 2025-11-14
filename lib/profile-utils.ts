@@ -3,7 +3,7 @@ import { User } from './types'
 /**
  * Type for profile completeness check - only requires the fields we actually check
  */
-type ProfileCompletenessCheck = {
+export type ProfileCompletenessCheck = {
   full_name?: string | null
   country?: string | null
   phone_country_code?: string | null
@@ -14,7 +14,7 @@ type ProfileCompletenessCheck = {
  * Check if a user profile is complete (has all required fields)
  * Required fields: full_name, country, phone_country_code, phone_number
  */
-export function isProfileComplete(profile: User | ProfileCompletenessCheck): boolean {
+export function isProfileComplete(profile: User | ProfileCompletenessCheck | { full_name?: any; country?: any; phone_country_code?: any; phone_number?: any; } | null | any): boolean {
   if (!profile) return false
 
   const hasFullName = !!profile.full_name && profile.full_name.trim().length > 0

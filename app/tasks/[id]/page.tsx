@@ -236,9 +236,9 @@ export default function TaskDetailPage() {
       if (error) throw error
 
       if (reviewsData && reviewsData.length > 0) {
-        const profileIds = [
-          ...new Set(reviewsData.flatMap((review) => [review.reviewer_id, review.reviewee_id])),
-        ]
+        const profileIds = Array.from(
+          new Set(reviewsData.flatMap((review) => [review.reviewer_id, review.reviewee_id]))
+        )
 
         const { data: profilesData } = await supabase
           .from('profiles')
@@ -1159,7 +1159,7 @@ export default function TaskDetailPage() {
                           {bid.user?.rating && (
                             <span className="text-xs text-amber-600 font-semibold">
                               ★ {bid.user.rating.toFixed(1)}
-                              {bid.user.reviewCount > 0 && (
+                              {(bid.user.reviewCount ?? 0) > 0 && (
                                 <span className="text-gray-400"> ({bid.user.reviewCount})</span>
                               )}
                             </span>

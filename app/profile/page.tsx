@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, ChangeEvent } from 'react'
+import { useEffect, useState, ChangeEvent, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { User, Review } from '@/lib/types'
@@ -8,7 +8,7 @@ import { format } from 'date-fns'
 import { geocodePostcode } from '@/lib/geocoding'
 import { isProfileComplete, getMissingFields } from '@/lib/profile-utils'
 
-export default function ProfilePage() {
+function ProfilePageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const setupRequired = searchParams.get('setup') === 'required'
@@ -835,6 +835,14 @@ export default function ProfilePage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <ProfilePageContent />
+    </Suspense>
   )
 }
 
