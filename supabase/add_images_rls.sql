@@ -45,3 +45,6 @@ CREATE POLICY "Image public access"
   USING (bucket_id = 'images');
 
 
+
+
+

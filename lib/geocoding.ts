@@ -1,26 +1,41 @@
 // Geocoding utility using OpenStreetMap Nominatim API (free, no API key required)
 
+import { isPortugueseCountry, normalizePortuguesePostcode } from './postcode'
+
 export interface GeocodeResult {
   latitude: number
   longitude: number
   display_name: string
   postcode?: string
+  closest_address?: string
 }
 
 export async function geocodeAddress(
   address: string,
-  postcode?: string
+  postcode?: string,
+  country?: string
 ): Promise<GeocodeResult | null> {
   try {
     // Build query - prefer postcode if provided
     const query = postcode ? `${postcode}, ${address}` : address
     
-    // Use Nominatim API (free, rate-limited but fine for our use case)
+    // Use our API route to avoid CORS issues (server-side proxy)
+    const apiUrl = typeof window !== 'undefined' 
+      ? '/api/geocode' 
+      : process.env.NEXT_PUBLIC_SITE_URL 
+        ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/geocode`
+        : 'http://localhost:3000/api/geocode'
+    
+    const params = new URLSearchParams()
+    if (query) params.append('q', query)
+    if (postcode) params.append('postcode', postcode)
+    if (country) params.append('country', country)
+    
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&addressdetails=1`,
+      `${apiUrl}?${params.toString()}`,
       {
         headers: {
-          'User-Agent': 'Taskorilla/1.0' // Required by Nominatim
+          'Content-Type': 'application/json',
         }
       }
     )
@@ -31,24 +46,12 @@ export async function geocodeAddress(
 
     const data = await response.json()
 
-    if (!data || data.length === 0) {
+    if (data.error) {
+      console.error('Geocoding API error:', data.error)
       return null
     }
 
-    const result = data[0]
-    const lat = parseFloat(result.lat)
-    const lon = parseFloat(result.lon)
-
-    if (isNaN(lat) || isNaN(lon)) {
-      return null
-    }
-
-    return {
-      latitude: lat,
-      longitude: lon,
-      display_name: result.display_name,
-      postcode: result.address?.postcode || postcode || undefined,
-    }
+    return data.result || null
   } catch (error) {
     console.error('Geocoding error:', error)
     return null
@@ -59,18 +62,8 @@ export async function geocodeAddress(
 export function isPostcodeComplete(postcode: string, country?: string): boolean {
   const normalized = postcode.trim()
   
-  // For Portuguese postcodes with dash format (XXXX-XXX), check if complete
-  if (country?.toLowerCase() === 'portugal' && normalized.includes('-')) {
-    const parts = normalized.split('-')
-    // Portuguese postcode format: 4 digits - 3 digits (e.g., 8600-258)
-    if (parts.length === 2) {
-      const areaCode = parts[0].trim()
-      const suffix = parts[1].trim()
-      // Complete if area code is 4 digits and suffix is 3 digits
-      return areaCode.length === 4 && suffix.length === 3
-    }
-    // If dash is present but incomplete, it's not complete
-    return false
+  if (isPortugueseCountry(country)) {
+    return normalizePortuguesePostcode(normalized) !== null
   }
   
   // For other countries, consider it complete if it has at least 4 characters
@@ -81,114 +74,144 @@ export function isPostcodeComplete(postcode: string, country?: string): boolean 
 export async function geocodePostcode(postcode: string, country?: string): Promise<GeocodeResult | null> {
   let normalizedPostcode = postcode.trim()
   
+  if (isPortugueseCountry(country)) {
+    const formatted = normalizePortuguesePostcode(normalizedPostcode)
+    if (!formatted) {
+      return null
+    }
+    normalizedPostcode = formatted
+  }
+  
   // Don't geocode incomplete postcodes
   if (!isPostcodeComplete(normalizedPostcode, country)) {
     return null
   }
   
-  // For Portuguese postcodes with dash (e.g., 8600-258, 8600-545), try multiple strategies
-  if (country?.toLowerCase() === 'portugal' && normalizedPostcode.includes('-')) {
+  // For Portuguese postcodes with dash format (XXXX-XXX), use specialized handling
+  if (isPortugueseCountry(country)) {
     const areaCode = normalizedPostcode.split('-')[0].trim()
     const suffix = normalizedPostcode.split('-')[1]?.trim()
     
-    // Known area codes and their cities for validation
-    const areaCodeMap: { [key: string]: { city: string; centerLat: number; centerLng: number } } = {
-      '8600': { city: 'Lagos', centerLat: 37.1020, centerLng: -8.6750 }
-    }
+    // Strategy 1: Call the API route directly with postcode parameter to ensure GEO API PT is used
+    // This bypasses the geocodeAddress wrapper to ensure we get GEO API PT results
+    let result: GeocodeResult | null = null
     
-    const areaInfo = areaCodeMap[areaCode]
-    
-    // Strategy 1: Try full postcode with "Portugal" first (most specific)
-    let query = `${normalizedPostcode}, Portugal`
-    let result = await geocodeAddress('', query)
-    
-    // Validate result is in the correct area (for 8600 = Lagos area)
-    if (result && areaInfo) {
-      const distanceFromCenter = calculateDistance(
-        areaInfo.centerLat,
-        areaInfo.centerLng,
-        result.latitude,
-        result.longitude
-      )
-      // If result is more than 50km from expected area, it's likely wrong
-      if (distanceFromCenter > 50) {
-        console.warn(`⚠️ Geocoded result for "${postcode}" is ${distanceFromCenter.toFixed(1)}km from ${areaInfo.city}, likely incorrect. Using fallback.`)
-        result = null
-      }
-    }
-    
-    // Strategy 2: If that fails or is invalid, try with area code and city (for 8600 = Lagos)
-    if (!result && areaInfo) {
-      query = `${normalizedPostcode}, ${areaInfo.city}, Portugal`
-      result = await geocodeAddress('', query)
+    try {
+      const apiUrl = typeof window !== 'undefined' 
+        ? '/api/geocode' 
+        : process.env.NEXT_PUBLIC_SITE_URL 
+          ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/geocode`
+          : 'http://localhost:3000/api/geocode'
       
-      // Validate again
-      if (result) {
-        const distanceFromCenter = calculateDistance(
-          areaInfo.centerLat,
-          areaInfo.centerLng,
-          result.latitude,
-          result.longitude
-        )
-        if (distanceFromCenter > 50) {
-          result = null
+      const params = new URLSearchParams()
+      params.append('postcode', normalizedPostcode)
+      params.append('country', country || 'Portugal')
+      
+      const response = await fetch(`${apiUrl}?${params.toString()}`, {
+        headers: { 'Content-Type': 'application/json' }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data.result && data.result.latitude && data.result.longitude) {
+          console.log(`✅ geocodePostcode: Got result from API route for ${normalizedPostcode}:`, {
+            lat: data.result.latitude,
+            lon: data.result.longitude
+          })
+          return data.result
         }
       }
+    } catch (error) {
+      console.error('Error calling geocode API route directly:', error)
     }
     
-    // Strategy 3: If still no result, try just area code with city
-    if (!result && areaInfo) {
-      query = `${areaCode}, ${areaInfo.city}, Portugal`
-      result = await geocodeAddress('', query)
-      
-      // Validate again
-      if (result) {
-        const distanceFromCenter = calculateDistance(
-          areaInfo.centerLat,
-          areaInfo.centerLng,
-          result.latitude,
-          result.longitude
-        )
-        if (distanceFromCenter > 50) {
-          result = null
-        }
-      }
-    }
+    // If we got a result from the direct API call, return it
+    // (The direct API call above should have returned if successful)
     
-    // Strategy 4: Last resort - use known city center with offset based on postcode suffix
-    // This is the safest approach for Portuguese postcodes
-    if (!result && areaInfo) {
-      // Use the known center coordinates for the area
-      result = {
-        latitude: areaInfo.centerLat,
-        longitude: areaInfo.centerLng,
-        display_name: `${areaInfo.city}, Portugal`,
-        postcode: normalizedPostcode
-      }
+    // Strategy 2: Fallback - try with just the area code if full postcode failed
+    // This should rarely be needed as GEO API PT should handle full postcodes
+    if (!result) {
+      console.warn(`⚠️ Full postcode ${normalizedPostcode} geocoding failed, trying area code ${areaCode}`)
+      // Use the API route directly with area code
+      const apiUrl = typeof window !== 'undefined' 
+        ? '/api/geocode' 
+        : process.env.NEXT_PUBLIC_SITE_URL 
+          ? `${process.env.NEXT_PUBLIC_SITE_URL}/api/geocode`
+          : 'http://localhost:3000/api/geocode'
       
-      // Add a meaningful offset based on postcode suffix to differentiate locations
-      // This ensures different postcodes get different coordinates that reflect real distance
-      if (suffix) {
-        const suffixNum = parseInt(suffix, 10) || 0
+      try {
+        const params = new URLSearchParams()
+        params.append('postcode', areaCode)
+        params.append('country', country || 'Portugal')
         
-        // Create offsets that spread postcodes across the area
-        // 0.01 degree ≈ 1.1 km, so we use smaller offsets for nearby locations
-        // Use a formula that gives consistent but different positions for different suffixes
-        const latOffset = ((suffixNum % 200) - 100) * 0.0003  // Range: -0.03 to +0.03 degrees (~3.3 km)
-        const lngOffset = ((suffixNum % 150) - 75) * 0.0003  // Range: -0.0225 to +0.0225 degrees (~2.5 km)
-        
-        result.latitude = result.latitude + latOffset
-        result.longitude = result.longitude + lngOffset
-        
-        console.log(`📍 Applied safe offset for postcode "${postcode}":`, {
-          suffix: suffix,
-          suffixNum: suffixNum,
-          latOffset: latOffset,
-          lngOffset: lngOffset,
-          finalLat: result.latitude,
-          finalLng: result.longitude,
-          area: areaInfo.city
+        const response = await fetch(`${apiUrl}?${params.toString()}`, {
+          headers: { 'Content-Type': 'application/json' }
         })
+        
+        if (response.ok) {
+          const data = await response.json()
+          if (data.result && data.result.latitude && data.result.longitude) {
+            result = data.result
+            
+            // Update the postcode in the address
+            if (result && result.closest_address) {
+              result.closest_address = result.closest_address.replace(/\b\d{4}(-\d{3})?\b/, normalizedPostcode)
+            } else if (result && result.display_name) {
+              result.closest_address = result.display_name.replace(/\b\d{4}(-\d{3})?\b/, normalizedPostcode)
+            }
+            
+            // Add small offset based on suffix to differentiate postcodes in same area
+            if (result && suffix && result.latitude && result.longitude) {
+              const suffixNum = parseInt(suffix, 10) || 0
+              const latOffset = ((suffixNum % 200) - 100) * 0.0002
+              const lngOffset = ((suffixNum % 150) - 75) * 0.0002
+              
+              result.latitude = result.latitude + latOffset
+              result.longitude = result.longitude + lngOffset
+              
+              console.log(`📍 Used area code "${areaCode}" for postcode "${normalizedPostcode}":`, {
+                closest_address: result.closest_address,
+                suffix: suffix,
+                finalLat: result.latitude,
+                finalLng: result.longitude
+              })
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error geocoding area code:', error)
+      }
+    }
+    
+    // Return result if we have one
+    if (result && result.latitude && result.longitude) {
+      return result
+    }
+    
+    // Strategy 3: Last resort - try geocoding just "Portugal" and use approximate center
+    // This should rarely be needed as Portuguese postcodes are well-covered
+    if (!result) {
+      result = await geocodeAddress('Portugal', '', country)
+      
+      if (result && areaCode) {
+        // Use approximate coordinates based on area code pattern
+        // Portuguese postcodes are roughly organized geographically
+        const areaNum = parseInt(areaCode, 10) || 0
+        
+        // Rough approximation: higher area codes tend to be more north/east
+        // This is a fallback and won't be very accurate, but better than nothing
+        const baseLat = 39.5 // Rough center of Portugal
+        const baseLng = -8.0
+        
+        // Small adjustments based on area code
+        const latAdjust = ((areaNum % 1000) - 500) * 0.001
+        const lngAdjust = ((areaNum % 1000) - 500) * 0.001
+        
+        result.latitude = baseLat + latAdjust
+        result.longitude = baseLng + lngAdjust
+        result.display_name = `${normalizedPostcode}, Portugal`
+        
+        console.warn(`⚠️ Using approximate coordinates for postcode "${postcode}"`)
       }
     }
     
@@ -197,8 +220,7 @@ export async function geocodePostcode(postcode: string, country?: string): Promi
       console.log(`✅ Geocoded postcode "${postcode}" to:`, {
         lat: result.latitude,
         lng: result.longitude,
-        display_name: result.display_name,
-        query_used: query
+        display_name: result.display_name
       })
     } else {
       console.warn(`⚠️ Failed to geocode postcode "${postcode}"`)
@@ -208,8 +230,7 @@ export async function geocodePostcode(postcode: string, country?: string): Promi
   }
   
   // For non-Portuguese or postcodes without dashes, use standard approach
-  const query = country ? `${normalizedPostcode}, ${country}` : normalizedPostcode
-  return await geocodeAddress('', query)
+  return await geocodeAddress('', normalizedPostcode, country)
 }
 
 // Calculate distance between two coordinates using Haversine formula
@@ -238,5 +259,45 @@ export function calculateDistance(
 
 function toRad(degrees: number): number {
   return (degrees * Math.PI) / 180
+}
+
+/**
+ * Extract just the town/city name from a full address string
+ * For Portuguese addresses: "Street, Parish, Municipality, District, Postcode, Portugal" -> "Municipality"
+ * For simple addresses: "City, State" -> "City"
+ * For addresses like "Lagos, 8600-545, Portugal" -> "Lagos"
+ */
+export function extractTownName(location: string): string {
+  if (!location) return ''
+  
+  const parts = location.split(',').map(p => p.trim())
+  
+  // If it's a Portuguese address format with postcode pattern (xxxx-xxx)
+  const hasPortuguesePostcode = parts.some(p => /^\d{4}-\d{3}$/.test(p))
+  
+  if (hasPortuguesePostcode) {
+    // Portuguese format: usually "Street, Parish, Municipality, District, Postcode, Portugal"
+    // Or simpler: "Municipality, Postcode, Portugal"
+    // Try to find the municipality (usually 3rd part, or 1st if simple)
+    if (parts.length >= 3) {
+      // Check if first part looks like a street (has numbers or common street words)
+      const firstPart = parts[0].toLowerCase()
+      const looksLikeStreet = /\d|street|avenue|road|rua|avenida|rua da|rua do|rua de/i.test(firstPart)
+      
+      if (looksLikeStreet && parts.length >= 3) {
+        // Full format: return municipality (usually 3rd part)
+        return parts[2] || parts[0]
+      } else {
+        // Simple format: "Municipality, Postcode, Portugal" -> return first part
+        return parts[0]
+      }
+    } else {
+      // Fallback: return first part
+      return parts[0]
+    }
+  }
+  
+  // For non-Portuguese addresses, return the first part (city name)
+  return parts[0] || location
 }
 

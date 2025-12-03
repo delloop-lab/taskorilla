@@ -4,14 +4,25 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { getPendingReviews } from '@/lib/review-utils'
 
 export default function Navbar() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [profileName, setProfileName] = useState<string | null>(null)
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
   const [unreadCount, setUnreadCount] = useState<number>(0)
+  const [pendingBidsCount, setPendingBidsCount] = useState<number>(0)
+  const [hasPendingBids, setHasPendingBids] = useState<boolean>(false) // Track if user has ANY pending bids
+  const [bidsViewed, setBidsViewed] = useState<boolean>(false) // Track if user has viewed bids this session
+  const [acceptedBidsCount, setAcceptedBidsCount] = useState<number>(0)
+  const [firstAcceptedTaskId, setFirstAcceptedTaskId] = useState<string | null>(null)
+  const [pendingReviewsCount, setPendingReviewsCount] = useState<number>(0)
+  const [firstPendingReviewTaskId, setFirstPendingReviewTaskId] = useState<string | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [tasksMenuOpen, setTasksMenuOpen] = useState(false)
+  const [helpersMenuOpen, setHelpersMenuOpen] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -34,15 +45,17 @@ export default function Navbar() {
       if (user?.id) {
         const { data } = await supabase
           .from('profiles')
-          .select('full_name, avatar_url')
+          .select('full_name, avatar_url, role')
           .eq('id', user.id)
           .single()
 
         setProfileName(data?.full_name || null)
         setProfileAvatar(data?.avatar_url || null)
+        setUserRole(data?.role || 'user')
       } else {
         setProfileName(null)
         setProfileAvatar(null)
+        setUserRole(null)
         setUnreadCount(0)
       }
     }
@@ -125,27 +138,274 @@ export default function Navbar() {
     }
   }, [user])
 
+  // Load pending bids count (bids on user's tasks that are still pending)
+  useEffect(() => {
+    if (!user?.id) {
+      setPendingBidsCount(0)
+      setHasPendingBids(false)
+      setBidsViewed(false)
+      return
+    }
+
+    const loadPendingBids = async () => {
+      try {
+        console.log('🔔 Loading pending bids for user:', user.id)
+        
+        // Get user's open tasks (excluding archived and hidden)
+        // Use or filter to handle cases where columns might be NULL (not explicitly false)
+        const { data: userTasks, error: tasksError } = await supabase
+          .from('tasks')
+          .select('id, title, status, archived, hidden_by_admin')
+          .eq('created_by', user.id)
+          .eq('status', 'open')
+          .or('archived.eq.false,archived.is.null')
+          .or('hidden_by_admin.eq.false,hidden_by_admin.is.null')
+
+        if (tasksError) {
+          console.error('Error loading user tasks:', tasksError)
+          return
+        }
+
+        console.log('🔔 User open tasks (non-archived, non-hidden):', userTasks?.map(t => ({
+          id: t.id,
+          title: t.title,
+          status: t.status,
+          archived: t.archived,
+          hidden_by_admin: t.hidden_by_admin
+        })))
+
+        // Debug: Also fetch ALL tasks by user to see what's being filtered out
+        const { data: allUserTasks } = await supabase
+          .from('tasks')
+          .select('id, title, status, archived, hidden_by_admin')
+          .eq('created_by', user.id)
+        
+        console.log('🔔 ALL user tasks (for debugging):', allUserTasks?.map(t => ({
+          id: t.id,
+          title: t.title,
+          status: t.status,
+          archived: t.archived,
+          hidden_by_admin: t.hidden_by_admin,
+          shouldCount: t.status === 'open' && !t.archived && !t.hidden_by_admin
+        })))
+
+        if (!userTasks || userTasks.length === 0) {
+          console.log('🔔 No open tasks found for user')
+          setPendingBidsCount(0)
+          setHasPendingBids(false)
+          return
+        }
+
+        const taskIds = userTasks.map(t => t.id)
+
+        // Count pending bids on those tasks
+        const { count, error: bidsError } = await supabase
+          .from('bids')
+          .select('id', { count: 'exact', head: true })
+          .in('task_id', taskIds)
+          .eq('status', 'pending')
+
+        if (bidsError) {
+          console.error('Error counting pending bids:', bidsError)
+          return
+        }
+
+        console.log('🔔 Pending bids count:', count)
+        const bidCount = count || 0
+        setPendingBidsCount(bidCount)
+        setHasPendingBids(bidCount > 0)
+        
+        // If there are new bids and user had previously viewed, show badge again
+        if (bidCount > 0) {
+          setBidsViewed(false)
+        }
+      } catch (error) {
+        console.error('Error loading pending bids:', error)
+      }
+    }
+
+    loadPendingBids()
+
+    // Listen for custom event when bids are viewed (to hide the badge but keep the word)
+    const handleBidsViewed = () => {
+      setBidsViewed(true)
+    }
+
+    window.addEventListener('bids-viewed', handleBidsViewed)
+
+    // Set up real-time subscription for new bids
+    const channel = supabase
+      .channel(`pending-bids-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bids',
+        },
+        () => {
+          loadPendingBids()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      window.removeEventListener('bids-viewed', handleBidsViewed)
+      supabase.removeChannel(channel)
+    }
+  }, [user])
+
+  // Load accepted bids count (for helpers - when their bids are accepted)
+  useEffect(() => {
+    if (!user?.id) {
+      setAcceptedBidsCount(0)
+      setFirstAcceptedTaskId(null)
+      return
+    }
+
+    const loadAcceptedBids = async () => {
+      try {
+        // Count bids by this user that have been accepted and task is in_progress
+        // (not completed yet, so they need to see the notification)
+        const { data: acceptedBids, error } = await supabase
+          .from('bids')
+          .select(`
+            id,
+            task_id,
+            tasks!inner(status)
+          `)
+          .eq('user_id', user.id)
+          .eq('status', 'accepted')
+
+        if (error) {
+          console.error('Error loading accepted bids:', error)
+          return
+        }
+
+        // Filter to only tasks that are in_progress (not completed)
+        const inProgressBids = acceptedBids?.filter(
+          (bid: any) => bid.tasks?.status === 'in_progress'
+        ) || []
+
+        if (inProgressBids.length === 0) {
+          setAcceptedBidsCount(0)
+          setFirstAcceptedTaskId(null)
+          return
+        }
+
+        // Check which tasks the helper has already added progress updates to
+        // If they've started work (added updates), don't show WON notification
+        const taskIds = inProgressBids.map((b: any) => b.task_id)
+        const { data: progressUpdates } = await supabase
+          .from('task_progress_updates')
+          .select('task_id')
+          .eq('user_id', user.id)
+          .in('task_id', taskIds)
+
+        // Get unique task IDs where helper has added progress updates
+        const tasksWithProgress = new Set(progressUpdates?.map((p: any) => p.task_id) || [])
+
+        // Filter out tasks where helper has already commenced work
+        const newWonBids = inProgressBids.filter(
+          (bid: any) => !tasksWithProgress.has(bid.task_id)
+        )
+
+        console.log('🎉 New WON bids (no progress yet):', newWonBids.length)
+        setAcceptedBidsCount(newWonBids.length)
+        // Store the first accepted task ID for direct navigation
+        setFirstAcceptedTaskId(newWonBids.length > 0 ? newWonBids[0].task_id : null)
+      } catch (error) {
+        console.error('Error loading accepted bids:', error)
+      }
+    }
+
+    loadAcceptedBids()
+
+    // Set up real-time subscription for bid status changes
+    const channel = supabase
+      .channel(`accepted-bids-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'bids',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          loadAcceptedBids()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user])
+
+  // Load pending reviews count
+  useEffect(() => {
+    if (!user?.id) {
+      setPendingReviewsCount(0)
+      setFirstPendingReviewTaskId(null)
+      return
+    }
+
+    const loadPendingReviews = async () => {
+      try {
+        const pendingReviews = await getPendingReviews(user.id)
+        setPendingReviewsCount(pendingReviews.length)
+        // Store the first pending review's task ID for direct navigation
+        setFirstPendingReviewTaskId(pendingReviews.length > 0 ? pendingReviews[0].task_id : null)
+      } catch (error) {
+        console.error('Error loading pending reviews:', error)
+      }
+    }
+
+    loadPendingReviews()
+
+    // Refresh every 30 seconds
+    const interval = setInterval(loadPendingReviews, 30000)
+
+    // Listen for review submission events
+    const handleReviewSubmitted = () => {
+      setTimeout(() => {
+        loadPendingReviews()
+      }, 500)
+    }
+
+    window.addEventListener('review-submitted', handleReviewSubmitted)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('review-submitted', handleReviewSubmitted)
+    }
+  }, [user])
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     setProfileName(null)
     setProfileAvatar(null)
+    setUserRole(null)
     router.push('/')
     router.refresh()
   }
 
+  // Check if user has admin access
+  const isAdmin = userRole === 'admin' || userRole === 'superadmin'
+
   if (loading) {
     return (
-      <nav className="bg-white shadow-sm">
+      <nav className="bg-white shadow-sm relative z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center space-x-2 text-xl font-bold" style={{ color: '#8B4513' }}>
+            <div className="flex items-center text-xl font-bold" style={{ color: '#8B4513' }}>
               <img 
-                src="/images/taskorilla-mascot.png" 
+                src="/images/taskorilla_header_logo.png" 
                 alt="Taskorilla" 
-                className="h-8 w-8 object-contain"
+                className="h-[40px] object-contain"
                 style={{ backgroundColor: 'transparent' }}
               />
-              <span>Taskorilla</span>
             </div>
           </div>
         </div>
@@ -154,100 +414,192 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="bg-white shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          <Link href="/" className="flex items-center space-x-2 text-xl font-bold" style={{ color: '#8B4513' }}>
-            <img 
-              src="/images/taskorilla-mascot.png" 
-              alt="Taskorilla" 
-              className="h-8 w-8 object-contain"
-              style={{ backgroundColor: 'transparent' }}
-            />
-            <span className="hidden sm:inline">Taskorilla</span>
-          </Link>
-          
-          {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-4">
-            {user && (
-              <div className="flex items-center space-x-2">
-                <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                  {profileAvatar ? (
-                    <img src={profileAvatar} alt="avatar" className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="text-sm font-semibold text-gray-600">
-                      {(profileName?.[0] || user.email?.[0] || '?').toUpperCase()}
-                    </span>
-                  )}
-                </div>
-                <span className="text-sm font-semibold text-blue-600 hidden lg:inline">
-                  {profileName || user.email}
-                </span>
-              </div>
-            )}
-            <Link
-              href="/tasks"
-              className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium"
-            >
-              Browse Tasks
+    <>
+      <nav className="bg-white shadow-sm relative z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16 items-center">
+            <Link href="/" className="flex items-center text-xl font-bold" style={{ color: '#8B4513' }}>
+              <img 
+                src="/images/taskorilla_header_logo.png" 
+                alt="Taskorilla" 
+                className="h-[40px] object-contain"
+                style={{ backgroundColor: 'transparent' }}
+              />
             </Link>
             
+            {/* Desktop Menu */}
+            <div className="hidden md:flex items-center space-x-4">
+            {/* TASKS Dropdown Menu */}
+            <div className="relative">
+              <button
+                onMouseEnter={() => setTasksMenuOpen(true)}
+                onMouseLeave={() => setTasksMenuOpen(false)}
+                className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1"
+              >
+                TASKS
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {tasksMenuOpen && (
+                <div
+                  onMouseEnter={() => setTasksMenuOpen(true)}
+                  onMouseLeave={() => setTasksMenuOpen(false)}
+                  className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50"
+                >
+                  {user ? (
+                    <Link
+                      href="/tasks/new"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-primary-600"
+                    >
+                      Post a Task
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => router.push('/login?redirect=/tasks/new')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-primary-600"
+                    >
+                      Post a Task
+                    </button>
+                  )}
+                  <Link
+                    href="/tasks"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-primary-600"
+                  >
+                    Browse Tasks
+                  </Link>
+                </div>
+              )}
+            </div>
+            {/* HELPERS Dropdown Menu */}
+            <div className="relative">
+              <button
+                onMouseEnter={() => setHelpersMenuOpen(true)}
+                onMouseLeave={() => setHelpersMenuOpen(false)}
+                className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1"
+              >
+                HELPERS
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {helpersMenuOpen && (
+                <div
+                  onMouseEnter={() => setHelpersMenuOpen(true)}
+                  onMouseLeave={() => setHelpersMenuOpen(false)}
+                  className="absolute top-full left-0 mt-1 w-56 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50"
+                >
+                  <Link
+                    href="/helpers"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-primary-600"
+                  >
+                    Browse all Helpers
+                  </Link>
+                  <Link
+                    href="/professionals"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-primary-600"
+                  >
+                    Browse Professionals
+                  </Link>
+                </div>
+              )}
+            </div>
             {user ? (
               <>
-                <Link
-                  href="/tasks/new"
-                  className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Post Task
-                </Link>
-                <Link
-                  href="/messages"
-                  className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium relative"
-                >
-                  Messages
-                  {unreadCount > 0 && (
+                {hasPendingBids && (
+                  <button
+                    onClick={() => {
+                      window.dispatchEvent(new Event('bids-viewed'))
+                      router.push('/tasks?filter=my_tasks')
+                    }}
+                    className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium relative cursor-pointer"
+                    title="Bids on your tasks"
+                  >
+                    Bids
+                    {pendingBidsCount > 0 && !bidsViewed && (
+                      <span className="absolute top-0 right-0 bg-green-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center min-w-[20px] px-1 transform translate-x-1/2 -translate-y-1/2">
+                        {pendingBidsCount > 99 ? '99+' : pendingBidsCount}
+                      </span>
+                    )}
+                  </button>
+                )}
+                {acceptedBidsCount > 0 && firstAcceptedTaskId && (
+                  <button
+                    onClick={() => router.push(`/tasks/${firstAcceptedTaskId}`)}
+                    className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium relative cursor-pointer"
+                    title="Your bid has been accepted! Click to view the task."
+                  >
+                    WON
+                    <span className="absolute top-0 right-0 bg-purple-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center min-w-[20px] px-1 transform translate-x-1/2 -translate-y-1/2">
+                      {acceptedBidsCount > 99 ? '99+' : acceptedBidsCount}
+                    </span>
+                  </button>
+                )}
+                {unreadCount > 0 && (
+                  <Link
+                    href="/messages"
+                    className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium relative"
+                  >
+                    Messages
                     <span className="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center min-w-[20px] px-1 transform translate-x-1/2 -translate-y-1/2">
                       {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
-                  )}
+                  </Link>
+                )}
+                {pendingReviewsCount > 0 && (
+                  <Link
+                    href={firstPendingReviewTaskId ? `/tasks/${firstPendingReviewTaskId}` : '/tasks?filter=my_tasks&pending_reviews=true'}
+                    className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium relative"
+                    title="Pending Reviews"
+                  >
+                    Actions
+                    <span className="absolute top-0 right-0 bg-amber-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center min-w-[20px] px-1 transform translate-x-1/2 -translate-y-1/2">
+                      {pendingReviewsCount > 99 ? '99+' : pendingReviewsCount}
+                    </span>
+                  </Link>
+                )}
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium font-semibold"
+                    style={{ color: '#8B4513' }}
+                  >
+                    Admin
+                  </Link>
+                )}
+                <Link
+                  href="/profile"
+                  className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Profile
                 </Link>
-              </>
-            ) : (
-              <>
+                {user && (
+                  <div className="flex items-center">
+                    <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                      {profileAvatar ? (
+                        <img src={profileAvatar} alt="avatar" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-sm font-semibold text-gray-600">
+                          {(profileName?.[0] || user.email?.[0] || '?').toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <button
-                  onClick={() => router.push('/login?redirect=/tasks/new')}
-                  className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium"
+                  onClick={handleLogout}
+                  className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
                 >
-                  Post Task
-                </button>
-                <button
-                  onClick={() => router.push('/login?redirect=/messages')}
-                  className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Messages
+                  Logout
                 </button>
               </>
-            )}
-            <Link
-              href="/profile"
-              className={`text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium ${!user ? 'hidden' : ''}`}
-            >
-              Profile
-            </Link>
-            {user ? (
-              <button
-                onClick={handleLogout}
-                className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
-              >
-                Logout
-              </button>
             ) : (
               <>
                 <Link
                   href="/login"
                   className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium"
                 >
-                  Login
+                  LOGIN
                 </Link>
                 <Link
                   href="/register"
@@ -311,29 +663,57 @@ export default function Navbar() {
                 </span>
               </div>
             )}
-            <Link
-              href="/tasks"
-              className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Browse Tasks
-            </Link>
             {user ? (
               <>
-                <Link
-                  href="/tasks/new"
-                  className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Post Task
-                </Link>
-                <Link
-                  href="/messages"
-                  className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Messages {unreadCount > 0 && `(${unreadCount > 99 ? '99+' : unreadCount})`}
-                </Link>
+                {hasPendingBids && (
+                  <Link
+                    href="/tasks?filter=my_tasks"
+                    className={`block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium ${pendingBidsCount > 0 && !bidsViewed ? 'bg-green-50' : ''}`}
+                    onClick={() => {
+                      window.dispatchEvent(new Event('bids-viewed'))
+                      setMobileMenuOpen(false)
+                    }}
+                  >
+                    {pendingBidsCount > 0 && !bidsViewed ? `🔔 New Bids (${pendingBidsCount > 99 ? '99+' : pendingBidsCount})` : 'Bids'}
+                  </Link>
+                )}
+                {acceptedBidsCount > 0 && firstAcceptedTaskId && (
+                  <Link
+                    href={`/tasks/${firstAcceptedTaskId}`}
+                    className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium bg-purple-50"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Bid WON ({acceptedBidsCount > 99 ? '99+' : acceptedBidsCount}) - View your task!
+                  </Link>
+                )}
+                {unreadCount > 0 && (
+                  <Link
+                    href="/messages"
+                    className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium bg-red-50"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    📩 Messages ({unreadCount > 99 ? '99+' : unreadCount})
+                  </Link>
+                )}
+                {pendingReviewsCount > 0 && (
+                  <Link
+                    href={firstPendingReviewTaskId ? `/tasks/${firstPendingReviewTaskId}` : '/tasks?filter=my_tasks&pending_reviews=true'}
+                    className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Actions ({pendingReviewsCount > 99 ? '99+' : pendingReviewsCount})
+                  </Link>
+                )}
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium font-semibold"
+                    onClick={() => setMobileMenuOpen(false)}
+                    style={{ color: '#8B4513' }}
+                  >
+                    Admin
+                  </Link>
+                )}
                 <Link
                   href="/profile"
                   className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
@@ -353,30 +733,12 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <button
-                  onClick={() => {
-                    router.push('/login?redirect=/tasks/new')
-                    setMobileMenuOpen(false)
-                  }}
-                  className="block w-full text-left text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  Post Task
-                </button>
-                <button
-                  onClick={() => {
-                    router.push('/login?redirect=/messages')
-                    setMobileMenuOpen(false)
-                  }}
-                  className="block w-full text-left text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  Messages
-                </button>
                 <Link
                   href="/login"
                   className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Login
+                  LOGIN
                 </Link>
                 <Link
                   href="/register"
@@ -391,6 +753,7 @@ export default function Navbar() {
         )}
       </div>
     </nav>
+    </>
   )
 }
 

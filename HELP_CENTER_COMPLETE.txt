@@ -1,0 +1,427 @@
+================================================================================
+                    TASKORILLA HELP CENTER - COMPLETE GUIDE
+================================================================================
+
+This document contains all Help Center content from Taskorilla.
+Last Updated: December 2024
+
+================================================================================
+                            TABLE OF CONTENTS
+================================================================================
+
+1. GETTING STARTED
+   - FAQs
+   - Getting Started Guide
+
+2. POSTING TASKS
+   - FAQs
+   - How to Post a Task Guide
+
+3. HELPER GUIDE
+   - FAQs
+   - Working as a Helper Guide
+
+4. PAYMENT GUIDE
+   - FAQs
+   - Understanding Payments Guide
+   - Disputes and Refunds
+
+5. SAFETY GUIDE
+   - FAQs
+   - Staying Safe on Taskorilla Guide
+   - Marketplace Safety Guidelines
+
+6. PLATFORM & TECHNICAL
+   - FAQs
+
+7. LEGAL & PRIVACY
+   - GDPR Data Processing Add-On
+
+================================================================================
+                        1. GETTING STARTED
+================================================================================
+
+--- FAQs ---
+
+Q: How do I create a Taskorilla account?
+A: Click 'Sign Up,' enter your email, pick a password, choose between Helper, 
+   Tasker, or both, and confirm. You're ready to post or do tasks.
+
+Q: Do I need a verified ID to start?
+A: Not immediately, but verifying your ID helps build trust with other users 
+   and unlocks higher-value tasks.
+
+Q: Can I use Taskorilla on mobile?
+A: Absolutely. Our site works on any mobile browser, and we're working on an 
+   app soon.
+
+Q: How do I edit my profile?
+A: Go to 'My Profile,' update your info, skills, or profile picture, and hit 
+   save.
+
+--- Getting Started Guide ---
+
+GETTING STARTED WITH TASKORILLA
+
+Step 1: Sign Up
+Click 'Sign Up,' enter your email, create a password, and confirm. You'll 
+receive a confirmation email, click the link to verify your account.
+
+Step 2: Verify Your Account (Optional but Recommended)
+Verifying your ID helps build trust with other users and unlocks higher-value 
+tasks. Go to 'My Profile' and upload a photo ID.
+
+Step 3: Set Up Your Profile
+Add a profile picture, list your skills (if you plan to be a Helper), and 
+write a short bio. A complete profile makes you more trustworthy and helps you 
+get matched with the right tasks.
+
+Step 4: Browse Tasks or Post a Task
+Decide whether you want to post a task (if you need help) or browse tasks (if 
+you want to earn money as a Helper). Click 'Post a Task' or 'Browse Tasks' 
+from the main menu.
+
+Step 5: Check Notifications
+Keep track of messages, bids, and task updates through your dashboard and 
+email notifications. Stay responsive to build a good reputation!
+
+================================================================================
+                        2. POSTING TASKS
+================================================================================
+
+--- FAQs ---
+
+Q: How do I post a task?
+A: Click 'Post a Task,' describe what you need, set location, time, and 
+   budget. Then hit 'Post.'
+
+Q: Can I edit a task after posting?
+A: Yes, you can edit the description, budget, or deadline before anyone 
+   accepts it.
+
+Q: Can I cancel a task?
+A: You can, but we recommend messaging any assigned Helper first. 
+   Cancellation fees may apply for confirmed tasks.
+
+Q: How do I find Helpers for my task?
+A: Once posted, Helpers in your area get a notification. You can also browse 
+   profiles and invite them directly.
+
+--- How to Post a Task Guide ---
+
+HOW TO POST A TASK
+
+Step 1: Click 'Post a Task'
+From the main menu or homepage, click 'Post a Task.' Enter a clear, 
+descriptive title (e.g., 'Assemble IKEA Furniture') and provide detailed 
+instructions about what needs to be done.
+
+Step 2: Set Location and Timing
+Specify where the task needs to happen (address or postcode) and when you 
+need it done. You can set a specific date/time or mark it as flexible.
+
+Step 3: Set Your Budget
+Enter the amount you're willing to pay. Taskorilla will show you the service 
+fee upfront. Be fair, competitive budgets attract better Helpers!
+
+Step 4: Add Photos (Optional)
+Upload photos to give Helpers a better idea of what's involved. This helps 
+them provide accurate bids.
+
+Step 5: Publish Your Task
+Click 'Post.' Your task goes live immediately, and nearby Helpers get 
+notified. You'll receive bids and can chat with interested Helpers to 
+finalize details.
+
+Step 6: Manage Your Tasks
+From your dashboard, you can edit task details, cancel if needed, or message 
+Helpers. Once the task is complete, confirm completion and leave a review.
+
+================================================================================
+                        3. HELPER GUIDE
+================================================================================
+
+--- FAQs ---
+
+Q: How do I become a Helper?
+A: Sign up, complete your profile, verify your ID, and you're ready to 
+   browse tasks.
+
+Q: Can I accept multiple tasks at once?
+A: Yes, but only take what you can realistically complete on time.
+
+Q: How do I mark a task as completed?
+A: Open the task in your dashboard and click 'Mark as Completed.' The poster 
+   will then confirm.
+
+Q: What if I can't finish a task?
+A: Communicate with the tasker immediately. Unfinished tasks can affect your 
+   rating.
+
+Q: How should I price my bid?
+A: Always enter your full price in euros (including time, materials, 
+   transport, and fees) and use the Price Justification box to explain what 
+   the poster gets for that amount. Once a poster accepts your bid the price 
+   is locked in, so only commit to a number you are happy to honour.
+
+--- Working as a Helper Guide ---
+
+WORKING AS A HELPER
+
+Step 1: Complete Your Helper Profile
+After signing up, complete your Helper profile. Add your skills, experience, 
+availability, hourly rate, and any tools/equipment you have. Upload a profile 
+picture, it builds trust!
+
+Step 2: Browse Available Tasks
+Go to 'Browse Tasks' to see tasks near you that match your skills. Use 
+filters to narrow down by category, distance, or budget.
+
+Step 3: Submit a Bid
+Found a task you can do? Click 'Submit Bid,' explain why you're a good fit, 
+and confirm your availability. Be clear and professional.
+
+Step 4: Communicate with the Tasker
+If your bid is accepted, you'll get a notification. Message the tasker to 
+confirm details, timing, and any special requirements.
+
+Step 5: Complete the Task
+Show up on time, do the job well, and follow the tasker's instructions. Take 
+photos of your work if needed, it helps with disputes and builds your 
+reputation.
+
+Step 6: Mark as Completed
+Once finished, click 'Mark as Completed' in your dashboard. The tasker will 
+confirm, and you'll get paid automatically.
+
+Step 7: Build Your Reputation
+Ask for reviews after every task. A high rating and positive feedback mean 
+more jobs and better pay!
+
+================================================================================
+                        4. PAYMENT GUIDE
+================================================================================
+
+--- FAQs ---
+
+Q: How does payment work?
+A: Taskers pay through our secure system. Helpers get paid after the task is 
+   confirmed as complete.
+
+Q: Are there fees?
+A: Yes, Taskorilla takes a small service fee. Helpers get the net amount 
+   displayed before accepting.
+
+Q: How do I get paid?
+A: Add your bank account in settings. Once a task is confirmed, we transfer 
+   funds automatically.
+
+Q: What if a task isn't paid?
+A: Contact support. We'll review the case and mediate if necessary.
+
+--- Understanding Payments Guide ---
+
+UNDERSTANDING PAYMENTS ON TASKORILLA
+
+Step 1: Add Your Payment Method
+Go to 'Settings' > 'Payment Information.' Add your bank account or preferred 
+payment method. This is required to receive payments as a Helper.
+
+Step 2: Understand Fees
+Taskorilla takes a small service fee from each transaction. The fee is always 
+shown upfront before you post or accept a task. Helpers see their net 
+earnings before accepting.
+
+Step 3: Make or Receive Payment
+
+For Taskers: When you accept a bid, you'll be prompted to pay securely 
+through our platform. Funds are held until the task is confirmed as complete.
+
+For Helpers: Once a task is marked complete and confirmed by the tasker, 
+payment is released to your account automatically.
+
+Step 4: Track Your Payments
+Check your dashboard for payment history, pending payments, and completed 
+transactions. You'll receive email confirmations for every payment.
+
+Step 5: Withdrawals (For Helpers)
+Payments are transferred to your linked account automatically after task 
+confirmation. If there's a delay, check your payment method settings or 
+contact support.
+
+Step 6: Report Payment Issues
+If a payment isn't received or there's a dispute, contact support at 
+tee@taskorilla.com. We'll review the case and mediate if necessary.
+
+--- Disputes and Refunds ---
+
+DISPUTES AND REFUNDS
+Last Updated: November 17, 2025
+
+Taskorilla is not a party to agreements between Taskers and Helpers. Any 
+disputes must be handled directly between those two users.
+
+Taskorilla does not provide refunds for task payments unless there is a 
+confirmed platform error, such as a duplicated charge caused by the platform 
+itself.
+
+We do not mediate disagreements, guarantee outcomes, or compensate users for 
+incomplete tasks, dissatisfaction, or disagreements between Taskers and Helpers.
+
+================================================================================
+                        5. SAFETY GUIDE
+================================================================================
+
+--- FAQs ---
+
+Q: How do I stay safe when meeting Helpers or Taskers?
+A: Meet in public spaces when possible, verify profiles, and never share 
+   unnecessary personal info.
+
+Q: What if I have a problem with a Helper or Tasker?
+A: Report the issue through the platform. We take safety seriously and will 
+   help resolve it.
+
+Q: Can I block a Helper or Tasker?
+A: Yes. Go to their profile and click 'Block User.' They won't see or message 
+   you.
+
+Q: What if something gets damaged during a task?
+A: Document it with photos, contact the other party, and involve support if 
+   needed.
+
+--- Staying Safe on Taskorilla Guide ---
+
+STAYING SAFE ON TASKORILLA
+
+Step 1: Verify Profiles Before Working Together
+Always check a user's profile, reviews, and verification status before 
+accepting or assigning a task. Verified users with good reviews are more 
+trustworthy.
+
+Step 2: Meet in Public Spaces When Possible
+For tasks that don't require being at someone's home (like delivery or 
+moving), arrange to meet in a public location first.
+
+Step 3: Communicate Clearly Through the Platform
+Use Taskorilla's messaging system for all communication. This keeps a record 
+and helps resolve disputes. Never share personal contact info like phone 
+numbers or emails early on.
+
+Step 4: Protect Your Personal Information
+Don't overshare. Your profile should include enough to build trust, but not 
+sensitive details like your full address, bank info, or personal 
+identification numbers.
+
+Step 5: Document Everything
+Take photos before and after completing a task. This protects both parties in 
+case of damage claims or disputes about work quality.
+
+Step 6: Trust Your Instincts
+If something feels off, it probably is. Don't proceed with a task if you're 
+uncomfortable. You can always cancel and report suspicious behavior.
+
+Step 7: Report Problems Immediately
+If someone is harassing you, acting suspiciously, or breaking platform rules, 
+use the 'Report' button on their profile. We take safety seriously and will 
+investigate promptly.
+
+Step 8: Review Safety Tips Regularly
+Check our Help Center for updated safety guidelines. Stay informed about 
+common scams and how to avoid them.
+
+--- Marketplace Safety Guidelines ---
+
+MARKETPLACE SAFETY GUIDELINES
+Last Updated: November 17, 2025
+
+Taskorilla does not verify every user, supervise tasks, or guarantee that 
+every experience will be safe. Always use caution.
+
+Safety Tips
+
+- Meet in public places whenever possible.
+- Avoid tasks that feel risky or unsafe.
+- Trust your instincts — walk away if something feels off.
+- Hold off on sharing personal contact details until you feel comfortable.
+- Report suspicious behaviour immediately within the platform.
+
+Platform Restrictions
+
+Taskorilla does not allow illegal tasks, dangerous activities, offensive 
+behaviour, or attempts to move conversations off the platform to avoid our 
+rules.
+
+Emergency Situations
+
+If you ever feel unsafe, contact local authorities right away. Taskorilla is 
+not an emergency service.
+
+================================================================================
+                    6. PLATFORM & TECHNICAL
+================================================================================
+
+--- FAQs ---
+
+Q: Can I delete my Taskorilla account?
+A: Yes, but note that completed task history may remain for record-keeping.
+
+Q: Why can't I post a task or accept one?
+A: Check if your account is verified and that you haven't been suspended for 
+   any reason.
+
+Q: How do I reset my password?
+A: Click 'Forgot Password,' enter your email, and follow the link we send.
+
+Q: Why am I not seeing certain tasks?
+A: Tasks are shown based on location, skills, and availability. Update your 
+   profile for better matches.
+
+Q: How do I contact support?
+A: Use the 'Contact Support' form in the Help Center. We usually reply 
+   within 24 hours.
+
+================================================================================
+                    7. LEGAL & PRIVACY
+================================================================================
+
+--- GDPR Data Processing Add-On ---
+
+GDPR DATA PROCESSING ADD-ON
+Last Updated: November 17, 2025
+
+This add-on applies to users in the European Economic Area (EEA) and the 
+United Kingdom.
+
+Data Controller
+
+Taskorilla is the data controller for the information you provide through the 
+platform.
+
+Your Rights Under GDPR
+
+You may request access, correction, deletion, restriction of processing, data 
+portability, or withdrawal of consent. Contact us to exercise these rights.
+
+Data Transfers
+
+We may transfer data outside the EEA or UK using legally recognised safeguards 
+such as Standard Contractual Clauses.
+
+Obligations
+
+Do not upload information about others unless you have their permission.
+
+================================================================================
+                              CONTACT SUPPORT
+================================================================================
+
+For additional help or support, please contact us through the Help Center 
+contact form or email: tee@taskorilla.com
+
+We usually reply within 24 hours.
+
+================================================================================
+                              END OF DOCUMENT
+================================================================================
+

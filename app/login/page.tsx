@@ -1,17 +1,28 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 
-export default function Login() {
+function LoginContent() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectUrl = searchParams.get('redirect')
+  const confirmed = searchParams.get('confirmed')
+  
+  // Show success message if email was confirmed
+  useEffect(() => {
+    if (confirmed === 'true') {
+      setSuccessMessage('Email confirmed successfully! You can now sign in.')
+    }
+  }, [confirmed])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -76,7 +87,12 @@ export default function Login() {
           router.push('/profile?setup=required')
           router.refresh()
         } else {
-          router.push('/tasks')
+          // Check if there's a redirect URL, otherwise go to tasks
+          if (redirectUrl) {
+            router.push(redirectUrl)
+          } else {
+            router.push('/tasks')
+          }
           router.refresh()
         }
       } else {
@@ -105,6 +121,11 @@ export default function Login() {
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+          {successMessage && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
+              {successMessage}
+            </div>
+          )}
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}
@@ -173,6 +194,14 @@ export default function Login() {
         </form>
       </div>
     </div>
+  )
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   )
 }
 

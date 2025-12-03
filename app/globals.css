@@ -37,11 +37,53 @@ body {
   height: 100%;
   width: 100%;
   z-index: 1;
+  /* iOS-specific fixes */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: pan-x pan-y;
+  -webkit-touch-callout: none;
+}
+
+/* Fix for iOS Safari map rendering issues */
+.leaflet-container.leaflet-touch {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.leaflet-control-container {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Ensure map tiles load correctly on iOS */
+.leaflet-tile-container img {
+  max-width: none !important;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
 }
 
 .custom-marker {
-  background: transparent;
-  border: none;
+  background: transparent !important;
+  border: none !important;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  pointer-events: auto !important;
+}
+
+/* Ensure marker content is visible */
+.custom-marker div {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Leaflet marker pane z-index fix */
+.leaflet-marker-pane {
+  z-index: 600 !important;
+}
+
+.leaflet-popup-pane {
+  z-index: 700 !important;
 }
 
 

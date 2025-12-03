@@ -161,29 +161,68 @@ export default function MessagesPage() {
                     ? 'bg-blue-50 border-2 border-blue-200' 
                     : 'bg-white'
                 }`}
+                style={{ overflow: 'hidden', wordBreak: 'break-word' }}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className={`text-lg font-semibold ${hasUnread ? 'text-blue-900' : 'text-gray-900'}`}>
+                <div className="flex items-start justify-between min-w-0">
+                  <div className="flex-1 min-w-0" style={{ overflow: 'hidden' }}>
+                    <div className="flex items-center space-x-3 mb-2 flex-wrap" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                      <h3 className={`text-lg font-semibold ${hasUnread ? 'text-blue-900' : 'text-gray-900'}`} style={{ wordBreak: 'break-word' }}>
                         {otherParticipant?.full_name || otherParticipant?.email}
                       </h3>
                       {hasUnread && (
-                        <span className="bg-blue-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center min-w-[20px] px-1">
+                        <span className="bg-blue-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center min-w-[20px] px-1 flex-shrink-0">
                           {(conv as any).unread_count > 99 ? '99+' : (conv as any).unread_count}
                         </span>
                       )}
                       {conv.task && (
-                        <span className={`text-sm ${hasUnread ? 'text-blue-700' : 'text-gray-500'}`}>
+                        <span className={`text-sm ${hasUnread ? 'text-blue-700' : 'text-gray-500'}`} style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                           • {conv.task.title}
                         </span>
                       )}
                     </div>
-                    {conv.last_message && (
-                      <p className={`truncate mb-2 ${hasUnread ? 'text-blue-800 font-medium' : 'text-gray-600'}`}>
-                        {conv.last_message.content}
-                      </p>
-                    )}
+                    {conv.last_message && (() => {
+                      const content = conv.last_message.content
+                      // Check if content contains a URL
+                      const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/gi
+                      const urlMatch = urlRegex.exec(content)
+                      
+                      if (urlMatch) {
+                        const url = urlMatch[0]
+                        const textBefore = content.substring(0, urlMatch.index).trim()
+                        const isTaskUrl = url.includes('/tasks/')
+                        const buttonText = isTaskUrl ? 'View Task' : 'Open Link'
+                        
+                        return (
+                          <div className="mb-2 space-y-1">
+                            {textBefore && (
+                              <p className={`${hasUnread ? 'text-blue-800 font-medium' : 'text-gray-600'}`} style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                                {textBefore}
+                              </p>
+                            )}
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className={`inline-block px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                                hasUnread
+                                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                  : 'bg-primary-600 text-white hover:bg-primary-700'
+                              }`}
+                            >
+                              {buttonText}
+                            </a>
+                          </div>
+                        )
+                      }
+                      
+                      // No URL, just show text with proper wrapping
+                      return (
+                        <p className={`mb-2 ${hasUnread ? 'text-blue-800 font-medium' : 'text-gray-600'}`} style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                          {content}
+                        </p>
+                      )
+                    })()}
                     {conv.updated_at && (
                       <p className={`text-xs ${hasUnread ? 'text-blue-600' : 'text-gray-400'}`}>
                         {format(new Date(conv.updated_at), 'MMM d, yyyy h:mm a')}

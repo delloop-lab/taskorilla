@@ -6,3 +6,6 @@ ALTER TABLE tasks
 CREATE INDEX IF NOT EXISTS idx_tasks_archived ON tasks(archived);
 
 
+
+
+

@@ -1,22 +1,39 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 
-export default function Register() {
+function RegisterContent() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [fullName, setFullName] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectUrl = searchParams.get('redirect')
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
+
+    // Validation
+    if (password !== confirmPassword) {
+      setError('Passwords do not match')
+      setLoading(false)
+      return
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long')
+      setLoading(false)
+      return
+    }
 
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -29,42 +46,42 @@ export default function Register() {
         },
       })
 
-      if (error) throw error
+      if (error) {
+        console.error('Registration error:', error)
+        let errorMessage = error.message || 'An error occurred during registration'
+        
+        if (error.message.includes('User already registered')) {
+          errorMessage = 'An account with this email already exists. Please sign in instead.'
+        } else if (error.message.includes('Password')) {
+          errorMessage = 'Password does not meet requirements. Please choose a stronger password.'
+        } else if (error.message.includes('Email')) {
+          errorMessage = 'Please enter a valid email address.'
+        }
+        
+        setError(errorMessage)
+        return
+      }
 
       if (data.user) {
-        // Update profile with full name
-        await supabase
-          .from('profiles')
-          .update({ full_name: fullName })
-          .eq('id', data.user.id)
-
         // Check if email confirmation is required
-        if (!data.session) {
-          setError('Registration successful! Please check your email and click the confirmation link to activate your account.')
-          return
-        }
-
-        // Check if profile is complete
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, country, phone_country_code, phone_number')
-          .eq('id', data.user.id)
-          .single()
-
-        // Import profile check utility
-        const { isProfileComplete } = await import('@/lib/profile-utils')
-        
-        if (!isProfileComplete(profile)) {
-          // Redirect to profile page if incomplete
-          router.push('/profile?setup=required')
+        // If confirmation is disabled, user will be logged in automatically
+        if (data.session) {
+          // User is logged in (email confirmation disabled)
+          router.push(redirectUrl || '/profile?setup=required')
           router.refresh()
         } else {
-          router.push('/tasks')
-          router.refresh()
+          // Email confirmation required - show success message and redirect
+          // The redirect will show a proper "check your email" message
+          setTimeout(() => {
+            router.push('/auth/auth-code-error?type=confirmation')
+          }, 100)
         }
+      } else {
+        setError('Registration failed. Please try again.')
       }
     } catch (error: any) {
-      setError(error.message || 'An error occurred during registration')
+      console.error('Unexpected registration error:', error)
+      setError(error.message || 'An unexpected error occurred during registration')
     } finally {
       setLoading(false)
     }
@@ -90,7 +107,7 @@ export default function Register() {
               {error}
             </div>
           )}
-          <div className="rounded-md shadow-sm -space-y-px">
+          <div className="rounded-md shadow-sm space-y-4">
             <div>
               <label htmlFor="full-name" className="sr-only">
                 Full Name
@@ -100,7 +117,7 @@ export default function Register() {
                 name="fullName"
                 type="text"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
                 placeholder="Full Name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
@@ -122,21 +139,52 @@ export default function Register() {
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
-            <div>
+            <div className="relative">
               <label htmlFor="password" className="sr-only">
                 Password
               </label>
               <input
                 id="password"
                 name="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+                placeholder="Password (min. 6 characters)"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? (
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                  </svg>
+                ) : (
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+            <div>
+              <label htmlFor="confirm-password" className="sr-only">
+                Confirm Password
+              </label>
+              <input
+                id="confirm-password"
+                name="confirmPassword"
+                type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                minLength={6}
+                placeholder="Confirm Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
               />
             </div>
           </div>
@@ -156,4 +204,10 @@ export default function Register() {
   )
 }
 
-
+export default function Register() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <RegisterContent />
+    </Suspense>
+  )
+}

@@ -3,3 +3,6 @@ ALTER TABLE tasks
   ADD COLUMN IF NOT EXISTS image_url TEXT;
 
 
+
+
+

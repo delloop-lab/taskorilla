@@ -3,8 +3,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import StandardModal from '@/components/StandardModal'
 import { Category, Tag } from '@/lib/types'
 import { geocodePostcode } from '@/lib/geocoding'
+import { formatPostcodeForCountry, isPortuguesePostcode } from '@/lib/postcode'
+import { checkForContactInfo } from '@/lib/content-filter'
 
 export default function EditTaskPage() {
   const params = useParams()
@@ -27,6 +30,18 @@ export default function EditTaskPage() {
   const [imageUploading, setImageUploading] = useState(false)
   const [postcode, setPostcode] = useState('')
   const [country, setCountry] = useState('')
+  const [closestAddress, setClosestAddress] = useState<string | null>(null)
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean
+    type: 'success' | 'error' | 'warning' | 'info' | 'confirm'
+    title: string
+    message: string
+  }>({
+    isOpen: false,
+    type: 'info',
+    title: '',
+    message: '',
+  })
   const [geocoding, setGeocoding] = useState(false)
   const [geocodeError, setGeocodeError] = useState<string | null>(null)
   const [showAddSubCategory, setShowAddSubCategory] = useState(false)
@@ -223,7 +238,12 @@ export default function EditTaskPage() {
 
   const handleAddSubCategory = async () => {
     if (!formData.category_id || !newSubCategoryName.trim()) {
-      alert('Please select a category and enter a sub-category name')
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: 'Missing Information',
+        message: 'Please select a category and enter a sub-category name',
+      })
       return
     }
 
@@ -244,7 +264,12 @@ export default function EditTaskPage() {
 
       if (error) {
         if (error.code === '23505') { // Unique constraint violation
-          alert('A sub-category with this name already exists')
+          setModalState({
+            isOpen: true,
+            type: 'warning',
+            title: 'Duplicate Category',
+            message: 'A sub-category with this name already exists',
+          })
         } else {
           throw error
         }
@@ -257,7 +282,12 @@ export default function EditTaskPage() {
       setNewSubCategoryName('')
       setShowAddSubCategory(false)
     } catch (error: any) {
-      alert(error.message || 'Error creating sub-category')
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: error.message || 'Error creating sub-category',
+      })
     } finally {
       setAddingSubCategory(false)
     }
@@ -355,7 +385,12 @@ export default function EditTaskPage() {
       setImageUrls(prev => [...prev, ...newUrls])
     } catch (error: any) {
       console.error('Error uploading image:', error)
-      alert(error.message || 'Error uploading image')
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: error.message || 'Error uploading image',
+      })
     } finally {
       setImageUploading(false)
       if (event.target) {
@@ -373,76 +408,97 @@ export default function EditTaskPage() {
   }
 
   const handlePostcodeChange = async (value: string) => {
-    setPostcode(value)
+    const trimmedCountry = country.trim()
+    const formattedValue = formatPostcodeForCountry(value, trimmedCountry)
+    setPostcode(formattedValue)
     setGeocodeError(null)
+    if (!formattedValue.trim()) {
+      setClosestAddress(null)
+    }
     
     // Only geocode if postcode is complete (not while typing)
-    if (value.trim() && country.trim()) {
+    if (formattedValue.trim() && trimmedCountry) {
       // Check if postcode is complete using the helper function
       const { isPostcodeComplete } = await import('@/lib/geocoding')
       
-      if (isPostcodeComplete(value.trim(), country.trim())) {
+      if (isPostcodeComplete(formattedValue.trim(), trimmedCountry)) {
         setGeocoding(true)
         try {
-          const result = await geocodePostcode(value.trim(), country.trim())
+          const result = await geocodePostcode(formattedValue.trim(), trimmedCountry)
           if (result) {
-            console.log(`✅ Task edit geocoded "${value.trim()}" to:`, {
+            const derivedAddress = result.closest_address || result.display_name
+            setClosestAddress(derivedAddress || null)
+            console.log(`✅ Task edit geocoded "${formattedValue.trim()}" to:`, {
               lat: result.latitude,
               lng: result.longitude,
               display_name: result.display_name
             })
-            setFormData({
-              ...formData,
-              latitude: result.latitude,
-              longitude: result.longitude,
-            })
-            // Update location field with the display name if it's empty
-            if (!formData.location && result.display_name) {
-              setFormData(prev => ({
+            setFormData(prev => {
+              const shouldForceClosestAddress =
+                isPortuguesePostcode(formattedValue.trim()) &&
+                trimmedCountry.toLowerCase() === 'portugal' &&
+                !!derivedAddress
+              
+              const nextLocation =
+                shouldForceClosestAddress
+                  ? derivedAddress!
+                  : !prev.location && derivedAddress
+                    ? derivedAddress
+                    : prev.location
+
+              return {
                 ...prev,
-                location: result.display_name,
-              }))
-            }
+                latitude: result.latitude,
+                longitude: result.longitude,
+                location: nextLocation,
+              }
+            })
           } else {
-            setGeocodeError('Could not find location for this postcode and country')
-            setFormData({
-              ...formData,
+            setGeocodeError('Postcode not found')
+            setClosestAddress(null)
+            setFormData(prev => ({
+              ...prev,
               latitude: null,
               longitude: null,
-            })
+              location: '', // Clear location when postcode cannot be decoded
+            }))
           }
         } catch (error: any) {
           console.error('Geocoding error:', error)
-          setGeocodeError('Error geocoding postcode')
-          setFormData({
-            ...formData,
+          setGeocodeError('Postcode not found')
+          setClosestAddress(null)
+          setFormData(prev => ({
+            ...prev,
             latitude: null,
             longitude: null,
-          })
+            location: '', // Clear location when postcode cannot be decoded
+          }))
         } finally {
           setGeocoding(false)
         }
       } else {
         // Postcode is incomplete, clear coordinates but don't show error yet
-        setFormData({
-          ...formData,
+        setClosestAddress(null)
+        setFormData(prev => ({
+          ...prev,
           latitude: null,
           longitude: null,
-        })
+        }))
       }
-    } else if (value.trim() && !country.trim()) {
+    } else if (formattedValue.trim() && !trimmedCountry) {
       setGeocodeError('Please select a country first')
-      setFormData({
-        ...formData,
+      setFormData(prev => ({
+        ...prev,
         latitude: null,
         longitude: null,
-      })
+      }))
     } else {
-      setFormData({
-        ...formData,
+      setClosestAddress(null)
+      setFormData(prev => ({
+        ...prev,
         latitude: null,
         longitude: null,
-      })
+      }))
     }
   }
 
@@ -461,6 +517,21 @@ export default function EditTaskPage() {
     setSaving(true)
     setError(null)
 
+    // Check title and description for contact information (email/phone) - block for safety
+    const titleCheck = checkForContactInfo(formData.title)
+    if (!titleCheck.isClean) {
+      setError(titleCheck.message)
+      setSaving(false)
+      return
+    }
+
+    const descriptionCheck = checkForContactInfo(formData.description)
+    if (!descriptionCheck.isClean) {
+      setError(descriptionCheck.message)
+      setSaving(false)
+      return
+    }
+
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser()
       if (!authUser) throw new Error('You must be logged in to edit a task')
@@ -471,7 +542,7 @@ export default function EditTaskPage() {
         .update({
           title: formData.title,
           description: formData.description,
-          budget: parseFloat(formData.budget),
+          budget: formData.budget && formData.budget.trim() ? parseFloat(formData.budget) : null,
           category_id: formData.category_id || null,
           sub_category_id: formData.sub_category_id || null,
           location: formData.location || null,
@@ -650,12 +721,11 @@ export default function EditTaskPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label htmlFor="budget" className="block text-sm font-medium text-gray-700 mb-2">
-              Budget ($) *
+              Budget (€) <span className="text-gray-500 font-normal">(Optional)</span>
             </label>
             <input
               type="number"
               id="budget"
-              required
               min="0"
               step="0.01"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
@@ -663,6 +733,9 @@ export default function EditTaskPage() {
               value={formData.budget}
               onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
             />
+            <p className="mt-1 text-xs text-gray-500">
+              If no budget is entered, visitors will see "Quote" on your task.
+            </p>
           </div>
 
           <div>
@@ -903,8 +976,10 @@ export default function EditTaskPage() {
             {geocodeError && (
               <p className="mt-1 text-sm text-red-600">{geocodeError}</p>
             )}
-            {formData.latitude && formData.longitude && country.trim() && (
-              <p className="mt-1 text-sm text-green-600">✓ Location found</p>
+            {!geocoding && !geocodeError && formData.latitude && formData.longitude && country.trim() && (
+              <p className="mt-1 text-sm text-green-600">
+                ✓ Location found{closestAddress ? ` — ${closestAddress}` : ''}
+              </p>
             )}
           </div>
 
@@ -966,6 +1041,15 @@ export default function EditTaskPage() {
           </button>
         </div>
       </form>
+
+      {/* Standard Modal */}
+      <StandardModal
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState({ ...modalState, isOpen: false })}
+        type={modalState.type}
+        title={modalState.title}
+        message={modalState.message}
+      />
     </div>
   )
 }

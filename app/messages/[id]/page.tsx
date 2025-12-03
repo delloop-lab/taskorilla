@@ -3,64 +3,82 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Conversation, Message } from '@/lib/types'
+import { Message, Conversation } from '@/lib/types'
 import { format } from 'date-fns'
-import type { RealtimeChannel } from '@supabase/supabase-js'
+import Link from 'next/link'
+import { ArrowLeft, Send } from 'lucide-react'
+import StandardModal from '@/components/StandardModal'
+import { checkForContactInfo } from '@/lib/content-filter'
 
 export default function ConversationPage() {
   const params = useParams()
   const router = useRouter()
   const conversationId = params.id as string
-
-  const [conversation, setConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
+  const [conversation, setConversation] = useState<Conversation | null>(null)
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [messageImage, setMessageImage] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [otherParticipant, setOtherParticipant] = useState<any>(null)
+  const [task, setTask] = useState<any>(null)
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean
+    type: 'success' | 'error' | 'warning' | 'info' | 'confirm'
+    title: string
+    message: string
+  }>({
+    isOpen: false,
+    type: 'info',
+    title: '',
+    message: '',
+  })
 
   useEffect(() => {
     checkUser()
-  }, [])
+    loadConversation()
+    loadMessages()
+  }, [conversationId])
 
+  // Set up real-time subscription for new messages
   useEffect(() => {
-    if (!user) return
+    if (!conversationId) return
 
-    const initialise = async () => {
-      setLoading(true)
-      const conversationExists = await fetchConversation(user.id)
-      if (!conversationExists) {
-        setLoading(false)
-        return
-      }
-
-      await fetchMessages()
-      setLoading(false)
-
-      channel = setupRealtime(() => {
-        fetchMessages()
-      })
-    }
-
-    let channel: RealtimeChannel | null = null
-
-    initialise()
+    const channel = supabase
+      .channel(`conversation-${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        () => {
+          loadMessages()
+        }
+      )
+      .subscribe()
 
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel)
-      }
+      supabase.removeChannel(channel)
     }
-  }, [conversationId, user])
+  }, [conversationId])
 
+  // Scroll to bottom when messages change
   useEffect(() => {
-    scrollToBottom()
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+  // Mark messages as read when viewing
+  useEffect(() => {
+    if (user && messages.length > 0) {
+      markMessagesAsRead()
+    }
+  }, [user, messages])
 
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -71,9 +89,9 @@ export default function ConversationPage() {
     }
   }
 
-  const fetchConversation = async (currentUserId: string) => {
+  const loadConversation = async () => {
     try {
-      const { data: convData, error } = await supabase
+      const { data, error } = await supabase
         .from('conversations')
         .select('*')
         .eq('id', conversationId)
@@ -81,42 +99,43 @@ export default function ConversationPage() {
 
       if (error) throw error
 
-      if (!convData) {
-        return false
+      setConversation(data)
+
+      // Load other participant and task
+      if (data) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const otherId = data.participant1_id === user.id 
+            ? data.participant2_id 
+            : data.participant1_id
+
+          const [participantResult, taskResult] = await Promise.all([
+            supabase
+              .from('profiles')
+              .select('id, email, full_name, avatar_url')
+              .eq('id', otherId)
+              .single(),
+            data.task_id
+              ? supabase
+                  .from('tasks')
+                  .select('id, title')
+                  .eq('id', data.task_id)
+                  .single()
+              : Promise.resolve({ data: null })
+          ])
+
+          setOtherParticipant(participantResult.data)
+          setTask(taskResult.data)
+        }
       }
-
-      const isParticipant =
-        convData.participant1_id === currentUserId ||
-        convData.participant2_id === currentUserId
-
-      if (!isParticipant) {
-        router.push('/messages')
-        return false
-      }
-
-      const [taskResult, participant1Result, participant2Result] = await Promise.all([
-        supabase.from('tasks').select('id, title').eq('id', convData.task_id).single(),
-        supabase.from('profiles').select('id, email, full_name, avatar_url').eq('id', convData.participant1_id).single(),
-        supabase.from('profiles').select('id, email, full_name, avatar_url').eq('id', convData.participant2_id).single()
-      ])
-
-      setConversation({
-        ...convData,
-        task: taskResult.data || null,
-        participant1: participant1Result.data || null,
-        participant2: participant2Result.data || null
-      })
-
-      return true
     } catch (error) {
       console.error('Error loading conversation:', error)
-      return false
     }
   }
 
-  const fetchMessages = async () => {
+  const loadMessages = async () => {
     try {
-      const { data: messagesData, error } = await supabase
+      const { data, error } = await supabase
         .from('messages')
         .select('*')
         .eq('conversation_id', conversationId)
@@ -124,100 +143,121 @@ export default function ConversationPage() {
 
       if (error) throw error
 
-      if (messagesData && messagesData.length > 0) {
-        // Mark messages as read if current user is the receiver
-        if (user) {
-          // Filter unread messages - handle case where is_read might be null/undefined
-          const unreadMessages = messagesData.filter(
-            m => m.receiver_id === user.id && (m.is_read === false || m.is_read === null || m.is_read === undefined)
-          )
-
-          if (unreadMessages.length > 0) {
-            const messageIds = unreadMessages.map(m => m.id)
-            
-            const { error: updateError } = await supabase
-              .from('messages')
-              .update({ is_read: true })
-              .in('id', messageIds)
-            
-            if (updateError) {
-              console.error('Error marking messages as read:', updateError)
-              // If column doesn't exist, log a helpful message
-              if (updateError.message?.includes('column') && updateError.message?.includes('does not exist')) {
-                console.error('⚠️ The is_read column does not exist. Please run the SQL script: supabase/add_message_read_status.sql')
-              }
-            } else {
-              // Force a refresh of the navbar count by dispatching a custom event
-              // This ensures the count updates even if real-time subscription is delayed
-              setTimeout(() => {
-                window.dispatchEvent(new CustomEvent('messages-read'))
-              }, 100)
-            }
-          }
-        }
-
-        // Fetch profiles for senders and receivers
+      // Load sender and receiver profiles
+      if (data && data.length > 0) {
         const userIds = Array.from(new Set([
-          ...messagesData.map(m => m.sender_id),
-          ...messagesData.map(m => m.receiver_id)
+          ...data.map(m => m.sender_id),
+          ...data.map(m => m.receiver_id)
         ]))
 
-        const { data: profilesData } = await supabase
+        const { data: profiles } = await supabase
           .from('profiles')
           .select('id, email, full_name, avatar_url')
           .in('id', userIds)
 
-        // Map profiles to messages
-        const messagesWithProfiles = messagesData.map(message => ({
+        const messagesWithProfiles = data.map(message => ({
           ...message,
-          sender: profilesData?.find(p => p.id === message.sender_id),
-          receiver: profilesData?.find(p => p.id === message.receiver_id)
+          sender: profiles?.find(p => p.id === message.sender_id),
+          receiver: profiles?.find(p => p.id === message.receiver_id),
         }))
 
-        setMessages(messagesWithProfiles)
+        setMessages(messagesWithProfiles as Message[])
       } else {
         setMessages([])
       }
     } catch (error) {
       console.error('Error loading messages:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const setupRealtime = (onNewMessage: () => void) => {
-    return supabase
-      .channel(`conversation:${conversationId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        () => {
-          onNewMessage()
-        }
-      )
-      .subscribe()
+  const markMessagesAsRead = async () => {
+    if (!user) return
+
+    try {
+      await supabase
+        .from('messages')
+        .update({ is_read: true })
+        .eq('conversation_id', conversationId)
+        .eq('receiver_id', user.id)
+        .eq('is_read', false)
+
+      // Dispatch event to update unread count in navbar
+      window.dispatchEvent(new Event('messages-read'))
+    } catch (error) {
+      console.error('Error marking messages as read:', error)
+    }
+  }
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !user) return
+
+    setUploadingImage(true)
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `message-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+      const filePath = `${user.id}/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file, { upsert: true })
+
+      if (uploadError) throw uploadError
+
+      const { data } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath)
+
+      setMessageImage(data.publicUrl)
+    } catch (error: any) {
+      console.error('Error uploading image:', error)
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: error.message || 'Error uploading image',
+      })
+    } finally {
+      setUploadingImage(false)
+      if (event.target) {
+        event.target.value = ''
+      }
+    }
   }
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newMessage.trim() || !user || !conversation) return
+    if ((!newMessage.trim() && !messageImage) || !user || !conversation || sending) return
+
+    // Check for contact information (email/phone) - block for safety
+    const contentCheck = checkForContactInfo(newMessage)
+    if (!contentCheck.isClean) {
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: 'Contact Information Detected',
+        message: contentCheck.message,
+      })
+      return
+    }
 
     setSending(true)
     try {
-      const receiverId =
-        conversation.participant1_id === user.id
-          ? conversation.participant2_id
-          : conversation.participant1_id
+      const receiverId = conversation.participant1_id === user.id
+        ? conversation.participant2_id
+        : conversation.participant1_id
 
-      const { error } = await supabase.from('messages').insert({
-        conversation_id: conversationId,
-        sender_id: user.id,
-        receiver_id: receiverId,
-        content: newMessage,
-      })
+      const { error } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_id: user.id,
+          receiver_id: receiverId,
+          content: newMessage.trim() || '',
+          image_url: messageImage || null,
+        })
 
       if (error) throw error
 
@@ -227,59 +267,43 @@ export default function ConversationPage() {
         .update({ updated_at: new Date().toISOString() })
         .eq('id', conversationId)
 
-      // Send email notification to receiver
-      try {
-        const receiver = conversation.participant1_id === user.id 
-          ? conversation.participant2 
-          : conversation.participant1
-
-        console.log('📧 Email notification check:', {
-          receiver: receiver,
-          receiverEmail: receiver?.email,
-          conversationId: conversationId
-        })
-
-        if (receiver && receiver.email) {
-          // Get sender's full name
+      // Send email notification
+      if (otherParticipant) {
+        try {
           const { data: senderProfile } = await supabase
             .from('profiles')
             .select('full_name, email')
             .eq('id', user.id)
             .single()
 
-          console.log('📧 Sending email notification to:', receiver.email)
-          
-          const emailResponse = await fetch('/api/send-email', {
+          await fetch('/api/send-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               type: 'new_message',
-              recipientEmail: receiver.email,
-              recipientName: receiver.full_name || receiver.email,
-              senderName: senderProfile?.full_name || senderProfile?.email || user.email,
-              messagePreview: newMessage.substring(0, 100),
+              recipientEmail: otherParticipant.email,
+              recipientName: otherParticipant.full_name || otherParticipant.email,
+              senderName: senderProfile?.full_name || senderProfile?.email || 'Someone',
+              messagePreview: newMessage.trim().substring(0, 100),
               conversationId: conversationId,
             }),
           })
-
-          const emailResult = await emailResponse.json()
-          if (emailResponse.ok) {
-            console.log('✅ Email notification sent successfully:', emailResult)
-          } else {
-            console.error('❌ Email notification failed:', emailResult)
-          }
-        } else {
-          console.warn('⚠️ Cannot send email: receiver email not found', { receiver })
+        } catch (emailError) {
+          console.error('Error sending email notification:', emailError)
         }
-      } catch (emailError) {
-        console.error('❌ Error sending email notification:', emailError)
-        // Don't fail message sending if email fails
       }
 
       setNewMessage('')
-      fetchMessages()
+      setMessageImage(null)
+      loadMessages()
     } catch (error: any) {
-      alert(error.message || 'Error sending message')
+      console.error('Error sending message:', error)
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: 'Error sending message: ' + (error.message || 'Unknown error'),
+      })
     } finally {
       setSending(false)
     }
@@ -296,70 +320,191 @@ export default function ConversationPage() {
   if (!conversation) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center">Conversation not found</div>
+        <div className="text-center">
+          <p className="text-gray-500 mb-4">Conversation not found.</p>
+          <Link href="/messages" className="text-primary-600 hover:text-primary-700">
+            ← Back to Messages
+          </Link>
+        </div>
       </div>
     )
   }
 
-  const otherParticipant =
-    conversation.participant1_id === user?.id
-      ? conversation.participant2
-      : conversation.participant1
-
   return (
+    <>
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <button
-        onClick={() => router.push('/messages')}
-        className="text-primary-600 hover:text-primary-700 mb-4 inline-block"
-      >
-        ← Back to messages
-      </button>
-
-      <div className="bg-white rounded-lg shadow-md p-6 mb-4">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Conversation with {otherParticipant?.full_name || otherParticipant?.email}
-        </h1>
-        {conversation.task && (
-          <p className="text-gray-600">About: {conversation.task.title}</p>
-        )}
+      {/* Header */}
+      <div className="mb-6">
+        <Link
+          href="/messages"
+          className="inline-flex items-center text-primary-600 hover:text-primary-700 mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Messages
+        </Link>
+        <div className="bg-white rounded-lg shadow-md p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              {otherParticipant?.avatar_url && (
+                <img
+                  src={otherParticipant.avatar_url}
+                  alt={otherParticipant.full_name || otherParticipant.email}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              )}
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900">
+                  {otherParticipant?.full_name || otherParticipant?.email || 'Unknown User'}
+                </h1>
+                {task && (
+                  <Link
+                    href={`/tasks/${task.id}`}
+                    className="text-sm text-primary-600 hover:text-primary-700"
+                  >
+                    {task.title}
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md p-6 mb-4 h-96 overflow-y-auto">
+      {/* Messages */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6 min-h-[400px] max-h-[600px] overflow-y-auto">
         {messages.length === 0 ? (
-          <div className="text-center text-gray-500 py-8">
-            No messages yet. Start the conversation!
+          <div className="text-center text-gray-500 py-12">
+            <p>No messages yet. Start the conversation!</p>
           </div>
         ) : (
           <div className="space-y-4">
             {messages.map((message) => {
-              const isOwn = message.sender_id === user?.id
-              const isUnread = !isOwn && !message.is_read
+              const isOwnMessage = message.sender_id === user?.id
               return (
                 <div
                   key={message.id}
-                  className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} min-w-0 w-full`}
                 >
                   <div
-                    className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg relative ${
-                      isOwn
+                    className={`max-w-[85%] sm:max-w-[70%] rounded-lg p-3 ${
+                      isOwnMessage
                         ? 'bg-primary-600 text-white'
-                        : isUnread
-                        ? 'bg-blue-100 border-2 border-blue-400 text-gray-900'
-                        : 'bg-gray-200 text-gray-900'
+                        : 'bg-gray-100 text-gray-900'
                     }`}
+                    style={{ 
+                      wordBreak: 'break-word', 
+                      overflowWrap: 'break-word', 
+                      minWidth: 0,
+                      maxWidth: '100%',
+                      overflow: 'hidden',
+                      flexShrink: 1,
+                      boxSizing: 'border-box'
+                    }}
                   >
-                    {isUnread && (
-                      <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                        !
-                      </span>
-                    )}
-                    {!isOwn && (
-                      <p className="text-xs font-semibold mb-1 opacity-75">
-                        {message.sender?.full_name || message.sender?.email}
+                    {!isOwnMessage && message.sender && (
+                      <p className="text-xs font-semibold mb-1 opacity-75 break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                        {message.sender.full_name || message.sender.email}
                       </p>
                     )}
-                    <p className="text-sm">{message.content}</p>
-                    <p className={`text-xs mt-1 ${isOwn ? 'text-primary-100' : 'text-gray-500'}`}>
+                    {message.image_url && (
+                      <div className="mb-2">
+                        <img
+                          src={message.image_url}
+                          alt="Message attachment"
+                          className="max-w-full max-h-48 rounded-lg object-contain"
+                        />
+                      </div>
+                    )}
+                    {message.content && (() => {
+                      // Better URL regex that captures URLs more reliably
+                      const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/gi
+                      const parts = []
+                      let lastIndex = 0
+                      let match
+                      
+                      // Find all URLs in the content
+                      while ((match = urlRegex.exec(message.content)) !== null) {
+                        // Add text before URL
+                        if (match.index > lastIndex) {
+                          const textBefore = message.content.substring(lastIndex, match.index)
+                          if (textBefore) {
+                            parts.push({
+                              type: 'text',
+                              content: textBefore
+                            })
+                          }
+                        }
+                        // Add URL
+                        parts.push({
+                          type: 'url',
+                          content: match[0]
+                        })
+                        lastIndex = urlRegex.lastIndex
+                      }
+                      
+                      // Add remaining text
+                      if (lastIndex < message.content.length) {
+                        const remainingText = message.content.substring(lastIndex)
+                        if (remainingText) {
+                          parts.push({
+                            type: 'text',
+                            content: remainingText
+                          })
+                        }
+                      }
+                      
+                      // If no URLs found, just show the content
+                      if (parts.length === 0) {
+                        parts.push({
+                          type: 'text',
+                          content: message.content
+                        })
+                      }
+                      
+                      return (
+                        <>
+                          {parts.map((part, idx) => {
+                            if (part.type === 'url') {
+                              const isTaskUrl = part.content.includes('/tasks/')
+                              const buttonText = isTaskUrl ? 'View Task' : 'Open Link'
+                              
+                              return (
+                                <a
+                                  key={idx}
+                                  href={part.content}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className={`inline-block mt-2 mb-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                    isOwnMessage
+                                      ? 'bg-white text-primary-600 hover:bg-gray-100'
+                                      : 'bg-primary-600 text-white hover:bg-primary-700'
+                                  }`}
+                                >
+                                  {buttonText}
+                                </a>
+                              )
+                            }
+                            return (
+                              <span 
+                                key={idx} 
+                                style={{ 
+                                  wordBreak: 'break-word', 
+                                  overflowWrap: 'break-word',
+                                  whiteSpace: 'pre-wrap'
+                                }}
+                              >
+                                {part.content}
+                              </span>
+                            )
+                          })}
+                        </>
+                      )
+                    })()}
+                    <p
+                      className={`text-xs mt-1 ${
+                        isOwnMessage ? 'text-primary-100' : 'text-gray-500'
+                      }`}
+                    >
                       {format(new Date(message.created_at), 'h:mm a')}
                     </p>
                   </div>
@@ -371,27 +516,73 @@ export default function ConversationPage() {
         )}
       </div>
 
+      {/* Message Input */}
       <form onSubmit={handleSendMessage} className="bg-white rounded-lg shadow-md p-4">
-        <div className="flex space-x-4">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type your message..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-            disabled={sending}
-          />
+        {messageImage && (
+          <div className="mb-3 relative inline-block max-w-full">
+            <img
+              src={messageImage}
+              alt="Preview"
+              className="max-w-xs max-h-32 rounded-lg object-contain"
+            />
+            <button
+              type="button"
+              onClick={() => setMessageImage(null)}
+              className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700"
+            >
+              ×
+            </button>
+          </div>
+        )}
+        <div className="flex space-x-2">
+          <div className="flex-1 flex flex-col">
+            <textarea
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Type your message..."
+              rows={3}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 resize-none"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  handleSendMessage(e)
+                }
+              }}
+            />
+            <label className="mt-2 cursor-pointer inline-flex items-center text-sm text-gray-600 hover:text-primary-600">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                disabled={uploadingImage}
+                className="sr-only"
+              />
+              <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              {uploadingImage ? 'Uploading...' : 'Attach photo'}
+            </label>
+          </div>
           <button
             type="submit"
-            disabled={sending || !newMessage.trim()}
-            className="bg-primary-600 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-primary-700 disabled:opacity-50"
+            disabled={(!newMessage.trim() && !messageImage) || sending || uploadingImage}
+            className="bg-primary-600 text-white px-6 py-2 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
-            Send
+            <Send className="w-4 h-4" />
+            <span>{sending ? 'Sending...' : 'Send'}</span>
           </button>
         </div>
       </form>
     </div>
+
+    {/* Standard Modal */}
+    <StandardModal
+      isOpen={modalState.isOpen}
+      onClose={() => setModalState({ ...modalState, isOpen: false })}
+      type={modalState.type}
+      title={modalState.title}
+      message={modalState.message}
+    />
+    </>
   )
 }
-
-

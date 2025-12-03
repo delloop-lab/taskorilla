@@ -6,3 +6,6 @@ CREATE POLICY "Users can delete their own tasks"
   USING (created_by = auth.uid());
 
 
+
+
+

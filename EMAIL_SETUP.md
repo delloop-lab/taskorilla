@@ -1,22 +1,29 @@
-# Email Notifications Setup
+# Email Notifications Setup (SMTP)
 
-## Step 1: Add Resend API Key to Environment Variables
+The application now sends all transactional emails directly through your SMTP server using Nodemailer. No third‑party email APIs are required.
+
+## Step 1: Configure SMTP Environment Variables
 
 Add the following to your `.env.local` file:
 
 ```env
-RESEND_API_KEY=re_hE6LCZZV_PVkvusZ7BR7zYmCYupfGFhSC
+SMTP_HOST=smtp.yourprovider.com
+SMTP_PORT=587
+SMTP_USER=your-smtp-username
+SMTP_PASS=your-smtp-password
+SMTP_FROM="Taskorilla <tee@taskorilla.com>"
+SMTP_SECURE=false            # set to true if you use port 465 / SSL
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-For production, update `NEXT_PUBLIC_APP_URL` to your production domain.
+- For production, update `NEXT_PUBLIC_APP_URL` to your live domain.
+- `SMTP_FROM` controls the `from` header for all outgoing emails.
 
-## Step 2: Verify Your Domain in Resend
+## Step 2: Verify SMTP Access
 
-1. Go to [Resend Dashboard](https://resend.com/domains)
-2. Add and verify your domain
-3. Update the `from` email address in `lib/email.ts` to use your verified domain:
-   - Change `'Taskorilla <notifications@taskorilla.com>'` to `'Taskorilla <notifications@yourdomain.com>'`
+1. Make sure the credentials above can send mail through your provider.
+2. If your provider restricts sender addresses, ensure `SMTP_FROM` uses an allowed mailbox.
+3. If you switch to a different SMTP host (SendGrid, Mailgun, etc.), just update the env vars—no code changes needed.
 
 ## Step 3: Email Notifications Implemented
 
@@ -48,21 +55,16 @@ The following email notifications are now active:
 
 ## Testing
 
-To test email notifications:
-
-1. Make sure your `.env.local` has the Resend API key
-2. Restart your development server: `npm run dev`
-3. Trigger events (place bid, accept bid, send message, etc.)
-4. Check the Resend dashboard for sent emails
+1. Add the SMTP variables to `.env.local`.
+2. Restart your dev server: `npm run dev`.
+3. Trigger a workflow (place bid, accept bid, send message, mark task complete, etc.).
+4. Check the inbox for the `SMTP_FROM` account or your SMTP provider’s logs.
 
 ## Production Deployment
 
-When deploying to production:
-
-1. Set `RESEND_API_KEY` in your hosting platform's environment variables
-2. Set `NEXT_PUBLIC_APP_URL` to your production domain
-3. Verify your domain in Resend
-4. Update the `from` email address in `lib/email.ts`
+1. Set all SMTP variables (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `SMTP_SECURE`) in your hosting provider’s environment settings.
+2. Set `NEXT_PUBLIC_APP_URL` to your production domain.
+3. Restart the app to pick up the new env variables.
 
 ## Email Templates
 

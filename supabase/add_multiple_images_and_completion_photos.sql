@@ -84,3 +84,6 @@ CREATE POLICY "Users can delete their own completion photos"
   USING (uploaded_by = auth.uid());
 
 
+
+
+

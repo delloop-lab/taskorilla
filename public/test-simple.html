@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple Airwallex Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    button {
+      background: #0070f3;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 10px 0;
+    }
+    button:hover {
+      background: #0051cc;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 5px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .error {
+      background: #fee;
+      color: #c00;
+    }
+    .success {
+      background: #efe;
+      color: #060;
+    }
+  </style>
+</head>
+<body>
+  <h1>Simple Airwallex API Test</h1>
+  
+  <div>
+    <button onclick="testCreateCustomer()">Test Create Customer (POST)</button>
+    <button onclick="testCreatePayment()">Test Create Payment (POST)</button>
+    <button onclick="testCreatePayout()">Test Create Payout (POST)</button>
+    <button onclick="testGetPayoutStatus()">Test Get Payout Status (GET)</button>
+    <button onclick="testGetMethod()">Test GET Method (should fail with 405)</button>
+  </div>
+
+  <div id="result" class="result">Click a button to test...</div>
+
+  <script>
+    async function testCreateCustomer() {
+      const resultDiv = document.getElementById('result');
+      resultDiv.textContent = 'Testing POST /api/airwallex/create-customer...\n';
+      resultDiv.className = 'result';
+
+      try {
+        const response = await fetch('/api/airwallex/create-customer', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: 'test@example.com',
+            first_name: 'Test',
+            last_name: 'User'
+          })
+        });
+
+        const data = await response.json();
+        
+        resultDiv.textContent += `\nStatus: ${response.status} ${response.statusText}\n`;
+        resultDiv.textContent += `\nResponse:\n${JSON.stringify(data, null, 2)}`;
+        
+        if (response.ok) {
+          resultDiv.className = 'result success';
+        } else {
+          resultDiv.className = 'result error';
+        }
+      } catch (error) {
+        resultDiv.textContent += `\nError: ${error.message}`;
+        resultDiv.className = 'result error';
+      }
+    }
+
+    async function testCreatePayment() {
+      const resultDiv = document.getElementById('result');
+      resultDiv.textContent = 'Testing full payment flow...\n';
+      resultDiv.className = 'result';
+
+      try {
+        // Step 1: Create payment customer (cus_)
+        resultDiv.textContent += '\nStep 1: Creating payment customer...';
+        const customerResponse = await fetch('/api/airwallex/create-customer', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: `test_${Date.now()}@example.com`,
+            first_name: 'Test',
+            last_name: 'User'
+          })
+        });
+
+        const customerData = await customerResponse.json();
+        
+        if (!customerResponse.ok) {
+          throw new Error(`Customer creation failed: ${JSON.stringify(customerData)}`);
+        }
+
+        resultDiv.textContent += `\n✓ Customer created: ${customerData.id}\n`;
+
+        // Step 2: Create payment with customer_id
+        resultDiv.textContent += '\nStep 2: Creating payment intent...';
+        const paymentResponse = await fetch('/api/airwallex/create-payment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            amount: 50.00,
+            currency: 'EUR',
+            merchant_order_id: `order_${Date.now()}`,
+            return_url: 'http://localhost:3000/success',
+            customer_id: customerData.id
+          })
+        });
+
+        const paymentData = await paymentResponse.json();
+        
+        resultDiv.textContent += `\n\nPayment Status: ${paymentResponse.status} ${paymentResponse.statusText}\n`;
+        resultDiv.textContent += `\nPayment Response:\n${JSON.stringify(paymentData, null, 2)}`;
+        
+        if (paymentResponse.ok) {
+          resultDiv.textContent += `\n\n✓ Payment intent created successfully!`;
+          if (paymentData.id) {
+            resultDiv.textContent += `\n✓ Payment Intent ID: ${paymentData.id}`;
+          }
+          if (paymentData.next_action && paymentData.next_action.url) {
+            resultDiv.textContent += `\n✓ Checkout URL: ${paymentData.next_action.url}`;
+          }
+          resultDiv.className = 'result success';
+        } else {
+          resultDiv.className = 'result error';
+        }
+      } catch (error) {
+        resultDiv.textContent += `\n\nError: ${error.message}`;
+        resultDiv.className = 'result error';
+      }
+    }
+
+    async function testCreatePayout() {
+      const resultDiv = document.getElementById('result');
+      resultDiv.textContent = 'Testing POST /api/airwallex/create-payout...\n';
+      resultDiv.className = 'result';
+
+      // Prompt for required values (taskId and helperId are optional for testing)
+      const taskId = prompt('Enter Task ID (UUID) - Optional, press Cancel to skip:', '');
+      const helperId = prompt('Enter Helper ID (UUID) - Optional, press Cancel to skip:', '');
+
+      const amount = prompt('Enter amount (e.g., 50.00):', '50.00');
+      if (!amount || parseFloat(amount) <= 0) {
+        resultDiv.textContent += '\n\n❌ Cancelled: Valid amount is required';
+        resultDiv.className = 'result error';
+        return;
+      }
+
+      // Test IBANs for sandbox:
+      // - PT50000201231234567890154 (Portugal - valid checksum)
+      // - DE89370400440532013000 (Germany - common test IBAN)
+      // - GB82WEST12345698765432 (UK)
+      const defaultIban = 'DE89370400440532013000'; // German test IBAN (commonly supported)
+      const iban = prompt('Enter IBAN for testing:\n\nSuggested test IBANs:\n- DE89370400440532013000 (Germany)\n- GB82WEST12345698765432 (UK)\n- PT50000201231234567890154 (Portugal)', defaultIban);
+      if (!iban) {
+        resultDiv.textContent += '\n\n❌ Cancelled: IBAN is required';
+        resultDiv.className = 'result error';
+        return;
+      }
+      
+      // Remove any dots, spaces, dashes, or invalid characters from IBAN
+      const cleanedIban = iban.replace(/[.\s-]/g, '').toUpperCase();
+      
+      // Validate IBAN length (15-34 characters depending on country)
+      // DE: 22 chars, PT: 25 chars, GB: 22 chars
+      if (cleanedIban.length < 15 || cleanedIban.length > 34) {
+        resultDiv.textContent += '\n\n❌ Error: IBAN must be between 15-34 characters';
+        resultDiv.textContent += `\n\nReceived: ${cleanedIban.length} characters`;
+        resultDiv.textContent += `\n\nIBAN entered: ${iban}`;
+        resultDiv.textContent += `\n\nCleaned IBAN: ${cleanedIban}`;
+        resultDiv.className = 'result error';
+        return;
+      }
+      
+      // Show country code info
+      const ibanCountry = cleanedIban.substring(0, 2);
+      resultDiv.textContent += `\n\n✓ IBAN country: ${ibanCountry}`;
+      
+      if (cleanedIban !== iban.replace(/\s/g, '').toUpperCase()) {
+        resultDiv.textContent += '\n\n⚠️ Warning: Removed dots/spaces from IBAN. Using: ' + cleanedIban;
+      }
+      
+      // Show full IBAN in output (not masked)
+      resultDiv.textContent += `\n\n✓ Using full IBAN: ${cleanedIban}`;
+
+      const accountHolderName = prompt('Enter Account Holder Name:', 'Test User');
+      if (!accountHolderName) {
+        resultDiv.textContent += '\n\n❌ Cancelled: Account holder name is required';
+        resultDiv.className = 'result error';
+        return;
+      }
+
+      const currency = prompt('Enter currency (default: EUR):', 'EUR') || 'EUR';
+
+      resultDiv.textContent += `\nAmount: ${amount} ${currency}`;
+      resultDiv.textContent += `\nIBAN: ${cleanedIban} (full IBAN - ${cleanedIban.length} characters)`;
+      resultDiv.textContent += `\nAccount Holder: ${accountHolderName}`;
+      if (taskId) resultDiv.textContent += `\nTask ID: ${taskId}`;
+      if (helperId) resultDiv.textContent += `\nHelper ID: ${helperId}`;
+      resultDiv.textContent += `\n\nSending request...`;
+
+      try {
+        const payload = {
+          amount: parseFloat(amount),
+          currency,
+          iban: cleanedIban, // Use cleaned IBAN without dots/spaces
+          accountHolderName,
+        };
+        
+        // Add optional fields if provided
+        if (taskId) payload.taskId = taskId;
+        if (helperId) payload.helperId = helperId;
+
+        const response = await fetch('/api/airwallex/create-payout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload)
+        });
+
+        // Check if response is HTML (error page) instead of JSON
+        const contentType = response.headers.get('content-type') || '';
+        let data;
+        
+        if (!contentType.includes('application/json')) {
+          const text = await response.text();
+          if (text.trim().startsWith('<!') || text.includes('<html')) {
+            resultDiv.textContent += `\n\n❌ Error: HTML response received from server`;
+            resultDiv.textContent += `\n\nThis usually means the server encountered an error.`;
+            resultDiv.textContent += `\n\nStatus: ${response.status} ${response.statusText}`;
+            resultDiv.textContent += `\n\nResponse preview: ${text.substring(0, 200)}...`;
+            resultDiv.className = 'result error';
+            return;
+          }
+          // Try to parse as JSON anyway
+          try {
+            data = JSON.parse(text);
+          } catch {
+            resultDiv.textContent += `\n\n❌ Error: Invalid response format`;
+            resultDiv.textContent += `\n\nStatus: ${response.status} ${response.statusText}`;
+            resultDiv.textContent += `\n\nResponse: ${text.substring(0, 500)}`;
+            resultDiv.className = 'result error';
+            return;
+          }
+        } else {
+          try {
+            data = await response.json();
+          } catch (jsonError) {
+            resultDiv.textContent += `\n\n❌ Error: Failed to parse JSON response`;
+            resultDiv.textContent += `\n\nStatus: ${response.status} ${response.statusText}`;
+            resultDiv.textContent += `\n\nError: ${jsonError.message}`;
+            resultDiv.className = 'result error';
+            return;
+          }
+        }
+        
+        resultDiv.textContent += `\n\nStatus: ${response.status} ${response.statusText}\n`;
+        resultDiv.textContent += `\nResponse:\n${JSON.stringify(data, null, 2)}`;
+        
+        if (response.ok) {
+          resultDiv.textContent += `\n\n✓ Payout created successfully!`;
+          if (data.payoutId) {
+            resultDiv.textContent += `\n✓ Payout ID: ${data.payoutId}`;
+            resultDiv.textContent += `\n✓ Status: ${data.status}`;
+            resultDiv.textContent += `\n✓ Amount: ${data.amount} ${data.currency}`;
+          }
+          resultDiv.className = 'result success';
+        } else {
+          resultDiv.className = 'result error';
+        }
+      } catch (error) {
+        resultDiv.textContent += `\n\nError: ${error.message}`;
+        resultDiv.className = 'result error';
+      }
+    }
+
+    async function testGetPayoutStatus() {
+      const resultDiv = document.getElementById('result');
+      resultDiv.textContent = 'Testing GET /api/airwallex/payout-status...\n';
+      resultDiv.className = 'result';
+
+      const payoutId = prompt('Enter Payout ID:', '');
+      if (!payoutId) {
+        resultDiv.textContent += '\n\n❌ Cancelled: Payout ID is required';
+        resultDiv.className = 'result error';
+        return;
+      }
+
+      resultDiv.textContent += `\nPayout ID: ${payoutId}`;
+      resultDiv.textContent += `\n\nFetching status...`;
+
+      try {
+        const response = await fetch(`/api/airwallex/payout-status?payoutId=${encodeURIComponent(payoutId)}`, {
+          method: 'GET',
+        });
+
+        const data = await response.json();
+        
+        resultDiv.textContent += `\n\nStatus: ${response.status} ${response.statusText}\n`;
+        resultDiv.textContent += `\nResponse:\n${JSON.stringify(data, null, 2)}`;
+        
+        if (response.ok) {
+          resultDiv.textContent += `\n\n✓ Payout status retrieved successfully!`;
+          if (data.status) {
+            resultDiv.textContent += `\n✓ Current Status: ${data.status}`;
+          }
+          resultDiv.className = 'result success';
+        } else {
+          resultDiv.className = 'result error';
+        }
+      } catch (error) {
+        resultDiv.textContent += `\n\nError: ${error.message}`;
+        resultDiv.className = 'result error';
+      }
+    }
+
+    async function testGetMethod() {
+      const resultDiv = document.getElementById('result');
+      resultDiv.textContent = 'Testing GET /api/airwallex/create-customer (should return 405)...\n';
+      resultDiv.className = 'result';
+
+      try {
+        const response = await fetch('/api/airwallex/create-customer', {
+          method: 'GET'
+        });
+
+        const data = await response.text();
+        
+        resultDiv.textContent += `\nStatus: ${response.status} ${response.statusText}\n`;
+        resultDiv.textContent += `\nResponse:\n${data}`;
+        
+        if (response.status === 405) {
+          resultDiv.textContent += `\n\n✓ Correct! GET method is not allowed (405)`;
+          resultDiv.className = 'result success';
+        } else {
+          resultDiv.className = 'result error';
+        }
+      } catch (error) {
+        resultDiv.textContent += `\nError: ${error.message}`;
+        resultDiv.className = 'result error';
+      }
+    }
+  </script>
+</body>
+</html>
+

@@ -38,16 +38,28 @@ INSERT INTO categories (id, name, slug, parent_id) VALUES
   ('550e8400-e29b-41d4-a716-446655440021', 'Furniture Removal', 'furniture-removal', '550e8400-e29b-41d4-a716-446655440003'),
   ('550e8400-e29b-41d4-a716-446655440022', 'House Moving', 'house-moving', '550e8400-e29b-41d4-a716-446655440003'),
   ('550e8400-e29b-41d4-a716-446655440023', 'Delivery', 'delivery', '550e8400-e29b-41d4-a716-446655440003'),
-  ('550e8400-e29b-41d4-a716-446655440024', 'Packing & Unpacking', 'packing-unpacking', '550e8400-e29b-41d4-a716-446655440003')
+  ('550e8400-e29b-41d4-a716-446655440024', 'Packing & Unpacking', 'packing-unpacking', '550e8400-e29b-41d4-a716-446655440003'),
+  -- New categories with user-requested names
+  ('550e8400-e29b-41d4-a716-446655440056', 'Waste & Furniture Removal', 'waste-furniture-removal', '550e8400-e29b-41d4-a716-446655440003'),
+  ('550e8400-e29b-41d4-a716-446655440057', 'Moving Help', 'moving-help', '550e8400-e29b-41d4-a716-446655440003'),
+  ('550e8400-e29b-41d4-a716-446655440058', 'Heavy Lifting & Loading', 'heavy-lifting-loading', '550e8400-e29b-41d4-a716-446655440003')
 ON CONFLICT (slug) DO NOTHING;
 
 -- Handyman Sub-categories
 INSERT INTO categories (id, name, slug, parent_id) VALUES
+  -- Original categories (kept for backward compatibility)
   ('550e8400-e29b-41d4-a716-446655440025', 'Plumbing', 'plumbing', '550e8400-e29b-41d4-a716-446655440004'),
   ('550e8400-e29b-41d4-a716-446655440026', 'Electrical', 'electrical', '550e8400-e29b-41d4-a716-446655440004'),
   ('550e8400-e29b-41d4-a716-446655440027', 'Carpentry', 'carpentry', '550e8400-e29b-41d4-a716-446655440004'),
   ('550e8400-e29b-41d4-a716-446655440028', 'Assembly', 'assembly', '550e8400-e29b-41d4-a716-446655440004'),
-  ('550e8400-e29b-41d4-a716-446655440029', 'General Repairs', 'general-repairs', '550e8400-e29b-41d4-a716-446655440004')
+  ('550e8400-e29b-41d4-a716-446655440029', 'General Repairs', 'general-repairs', '550e8400-e29b-41d4-a716-446655440004'),
+  -- New categories with user-requested names
+  ('550e8400-e29b-41d4-a716-446655440050', 'Plumbing Help', 'plumbing-help', '550e8400-e29b-41d4-a716-446655440004'),
+  ('550e8400-e29b-41d4-a716-446655440051', 'Electrical Help', 'electrical-help', '550e8400-e29b-41d4-a716-446655440004'),
+  ('550e8400-e29b-41d4-a716-446655440052', 'Light Carpentry', 'light-carpentry', '550e8400-e29b-41d4-a716-446655440004'),
+  ('550e8400-e29b-41d4-a716-446655440053', 'Furniture Assembly', 'furniture-assembly', '550e8400-e29b-41d4-a716-446655440004'),
+  ('550e8400-e29b-41d4-a716-446655440054', 'Minor Home Repairs', 'minor-home-repairs', '550e8400-e29b-41d4-a716-446655440004'),
+  ('550e8400-e29b-41d4-a716-446655440055', 'Mounting', 'mounting', '550e8400-e29b-41d4-a716-446655440004')
 ON CONFLICT (slug) DO NOTHING;
 
 -- Tech & IT Sub-categories
@@ -85,5 +97,12 @@ INSERT INTO categories (id, name, slug, parent_id) VALUES
   ('550e8400-e29b-41d4-a716-446655440044', 'Music Lessons', 'music-lessons', '550e8400-e29b-41d4-a716-446655440009'),
   ('550e8400-e29b-41d4-a716-446655440045', 'Language Lessons', 'language-lessons', '550e8400-e29b-41d4-a716-446655440009')
 ON CONFLICT (slug) DO NOTHING;
+
+-- Personal Assistance (New Main Category)
+INSERT INTO categories (id, name, slug, parent_id) VALUES
+  ('550e8400-e29b-41d4-a716-446655440059', 'Personal Assistance', 'personal-assistance', NULL)
+ON CONFLICT (slug) DO NOTHING;
+
+
 
 

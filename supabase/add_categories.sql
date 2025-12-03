@@ -51,3 +51,6 @@ CREATE POLICY "Authenticated users can delete categories"
   USING (auth.role() = 'authenticated');
 
 
+
+
+

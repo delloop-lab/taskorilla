@@ -17,3 +17,6 @@ CREATE INDEX IF NOT EXISTS idx_profiles_postcode ON profiles(postcode);
 CREATE INDEX IF NOT EXISTS idx_profiles_location ON profiles(latitude, longitude);
 
 
+
+
+

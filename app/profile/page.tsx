@@ -7,6 +7,11 @@ import { User, Review } from '@/lib/types'
 import { format } from 'date-fns'
 import { geocodePostcode } from '@/lib/geocoding'
 import { isProfileComplete, getMissingFields } from '@/lib/profile-utils'
+import { STANDARD_SKILLS, STANDARD_SERVICES } from '@/lib/helper-constants'
+import { STANDARD_PROFESSIONS } from '@/lib/profession-constants'
+import { PROFESSION_CATEGORIES, ALL_PROFESSIONS } from '@/lib/profession-categories'
+import { getPendingReviews } from '@/lib/review-utils'
+import { formatPostcodeForCountry } from '@/lib/postcode'
 
 function ProfilePageContent() {
   const router = useRouter()
@@ -26,12 +31,64 @@ function ProfilePageContent() {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [geocoding, setGeocoding] = useState(false)
   const [geocodeError, setGeocodeError] = useState<string | null>(null)
+  const [closestAddress, setClosestAddress] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
   const [averageRating, setAverageRating] = useState<number | null>(null)
+  const [isTasker, setIsTasker] = useState(true)
+  const [isHelper, setIsHelper] = useState(false)
+  const [isProfessional, setIsProfessional] = useState(false)
+  const [bio, setBio] = useState('')
+  const [skills, setSkills] = useState<string[]>([])
+  const [servicesOffered, setServicesOffered] = useState<string[]>([])
+  const [professionalOfferings, setProfessionalOfferings] = useState<string[]>([])
+  const [qualifications, setQualifications] = useState<string[]>([])
+  const [professions, setProfessions] = useState<string[]>([])
+  const [badges, setBadges] = useState<string[]>([])
+  const [hourlyRate, setHourlyRate] = useState('')
+  const [iban, setIban] = useState('')
+  const [newSkill, setNewSkill] = useState('')
+  const [newService, setNewService] = useState('')
+  const [newProfessionalOffering, setNewProfessionalOffering] = useState('')
+  const [newQualification, setNewQualification] = useState('')
+  const [selectedProfessionCategory, setSelectedProfessionCategory] = useState<string>('')
+  const [pendingReviews, setPendingReviews] = useState<any[]>([])
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [earnings, setEarnings] = useState<{
+    tasks: Array<{
+      id: string
+      title: string
+      budget: number
+      completed_at: string
+      payout_status: string | null
+      earning: number
+    }>
+    totalEarnings: number
+    paidEarnings: number
+    pendingEarnings: number
+    totalTasks: number
+  }>({ tasks: [], totalEarnings: 0, paidEarnings: 0, pendingEarnings: 0, totalTasks: 0 })
+  const [earningsExpanded, setEarningsExpanded] = useState(false)
+  
+  // Payments state for taskers
+  const [payments, setPayments] = useState<{
+    tasks: Array<{
+      id: string
+      title: string
+      budget: number
+      service_fee: number
+      total_paid: number
+      completed_at: string
+      payment_status: string | null
+      helper_name: string | null
+    }>
+    totalPaid: number
+    totalTasks: number
+  }>({ tasks: [], totalPaid: 0, totalTasks: 0 })
+  const [paymentsExpanded, setPaymentsExpanded] = useState(false)
 
   useEffect(() => {
     loadProfile()
@@ -41,7 +98,11 @@ function ProfilePageContent() {
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser()
       if (!authUser) {
-        router.push('/login')
+        // Preserve setup=required parameter when redirecting to login
+        const redirectUrl = setupRequired 
+          ? '/login?redirect=/profile?setup=required'
+          : '/login?redirect=/profile'
+        router.push(redirectUrl)
         return
       }
 
@@ -62,6 +123,19 @@ function ProfilePageContent() {
       setPhoneCountryCode(data?.phone_country_code || '')
       setPhoneNumber(data?.phone_number || '')
       setAvatarUrl(data?.avatar_url || null)
+      setIsTasker(data?.is_tasker ?? true)
+      setIsHelper(data?.is_helper ?? false)
+      setBio(data?.bio || '')
+      setSkills(data?.skills || [])
+      setServicesOffered(data?.services_offered || [])
+      setProfessionalOfferings(data?.professional_offerings || [])
+      setQualifications(data?.qualifications || [])
+      setProfessions(data?.professions || [])
+      // Set isProfessional based on whether they have professions
+      setIsProfessional((data?.professions?.length || 0) > 0)
+      setBadges(data?.badges || [])
+      setHourlyRate(data?.hourly_rate?.toString() || '')
+      setIban(data?.iban || '')
 
       // Load reviews for this user
       const { data: reviewsData } = await supabase
@@ -99,6 +173,114 @@ function ProfilePageContent() {
           setEditing(true)
         }
       }
+
+      // Load pending reviews
+      if (authUser) {
+        const reviews = await getPendingReviews(authUser.id)
+        setPendingReviews(reviews)
+      }
+
+      // Load earnings for helpers (completed tasks where user was assigned)
+      if (authUser && data?.is_helper) {
+        const { data: completedTasks } = await supabase
+          .from('tasks')
+          .select('id, title, budget, updated_at, payout_status')
+          .eq('assigned_to', authUser.id)
+          .eq('status', 'completed')
+          .order('updated_at', { ascending: false })
+
+        if (completedTasks && completedTasks.length > 0) {
+          // Filter out tasks without budgets and calculate earnings (budget - 10% platform fee)
+          const platformFeePercent = 10
+          const tasksWithBudgets = completedTasks.filter(task => task.budget != null && task.budget > 0)
+          const tasksWithEarnings = tasksWithBudgets.map(task => ({
+            id: task.id,
+            title: task.title,
+            budget: task.budget || 0,
+            completed_at: task.updated_at,
+            payout_status: task.payout_status,
+            earning: (task.budget || 0) * (1 - platformFeePercent / 100)
+          }))
+          
+          // Calculate paid vs pending earnings
+          const paidTasks = tasksWithEarnings.filter(t => 
+            t.payout_status === 'completed' || t.payout_status === 'simulated'
+          )
+          const pendingTasks = tasksWithEarnings.filter(t => 
+            t.payout_status !== 'completed' && t.payout_status !== 'simulated'
+          )
+          
+          const paidEarnings = paidTasks.reduce((sum, t) => sum + t.earning, 0)
+          const pendingEarnings = pendingTasks.reduce((sum, t) => sum + t.earning, 0)
+          const totalEarnings = paidEarnings + pendingEarnings
+          
+          setEarnings({
+            tasks: tasksWithEarnings,
+            totalEarnings,
+            paidEarnings,
+            pendingEarnings,
+            totalTasks: tasksWithEarnings.length
+          })
+        }
+      }
+
+      // Load payments for taskers (tasks they created and paid for)
+      if (authUser && data?.is_tasker) {
+        console.log('[Profile] Loading payments for tasker:', authUser.email)
+        
+        const { data: paidTasks, error: paidTasksError } = await supabase
+          .from('tasks')
+          .select('id, title, budget, updated_at, payment_status, assigned_to')
+          .eq('created_by', authUser.id)
+          .eq('payment_status', 'paid')
+          .order('updated_at', { ascending: false })
+
+        console.log('[Profile] Paid tasks query result:', { paidTasks, error: paidTasksError })
+
+        if (paidTasks && paidTasks.length > 0) {
+          // Get helper names for assigned tasks
+          const helperIds = paidTasks.map(t => t.assigned_to).filter(Boolean)
+          let helperNames: Record<string, string> = {}
+          
+          if (helperIds.length > 0) {
+            const { data: helpers } = await supabase
+              .from('profiles')
+              .select('id, full_name')
+              .in('id', helperIds)
+            
+            if (helpers) {
+              helperNames = helpers.reduce((acc, h) => {
+                acc[h.id] = h.full_name || 'Unknown'
+                return acc
+              }, {} as Record<string, string>)
+            }
+          }
+
+          const SERVICE_FEE = 2 // €2 service fee
+          const tasksWithPayments = paidTasks
+            .filter(task => task.budget != null && task.budget > 0)
+            .map(task => ({
+              id: task.id,
+              title: task.title,
+              budget: task.budget || 0,
+              service_fee: SERVICE_FEE,
+              total_paid: (task.budget || 0) + SERVICE_FEE,
+              completed_at: task.updated_at,
+              payment_status: task.payment_status,
+              helper_name: task.assigned_to ? helperNames[task.assigned_to] || null : null
+            }))
+          
+          const totalPaid = tasksWithPayments.reduce((sum, t) => sum + t.total_paid, 0)
+          
+          console.log('[Profile] Setting payments:', { totalPaid, count: tasksWithPayments.length })
+          
+          setPayments({
+            tasks: tasksWithPayments,
+            totalPaid,
+            totalTasks: tasksWithPayments.length
+          })
+        }
+      }
     } catch (error) {
       console.error('Error loading profile:', error)
     } finally {
@@ -107,53 +289,73 @@ function ProfilePageContent() {
   }
 
   const handlePostcodeChange = async (value: string) => {
-    setPostcode(value)
+    const trimmedCountry = country.trim()
+    const formattedValue = formatPostcodeForCountry(value, trimmedCountry)
+    setPostcode(formattedValue)
     setGeocodeError(null)
+    if (!formattedValue.trim()) {
+      setClosestAddress(null)
+    }
     
     // Only geocode if postcode is complete (not while typing)
-    if (value.trim() && country.trim()) {
+    if (formattedValue.trim() && trimmedCountry) {
       // Check if postcode is complete using the helper function
       const { isPostcodeComplete } = await import('@/lib/geocoding')
       
-      if (isPostcodeComplete(value.trim(), country.trim())) {
+      if (isPostcodeComplete(formattedValue.trim(), trimmedCountry)) {
         setGeocoding(true)
         try {
-          const result = await geocodePostcode(value.trim(), country.trim())
+          const result = await geocodePostcode(formattedValue.trim(), trimmedCountry)
           if (result) {
-            // Postcode is valid, will be saved with lat/lng
+            setClosestAddress(result.closest_address || result.display_name || null)
           } else {
             setGeocodeError('Could not find location for this postcode and country')
+            setClosestAddress(null)
           }
         } catch (error: any) {
           console.error('Geocoding error:', error)
           setGeocodeError('Error geocoding postcode')
+          setClosestAddress(null)
         } finally {
           setGeocoding(false)
         }
       }
       // If postcode is incomplete, don't show error yet - user is still typing
-    } else if (value.trim() && !country.trim()) {
+    } else if (formattedValue.trim() && !trimmedCountry) {
       setGeocodeError('Please select a country first')
+      setClosestAddress(null)
     }
   }
 
   const handleCountryChange = async (value: string) => {
+    const trimmedValue = value.trim()
     setCountry(value)
     setGeocodeError(null)
+    setClosestAddress(null)
+    
+    if (postcode) {
+      const formatted = formatPostcodeForCountry(postcode, trimmedValue)
+      if (formatted !== postcode) {
+        setPostcode(formatted)
+      }
+    }
     
     // Re-geocode postcode if it's already entered
-    if (postcode.trim().length >= 4 && value.trim()) {
+    const formattedPostcode = formatPostcodeForCountry(postcode.trim(), trimmedValue)
+    if (formattedPostcode.trim().length >= 4 && trimmedValue) {
       setGeocoding(true)
       try {
-        const result = await geocodePostcode(postcode.trim(), value.trim())
+        const result = await geocodePostcode(formattedPostcode.trim(), trimmedValue)
         if (result) {
-          // Postcode is valid
+          setClosestAddress(result.closest_address || result.display_name || null)
         } else {
           setGeocodeError('Could not find location for this postcode and country')
+          setClosestAddress(null)
         }
       } catch (error: any) {
         console.error('Geocoding error:', error)
         setGeocodeError('Error geocoding postcode')
+        setClosestAddress(null)
       } finally {
         setGeocoding(false)
       }
@@ -182,40 +384,146 @@ function ProfilePageContent() {
         setErrorMessage('Phone number with country code is required')
         return
       }
+      // Validate at least one role is enabled
+      if (!isTasker && !isHelper) {
+        setErrorMessage('You must enable at least one role (Tasker or Helper)')
+        return
+      }
+
+      const trimmedCountryValue = country.trim()
+      const sanitizedPostcode = formatPostcodeForCountry(postcode.trim(), trimmedCountryValue)
+      const normalizedPostcode = sanitizedPostcode.trim()
 
       // Geocode postcode if provided - ALWAYS re-geocode to ensure accuracy
       let latitude = null
       let longitude = null
-      if (postcode.trim().length >= 4 && country.trim()) {
-        const result = await geocodePostcode(postcode.trim(), country.trim())
+      if (normalizedPostcode.length >= 4 && trimmedCountryValue) {
+        const result = await geocodePostcode(normalizedPostcode, trimmedCountryValue)
         if (result) {
           latitude = result.latitude
           longitude = result.longitude
-          console.log(`✅ Profile geocoded "${postcode}" to:`, {
+          console.log(`✅ Profile geocoded "${normalizedPostcode}" to:`, {
             lat: latitude,
             lng: longitude,
             display_name: result.display_name
           })
         } else {
-          console.error(`❌ Failed to geocode postcode "${postcode}"`)
+          console.error(`❌ Failed to geocode postcode "${normalizedPostcode}"`)
         }
       }
 
-      const { error } = await supabase
+      // Generate or update profile slug if helper is enabled
+      let profileSlug = profile?.profile_slug
+      
+      // Check if name has changed (need to regenerate slug)
+      const nameChanged = profile?.full_name?.trim() !== fullName.trim()
+      
+      if (isHelper && fullName.trim()) {
+        // Generate slug from full name
+        const baseSlug = fullName.trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+        
+        if (baseSlug) {
+          // If slug doesn't exist or name has changed, regenerate it
+          if (!profileSlug || nameChanged) {
+            // Check if slug exists, if so append number
+            let slug = baseSlug
+            let counter = 0
+            while (true) {
+              const { data: existing } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('profile_slug', slug)
+                .neq('id', user.id)
+                .maybeSingle()
+              
+              if (!existing) break
+              counter++
+              slug = `${baseSlug}-${counter}`
+            }
+            profileSlug = slug
+          }
+        }
+      } else if (!isHelper) {
+        // If helper is disabled, clear the slug
+        profileSlug = null
+      }
+
+      // Parse hourly rate safely
+      let hourlyRateValue = null
+      if (hourlyRate && hourlyRate.trim()) {
+        const parsed = parseFloat(hourlyRate.trim())
+        if (!isNaN(parsed) && parsed >= 0) {
+          hourlyRateValue = parsed
+        }
+      }
+
+      const updateData: any = { 
+        full_name: fullName.trim(),
+        company_name: companyName.trim() || null,
+        postcode: normalizedPostcode || null,
+        country: trimmedCountryValue || null,
+        phone_country_code: phoneCountryCode.trim() || null,
+        phone_number: phoneNumber.trim() || null,
+        latitude: latitude,
+        longitude: longitude,
+        is_tasker: isTasker,
+        is_helper: isHelper,
+        bio: bio.trim() || null,
+        // If user is professional, clear skills and services; otherwise clear professions and professional offerings
+        skills: isProfessional ? [] : (skills.length > 0 ? skills : []),
+        services_offered: isProfessional ? [] : (servicesOffered.length > 0 ? servicesOffered : []),
+    professional_offerings: professionalOfferings.length > 0 ? professionalOfferings : [],
+        badges: badges.length > 0 ? badges : [],
+        hourly_rate: hourlyRateValue,
+        profile_slug: profileSlug || null,
+        iban: iban.trim() || null,
+      }
+
+      // Only include qualifications and professions if they exist in the schema
+      // These fields may not exist if migrations haven't been run yet
+      try {
+        // Try to update with all fields first
+        updateData.qualifications = qualifications.length > 0 ? qualifications : []
+        // Only include professions and professional offerings if user is professional
+        updateData.professions = isProfessional ? (professions.length > 0 ? professions : []) : []
+        updateData.professional_offerings = isProfessional ? (professionalOfferings.length > 0 ? professionalOfferings : []) : []
+      } catch (e) {
+        // If fields don't exist, they'll be excluded below
+      }
+
+      // Remove null/undefined values for arrays to avoid issues
+      if (updateData.skills.length === 0) updateData.skills = []
+      if (updateData.services_offered.length === 0) updateData.services_offered = []
+  if (updateData.professional_offerings.length === 0) updateData.professional_offerings = []
+      if (updateData.badges.length === 0) updateData.badges = []
+
+      let { error } = await supabase
         .from('profiles')
-        .update({ 
-          full_name: fullName.trim(),
-          company_name: companyName.trim() || null,
-          postcode: postcode.trim() || null,
-          country: country.trim() || null,
-          phone_country_code: phoneCountryCode.trim() || null,
-          phone_number: phoneNumber.trim() || null,
-          latitude: latitude,
-          longitude: longitude,
-        })
+        .update(updateData)
         .eq('id', user.id)
 
-      if (error) throw error
+      // If error is about missing columns, retry without them
+      if (error && (error.message?.includes('qualifications') || error.message?.includes('professions'))) {
+        console.warn('Some columns may not exist, retrying without qualifications/professions:', error.message)
+        delete updateData.qualifications
+        delete updateData.professions
+        
+        const { error: retryError } = await supabase
+          .from('profiles')
+          .update(updateData)
+          .eq('id', user.id)
+        
+        if (retryError) {
+          console.error('Profile update error:', retryError)
+          throw retryError
+        }
+      } else if (error) {
+        console.error('Profile update error:', error)
+        throw error
+      }
 
       // Reload profile to get updated data
       const { data: updatedData } = await supabase
@@ -233,9 +541,21 @@ function ProfilePageContent() {
         setPhoneCountryCode(updatedData.phone_country_code || '')
         setPhoneNumber(updatedData.phone_number || '')
         setAvatarUrl(updatedData.avatar_url || null)
+        setIsTasker(updatedData.is_tasker ?? true)
+        setIsHelper(updatedData.is_helper ?? false)
+        setBio(updatedData.bio || '')
+        setSkills(updatedData.skills || [])
+        setServicesOffered(updatedData.services_offered || [])
+        setProfessionalOfferings(updatedData.professional_offerings || [])
+        setQualifications(updatedData.qualifications || [])
+        setProfessions(updatedData.professions || [])
+        setBadges(updatedData.badges || [])
+        setHourlyRate(updatedData.hourly_rate?.toString() || '')
+        setIban(updatedData.iban || '')
 
           setEditing(false)
           setStatusMessage('Profile updated successfully.')
+          setShowSuccessModal(true)
 
           // Check if profile is now complete and close modal
           if (isProfileComplete(updatedData)) {
@@ -412,6 +732,71 @@ function ProfilePageContent() {
       )}
 
       <h1 className="text-3xl font-bold text-gray-900 mb-6">Profile</h1>
+
+      {/* Pending Reviews Reminder */}
+      {pendingReviews.length > 0 && (
+        <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-6 mb-6">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0">
+              <svg className="h-8 w-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                You have {pendingReviews.length} pending review{pendingReviews.length !== 1 ? 's' : ''}!
+              </h3>
+              <p className="text-sm text-gray-700 mb-4">
+                Please leave reviews for completed tasks to help build trust in the community.
+              </p>
+              <div className="space-y-2">
+                {pendingReviews.slice(0, 2).map((review) => (
+                  <Link
+                    key={review.task_id}
+                    href={`/tasks/${review.task_id}`}
+                    className="block p-3 bg-white rounded-lg border border-amber-200 hover:border-amber-300 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {review.other_user_avatar ? (
+                          <img
+                            src={review.other_user_avatar}
+                            alt={review.other_user_name || 'User'}
+                            className="h-8 w-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-semibold text-gray-600">
+                            {(review.other_user_name?.[0] || '?').toUpperCase()}
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            Review {review.is_tasker ? 'helper' : 'tasker'} for "{review.task_title}"
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            {review.other_user_name || 'User'}
+                          </p>
+                        </div>
+                      </div>
+                      <svg className="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </Link>
+                ))}
+                {pendingReviews.length > 2 && (
+                  <Link
+                    href="/tasks?filter=my_tasks&pending_reviews=true"
+                    className="block text-center text-sm text-amber-700 hover:text-amber-800 font-medium pt-2"
+                  >
+                    View all {pendingReviews.length} pending reviews →
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg shadow-md p-6">
         {(statusMessage || errorMessage) && (
@@ -640,8 +1025,10 @@ function ProfilePageContent() {
                   {geocodeError && (
                     <p className="mt-1 text-sm text-red-600">{geocodeError}</p>
                   )}
-                  {!geocodeError && postcode.trim().length >= 4 && country.trim() && !geocoding && (
-                    <p className="mt-1 text-sm text-green-600">✓ Postcode will be saved</p>
+                  {!geocodeError && closestAddress && !geocoding && (
+                    <p className="mt-1 text-sm text-green-600">
+                      ✓ Postcode recognized — {closestAddress}
+                    </p>
                   )}
                 </div>
               ) : (
@@ -737,11 +1124,928 @@ function ProfilePageContent() {
               )}
             </div>
 
+            {/* IBAN for Payouts */}
+            {isHelper && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  IBAN (for receiving payouts)
+                </label>
+                {editing ? (
+                  <div>
+                    <input
+                      type="text"
+                      value={iban}
+                      onChange={(e) => {
+                        // Remove spaces and convert to uppercase as user types
+                        const cleaned = e.target.value.replace(/\s/g, '').toUpperCase()
+                        setIban(cleaned)
+                      }}
+                      placeholder="e.g., PT50001234567890123456789"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Your IBAN is required to receive payouts when tasks are completed. Format: 2 letters + 2 digits + up to 30 alphanumeric characters.
+                    </p>
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={profile.iban || 'Not set'}
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Payments Section - For Taskers */}
+            {isTasker && payments.totalTasks > 0 && (
+              <div className="border-t pt-6 mt-6">
+                {/* Clickable Header */}
+                <button 
+                  onClick={() => setPaymentsExpanded(!paymentsExpanded)}
+                  className="w-full flex items-center justify-between text-left mb-4"
+                >
+                  <h3 className="text-lg font-semibold text-gray-900">Payments</h3>
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg font-bold text-blue-700">€{payments.totalPaid.toFixed(2)}</span>
+                    <span className="text-sm text-gray-500">({payments.totalTasks} tasks)</span>
+                    <svg 
+                      className={`w-5 h-5 text-gray-500 transition-transform ${paymentsExpanded ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </button>
+
+                {/* Expandable Content */}
+                {paymentsExpanded && (
+                  <>
+                    {/* Summary Cards */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                        <p className="text-sm text-blue-700 font-medium">Total Paid</p>
+                        <p className="text-2xl font-bold text-blue-800">€{payments.totalPaid.toFixed(2)}</p>
+                      </div>
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+                        <p className="text-sm text-gray-700 font-medium">Tasks Paid</p>
+                        <p className="text-2xl font-bold text-gray-800">{payments.totalTasks}</p>
+                      </div>
+                    </div>
+
+                    {/* Payments Table */}
+                    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Task</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Helper</th>
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Amount</th>
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Fee</th>
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {payments.tasks.map((task: any) => (
+                            <tr key={task.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3">
+                                <a 
+                                  href={`/tasks/${task.id}`}
+                                  className="text-sm font-medium text-primary-600 hover:underline truncate block max-w-[180px]"
+                                >
+                                  {task.title}
+                                </a>
+                                <p className="text-xs text-gray-500">
+                                  {new Date(task.completed_at).toLocaleDateString()}
+                                </p>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600">
+                                {task.helper_name || '-'}
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm text-gray-600">
+                                €{(task.budget || 0).toFixed(2)}
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm text-gray-500">
+                                €{task.service_fee.toFixed(2)}
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm font-semibold text-blue-700">
+                                €{task.total_paid.toFixed(2)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+                          <tr>
+                            <td className="px-4 py-3 text-sm font-semibold text-gray-900" colSpan={2}>Total</td>
+                            <td className="px-4 py-3 text-right text-sm text-gray-600">
+                              €{payments.tasks.reduce((sum: number, t: any) => sum + (t.budget || 0), 0).toFixed(2)}
+                            </td>
+                            <td className="px-4 py-3 text-right text-sm text-gray-500">
+                              €{(payments.totalTasks * 2).toFixed(2)}
+                            </td>
+                            <td className="px-4 py-3 text-right text-sm font-bold text-blue-700">
+                              €{payments.totalPaid.toFixed(2)}
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Earnings Section - Only for Helpers */}
+            {isHelper && earnings.totalTasks > 0 && (
+              <div className="border-t pt-6 mt-6">
+                {/* Clickable Header */}
+                <button 
+                  onClick={() => setEarningsExpanded(!earningsExpanded)}
+                  className="w-full flex items-center justify-between text-left mb-4"
+                >
+                  <h3 className="text-lg font-semibold text-gray-900">Earnings</h3>
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg font-bold text-green-700">€{earnings.paidEarnings.toFixed(2)}</span>
+                    {earnings.pendingEarnings > 0 && (
+                      <span className="text-sm text-amber-600">(+€{earnings.pendingEarnings.toFixed(2)} pending)</span>
+                    )}
+                    <svg 
+                      className={`w-5 h-5 text-gray-500 transition-transform ${earningsExpanded ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </button>
+
+                {/* Expandable Content */}
+                {earningsExpanded && (
+                  <>
+                    {/* Summary Cards */}
+                    <div className="grid grid-cols-3 gap-4 mb-6">
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                        <p className="text-sm text-green-700 font-medium">Paid</p>
+                        <p className="text-2xl font-bold text-green-800">€{earnings.paidEarnings.toFixed(2)}</p>
+                      </div>
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
+                        <p className="text-sm text-amber-700 font-medium">Pending</p>
+                        <p className="text-2xl font-bold text-amber-800">€{earnings.pendingEarnings.toFixed(2)}</p>
+                      </div>
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                        <p className="text-sm text-blue-700 font-medium">Tasks</p>
+                        <p className="text-2xl font-bold text-blue-800">{earnings.totalTasks}</p>
+                      </div>
+                    </div>
+
+                    {/* Earnings Table */}
+                    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Task</th>
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Budget</th>
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Earned</th>
+                            <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {earnings.tasks.map((task: any) => (
+                            <tr key={task.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3">
+                                <a 
+                                  href={`/tasks/${task.id}`}
+                                  className="text-sm font-medium text-primary-600 hover:underline truncate block max-w-[200px]"
+                                >
+                                  {task.title}
+                                </a>
+                                <p className="text-xs text-gray-500">
+                                  {new Date(task.completed_at).toLocaleDateString()}
+                                </p>
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm text-gray-600">
+                                €{(task.budget || 0).toFixed(2)}
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm font-semibold text-green-700">
+                                €{(task.earning || 0).toFixed(2)}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded ${
+                                  task.payout_status === 'completed' || task.payout_status === 'simulated'
+                                    ? 'bg-green-100 text-green-800'
+                                    : task.payout_status === 'processing'
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : task.payout_status === 'failed'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {task.payout_status === 'completed' || task.payout_status === 'simulated' 
+                                    ? 'Paid' 
+                                    : task.payout_status === 'processing'
+                                    ? 'Processing'
+                                    : task.payout_status === 'failed'
+                                    ? 'Failed'
+                                    : 'Pending'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+                          <tr>
+                            <td className="px-4 py-3 text-sm font-semibold text-gray-900">Total</td>
+                            <td className="px-4 py-3 text-right text-sm text-gray-600">
+                              €{earnings.tasks.reduce((sum: number, t: any) => sum + (t.budget || 0), 0).toFixed(2)}
+                            </td>
+                            <td className="px-4 py-3 text-right text-sm">
+                              <span className="font-bold text-green-700">€{earnings.paidEarnings.toFixed(2)}</span>
+                              {earnings.pendingEarnings > 0 && (
+                                <span className="text-amber-600 ml-1">(+€{earnings.pendingEarnings.toFixed(2)})</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-center text-xs text-gray-500">
+                              (10% fee)
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* No Earnings Yet - for helpers with no completed tasks */}
+            {isHelper && earnings.totalTasks === 0 && (
+              <div className="border-t pt-6 mt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">💰 Earnings</h3>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
+                  <p className="text-gray-600 mb-2">No earnings yet</p>
+                  <p className="text-sm text-gray-500">Complete tasks to start earning!</p>
+                  <a 
+                    href="/tasks" 
+                    className="inline-block mt-4 px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700"
+                  >
+                    Browse Tasks
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {/* Role Settings */}
+            <div className="border-t pt-6 mt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Roles</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Choose how you want to use Taskorilla. You can enable both roles to post tasks and bid on tasks.
+              </p>
+              
+              <div className="space-y-4">
+                {/* Tasker Role */}
+                <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3">
+                      <h4 className="text-base font-medium text-gray-900">Tasker</h4>
+                      {isTasker && (
+                        <span className="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded">
+                          Active
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Post tasks and hire helpers to complete them
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isTasker}
+                      onChange={(e) => setIsTasker(e.target.checked)}
+                      disabled={!editing}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"></div>
+                  </label>
+                </div>
+
+                {/* Helper Role */}
+                <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3">
+                      <h4 className="text-base font-medium text-gray-900">Helper</h4>
+                      {isHelper && (
+                        <span className="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded">
+                          Active
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Browse tasks and submit bids to earn money
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isHelper}
+                      onChange={(e) => setIsHelper(e.target.checked)}
+                      disabled={!editing}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"></div>
+                  </label>
+                </div>
+
+                {!isTasker && !isHelper && editing && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-sm text-amber-800">
+                      ⚠️ You must enable at least one role. Enable Tasker to post tasks or Helper to bid on tasks.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Helper Profile Settings */}
+            {isHelper && (
+              <div className="border-t pt-6 mt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Helper Profile</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Customize your helper profile to showcase your skills and attract taskers.
+                </p>
+
+                {/* Professional Toggle */}
+                {editing && (
+                  <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isProfessional}
+                        onChange={(e) => {
+                          const newValue = e.target.checked
+                          setIsProfessional(newValue)
+                          // If unchecking professional, clear professions and professional offerings
+                          if (!newValue) {
+                            setProfessions([])
+                            setProfessionalOfferings([])
+                            setSelectedProfessionCategory('')
+                          }
+                          // If checking professional, clear skills and services
+                          if (newValue) {
+                            setSkills([])
+                            setServicesOffered([])
+                          }
+                        }}
+                        className="h-5 w-5 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                      />
+                      <div>
+                        <span className="text-base font-semibold text-gray-900">I am a Professional</span>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Check this if you provide professional services. You'll manage Professions and Professional Offerings instead of Skills and Services.
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  {/* Bio */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Bio / About Me
+                    </label>
+                    {editing ? (
+                      <textarea
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value)}
+                        rows={4}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="Tell taskers about yourself, your experience, and what makes you a great helper..."
+                      />
+                    ) : (
+                      <p className="text-gray-700 whitespace-pre-line">
+                        {profile.bio || 'No bio added yet'}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Hourly Rate */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Hourly Rate (€)
+                    </label>
+                    {editing ? (
+                      <>
+                        <input
+                          type="number"
+                          value={hourlyRate}
+                          onChange={(e) => setHourlyRate(e.target.value)}
+                          min="0"
+                          step="0.01"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                          placeholder="e.g., 25.00"
+                        />
+                        {(editing ? isProfessional : (profile.professions?.length || 0) > 0) && (
+                          <p className="mt-1 text-xs text-gray-500">
+                            If no amount is entered, visitors will see "Ask About Fees" on your profile.
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-gray-700">
+                        {profile.hourly_rate ? `€${profile.hourly_rate}/hr` : 'Not set'}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Skills - Only show if user is not a professional */}
+                  {isHelper && !(editing ? isProfessional : (profile.professions?.length || 0) > 0) && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Skills
+                    </label>
+                    {editing ? (
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {skills.map((skill, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm"
+                            >
+                              {skill}
+                              <button
+                                type="button"
+                                onClick={() => setSkills(skills.filter((_, i) => i !== index))}
+                                className="text-primary-600 hover:text-primary-800"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                        <div className="space-y-2">
+                          {/* Standard Skills Dropdown */}
+                          <select
+                            value=""
+                            onChange={(e) => {
+                              const selectedSkill = e.target.value
+                              if (selectedSkill && !skills.includes(selectedSkill)) {
+                                setSkills([...skills, selectedSkill])
+                                e.target.value = ''
+                              }
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 bg-white"
+                          >
+                            <option value="">Select a standard skill...</option>
+                            {STANDARD_SKILLS
+                              .filter(skill => !skills.includes(skill))
+                              .map((skill) => (
+                                <option key={skill} value={skill}>
+                                  {skill}
+                                </option>
+                              ))}
+                          </select>
+                          {/* Custom Skill Input */}
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={newSkill}
+                              onChange={(e) => setNewSkill(e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault()
+                                  if (newSkill.trim() && !skills.includes(newSkill.trim())) {
+                                    setSkills([...skills, newSkill.trim()])
+                                    setNewSkill('')
+                                  }
+                                }
+                              }}
+                              placeholder="Or add a custom skill and press Enter"
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (newSkill.trim() && !skills.includes(newSkill.trim())) {
+                                  setSkills([...skills, newSkill.trim()])
+                                  setNewSkill('')
+                                }
+                              }}
+                              className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+                            >
+                              Add
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {profile.skills && profile.skills.length > 0 ? (
+                          profile.skills.map((skill, index) => (
+                            <span
+                              key={index}
+                              className="px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm"
+                            >
+                              {skill}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-gray-500">No skills added</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  )}
+
+                  {/* Services Offered - Only show if user is not a professional */}
+                  {isHelper && !(editing ? isProfessional : (profile.professions?.length || 0) > 0) && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Services Offered
+                    </label>
+                    {editing ? (
+                      <div className="space-y-2">
+                        <ul className="list-disc list-inside space-y-1 mb-2">
+                          {servicesOffered.map((service, index) => (
+                            <li key={index} className="flex items-center justify-between text-gray-700">
+                              <span>{service}</span>
+                              <button
+                                type="button"
+                                onClick={() => setServicesOffered(servicesOffered.filter((_, i) => i !== index))}
+                                className="text-red-600 hover:text-red-800 ml-2"
+                              >
+                                ×
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="space-y-2">
+                          {/* Standard Services Dropdown */}
+                          <select
+                            value=""
+                            onChange={(e) => {
+                              const selectedService = e.target.value
+                              if (selectedService && !servicesOffered.includes(selectedService)) {
+                                setServicesOffered([...servicesOffered, selectedService])
+                                e.target.value = ''
+                              }
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 bg-white"
+                          >
+                            <option value="">Select a standard service...</option>
+                            {STANDARD_SERVICES
+                              .filter(service => !servicesOffered.includes(service))
+                              .map((service) => (
+                                <option key={service} value={service}>
+                                  {service}
+                                </option>
+                              ))}
+                          </select>
+                          {/* Custom Service Input */}
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={newService}
+                              onChange={(e) => setNewService(e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault()
+                                  if (newService.trim() && !servicesOffered.includes(newService.trim())) {
+                                    setServicesOffered([...servicesOffered, newService.trim()])
+                                    setNewService('')
+                                  }
+                                }
+                              }}
+                              placeholder="Or add a custom service and press Enter"
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (newService.trim() && !servicesOffered.includes(newService.trim())) {
+                                  setServicesOffered([...servicesOffered, newService.trim()])
+                                  setNewService('')
+                                }
+                              }}
+                              className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+                            >
+                              Add
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <ul className="list-disc list-inside space-y-1 text-gray-700">
+                        {profile.services_offered && profile.services_offered.length > 0 ? (
+                          profile.services_offered.map((service, index) => (
+                            <li key={index}>{service}</li>
+                          ))
+                        ) : (
+                          <li className="text-gray-500">No services listed</li>
+                        )}
+                      </ul>
+                )}
+              </div>
+              )}
+
+              {/* Professional Offerings (Professionals only) */}
+              {isHelper && (editing ? isProfessional : (profile.professions?.length || 0) > 0) && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Professional Offerings
+                  </label>
+                  {editing ? (
+                    <div className="space-y-2">
+                      <p className="text-xs text-gray-500">
+                        List the professional services you provide (e.g., Therapy Sessions, Podcast Production, CFO Advisory).
+                      </p>
+                      <ul className="list-disc list-inside space-y-1 mb-2">
+                        {professionalOfferings.map((offering, index) => (
+                          <li key={index} className="flex items-center justify-between text-gray-700">
+                            <span>{offering}</span>
+                            <button
+                              type="button"
+                              onClick={() => setProfessionalOfferings(professionalOfferings.filter((_, i) => i !== index))}
+                              className="text-red-600 hover:text-red-800 ml-2"
+                            >
+                              ×
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newProfessionalOffering}
+                          onChange={(e) => setNewProfessionalOffering(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              if (newProfessionalOffering.trim() && !professionalOfferings.includes(newProfessionalOffering.trim())) {
+                                setProfessionalOfferings([...professionalOfferings, newProfessionalOffering.trim()])
+                                setNewProfessionalOffering('')
+                              }
+                            }
+                          }}
+                          placeholder="e.g., Therapy Sessions"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (newProfessionalOffering.trim() && !professionalOfferings.includes(newProfessionalOffering.trim())) {
+                              setProfessionalOfferings([...professionalOfferings, newProfessionalOffering.trim()])
+                              setNewProfessionalOffering('')
+                            }
+                          }}
+                          className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <ul className="list-disc list-inside space-y-1 text-gray-700">
+                      {profile.professional_offerings && profile.professional_offerings.length > 0 ? (
+                        profile.professional_offerings.map((offering, index) => (
+                          <li key={index}>{offering}</li>
+                        ))
+                      ) : (
+                        <li className="text-gray-500">No professional offerings listed</li>
+                      )}
+                    </ul>
+                  )}
+                </div>
+              )}
+
+              {/* Professions */}
+                  {isHelper && (editing ? isProfessional : (profile.professions?.length || 0) > 0) && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Professions *
+                      </label>
+                      <p className="text-xs text-gray-500 mb-3">
+                        Select your professional roles. If you select any profession, Skills and Services will be hidden.
+                      </p>
+                      {editing ? (
+                        <div>
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {professions.map((profession, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
+                              >
+                                {profession}
+                                <button
+                                  type="button"
+                                  onClick={() => setProfessions(professions.filter((_, i) => i !== index))}
+                                  className="text-purple-600 hover:text-purple-800"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                          {/* Category-based profession selection */}
+                          <div className="space-y-4">
+                            {/* First, select a category */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Select Profession Category
+                              </label>
+                              <select
+                                value={selectedProfessionCategory}
+                                onChange={(e) => {
+                                  setSelectedProfessionCategory(e.target.value)
+                                }}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 bg-white"
+                              >
+                                <option value="">Choose a category...</option>
+                                {PROFESSION_CATEGORIES.map((category) => (
+                                  <option key={category.name} value={category.name}>
+                                    {category.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            {/* Then, show professions for the selected category */}
+                            {selectedProfessionCategory && (
+                              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                <div className="flex items-center justify-between mb-3">
+                                  <h4 className="font-semibold text-gray-800">
+                                    {PROFESSION_CATEGORIES.find(c => c.name === selectedProfessionCategory)?.name}
+                                  </h4>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedProfessionCategory('')}
+                                    className="text-sm text-gray-600 hover:text-gray-800"
+                                  >
+                                    Change Category
+                                  </button>
+                                </div>
+                                <select
+                                  value=""
+                                  onChange={(e) => {
+                                    const selectedProfession = e.target.value
+                                    if (selectedProfession && !professions.includes(selectedProfession)) {
+                                      setProfessions([...professions, selectedProfession])
+                                      e.target.value = ''
+                                    }
+                                  }}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 bg-white"
+                                >
+                                  <option value="">Select a profession...</option>
+                                  {PROFESSION_CATEGORIES
+                                    .find(c => c.name === selectedProfessionCategory)
+                                    ?.subs
+                                    .filter(profession => !professions.includes(profession))
+                                    .map((profession) => (
+                                      <option key={profession} value={profession}>
+                                        {profession}
+                                      </option>
+                                    ))}
+                                </select>
+                                <p className="text-xs text-gray-500 mt-2">
+                                  You can select multiple professions. After selecting one, choose another category or select more from this category.
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {profile.professions && profile.professions.length > 0 ? (
+                            profile.professions.map((profession, index) => (
+                              <span
+                                key={index}
+                                className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium"
+                              >
+                                {profession}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-gray-500 text-sm">No professions listed</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Qualifications */}
+                  {isHelper && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Qualifications & Certifications
+                      </label>
+                      {editing ? (
+                        <div>
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {qualifications.map((qualification, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                              >
+                                {qualification}
+                                <button
+                                  type="button"
+                                  onClick={() => setQualifications(qualifications.filter((_, i) => i !== index))}
+                                  className="text-blue-600 hover:text-blue-800"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={newQualification}
+                              onChange={(e) => setNewQualification(e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault()
+                                  if (newQualification.trim() && !qualifications.includes(newQualification.trim())) {
+                                    setQualifications([...qualifications, newQualification.trim()])
+                                    setNewQualification('')
+                                  }
+                                }
+                              }}
+                              placeholder="e.g., Carpentry Certification, Plumbing License"
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (newQualification.trim() && !qualifications.includes(newQualification.trim())) {
+                                  setQualifications([...qualifications, newQualification.trim()])
+                                  setNewQualification('')
+                                }
+                              }}
+                              className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+                            >
+                              Add
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {profile.qualifications && profile.qualifications.length > 0 ? (
+                            profile.qualifications.map((qualification, index) => (
+                              <div key={index} className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                                </svg>
+                                <span className="text-gray-900 text-sm">{qualification}</span>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-gray-500 text-sm">No qualifications listed</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Profile Link */}
+                  {profile.profile_slug && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Your Helper Profile Link
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={`${typeof window !== 'undefined' ? window.location.origin : ''}/helper/${profile.profile_slug}`}
+                          readOnly
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/helper/${profile.profile_slug}`
+                            navigator.clipboard.writeText(url)
+                            setStatusMessage('Profile link copied to clipboard!')
+                          }}
+                          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {editing && (
-              <div className="flex space-x-3 pt-4 border-t">
+              <div className="flex space-x-3 pt-4 border-t mt-6">
                 <button
                   onClick={handleUpdateProfile}
-                  className="bg-primary-600 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
+                  disabled={!isTasker && !isHelper}
+                  className="bg-primary-600 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Save Changes
                 </button>
@@ -753,6 +2057,23 @@ function ProfilePageContent() {
                     setCountry(profile.country || '')
                     setPhoneCountryCode(profile.phone_country_code || '')
                     setPhoneNumber(profile.phone_number || '')
+                    setIsTasker(profile.is_tasker ?? true)
+                    setIsHelper(profile.is_helper ?? false)
+                    setBio(profile.bio || '')
+                    setSkills(profile.skills || [])
+                    setServicesOffered(profile.services_offered || [])
+                    setProfessionalOfferings(profile.professional_offerings || [])
+                    setQualifications(profile.qualifications || [])
+                    setProfessions(profile.professions || [])
+                    setIsProfessional((profile.professions?.length || 0) > 0)
+                    setSelectedProfessionCategory('')
+                    setBadges(profile.badges || [])
+                    setHourlyRate(profile.hourly_rate?.toString() || '')
+                    setIban(profile.iban || '')
+                    setNewSkill('')
+                    setNewService('')
+                    setNewProfessionalOffering('')
+                    setNewQualification('')
                     setGeocodeError(null)
                     setEditing(false)
                   }}
@@ -834,6 +2155,50 @@ function ProfilePageContent() {
           </div>
         )}
       </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            {/* Icon */}
+            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+              <svg
+                className="h-6 w-6 text-green-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+
+            {/* Title */}
+            <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
+              Profile Updated Successfully!
+            </h3>
+
+            {/* Description */}
+            <p className="text-sm text-gray-600 text-center mb-6">
+              Your profile has been saved and updated. Your changes are now live.
+            </p>
+
+            {/* Button */}
+            <div className="flex justify-center">
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="px-6 py-2 bg-primary-600 text-white rounded-md font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

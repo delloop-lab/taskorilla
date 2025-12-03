@@ -9,9 +9,9 @@ export const metadata: Metadata = {
   title: 'Taskorilla - Swing Into Action',
   description: 'A marketplace for posting and bidding on tasks',
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    icon: '/images/taskorilla-mascot.png',
+    shortcut: '/images/taskorilla-mascot.png',
+    apple: '/images/taskorilla-mascot.png',
   },
 }
 

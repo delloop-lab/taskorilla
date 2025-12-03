@@ -7,6 +7,16 @@ CREATE TABLE IF NOT EXISTS profiles (
   email TEXT,
   full_name TEXT,
   avatar_url TEXT,
+  bio TEXT,
+  skills TEXT[],
+  services_offered TEXT[],
+  professional_offerings TEXT[],
+  badges TEXT[],
+  hourly_rate DECIMAL(10, 2),
+  profile_slug TEXT UNIQUE,
+  is_helper BOOLEAN DEFAULT false,
+  is_tasker BOOLEAN DEFAULT true,
+  is_featured BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL
 );
@@ -16,7 +26,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   title TEXT NOT NULL,
   description TEXT NOT NULL,
-  budget DECIMAL(10, 2) NOT NULL,
+  budget DECIMAL(10, 2),
   status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'completed', 'cancelled')),
   created_by UUID REFERENCES auth.users(id) NOT NULL,
   assigned_to UUID REFERENCES auth.users(id),
@@ -57,6 +67,7 @@ CREATE TABLE IF NOT EXISTS messages (
   sender_id UUID REFERENCES auth.users(id) NOT NULL,
   receiver_id UUID REFERENCES auth.users(id) NOT NULL,
   content TEXT NOT NULL,
+  image_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL
 );
 
@@ -77,6 +88,8 @@ CREATE INDEX IF NOT EXISTS idx_tasks_created_by ON tasks(created_by);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_bids_task_id ON bids(task_id);
 CREATE INDEX IF NOT EXISTS idx_bids_user_id ON bids(user_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_professional_offerings ON profiles USING GIN(professional_offerings) WHERE professional_offerings IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_profiles_is_featured ON profiles(is_featured) WHERE is_featured = TRUE;
 CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_conversations_task_id ON conversations(task_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_task_id ON reviews(task_id);

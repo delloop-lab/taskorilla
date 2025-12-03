@@ -1,3 +1,13 @@
+export interface RecentReview {
+  reviewee_id: string
+  rating: number
+  comment: string | null
+  created_at: string
+  reviewer?: {
+    full_name?: string
+  }
+}
+
 export interface User {
   id: string
   email: string
@@ -13,6 +23,19 @@ export interface User {
   created_at: string
   rating?: number | null
   reviewCount?: number
+  recentReviews?: RecentReview[]
+  is_tasker?: boolean
+  is_helper?: boolean
+  bio?: string | null
+  skills?: string[] | null
+  services_offered?: string[] | null
+  professional_offerings?: string[] | null
+  badges?: string[] | null
+  hourly_rate?: number | null
+  profile_slug?: string | null
+  qualifications?: string[] | null
+  professions?: string[] | null
+  is_featured?: boolean | null
 }
 
 export interface Category {
@@ -68,6 +91,8 @@ export interface Task {
   longitude?: number | null
   due_date?: string
   image_url?: string | null // Legacy field - kept for backward compatibility
+  required_skills?: string[] | null // Skills required for this task
+  required_professions?: string[] | null // Professional roles required for this task
   user?: User
   category_obj?: Category
   sub_category_obj?: Category
@@ -76,7 +101,18 @@ export interface Task {
   archived?: boolean
   images?: TaskImage[] // Multiple images
   completion_photos?: TaskCompletionPhoto[] // Completion proof photos
+  progress_updates?: TaskProgressUpdate[] // Progress updates
   willing_to_help?: boolean // Task poster is willing to help with the task
+  hidden_by_admin?: boolean // Set to true when admin hides the task
+  hidden_reason?: string | null // Reason why task was hidden
+  hidden_at?: string | null // Timestamp when task was hidden
+  hidden_by?: string | null // Admin user ID who hid the task
+  // Payment tracking fields
+  payment_status?: 'pending' | 'paid' | 'failed' | 'refunded' | null
+  payment_intent_id?: string | null
+  payout_status?: 'pending' | 'processing' | 'completed' | 'failed' | 'simulated' | null
+  payout_id?: string | null
+  payment_provider?: string | null
 }
 
 export interface Bid {
@@ -98,6 +134,7 @@ export interface Message {
   sender_id: string
   receiver_id: string
   content: string
+  image_url?: string | null // Optional image attachment
   created_at: string
   is_read?: boolean
   sender?: User
@@ -127,6 +164,17 @@ export interface Review {
   created_at: string
   reviewer?: User
   reviewee?: User
+  task?: Task
+}
+
+export interface TaskProgressUpdate {
+  id: string
+  task_id: string
+  user_id: string
+  message?: string | null
+  image_url?: string | null
+  created_at: string
+  user?: User
 }
 
 

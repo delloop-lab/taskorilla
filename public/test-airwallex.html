@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Airwallex API Test</title>
+</head>
+<body>
+  <h1>Test Airwallex API</h1>
+  <div>
+    <label>Email: <input type="text" id="email" value="test@example.com"></label><br>
+    <label>First Name: <input type="text" id="firstName" value="Lou"></label><br>
+    <label>Last Name: <input type="text" id="lastName" value="Schillaci"></label><br>
+    <button id="createCustomerBtn">Create Customer</button>
+  </div>
+  <pre id="output" style="background:#eee; padding:10px;"></pre>
+  <script>
+    const output = document.getElementById('output');
+    const btn = document.getElementById('createCustomerBtn');
+    btn.addEventListener('click', async () => {
+      output.textContent = 'Sending request...';
+      const payload = {
+        email: document.getElementById('email').value,
+        first_name: document.getElementById('firstName').value,
+        last_name: document.getElementById('lastName').value
+      };
+      try {
+        const response = await fetch('http://localhost:3000/api/airwallex/create-customer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        output.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        output.textContent = 'Error: ' + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
+
