@@ -289,10 +289,10 @@ export default function SuperadminDashboard() {
     }
 
     // Get user emails
-    const userIds = [...new Set([
+    const userIds = Array.from(new Set([
       ...paidTasks.map(t => t.created_by).filter(Boolean),
       ...paidTasks.map(t => t.assigned_to).filter(Boolean)
-    ])]
+    ]))
     
     let userEmails: Record<string, string> = {}
     if (userIds.length > 0) {
