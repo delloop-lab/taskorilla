@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
   const token_hash = requestUrl.searchParams.get('token_hash')
   const token = requestUrl.searchParams.get('token') // Email confirmation token
   const type = requestUrl.searchParams.get('type')
+  const email = requestUrl.searchParams.get('email')
   const next = requestUrl.searchParams.get('next') ?? '/tasks'
 
   const supabase = createClient(
@@ -15,10 +16,11 @@ export async function GET(request: NextRequest) {
   )
 
   // Handle email confirmation token (from confirmation email link)
-  if (token && type === 'signup') {
+  if (token && type === 'signup' && email) {
     const { error } = await supabase.auth.verifyOtp({
       type: 'email',
       token,
+      email,
     })
 
     if (!error) {

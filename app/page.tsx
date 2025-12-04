@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { CheckCircle, MessageSquare, Star, ClipboardList, Wallet } from 'lucide-react'
 import { TransparentGorillaImage } from '@/components/TransparentGorillaImage'
 import TrafficTracker from '@/components/TrafficTracker'
+import Footer from '@/components/Footer'
 
 export default function Home() {
   return (
@@ -299,28 +300,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-8 px-4 bg-muted/50 border-t border-border">
-        <div className="container mx-auto max-w-6xl">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-muted-foreground">
-            <p>© 2025 Taskorilla. All rights reserved. Swing responsibly.</p>
-            <div className="flex flex-wrap justify-center gap-6 text-sm">
-              <Link href="/help" className="hover:text-foreground transition-colors">
-                Help Center
-              </Link>
-              <Link href="/privacy" className="hover:text-foreground transition-colors">
-                Privacy Policy
-              </Link>
-              <Link href="/terms" className="hover:text-foreground transition-colors">
-                Terms of Service
-              </Link>
-              <a href="mailto:tee@taskorilla.com" className="hover:text-foreground transition-colors">
-                Contact
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }

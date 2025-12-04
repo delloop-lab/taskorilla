@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { CheckCircle, MessageSquare, Star } from 'lucide-react'
 import { TransparentGorillaImage } from '@/components/TransparentGorillaImage'
+import Footer from '@/components/Footer'
 
 export default function LandingV2() {
   return (
@@ -223,12 +224,7 @@ export default function LandingV2() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-8 px-4 bg-muted/50 border-t border-border">
-        <div className="container mx-auto max-w-6xl text-center text-muted-foreground">
-          <p>© 2025 Taskorilla. All rights reserved. Swing responsibly.</p>
-        </div>
-      </footer>
+      <Footer variant="centered" />
     </div>
   )
 }

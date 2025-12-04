@@ -1,0 +1,68 @@
+name: Increment Version
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths-ignore:
+      - 'version.json'
+      - '.github/workflows/increment-version.yml'
+
+jobs:
+  increment-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 2
+
+      - name: Check if version.json was changed in this commit
+        id: check_version_changed
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -q "version.json"; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "version.json was changed in this commit, skipping auto-increment..."
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Node.js
+        if: steps.check_version_changed.outputs.skip == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Read current version
+        if: steps.check_version_changed.outputs.skip == 'false'
+        id: read_version
+        run: |
+          VERSION=$(node -e "const v = require('./version.json'); console.log(v.version)")
+          echo "current_version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Increment version
+        if: steps.check_version_changed.outputs.skip == 'false'
+        id: increment_version
+        run: |
+          CURRENT_VERSION="${{ steps.read_version.outputs.current_version }}"
+          NEW_VERSION=$(node -e "console.log((parseFloat('$CURRENT_VERSION') + 0.001).toFixed(3))")
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Incrementing version from $CURRENT_VERSION to $NEW_VERSION"
+
+      - name: Update version.json
+        if: steps.check_version_changed.outputs.skip == 'false'
+        run: |
+          NEW_VERSION="${{ steps.increment_version.outputs.new_version }}"
+          node -e "const fs = require('fs'); const data = { version: '$NEW_VERSION' }; fs.writeFileSync('version.json', JSON.stringify(data, null, 2) + '\n');"
+
+      - name: Commit and push version update
+        if: steps.check_version_changed.outputs.skip == 'false'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add version.json
+          git commit -m "chore: auto-increment version to ${{ steps.increment_version.outputs.new_version }}"
+          git push
+
