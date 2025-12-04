@@ -9,27 +9,6 @@ import FeaturedHelpers from '@/components/FeaturedHelpers'
 import { STANDARD_SKILLS, STANDARD_SERVICES, helperMatchesSearch } from '@/lib/helper-constants'
 import { STANDARD_PROFESSIONS, helperMatchesProfession } from '@/lib/profession-constants'
 
-type User = {
-  id: string
-  email: string
-  full_name?: string | null
-  bio?: string | null
-  skills?: string[] | null
-  services_offered?: string[] | null
-  professional_offerings?: string[] | null
-  qualifications?: string[] | null
-  avatar_url?: string | null
-  company_name?: string | null
-  postcode?: string | null
-  country?: string | null
-  hourly_rate?: number | null
-  profile_slug?: string | null
-  badges?: string[] | null
-  rating?: number | null
-  reviewCount?: number
-  completedTasks?: number
-}
-
 export default function BrowseHelpersPage() {
   const router = useRouter()
   const [helpers, setHelpers] = useState<User[]>([])
@@ -78,15 +57,15 @@ export default function BrowseHelpersPage() {
         STANDARD_PROFESSIONS.forEach(profession => allProfessions.add(profession))
         
         // Add skills, services, and professions from helpers
-        helpersData.forEach(helper => {
+        helpersData.forEach((helper: any) => {
           if (helper.skills && Array.isArray(helper.skills)) {
-            helper.skills.forEach(skill => allSkills.add(skill))
+            helper.skills.forEach((skill: string) => allSkills.add(skill))
           }
           if (helper.services_offered && Array.isArray(helper.services_offered)) {
-            helper.services_offered.forEach(service => allServices.add(service))
+            helper.services_offered.forEach((service: string) => allServices.add(service))
           }
           if (helper.professions && Array.isArray(helper.professions)) {
-            helper.professions.forEach(profession => allProfessions.add(profession))
+            helper.professions.forEach((profession: string) => allProfessions.add(profession))
           }
         })
         

@@ -95,7 +95,7 @@ export async function trackPageVisit(pageName: string) {
             })
           
           // Silently handle conflicts (they'll be caught on next page load)
-          if (insertError && insertError.status !== 409 && insertError.code !== '23505') {
+          if (insertError && insertError.code !== '23505') {
             console.error('Error inserting daily traffic:', insertError)
           }
         }

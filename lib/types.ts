@@ -36,6 +36,8 @@ export interface User {
   qualifications?: string[] | null
   professions?: string[] | null
   is_featured?: boolean | null
+  iban?: string | null
+  completedTasks?: number
 }
 
 export interface Category {
@@ -113,6 +115,7 @@ export interface Task {
   payout_status?: 'pending' | 'processing' | 'completed' | 'failed' | 'simulated' | null
   payout_id?: string | null
   payment_provider?: string | null
+  assigned_to_user?: User
 }
 
 export interface Bid {

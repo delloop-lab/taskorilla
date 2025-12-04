@@ -214,12 +214,12 @@ export default function TaskDetailPage() {
             .eq('task_id', taskId)
             .order('created_at', { ascending: false }),
           taskData.status === 'in_progress'
-            ? supabase
+            ? (supabase
                 .from('task_progress_updates')
                 .select('*, user:profiles(id, full_name, avatar_url)')
                 .eq('task_id', taskId)
-                .order('created_at', { ascending: false })
-                .then(result => {
+                .order('created_at', { ascending: false }) as any)
+                .then((result: any) => {
                   // Handle case where table doesn't exist yet
                   if (result.error && (result.error.code === 'PGRST205' || result.error.message?.includes('Could not find the table'))) {
                     console.warn('task_progress_updates table does not exist. Please run: supabase/add_progress_tracking.sql')

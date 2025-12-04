@@ -3,34 +3,12 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { User } from '@/lib/types'
+import type { User } from '@/lib/types'
 import Link from 'next/link'
 import FeaturedHelpers from '@/components/FeaturedHelpers'
 import { helperMatchesSearch } from '@/lib/helper-constants'
 import { STANDARD_PROFESSIONS, helperMatchesProfession } from '@/lib/profession-constants'
 import { PROFESSION_CATEGORIES } from '@/lib/profession-categories'
-
-type User = {
-  id: string
-  email: string
-  full_name?: string | null
-  bio?: string | null
-  skills?: string[] | null
-  services_offered?: string[] | null
-  professional_offerings?: string[] | null
-  qualifications?: string[] | null
-  avatar_url?: string | null
-  company_name?: string | null
-  postcode?: string | null
-  country?: string | null
-  hourly_rate?: number | null
-  profile_slug?: string | null
-  badges?: string[] | null
-  rating?: number | null
-  reviewCount?: number
-  completedTasks?: number
-  professions?: string[] | null
-}
 
 export default function ProfessionalsPage() {
   const router = useRouter()
@@ -76,9 +54,9 @@ export default function ProfessionalsPage() {
         STANDARD_PROFESSIONS.forEach(profession => allProfessions.add(profession))
         
         // Add professions from professionals
-        professionals.forEach(helper => {
+        professionals.forEach((helper: any) => {
           if (helper.professions && Array.isArray(helper.professions)) {
-            helper.professions.forEach(profession => allProfessions.add(profession))
+            helper.professions.forEach((profession: string) => allProfessions.add(profession))
           }
         })
         

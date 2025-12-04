@@ -1,0 +1,67 @@
+warning: in the working copy of 'app/auth/callback/route.ts', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/app/auth/callback/route.ts b/app/auth/callback/route.ts[m
+[1mindex 6b7b1dd..93ddd41 100644[m
+[1m--- a/app/auth/callback/route.ts[m
+[1m+++ b/app/auth/callback/route.ts[m
+[36m@@ -4,10 +4,11 @@[m [mimport type { NextRequest } from 'next/server'[m
+ [m
+ export async function GET(request: NextRequest) {[m
+   const requestUrl = new URL(request.url)[m
+[31m-  const token_hash = requestUrl.searchParams.get('token_hash')[m
+[32m+[m
+   const token = requestUrl.searchParams.get('token') // Email confirmation token[m
+[32m+[m[32m  const token_hash = requestUrl.searchParams.get('token_hash') // OTP token hash[m
+   const type = requestUrl.searchParams.get('type')[m
+[31m-  const email = requestUrl.searchParams.get('email')[m
+[32m+[m[32m  const email = requestUrl.searchParams.get('email') // required for email verification[m
+   const next = requestUrl.searchParams.get('next') ?? '/tasks'[m
+ [m
+   const supabase = createClient([m
+[36m@@ -15,27 +16,30 @@[m [mexport async function GET(request: NextRequest) {[m
+     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY![m
+   )[m
+ [m
+[31m-  // Handle email confirmation token (from confirmation email link)[m
+[32m+[m[32m  // Handle email confirmation token (signup link)[m
+   if (token && type === 'signup' && email) {[m
+     const { error } = await supabase.auth.verifyOtp({[m
+       type: 'email',[m
+       token,[m
+[31m-      email,[m
+[32m+[m[32m      email, // required by Supabase type[m
+     })[m
+ [m
+     if (!error) {[m
+[31m-      // Email confirmed successfully - redirect to login or tasks[m
+       return NextResponse.redirect(new URL('/login?confirmed=true', requestUrl.origin))[m
+     } else {[m
+       console.error('Email confirmation error:', error)[m
+[31m-      return NextResponse.redirect(new URL('/auth/auth-code-error?type=confirmation&error=' + encodeURIComponent(error.message), requestUrl.origin))[m
+[32m+[m[32m      return NextResponse.redirect([m
+[32m+[m[32m        new URL('/auth/auth-code-error?type=confirmation&error=' + encodeURIComponent(error.message), requestUrl.origin)[m
+[32m+[m[32m      )[m
+     }[m
+   }[m
+ [m
+[31m-  // Handle OTP token_hash (for other auth flows)[m
+[32m+[m[32m  // Handle OTP token_hash (other auth flows, like login)[m
+   if (token_hash && type) {[m
+     const { error } = await supabase.auth.verifyOtp({[m
+[31m-      type: type as any,[m
+[32m+[m[32m      // For token_hash flows we only support email-based OTP right now[m
+[32m+[m[32m      // Supabase expects an EmailOtpType here (e.g. 'magiclink' or 'signup')[m
+[32m+[m[32m      type: type as 'magiclink' | 'signup',[m
+       token_hash,[m
+     })[m
+ [m
+[36m@@ -43,7 +47,9 @@[m [mexport async function GET(request: NextRequest) {[m
+       return NextResponse.redirect(new URL(next, requestUrl.origin))[m
+     } else {[m
+       console.error('OTP verification error:', error)[m
+[31m-      return NextResponse.redirect(new URL('/auth/auth-code-error?error=' + encodeURIComponent(error.message), requestUrl.origin))[m
+[32m+[m[32m      return NextResponse.redirect([m
+[32m+[m[32m        new URL('/auth/auth-code-error?error=' + encodeURIComponent(error.message), requestUrl.origin)[m
+[32m+[m[32m      )[m
+     }[m
+   }[m
+ [m

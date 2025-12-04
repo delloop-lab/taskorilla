@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 
+// This route reads request.nextUrl.searchParams and must run dynamically
+export const dynamic = 'force-dynamic'
+
 const AIRWALLEX_BASE_URL = process.env.AIRWALLEX_ENVIRONMENT === 'production'
   ? 'https://api.airwallex.com/api/v1'
   : 'https://api-demo.airwallex.com/api/v1'

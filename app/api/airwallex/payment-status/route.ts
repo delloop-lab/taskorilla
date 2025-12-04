@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPaymentIntent } from '@/lib/airwallex'
 
+// This route depends on request.nextUrl.searchParams; mark it as dynamic
+export const dynamic = 'force-dynamic'
+
 /**
  * Get Airwallex payment intent status
  * GET /api/airwallex/payment-status?paymentIntentId=xxx

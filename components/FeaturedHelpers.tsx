@@ -192,10 +192,10 @@ export default function FeaturedHelpers({ searchTerm = '', selectedSkill = null,
                     <h3 className="font-semibold text-gray-900 truncate">
                       {helper.full_name || 'Helper'}
                     </h3>
-                    {helper.rating && (
+                    {helper.rating != null && (
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-amber-600 font-semibold">★ {helper.rating.toFixed(1)}</span>
-                        {helper.reviewCount > 0 && (
+                        {helper.reviewCount && helper.reviewCount > 0 && (
                           <span className="text-sm text-gray-600">({helper.reviewCount})</span>
                         )}
                       </div>
@@ -295,7 +295,7 @@ export default function FeaturedHelpers({ searchTerm = '', selectedSkill = null,
 
                 {/* Stats */}
                 <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                  {helper.completedTasks > 0 && (
+                  {helper.completedTasks && helper.completedTasks > 0 && (
                     <span className="text-xs text-gray-600">
                       {helper.completedTasks} completed
                     </span>
