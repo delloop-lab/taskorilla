@@ -11,7 +11,7 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <TrafficTracker pageName="home" />
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-secondary/10 py-14 md:py-20 px-4">
+      <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-secondary/10 pt-14 md:pt-20 pb-8 md:pb-12 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="space-y-6 animate-fade-in">
@@ -21,16 +21,24 @@ export default function Home() {
               <p className="text-xl text-muted-foreground">
                 Big jobs, small jobs, or anything in between. This is the place for people who need things done and for people who can do them. Post your tasks, offer your skills, or be part of both. Whether you want a casual helper or a proper professional, you will find them here. Get hired, get paid, get noticed. Smart, strong, simple.
               </p>
-              <div className="flex flex-wrap gap-4">
-                <Link href="/register">
-                  <Button size="lg" className="text-lg">
-                    Get Started
-                  </Button>
+              <div className="flex flex-wrap gap-4 pt-[10px] mb-0">
+                <Link href="/tasks/new" className="action-button post-button">
+                  <div className="button-icon">
+                    🆘
+                  </div>
+                  <div className="button-text">
+                    <h2 className="button-title">Post a Task</h2>
+                    <p className="button-subtitle">Get <strong>help</strong> to get things done!</p>
+                  </div>
                 </Link>
-                <Link href="/tasks">
-                  <Button size="lg" variant="outline" className="text-lg">
-                    Browse Tasks/Earn Money
-                  </Button>
+                <Link href="/tasks" className="action-button browse-button">
+                  <div className="button-icon">
+                    💵
+                  </div>
+                  <div className="button-text">
+                    <h2 className="button-title">Browse Tasks</h2>
+                    <p className="button-subtitle">Get <strong>paid</strong> to get things done!</p>
+                  </div>
                 </Link>
               </div>
             </div>
@@ -42,7 +50,7 @@ export default function Home() {
       </section>
 
       {/* Subheadline */}
-      <section className="py-8 md:py-12 px-4 bg-muted/30">
+      <section className="pt-4 md:pt-6 pb-8 md:pb-12 px-4 bg-muted/30">
         <div className="container mx-auto max-w-4xl text-center">
           <p className="text-lg text-muted-foreground">
             Life's full of tasks. Some are simple errands, others are tricky challenges. Whatever it is, Taskorilla connects you with helpers who think fast, work smart, and get it done without the hassle.

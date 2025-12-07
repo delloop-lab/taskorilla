@@ -55,3 +55,6 @@ COMMENT ON COLUMN platform_settings.key IS 'Unique setting identifier';
 COMMENT ON COLUMN platform_settings.value IS 'Setting value (stored as text, parse as needed)';
 COMMENT ON COLUMN platform_settings.description IS 'Human-readable description of the setting';
 
+
+
+

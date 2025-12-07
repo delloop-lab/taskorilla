@@ -11,3 +11,6 @@ CREATE INDEX IF NOT EXISTS idx_profiles_is_featured
 COMMENT ON COLUMN profiles.is_featured IS 'Set to true to manually feature a helper. Featured helpers are prioritized in the Featured Helpers section.';
 
 
+
+
+

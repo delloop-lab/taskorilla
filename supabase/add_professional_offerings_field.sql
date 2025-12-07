@@ -13,3 +13,6 @@ COMMENT ON COLUMN profiles.professional_offerings IS 'Array of professional offe
 
 
 
+
+
+

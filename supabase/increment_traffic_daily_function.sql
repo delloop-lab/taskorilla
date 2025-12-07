@@ -26,3 +26,6 @@ GRANT EXECUTE ON FUNCTION increment_traffic_daily(TEXT, DATE) TO anon;
 
 
 
+
+
+

@@ -20,3 +20,6 @@ SELECT policyname, cmd, qual, with_check
 FROM pg_policies 
 WHERE tablename = 'task_progress_updates' AND cmd = 'INSERT';
 
+
+
+

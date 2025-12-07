@@ -54,3 +54,6 @@ export function formatEuroWithDecimals(value?: number | null): string {
 }
 
 
+
+
+

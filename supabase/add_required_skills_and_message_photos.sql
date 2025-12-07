@@ -19,3 +19,6 @@ COMMENT ON COLUMN messages.image_url IS 'Optional image attachment URL for messa
 
 
 
+
+
+

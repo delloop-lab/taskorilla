@@ -29,7 +29,7 @@ export default function EditTaskPage() {
   const [existingImageIds, setExistingImageIds] = useState<string[]>([])
   const [imageUploading, setImageUploading] = useState(false)
   const [postcode, setPostcode] = useState('')
-  const [country, setCountry] = useState('')
+  const [country, setCountry] = useState('Portugal')
   const [closestAddress, setClosestAddress] = useState<string | null>(null)
   const [modalState, setModalState] = useState<{
     isOpen: boolean
@@ -60,13 +60,34 @@ export default function EditTaskPage() {
     longitude: null as number | null,
     willing_to_help: false,
   })
+  
+  // Task type: 'helper' or 'professional'
+  const [taskType, setTaskType] = useState<'helper' | 'professional'>('helper')
+  
+  // Professional task fields
+  const [professions, setProfessions] = useState<string[]>([])
+  const [selectedProfessions, setSelectedProfessions] = useState<string[]>([])
+  
+  // Bids/Professionals who applied
+  const [bids, setBids] = useState<any[]>([])
+  const [loadingBids, setLoadingBids] = useState(false)
 
   useEffect(() => {
     checkUser()
     loadCategories()
     loadTags()
+    loadProfessions()
     loadTask()
   }, [])
+
+  // Load bids when task type is professional
+  useEffect(() => {
+    if (taskType === 'professional' && taskId) {
+      loadBids()
+    } else {
+      setBids([])
+    }
+  }, [taskType, taskId])
 
   useEffect(() => {
     if (tagInput.trim()) {
@@ -157,9 +178,21 @@ export default function EditTaskPage() {
         await handleCategoryChange(taskData.category_id, false)
       }
 
+      // Determine task type: if required_professions exists, it's a professional task
+      // Otherwise, if category_id exists, it's a helper task
+      const isProfessional = taskData.required_professions && 
+                            Array.isArray(taskData.required_professions) && 
+                            taskData.required_professions.length > 0
+      setTaskType(isProfessional ? 'professional' : 'helper')
+
+      // Load required professions if set
+      if (taskData.required_professions && Array.isArray(taskData.required_professions)) {
+        setSelectedProfessions(taskData.required_professions)
+      }
+
       // Populate form
       setPostcode(taskData.postcode || '')
-      setCountry(taskData.country || '')
+      setCountry(taskData.country || 'Portugal')
       setFormData({
         title: taskData.title || '',
         description: taskData.description || '',
@@ -192,6 +225,109 @@ export default function EditTaskPage() {
       setCategories(data || [])
     } catch (error) {
       console.error('Error loading categories:', error)
+    }
+  }
+
+  const loadProfessions = async () => {
+    try {
+      // Import standard professions
+      const { STANDARD_PROFESSIONS } = await import('@/lib/profession-constants')
+      
+      // Start with standard professions
+      const allProfessions = new Set<string>(STANDARD_PROFESSIONS)
+      
+      // Also fetch professions from database
+      const { data: helpersData, error } = await supabase
+        .from('profiles')
+        .select('professions')
+        .eq('is_helper', true)
+        .not('professions', 'is', null)
+
+      if (!error && helpersData) {
+        helpersData.forEach((helper: any) => {
+          if (helper.professions && Array.isArray(helper.professions)) {
+            helper.professions.forEach((profession: string) => {
+              if (profession && profession.trim()) {
+                allProfessions.add(profession.trim())
+              }
+            })
+          }
+        })
+      }
+      
+      setProfessions(Array.from(allProfessions).sort())
+    } catch (error) {
+      console.error('Error loading professions:', error)
+    }
+  }
+
+  const loadBids = async () => {
+    if (!taskId) return
+    setLoadingBids(true)
+    try {
+      const { data: bidsData, error } = await supabase
+        .from('bids')
+        .select('*')
+        .eq('task_id', taskId)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      // Fetch profiles and ratings for bidders
+      if (bidsData && bidsData.length > 0) {
+        const bidderIds = Array.from(new Set(bidsData.map(b => b.user_id)))
+        const [profilesResult, reviewsResult] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('id, email, full_name, avatar_url, is_helper, profile_slug, badges, professions')
+            .in('id', bidderIds),
+          supabase
+            .from('reviews')
+            .select('reviewee_id, rating')
+            .in('reviewee_id', bidderIds)
+        ])
+
+        const profilesData = profilesResult.data || []
+        const reviewsData = reviewsResult.data || []
+
+        // Calculate average ratings for each bidder
+        const ratingsByUser: Record<string, { avg: number; count: number }> = {}
+        reviewsData.forEach(review => {
+          if (!ratingsByUser[review.reviewee_id]) {
+            ratingsByUser[review.reviewee_id] = { avg: 0, count: 0 }
+          }
+          ratingsByUser[review.reviewee_id].count++
+          ratingsByUser[review.reviewee_id].avg += review.rating
+        })
+
+        Object.keys(ratingsByUser).forEach(userId => {
+          const data = ratingsByUser[userId]
+          data.avg = data.avg / data.count
+        })
+
+        // Map profiles and ratings to bids
+        const bidsWithProfiles = bidsData.map(bid => {
+          const user = profilesData.find(p => p.id === bid.user_id)
+          const rating = ratingsByUser[bid.user_id]
+          return {
+            ...bid,
+            user: user ? { 
+              ...user, 
+              rating: rating ? rating.avg : null, 
+              reviewCount: rating?.count || 0
+            } : undefined
+          }
+        })
+
+        setBids(bidsWithProfiles)
+      } else {
+        setBids([])
+      }
+    } catch (error) {
+      console.error('Error loading bids:', error)
+      setBids([])
+    } finally {
+      setLoadingBids(false)
     }
   }
 
@@ -537,23 +673,37 @@ export default function EditTaskPage() {
       if (!authUser) throw new Error('You must be logged in to edit a task')
 
       // Update task
+      // Build update object based on task type
+      const updateData: any = {
+        title: formData.title,
+        description: formData.description,
+        budget: formData.budget && formData.budget.trim() ? parseFloat(formData.budget) : null,
+        location: formData.location || null,
+        postcode: postcode.trim() || null,
+        country: country.trim() || null,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+        due_date: formData.due_date || null,
+        image_url: imageUrls[0] || null, // Keep first image for backward compatibility
+        willing_to_help: formData.willing_to_help,
+      }
+
+      // Set fields based on task type
+      if (taskType === 'professional') {
+        // Professional task: use required_professions, clear category
+        updateData.required_professions = selectedProfessions.length > 0 ? selectedProfessions : null
+        updateData.category_id = null
+        updateData.sub_category_id = null
+      } else {
+        // Helper task: use category, clear required_professions
+        updateData.category_id = formData.category_id || null
+        updateData.sub_category_id = formData.sub_category_id || null
+        updateData.required_professions = null
+      }
+
       const { error: taskError } = await supabase
         .from('tasks')
-        .update({
-          title: formData.title,
-          description: formData.description,
-          budget: formData.budget && formData.budget.trim() ? parseFloat(formData.budget) : null,
-          category_id: formData.category_id || null,
-          sub_category_id: formData.sub_category_id || null,
-          location: formData.location || null,
-          postcode: postcode.trim() || null,
-          country: country.trim() || null,
-          latitude: formData.latitude,
-          longitude: formData.longitude,
-          due_date: formData.due_date || null,
-          image_url: imageUrls[0] || null, // Keep first image for backward compatibility
-          willing_to_help: formData.willing_to_help,
-        })
+        .update(updateData)
         .eq('id', taskId)
         .eq('created_by', authUser.id) // Extra security check
 
@@ -664,58 +814,36 @@ export default function EditTaskPage() {
           />
         </div>
 
-        <div className="border-t border-gray-200 pt-6">
-          <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-3">
-            Task Images (Optional) - You can upload multiple images
+        <div>
+          <label htmlFor="taskType" className="block text-sm font-medium text-gray-700 mb-2">
+            Task Type *
           </label>
-          <div className="space-y-3">
-            {imageUrls.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {imageUrls.map((url, index) => (
-                  <div key={index} className="relative border-2 border-gray-300 rounded-lg overflow-hidden">
-                    <img
-                      src={url}
-                      alt={`Task preview ${index + 1}`}
-                      className="w-full h-48 object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveImage(index)}
-                      disabled={imageUploading}
-                      className="absolute top-2 right-2 bg-red-600 text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-red-700 disabled:opacity-50 shadow-lg"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="flex items-center gap-3">
-              <label
-                htmlFor="image-upload"
-                className="cursor-pointer inline-flex items-center px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:border-primary-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                {imageUploading ? 'Uploading...' : 'Add Images'}
-                <input
-                  id="image-upload"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageUpload}
-                  disabled={imageUploading}
-                  className="sr-only"
-                />
-              </label>
-              {imageUrls.length === 0 && (
-                <p className="text-xs text-gray-500">
-                  Add photos to help others understand your task. You can select multiple files.
-                </p>
-              )}
-            </div>
-          </div>
+          <select
+            id="taskType"
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+            value={taskType}
+            onChange={(e) => {
+              const newType = e.target.value as 'helper' | 'professional'
+              setTaskType(newType)
+              // Clear fields that don't apply to the new type
+              if (newType === 'professional') {
+                // Switching to professional - clear category
+                setFormData({ ...formData, category_id: '', sub_category_id: '' })
+              } else {
+                // Switching to helper - clear required professions
+                setSelectedProfessions([])
+              }
+            }}
+          >
+            <option value="helper">Hire a Helper</option>
+            <option value="professional">Engage a Professional</option>
+          </select>
+          <p className="mt-1 text-xs text-gray-500">
+            {taskType === 'helper' 
+              ? 'Helpers can do general tasks. Select a category below.'
+              : 'Professionals have specific skills. Add required professions below.'}
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -738,24 +866,27 @@ export default function EditTaskPage() {
             </p>
           </div>
 
-          <div>
-            <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-2">
-              Category
-            </label>
-            <select
-              id="category_id"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-              value={formData.category_id}
-              onChange={(e) => handleCategoryChange(e.target.value)}
-            >
-              <option value="">Select a category</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Category - only show for helper tasks */}
+          {taskType === 'helper' && (
+            <div>
+              <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-2">
+                Category
+              </label>
+              <select
+                id="category_id"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                value={formData.category_id}
+                onChange={(e) => handleCategoryChange(e.target.value)}
+              >
+                <option value="">Select a category</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {formData.category_id && (
@@ -818,9 +949,163 @@ export default function EditTaskPage() {
           </div>
         )}
 
+        {/* Required Professions - only show for professional tasks */}
+        {taskType === 'professional' && (
+          <div>
+            <label htmlFor="professions" className="block text-sm font-medium text-gray-700 mb-2">
+              Required Professions (Optional)
+            </label>
+            <p className="text-xs text-gray-500 mb-2">
+              Select professions that are required for this task. You can select multiple. Leave empty if any professional can do it.
+            </p>
+            
+            {/* Dropdown to select from available professions */}
+            <div className="mb-3">
+              <select
+                id="profession-select"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                value=""
+                onChange={(e) => {
+                  const selectedProf = e.target.value
+                  if (selectedProf && !selectedProfessions.includes(selectedProf)) {
+                    setSelectedProfessions([...selectedProfessions, selectedProf])
+                  }
+                  e.target.value = '' // Reset dropdown
+                }}
+              >
+                <option value="">Select a profession from the list...</option>
+                {professions
+                  .filter(p => !selectedProfessions.includes(p))
+                  .map((profession, index) => (
+                    <option key={index} value={profession}>
+                      {profession}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            {/* Display selected professions as removable tags */}
+            {selectedProfessions.length > 0 && (
+              <div className="flex flex-wrap gap-2 p-3 border border-gray-300 rounded-md bg-gray-50">
+                {selectedProfessions.map((profession, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium bg-purple-100 text-purple-800"
+                  >
+                    {profession}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProfessions(selectedProfessions.filter((_, i) => i !== index))}
+                      className="ml-2 text-purple-600 hover:text-purple-800 font-bold"
+                      aria-label={`Remove ${profession}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Professionals who have applied - only show for professional tasks */}
+        {taskType === 'professional' && (
+          <div className="border-t border-gray-200 pt-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Professionals Who Applied ({bids.length})
+            </label>
+            {loadingBids ? (
+              <div className="text-center py-4 text-gray-500">Loading professionals...</div>
+            ) : bids.length === 0 ? (
+              <div className="text-center py-4 text-gray-500 bg-gray-50 rounded-md">
+                No professionals have applied yet.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {bids.map((bid) => (
+                  <div
+                    key={bid.id}
+                    className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3 flex-1">
+                        {bid.user?.avatar_url ? (
+                          <img
+                            src={bid.user.avatar_url}
+                            alt={bid.user.full_name || 'Professional'}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-medium">
+                            {(bid.user?.full_name || 'P')[0].toUpperCase()}
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-medium text-gray-900">
+                              {bid.user?.full_name || 'Unknown Professional'}
+                            </h4>
+                            {bid.user?.rating && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-yellow-500">★</span>
+                                <span className="text-sm text-gray-600">
+                                  {bid.user.rating.toFixed(1)} ({bid.user.reviewCount} reviews)
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          {bid.user?.professions && bid.user.professions.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {bid.user.professions.slice(0, 3).map((prof: string, idx: number) => (
+                                <span
+                                  key={idx}
+                                  className="px-2 py-0.5 text-xs bg-purple-100 text-purple-700 rounded"
+                                >
+                                  {prof}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {bid.message && (
+                            <p className="text-sm text-gray-600 mb-2">{bid.message}</p>
+                          )}
+                          <div className="flex items-center gap-4 text-sm">
+                            <span className="font-semibold text-primary-600">
+                              {bid.amount ? `€${bid.amount.toFixed(2)}` : 'Quote'}
+                            </span>
+                            <span className="text-gray-500">
+                              Status: <span className={`font-medium ${
+                                bid.status === 'accepted' ? 'text-green-600' :
+                                bid.status === 'rejected' ? 'text-red-600' :
+                                'text-yellow-600'
+                              }`}>
+                                {bid.status.charAt(0).toUpperCase() + bid.status.slice(1)}
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      {bid.user?.profile_slug && (
+                        <a
+                          href={`/profiles/${bid.user.profile_slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-4 px-3 py-1.5 text-sm text-primary-600 hover:text-primary-700 border border-primary-300 rounded-md hover:bg-primary-50 transition-colors"
+                        >
+                          View Profile
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <div>
           <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-2">
-            Tags (Press Enter to add)
+            Tags (Optional) <span className="text-gray-500 font-normal">Press Enter to add</span>
           </label>
           <div className="relative">
             <div className="flex flex-wrap gap-2 mb-2 p-2 border border-gray-300 rounded-md min-h-[42px]">
@@ -881,6 +1166,60 @@ export default function EditTaskPage() {
           <p className="text-xs text-gray-500 mt-1">
             Type a tag name and press Enter to add. Tags help others find your task.
           </p>
+        </div>
+
+        <div className="border-t border-gray-200 pt-6">
+          <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-3">
+            Task Images (Optional) - You can upload multiple images
+          </label>
+          <div className="space-y-3">
+            {imageUrls.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {imageUrls.map((url, index) => (
+                  <div key={index} className="relative border-2 border-gray-300 rounded-lg overflow-hidden">
+                    <img
+                      src={url}
+                      alt={`Task preview ${index + 1}`}
+                      className="w-full h-48 object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(index)}
+                      disabled={imageUploading}
+                      className="absolute top-2 right-2 bg-red-600 text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-red-700 disabled:opacity-50 shadow-lg"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-3">
+              <label
+                htmlFor="image-upload"
+                className="cursor-pointer inline-flex items-center px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:border-primary-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                {imageUploading ? 'Uploading...' : 'Add Images'}
+                <input
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  disabled={imageUploading}
+                  className="sr-only"
+                />
+              </label>
+              {imageUrls.length === 0 && (
+                <p className="text-xs text-gray-500">
+                  Add photos to help others understand your task. You can select multiple files.
+                </p>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

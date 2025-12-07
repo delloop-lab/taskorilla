@@ -86,4 +86,1547 @@ body {
   z-index: 700 !important;
 }
 
+/* SurveyJS Theme Management */
+/* 
+ * All SurveyJS theme CSS files are imported upfront in SurveyJSTrialForm.tsx
+ * SurveyJS's StylesManager.applyTheme() handles theme switching by applying CSS classes
+ * We only need to scope our custom CSS to [data-theme="custom"] to avoid interference
+ */
+
+/* Base wrapper - minimal, no custom styling for SurveyJS themes */
+.surveyjs-form-wrapper {
+  position: relative;
+}
+
+/* Custom CSS only applies when custom theme is selected */
+.surveyjs-form-wrapper[data-theme="custom"] {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Only apply wrapper styles for custom theme */
+.surveyjs-form-wrapper[data-theme="custom"] > * {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"]::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1, #3b82f6);
+  border-radius: 0.75rem;
+  z-index: -1;
+  opacity: 0.1;
+}
+
+/* Only apply custom root styles for custom theme */
+.surveyjs-form-wrapper[data-theme="custom"] .sv-root {
+  font-family: inherit;
+  background: transparent;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Only apply custom header/container styles for custom theme */
+.surveyjs-form-wrapper[data-theme="custom"] .sv-header {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-container {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Typeform-style: One question at a time, centered and compact - Only for custom theme */
+.surveyjs-form-wrapper[data-theme="custom"] .sv-body {
+  min-height: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-question {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-question__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* Title color - blue for all themes except DefaultV2 (which has its own override) */
+.surveyjs-form-wrapper:not([data-theme="defaultV2"]):not([data-theme="default"]) .sv-title {
+  color: #2563eb !important;
+}
+
+/* Custom title/description styles - only for custom theme */
+.surveyjs-form-wrapper[data-theme="custom"] .sv-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #2563eb !important;
+  margin-top: 10px !important;
+  margin-bottom: 0.25rem !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-description {
+  font-size: 0.75rem;
+  color: inherit !important;
+  opacity: 0.7;
+  margin-bottom: 1rem;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-question__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1rem;
+  line-height: 1.3;
+  text-align: center;
+}
+
+/* Custom input styles - only for custom theme */
+.surveyjs-form-wrapper[data-theme="custom"] .sv-input,
+.surveyjs-form-wrapper[data-theme="custom"] input.sv-input,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-input[type="text"],
+.surveyjs-form-wrapper[data-theme="custom"] .sv-input[type="number"],
+.surveyjs-form-wrapper[data-theme="custom"] .sv-input:not([type]),
+.surveyjs-form-wrapper[data-theme="custom"] .sv-question input,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-question__content input {
+  width: 200px;
+  min-width: 200px;
+  max-width: 800px;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: width 0.2s ease-in-out;
+  text-align: center;
+  box-sizing: border-box;
+  overflow: visible;
+  white-space: nowrap;
+  margin-bottom: 20px !important;
+  color: #000000 !important;
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+}
+
+/* Custom input selection/placeholder/focus styles - only for custom theme */
+.surveyjs-form-wrapper[data-theme="custom"] .sv-input::selection,
+.surveyjs-form-wrapper[data-theme="custom"] input.sv-input::selection,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-question input::selection {
+  background-color: transparent !important;
+  color: #000000 !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-input::-moz-selection,
+.surveyjs-form-wrapper[data-theme="custom"] input.sv-input::-moz-selection,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-question input::-moz-selection {
+  background-color: transparent !important;
+  color: #000000 !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-input::-webkit-selection,
+.surveyjs-form-wrapper[data-theme="custom"] input.sv-input::-webkit-selection {
+  background-color: transparent !important;
+  color: #000000 !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-input::placeholder {
+  text-align: center;
+  color: #9ca3af !important;
+}
+
+/* Make placeholders light grey for ALL SurveyJS themes */
+.surveyjs-form-wrapper .sv-input::placeholder,
+.surveyjs-form-wrapper input::placeholder,
+.surveyjs-form-wrapper .sv-question input::placeholder,
+.surveyjs-form-wrapper .sv-textarea::placeholder,
+.surveyjs-form-wrapper textarea::placeholder {
+  color: #9ca3af !important;
+  opacity: 0.7;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-input:focus,
+.surveyjs-form-wrapper[data-theme="custom"] input.sv-input:focus,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-question input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Custom textarea styles - only for custom theme */
+.surveyjs-form-wrapper[data-theme="custom"] .sv-textarea {
+  width: 100%;
+  max-width: 600px;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: none;
+  transition: height 0.2s ease-in-out;
+  min-height: 100px;
+  overflow-y: hidden;
+  line-height: 1.5;
+  color: inherit !important;
+  background-color: white !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-textarea::selection {
+  background-color: transparent !important;
+  color: inherit !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-textarea::-moz-selection {
+  background-color: transparent !important;
+  color: inherit !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-textarea::placeholder {
+  text-align: center;
+  color: #9ca3af;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-textarea:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+}
+
+/* Custom dropdown styles - only for custom theme */
+.surveyjs-form-wrapper[data-theme="custom"] .sv-selectbase {
+  width: 100% !important;
+  min-width: 300px !important;
+  max-width: 600px !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-dropdown {
+  width: 100% !important;
+  min-width: 300px !important;
+  max-width: 600px !important;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  background-color: white !important;
+  transition: all 0.2s ease-in-out;
+  text-align: left !important;
+  cursor: pointer;
+  white-space: normal;
+  word-wrap: break-word;
+  color: inherit !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-dropdown::selection {
+  background-color: transparent !important;
+  color: inherit !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-dropdown::-moz-selection {
+  background-color: transparent !important;
+  color: inherit !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-dropdown:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+}
+
+/* Dropdown options/popup styling - only for custom theme */
+.surveyjs-form-wrapper[data-theme="custom"] .sv-dropdown__list,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-list__item,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-list,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-popup,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-popup__container,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-popup__content,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-dropdown-popup,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-list__container {
+  min-width: 300px !important;
+  width: auto !important;
+  white-space: normal !important;
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  opacity: 1 !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-dropdown__list,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-popup,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-popup__container,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-popup__content,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-dropdown-popup,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-list__container {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  opacity: 1 !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-list {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  opacity: 1 !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-list__item {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  opacity: 1 !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-list__item:hover {
+  background-color: #f3f4f6 !important;
+  background: #f3f4f6 !important;
+}
+
+/* Target all possible dropdown popup elements - only for custom theme */
+.surveyjs-form-wrapper[data-theme="custom"] .sv-popup.sv-popup--dropdown,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-popup.sv-dropdown-popup,
+.surveyjs-form-wrapper[data-theme="custom"] div[class*="sv-popup"],
+.surveyjs-form-wrapper[data-theme="custom"] div[class*="dropdown-popup"],
+.surveyjs-form-wrapper[data-theme="custom"] div[class*="sv-list"] {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* Ensure dropdown value display is not highlighted - only for custom theme */
+.surveyjs-form-wrapper[data-theme="custom"] .sv-dropdown__value,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-dropdown__value-text {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: #000000 !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-list__item-text {
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  text-align: left !important;
+  color: inherit !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-dropdown__value {
+  color: inherit !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-dropdown__filter-string-input {
+  color: inherit !important;
+}
+
+/* Continue button text color - blue for all themes except DefaultV2 (which has its own override) */
+.surveyjs-form-wrapper:not([data-theme="defaultV2"]):not([data-theme="default"]) .sv-btn--action {
+  color: #2563eb !important;
+}
+
+/* Custom button styles - only for custom theme */
+.surveyjs-form-wrapper[data-theme="custom"] .sv-btn {
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-btn--action {
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: #2563eb !important;
+  border: none;
+  box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.3);
+  font-weight: 600;
+  transition: all 0.2s ease-in-out;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-btn--action:hover {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  box-shadow: 0 6px 12px -2px rgba(139, 92, 246, 0.4);
+  transform: translateY(-2px);
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-nav-btn {
+  margin: 0 0.5rem;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-btn--action:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-progress {
+  margin-bottom: 0.25rem !important;
+}
+
+/* Replace "Page" with "Question" in progress text */
+.surveyjs-form-wrapper .sv-progress__text::after {
+  content: '';
+}
+
+/* Use CSS to replace "Page" text with "Question" */
+.surveyjs-form-wrapper .sv-progress__text {
+  font-size: 0;
+}
+
+.surveyjs-form-wrapper .sv-progress__text::before {
+  content: attr(data-progress-text);
+  font-size: 14px;
+}
+
+/* Fix for defaultV2 and default themes - prevent question from overlapping page numbering */
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-header,
+.surveyjs-form-wrapper[data-theme="default"] .sv-header {
+  margin-bottom: 2rem !important;
+  padding-bottom: 1.5rem !important;
+}
+
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress {
+  margin-bottom: 1.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-body,
+.surveyjs-form-wrapper[data-theme="default"] .sv-body {
+  margin-top: 1rem !important;
+  padding-top: 1rem !important;
+}
+
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-question,
+.surveyjs-form-wrapper[data-theme="default"] .sv-question {
+  margin-top: 1.5rem !important;
+  padding-top: 1.5rem !important;
+}
+
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-question__title,
+.surveyjs-form-wrapper[data-theme="default"] .sv-question__title {
+  margin-top: 0.5rem !important;
+  padding-top: 0.5rem !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-progress__bar {
+  height: 0.5rem;
+  background-color: #e5e7eb;
+  border-radius: 0.25rem;
+  overflow: hidden;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-progress__bar-value {
+  height: 100%;
+  background: linear-gradient(90deg, #8b5cf6, #6366f1);
+  transition: width 0.3s ease-in-out;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-question__required-text {
+  color: #dc2626;
+}
+
+/* Remove extra space after buttons - only for custom theme */
+.surveyjs-form-wrapper[data-theme="custom"] .sv-action-bar,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-footer,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-action {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-body {
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-action-bar {
+  margin-top: 20px !important;
+  padding-top: 0 !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-btn {
+  margin-bottom: 0 !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-question__description {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+/* Geocoding spinner animation - applies to all themes */
+.surveyjs-form-wrapper .geocoding-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+  min-height: 28px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.surveyjs-form-wrapper .geocoding-indicator[data-geocoding-indicator="true"] {
+  /* Ensure it's visible and prominent */
+  z-index: 10;
+  position: relative;
+}
+
+.surveyjs-form-wrapper .geocoding-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid #3b82f6;
+  border-top-color: transparent;
+  border-right-color: rgba(59, 130, 246, 0.3);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Enhanced spinner for better visibility */
+.surveyjs-form-wrapper .geocoding-indicator .geocoding-spinner {
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Pulse animation for loading state */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.surveyjs-form-wrapper .geocoding-indicator[data-loading="true"] {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Remove all background colors and highlights from SurveyJS inputs - Only for custom theme */
+.surveyjs-form-wrapper[data-theme="custom"] .sv-question__content *,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-question *,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-string-editor,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-string-editor input,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-string-editor textarea {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-question__content input,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-question__content textarea,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-question input,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-question textarea {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Ensure no blue/light backgrounds on filled inputs - Only for custom theme */
+.surveyjs-form-wrapper[data-theme="custom"] .sv-input:not(:placeholder-shown),
+.surveyjs-form-wrapper[data-theme="custom"] .sv-input[value]:not([value=""]),
+.surveyjs-form-wrapper[data-theme="custom"] .sv-input.has-value,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-question.filled input,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-question.answered input {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* SurveyJS Custom Colors Override for DefaultV2 Theme */
+/* These overrides apply custom brand colors to DefaultV2 theme without breaking functionality */
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv_main.sv_default_css,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-root,
+.surveyjs-form-wrapper[data-theme="default"] .sv_main.sv_default_css,
+.surveyjs-form-wrapper[data-theme="default"] .sv-root {
+  --primary-color: #0185C8 !important; /* blue buttons, highlights */
+  --main-color: #FD9212 !important;    /* orange for progress, accents */
+  --text-color: #333333 !important;    /* default text color */
+  --primary: #0185C8 !important;
+  --secondary: #FD9212 !important;
+}
+
+/* Buttons - Next/Previous/Complete - Comprehensive override for DefaultV2 */
+/* Override any green colors with blue */
+.surveyjs-form-wrapper[data-theme="defaultV2"] button[style*="background"],
+.surveyjs-form-wrapper[data-theme="defaultV2"] button,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv_complete_btn,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv_next_btn,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv_prev_btn,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-btn,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-btn--action,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-action-button,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-action-bar button,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-footer button,
+.surveyjs-form-wrapper[data-theme="defaultV2"] input[type="button"],
+.surveyjs-form-wrapper[data-theme="defaultV2"] input[type="submit"],
+.surveyjs-form-wrapper[data-theme="default"] button[style*="background"],
+.surveyjs-form-wrapper[data-theme="default"] button,
+.surveyjs-form-wrapper[data-theme="default"] .sv_complete_btn,
+.surveyjs-form-wrapper[data-theme="default"] .sv_next_btn,
+.surveyjs-form-wrapper[data-theme="default"] .sv_prev_btn,
+.surveyjs-form-wrapper[data-theme="default"] .sv-btn,
+.surveyjs-form-wrapper[data-theme="default"] .sv-btn--action,
+.surveyjs-form-wrapper[data-theme="default"] .sv-action-button,
+.surveyjs-form-wrapper[data-theme="default"] .sv-action-bar button,
+.surveyjs-form-wrapper[data-theme="default"] .sv-footer button,
+.surveyjs-form-wrapper[data-theme="default"] input[type="button"],
+.surveyjs-form-wrapper[data-theme="default"] input[type="submit"] {
+  background-color: #0185C8 !important;
+  background: #0185C8 !important;
+  color: white !important;
+  border-color: #0185C8 !important;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: rgba(1, 133, 200, 0.3) !important;
+  cursor: pointer !important;
+  z-index: 10 !important;
+  position: relative !important;
+}
+
+.surveyjs-form-wrapper[data-theme="defaultV2"] button:hover,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv_complete_btn:hover,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv_next_btn:hover,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv_prev_btn:hover,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-btn:hover,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-btn--action:hover,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-action-button:hover,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-action-bar button:hover,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-footer button:hover,
+.surveyjs-form-wrapper[data-theme="defaultV2"] input[type="button"]:hover,
+.surveyjs-form-wrapper[data-theme="defaultV2"] input[type="submit"]:hover,
+.surveyjs-form-wrapper[data-theme="default"] button:hover,
+.surveyjs-form-wrapper[data-theme="default"] .sv_complete_btn:hover,
+.surveyjs-form-wrapper[data-theme="default"] .sv_next_btn:hover,
+.surveyjs-form-wrapper[data-theme="default"] .sv_prev_btn:hover,
+.surveyjs-form-wrapper[data-theme="default"] .sv-btn:hover,
+.surveyjs-form-wrapper[data-theme="default"] .sv-btn--action:hover,
+.surveyjs-form-wrapper[data-theme="default"] .sv-action-button:hover,
+.surveyjs-form-wrapper[data-theme="default"] .sv-action-bar button:hover,
+.surveyjs-form-wrapper[data-theme="default"] .sv-footer button:hover,
+.surveyjs-form-wrapper[data-theme="default"] input[type="button"]:hover,
+.surveyjs-form-wrapper[data-theme="default"] input[type="submit"]:hover {
+  background-color: #016aa0 !important;
+  background: #016aa0 !important;
+  border-color: #016aa0 !important;
+  opacity: 0.9;
+}
+
+/* Progress bar - orange color */
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv_progress__bar-value,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv_progress-bar,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress__bar-value,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress-bar,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv_progress_bar,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress__bar,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress-bar-container,
+.surveyjs-form-wrapper[data-theme="default"] .sv_progress__bar-value,
+.surveyjs-form-wrapper[data-theme="default"] .sv_progress-bar,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress__bar-value,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress-bar,
+.surveyjs-form-wrapper[data-theme="default"] .sv_progress_bar,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress__bar,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress-bar-container {
+  background-color: #FD9212 !important;
+  background: #FD9212 !important;
+}
+
+/* Horizontal line/separator above progress text - orange color */
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress hr,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress::before,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress::after,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-header,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-header hr,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-header::before,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-header::after,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress-border,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress__separator,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-header__separator,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-root .sv-progress,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-root .sv-header,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress hr,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress::before,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress::after,
+.surveyjs-form-wrapper[data-theme="default"] .sv-header,
+.surveyjs-form-wrapper[data-theme="default"] .sv-header hr,
+.surveyjs-form-wrapper[data-theme="default"] .sv-header::before,
+.surveyjs-form-wrapper[data-theme="default"] .sv-header::after,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress-border,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress__separator,
+.surveyjs-form-wrapper[data-theme="default"] .sv-header__separator,
+.surveyjs-form-wrapper[data-theme="default"] .sv-root .sv-progress,
+.surveyjs-form-wrapper[data-theme="default"] .sv-root .sv-header {
+  border-color: #FD9212 !important;
+  border-top-color: #FD9212 !important;
+  border-bottom-color: #FD9212 !important;
+  border-top: 2px solid #FD9212 !important;
+  border-bottom: 2px solid #FD9212 !important;
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+/* Force override the horizontal line border - catch all possible selectors */
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-header,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-header[style*="border"],
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress[style*="border"],
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-header *,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress *,
+.surveyjs-form-wrapper[data-theme="default"] .sv-header,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress,
+.surveyjs-form-wrapper[data-theme="default"] .sv-header[style*="border"],
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress[style*="border"],
+.surveyjs-form-wrapper[data-theme="default"] .sv-header *,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress * {
+  border-top: 2px solid #FD9212 !important;
+  border-top-color: #FD9212 !important;
+  border-top-width: 2px !important;
+  border-top-style: solid !important;
+  border-color: #FD9212 !important;
+}
+
+/* Target any element that might be the horizontal line above progress */
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-header::before,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-header::after,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress::before,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress::after,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-root::before,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-root::after,
+.surveyjs-form-wrapper[data-theme="default"] .sv-header::before,
+.surveyjs-form-wrapper[data-theme="default"] .sv-header::after,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress::before,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress::after,
+.surveyjs-form-wrapper[data-theme="default"] .sv-root::before,
+.surveyjs-form-wrapper[data-theme="default"] .sv-root::after {
+  border-top-color: #FD9212 !important;
+  border-color: #FD9212 !important;
+  background-color: #FD9212 !important;
+  color: #FD9212 !important;
+}
+
+/* Catch ALL elements in header and progress that might have green border/background */
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-header div,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-header span,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-header hr,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress div,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress span,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress hr,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-header > *,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress > *,
+.surveyjs-form-wrapper[data-theme="default"] .sv-header div,
+.surveyjs-form-wrapper[data-theme="default"] .sv-header span,
+.surveyjs-form-wrapper[data-theme="default"] .sv-header hr,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress div,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress span,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress hr,
+.surveyjs-form-wrapper[data-theme="default"] .sv-header > *,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress > * {
+  border-top-color: #FD9212 !important;
+  border-color: #FD9212 !important;
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+/* Ultimate override - any element with border-top that's green */
+.surveyjs-form-wrapper[data-theme="defaultV2"] *,
+.surveyjs-form-wrapper[data-theme="default"] * {
+  /* Check computed styles - will be handled by JavaScript if needed */
+}
+
+/* Progress section background/border - ensure orange */
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress[style*="border"],
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-header[style*="border"],
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress[style*="border"],
+.surveyjs-form-wrapper[data-theme="default"] .sv-header[style*="border"] {
+  border-color: #FD9212 !important;
+  border-top-color: #FD9212 !important;
+}
+
+/* Progress bar border/outline - orange color */
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress__bar,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress-bar-container,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress__bar,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress-bar-container {
+  border-color: #FD9212 !important;
+}
+
+/* Survey title - "Create a New Task" - Override green with blue */
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-title,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv_header_title,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-header__title,
+.surveyjs-form-wrapper[data-theme="defaultV2"] h1,
+.surveyjs-form-wrapper[data-theme="defaultV2"] h2,
+.surveyjs-form-wrapper[data-theme="defaultV2"] h3,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-root .sv-title,
+.surveyjs-form-wrapper[data-theme="default"] .sv-title,
+.surveyjs-form-wrapper[data-theme="default"] .sv_header_title,
+.surveyjs-form-wrapper[data-theme="default"] .sv-header__title,
+.surveyjs-form-wrapper[data-theme="default"] h1,
+.surveyjs-form-wrapper[data-theme="default"] h2,
+.surveyjs-form-wrapper[data-theme="default"] h3,
+.surveyjs-form-wrapper[data-theme="default"] .sv-root .sv-title {
+  color: #0185C8 !important;
+}
+
+/* Override ALL green colors with orange #FD9212 - Same approach as title fix */
+/* Checkboxes and checkmarks */
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-checkbox__svg,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-checkbox__svg path,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-checkbox__svg circle,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-checkbox__svg rect,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-checkbox--checked .sv-checkbox__svg,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-checkbox--checked .sv-checkbox__svg path,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-checkbox--checked .sv-checkbox__svg circle,
+.surveyjs-form-wrapper[data-theme="default"] .sv-checkbox__svg,
+.surveyjs-form-wrapper[data-theme="default"] .sv-checkbox__svg path,
+.surveyjs-form-wrapper[data-theme="default"] .sv-checkbox__svg circle,
+.surveyjs-form-wrapper[data-theme="default"] .sv-checkbox__svg rect,
+.surveyjs-form-wrapper[data-theme="default"] .sv-checkbox--checked .sv-checkbox__svg,
+.surveyjs-form-wrapper[data-theme="default"] .sv-checkbox--checked .sv-checkbox__svg path,
+.surveyjs-form-wrapper[data-theme="default"] .sv-checkbox--checked .sv-checkbox__svg circle {
+  fill: #FD9212 !important;
+  stroke: #FD9212 !important;
+  color: #FD9212 !important;
+}
+
+/* Item icons and success indicators */
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-item__icon,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-item__icon svg,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-item__icon svg path,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-item__icon svg circle,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-item__icon svg rect,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-icon,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-icon svg,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-icon svg path,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-icon svg circle,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-icon svg rect,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-success-icon,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-success-icon svg,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-success-icon svg path,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-success-icon svg circle,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-validation-icon,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-validation-icon svg,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-validation-icon svg path,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-validation-icon svg circle,
+.surveyjs-form-wrapper[data-theme="default"] .sv-item__icon,
+.surveyjs-form-wrapper[data-theme="default"] .sv-item__icon svg,
+.surveyjs-form-wrapper[data-theme="default"] .sv-item__icon svg path,
+.surveyjs-form-wrapper[data-theme="default"] .sv-item__icon svg circle,
+.surveyjs-form-wrapper[data-theme="default"] .sv-item__icon svg rect,
+.surveyjs-form-wrapper[data-theme="default"] .sv-icon,
+.surveyjs-form-wrapper[data-theme="default"] .sv-icon svg,
+.surveyjs-form-wrapper[data-theme="default"] .sv-icon svg path,
+.surveyjs-form-wrapper[data-theme="default"] .sv-icon svg circle,
+.surveyjs-form-wrapper[data-theme="default"] .sv-icon svg rect,
+.surveyjs-form-wrapper[data-theme="default"] .sv-success-icon,
+.surveyjs-form-wrapper[data-theme="default"] .sv-success-icon svg,
+.surveyjs-form-wrapper[data-theme="default"] .sv-success-icon svg path,
+.surveyjs-form-wrapper[data-theme="default"] .sv-success-icon svg circle,
+.surveyjs-form-wrapper[data-theme="default"] .sv-validation-icon,
+.surveyjs-form-wrapper[data-theme="default"] .sv-validation-icon svg,
+.surveyjs-form-wrapper[data-theme="default"] .sv-validation-icon svg path,
+.surveyjs-form-wrapper[data-theme="default"] .sv-validation-icon svg circle {
+  fill: #FD9212 !important;
+  stroke: #FD9212 !important;
+  color: #FD9212 !important;
+}
+
+/* All SVG elements within SurveyJS - force orange */
+.surveyjs-form-wrapper[data-theme="defaultV2"] svg,
+.surveyjs-form-wrapper[data-theme="defaultV2"] svg path,
+.surveyjs-form-wrapper[data-theme="defaultV2"] svg circle,
+.surveyjs-form-wrapper[data-theme="defaultV2"] svg rect,
+.surveyjs-form-wrapper[data-theme="defaultV2"] svg polygon,
+.surveyjs-form-wrapper[data-theme="defaultV2"] svg polyline,
+.surveyjs-form-wrapper[data-theme="defaultV2"] svg line,
+.surveyjs-form-wrapper[data-theme="defaultV2"] svg ellipse,
+.surveyjs-form-wrapper[data-theme="defaultV2"] svg g,
+.surveyjs-form-wrapper[data-theme="defaultV2"] svg g path,
+.surveyjs-form-wrapper[data-theme="defaultV2"] svg g circle,
+.surveyjs-form-wrapper[data-theme="defaultV2"] svg g rect,
+.surveyjs-form-wrapper[data-theme="default"] svg,
+.surveyjs-form-wrapper[data-theme="default"] svg path,
+.surveyjs-form-wrapper[data-theme="default"] svg circle,
+.surveyjs-form-wrapper[data-theme="default"] svg rect,
+.surveyjs-form-wrapper[data-theme="default"] svg polygon,
+.surveyjs-form-wrapper[data-theme="default"] svg polyline,
+.surveyjs-form-wrapper[data-theme="default"] svg line,
+.surveyjs-form-wrapper[data-theme="default"] svg ellipse,
+.surveyjs-form-wrapper[data-theme="default"] svg g,
+.surveyjs-form-wrapper[data-theme="default"] svg g path,
+.surveyjs-form-wrapper[data-theme="default"] svg g circle,
+.surveyjs-form-wrapper[data-theme="default"] svg g rect {
+  fill: #FD9212 !important;
+  stroke: #FD9212 !important;
+  color: #FD9212 !important;
+}
+
+/* Selected items and active states - override green backgrounds */
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-item--selected,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-item--active,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-item--checked,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-list__item--selected,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-list__item--active,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-dropdown__option--selected,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-dropdown__option--active,
+.surveyjs-form-wrapper[data-theme="default"] .sv-item--selected,
+.surveyjs-form-wrapper[data-theme="default"] .sv-item--active,
+.surveyjs-form-wrapper[data-theme="default"] .sv-item--checked,
+.surveyjs-form-wrapper[data-theme="default"] .sv-list__item--selected,
+.surveyjs-form-wrapper[data-theme="default"] .sv-list__item--active,
+.surveyjs-form-wrapper[data-theme="default"] .sv-dropdown__option--selected,
+.surveyjs-form-wrapper[data-theme="default"] .sv-dropdown__option--active {
+  background-color: #FD9212 !important;
+  border-color: #FD9212 !important;
+  color: white !important;
+}
+
+/* Question title and text */
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv_q_title,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-question__title,
+.surveyjs-form-wrapper[data-theme="default"] .sv_q_title,
+.surveyjs-form-wrapper[data-theme="default"] .sv-question__title {
+  color: #333333 !important;
+}
+
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv_q_description,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-question__description,
+.surveyjs-form-wrapper[data-theme="default"] .sv_q_description,
+.surveyjs-form-wrapper[data-theme="default"] .sv-question__description {
+  color: #333333 !important;
+}
+
+/* Radio/checkbox selection highlight */
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv_q_choice_item input:checked + label,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv_q_choice_item:hover label,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv_q_radiogroup_item input:checked + label,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv_q_radiogroup_item:hover label,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv_q_checkbox_item input:checked + label,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv_q_checkbox_item:hover label,
+.surveyjs-form-wrapper[data-theme="default"] .sv_q_choice_item input:checked + label,
+.surveyjs-form-wrapper[data-theme="default"] .sv_q_choice_item:hover label,
+.surveyjs-form-wrapper[data-theme="default"] .sv_q_radiogroup_item input:checked + label,
+.surveyjs-form-wrapper[data-theme="default"] .sv_q_radiogroup_item:hover label,
+.surveyjs-form-wrapper[data-theme="default"] .sv_q_checkbox_item input:checked + label,
+.surveyjs-form-wrapper[data-theme="default"] .sv_q_checkbox_item:hover label {
+  background-color: #0185C8 !important;
+  color: white !important;
+}
+
+/* Progress text */
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv_progress__text,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-progress-text,
+.surveyjs-form-wrapper[data-theme="default"] .sv_progress__text,
+.surveyjs-form-wrapper[data-theme="default"] .sv-progress-text {
+  color: #333333 !important;
+}
+
+/* General text color override for DefaultV2 */
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-root,
+.surveyjs-form-wrapper[data-theme="defaultV2"] .sv-body,
+.surveyjs-form-wrapper[data-theme="default"] .sv-root,
+.surveyjs-form-wrapper[data-theme="default"] .sv-body {
+  color: #333333;
+}
+
+/* ============================================
+   COMPREHENSIVE GREEN TO ORANGE REPLACEMENT
+   Replace ALL green colors in SurveyJS with #FD9212
+   ============================================ */
+
+/* Apply to ALL SurveyJS themes */
+.surveyjs-form-wrapper * {
+  /* Override common green color variables */
+  --success-color: #FD9212 !important;
+  --success: #FD9212 !important;
+  --green: #FD9212 !important;
+  --green-500: #FD9212 !important;
+  --green-600: #FD9212 !important;
+  --green-700: #FD9212 !important;
+}
+
+/* Success indicators, checkmarks, and validation states - ALL themes */
+.surveyjs-form-wrapper .sv-checkbox--checked,
+.surveyjs-form-wrapper .sv-checkbox__checked,
+.surveyjs-form-wrapper .sv-checkbox:checked,
+.surveyjs-form-wrapper .sv-checkbox[checked],
+.surveyjs-form-wrapper .sv-checkbox__svg,
+.surveyjs-form-wrapper .sv-checkbox__svg path,
+.surveyjs-form-wrapper .sv-checkbox__svg rect,
+.surveyjs-form-wrapper .sv-checkbox__svg circle,
+.surveyjs-form-wrapper .sv-item__icon,
+.surveyjs-form-wrapper .sv-item__icon svg,
+.surveyjs-form-wrapper .sv-item__icon svg path,
+.surveyjs-form-wrapper .sv-item__icon svg rect,
+.surveyjs-form-wrapper .sv-item__icon svg circle,
+.surveyjs-form-wrapper .sv-icon,
+.surveyjs-form-wrapper .sv-icon svg,
+.surveyjs-form-wrapper .sv-icon svg path,
+.surveyjs-form-wrapper .sv-icon svg rect,
+.surveyjs-form-wrapper .sv-icon svg circle,
+.surveyjs-form-wrapper .sv-success-icon,
+.surveyjs-form-wrapper .sv-success-icon svg,
+.surveyjs-form-wrapper .sv-success-icon svg path,
+.surveyjs-form-wrapper .sv-success-icon svg rect,
+.surveyjs-form-wrapper .sv-success-icon svg circle,
+.surveyjs-form-wrapper .sv-validation-icon,
+.surveyjs-form-wrapper .sv-validation-icon svg,
+.surveyjs-form-wrapper .sv-validation-icon svg path,
+.surveyjs-form-wrapper .sv-validation-icon svg rect,
+.surveyjs-form-wrapper .sv-validation-icon svg circle,
+.surveyjs-form-wrapper .sv-item--success,
+.surveyjs-form-wrapper .sv-item--success *,
+.surveyjs-form-wrapper .sv-question--answered,
+.surveyjs-form-wrapper .sv-question--answered *,
+.surveyjs-form-wrapper .sv-question--correct,
+.surveyjs-form-wrapper .sv-question--correct *,
+.surveyjs-form-wrapper [class*="success"],
+.surveyjs-form-wrapper [class*="success"] *,
+.surveyjs-form-wrapper [class*="green"],
+.surveyjs-form-wrapper [class*="green"] * {
+  color: #FD9212 !important;
+  fill: #FD9212 !important;
+  stroke: #FD9212 !important;
+  background-color: #FD9212 !important;
+  border-color: #FD9212 !important;
+}
+
+/* Focus states and active states - replace green with orange */
+.surveyjs-form-wrapper input:focus,
+.surveyjs-form-wrapper textarea:focus,
+.surveyjs-form-wrapper select:focus,
+.surveyjs-form-wrapper .sv-input:focus,
+.surveyjs-form-wrapper .sv-textarea:focus,
+.surveyjs-form-wrapper .sv-dropdown:focus,
+.surveyjs-form-wrapper .sv-question input:focus,
+.surveyjs-form-wrapper .sv-question textarea:focus,
+.surveyjs-form-wrapper .sv-question select:focus,
+.surveyjs-form-wrapper input:focus-visible,
+.surveyjs-form-wrapper textarea:focus-visible,
+.surveyjs-form-wrapper select:focus-visible,
+.surveyjs-form-wrapper .sv-input:focus-visible,
+.surveyjs-form-wrapper .sv-textarea:focus-visible,
+.surveyjs-form-wrapper .sv-dropdown:focus-visible {
+  border-color: #FD9212 !important;
+  outline-color: #FD9212 !important;
+  box-shadow: 0 0 0 2px rgba(253, 146, 18, 0.2) !important;
+}
+
+/* Selected/active choice items - replace green with orange */
+.surveyjs-form-wrapper .sv-item--selected,
+.surveyjs-form-wrapper .sv-item--selected *,
+.surveyjs-form-wrapper .sv-item--active,
+.surveyjs-form-wrapper .sv-item--active *,
+.surveyjs-form-wrapper .sv-item:hover,
+.surveyjs-form-wrapper .sv-item:hover *,
+.surveyjs-form-wrapper .sv-list__item--selected,
+.surveyjs-form-wrapper .sv-list__item--selected *,
+.surveyjs-form-wrapper .sv-list__item--active,
+.surveyjs-form-wrapper .sv-list__item--active *,
+.surveyjs-form-wrapper .sv-list__item:hover,
+.surveyjs-form-wrapper .sv-list__item:hover *,
+.surveyjs-form-wrapper .sv-dropdown__option--selected,
+.surveyjs-form-wrapper .sv-dropdown__option--selected *,
+.surveyjs-form-wrapper .sv-dropdown__option--active,
+.surveyjs-form-wrapper .sv-dropdown__option--active *,
+.surveyjs-form-wrapper .sv-dropdown__option:hover,
+.surveyjs-form-wrapper .sv-dropdown__option:hover * {
+  background-color: #FD9212 !important;
+  border-color: #FD9212 !important;
+  color: white !important;
+}
+
+/* Progress indicators and completion states */
+.surveyjs-form-wrapper .sv-progress__bar-value[style*="green"],
+.surveyjs-form-wrapper .sv-progress__bar-value[style*="#22c55e"],
+.surveyjs-form-wrapper .sv-progress__bar-value[style*="#10b981"],
+.surveyjs-form-wrapper .sv-progress__bar-value[style*="#16a34a"],
+.surveyjs-form-wrapper .sv-progress-bar[style*="green"],
+.surveyjs-form-wrapper .sv-progress-bar[style*="#22c55e"],
+.surveyjs-form-wrapper .sv-progress-bar[style*="#10b981"],
+.surveyjs-form-wrapper .sv-progress-bar[style*="#16a34a"],
+.surveyjs-form-wrapper [style*="background"][style*="green"],
+.surveyjs-form-wrapper [style*="background"][style*="#22c55e"],
+.surveyjs-form-wrapper [style*="background"][style*="#10b981"],
+.surveyjs-form-wrapper [style*="background"][style*="#16a34a"] {
+  background-color: #FD9212 !important;
+  background: #FD9212 !important;
+}
+
+/* Rating and star elements */
+.surveyjs-form-wrapper .sv-rating-item--selected,
+.surveyjs-form-wrapper .sv-rating-item--selected *,
+.surveyjs-form-wrapper .sv-rating-item--active,
+.surveyjs-form-wrapper .sv-rating-item--active *,
+.surveyjs-form-wrapper .sv-rating-item:hover,
+.surveyjs-form-wrapper .sv-rating-item:hover *,
+.surveyjs-form-wrapper .sv-star,
+.surveyjs-form-wrapper .sv-star--active,
+.surveyjs-form-wrapper .sv-star--selected,
+.surveyjs-form-wrapper .sv-star svg,
+.surveyjs-form-wrapper .sv-star svg path {
+  color: #FD9212 !important;
+  fill: #FD9212 !important;
+  stroke: #FD9212 !important;
+}
+
+/* Matrix and ranking elements */
+.surveyjs-form-wrapper .sv-matrix__cell--selected,
+.surveyjs-form-wrapper .sv-matrix__cell--selected *,
+.surveyjs-form-wrapper .sv-matrix__cell:hover,
+.surveyjs-form-wrapper .sv-matrix__cell:hover *,
+.surveyjs-form-wrapper .sv-ranking-item--selected,
+.surveyjs-form-wrapper .sv-ranking-item--selected *,
+.surveyjs-form-wrapper .sv-ranking-item:hover,
+.surveyjs-form-wrapper .sv-ranking-item:hover * {
+  background-color: #FD9212 !important;
+  border-color: #FD9212 !important;
+  color: white !important;
+}
+
+/* Image picker and file upload success states */
+.surveyjs-form-wrapper .sv-imagepicker-item--selected,
+.surveyjs-form-wrapper .sv-imagepicker-item--selected *,
+.surveyjs-form-wrapper .sv-imagepicker-item:hover,
+.surveyjs-form-wrapper .sv-imagepicker-item:hover *,
+.surveyjs-form-wrapper .sv-file__decorator--success,
+.surveyjs-form-wrapper .sv-file__decorator--success *,
+.surveyjs-form-wrapper .sv-file__decorator svg,
+.surveyjs-form-wrapper .sv-file__decorator svg path {
+  border-color: #FD9212 !important;
+  color: #FD9212 !important;
+  fill: #FD9212 !important;
+  stroke: #FD9212 !important;
+}
+
+/* Expression and calculated values */
+.surveyjs-form-wrapper .sv-expression,
+.surveyjs-form-wrapper .sv-expression--success,
+.surveyjs-form-wrapper .sv-expression--success *,
+.surveyjs-form-wrapper .sv-calculated-value,
+.surveyjs-form-wrapper .sv-calculated-value--success,
+.surveyjs-form-wrapper .sv-calculated-value--success * {
+  color: #FD9212 !important;
+  border-color: #FD9212 !important;
+}
+
+/* Panel and page states */
+.surveyjs-form-wrapper .sv-panel--expanded,
+.surveyjs-form-wrapper .sv-panel--expanded *,
+.surveyjs-form-wrapper .sv-page--active,
+.surveyjs-form-wrapper .sv-page--active * {
+  border-color: #FD9212 !important;
+}
+
+/* Any remaining green background colors */
+.surveyjs-form-wrapper [style*="background-color: green"],
+.surveyjs-form-wrapper [style*="background-color:#22c55e"],
+.surveyjs-form-wrapper [style*="background-color:#10b981"],
+.surveyjs-form-wrapper [style*="background-color:#16a34a"],
+.surveyjs-form-wrapper [style*="background: green"],
+.surveyjs-form-wrapper [style*="background:#22c55e"],
+.surveyjs-form-wrapper [style*="background:#10b981"],
+.surveyjs-form-wrapper [style*="background:#16a34a"],
+.surveyjs-form-wrapper [style*="border-color: green"],
+.surveyjs-form-wrapper [style*="border-color:#22c55e"],
+.surveyjs-form-wrapper [style*="border-color:#10b981"],
+.surveyjs-form-wrapper [style*="border-color:#16a34a"],
+.surveyjs-form-wrapper [style*="color: green"],
+.surveyjs-form-wrapper [style*="color:#22c55e"],
+.surveyjs-form-wrapper [style*="color:#10b981"],
+.surveyjs-form-wrapper [style*="color:#16a34a"] {
+  background-color: #FD9212 !important;
+  background: #FD9212 !important;
+  border-color: #FD9212 !important;
+  color: #FD9212 !important;
+}
+
+/* Modern theme specific overrides */
+.surveyjs-form-wrapper[data-theme="modern"] * {
+  --success-color: #FD9212 !important;
+  --success: #FD9212 !important;
+}
+
+.surveyjs-form-wrapper[data-theme="modern"] .sv-checkbox--checked,
+.surveyjs-form-wrapper[data-theme="modern"] .sv-checkbox__checked,
+.surveyjs-form-wrapper[data-theme="modern"] .sv-item--selected,
+.surveyjs-form-wrapper[data-theme="modern"] .sv-item--active,
+.surveyjs-form-wrapper[data-theme="modern"] input:focus,
+.surveyjs-form-wrapper[data-theme="modern"] textarea:focus,
+.surveyjs-form-wrapper[data-theme="modern"] select:focus {
+  border-color: #FD9212 !important;
+  background-color: #FD9212 !important;
+  color: white !important;
+}
+
+/* Custom theme specific overrides */
+.surveyjs-form-wrapper[data-theme="custom"] * {
+  --success-color: #FD9212 !important;
+  --success: #FD9212 !important;
+}
+
+.surveyjs-form-wrapper[data-theme="custom"] .sv-checkbox--checked,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-checkbox__checked,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-item--selected,
+.surveyjs-form-wrapper[data-theme="custom"] .sv-item--active,
+.surveyjs-form-wrapper[data-theme="custom"] input:focus,
+.surveyjs-form-wrapper[data-theme="custom"] textarea:focus,
+.surveyjs-form-wrapper[data-theme="custom"] select:focus {
+  border-color: #FD9212 !important;
+  background-color: #FD9212 !important;
+  color: white !important;
+}
+
+/* Additional green color overrides - catch any remaining green shades */
+.surveyjs-form-wrapper *[style*="rgb(34, 197, 94)"],
+.surveyjs-form-wrapper *[style*="rgb(16, 185, 129)"],
+.surveyjs-form-wrapper *[style*="rgb(22, 163, 74)"],
+.surveyjs-form-wrapper *[style*="rgb(5, 150, 105)"],
+.surveyjs-form-wrapper *[style*="rgb(20, 83, 45)"],
+.surveyjs-form-wrapper *[style*="rgb(25, 179, 148)"],
+.surveyjs-form-wrapper *[style*="rgba(34, 197, 94"],
+.surveyjs-form-wrapper *[style*="rgba(16, 185, 129"],
+.surveyjs-form-wrapper *[style*="rgba(22, 163, 74"],
+.surveyjs-form-wrapper *[style*="rgba(25, 179, 148"],
+.surveyjs-form-wrapper *[style*="hsl(142"],
+.surveyjs-form-wrapper *[style*="hsl(160"],
+.surveyjs-form-wrapper *[style*="hsl(168"] {
+  background-color: #FD9212 !important;
+  background: #FD9212 !important;
+  border-color: #FD9212 !important;
+  color: #FD9212 !important;
+  fill: #FD9212 !important;
+  stroke: #FD9212 !important;
+}
+
+/* Specific override for rgb(25, 179, 148) - the green color that's still showing */
+/* Target all possible SurveyJS elements that might have this green color */
+.surveyjs-form-wrapper *[style*="rgb(25, 179, 148)"],
+.surveyjs-form-wrapper *[style*="rgb(25,179,148)"],
+.surveyjs-form-wrapper *[style*="rgba(25, 179, 148"],
+.surveyjs-form-wrapper *[style*="rgba(25,179,148"],
+.surveyjs-form-wrapper *[style*="#19B394"],
+.surveyjs-form-wrapper *[style*="#19b394"],
+.surveyjs-form-wrapper svg[style*="rgb(25, 179, 148)"],
+.surveyjs-form-wrapper svg[style*="rgb(25,179,148)"],
+.surveyjs-form-wrapper path[style*="rgb(25, 179, 148)"],
+.surveyjs-form-wrapper path[style*="rgb(25,179,148)"],
+.surveyjs-form-wrapper circle[style*="rgb(25, 179, 148)"],
+.surveyjs-form-wrapper circle[style*="rgb(25,179,148)"],
+.surveyjs-form-wrapper rect[style*="rgb(25, 179, 148)"],
+.surveyjs-form-wrapper rect[style*="rgb(25,179,148)"] {
+  background-color: rgb(253, 146, 18) !important;
+  background: rgb(253, 146, 18) !important;
+  border-color: rgb(253, 146, 18) !important;
+  color: rgb(253, 146, 18) !important;
+  fill: rgb(253, 146, 18) !important;
+  stroke: rgb(253, 146, 18) !important;
+}
+
+/* Override SVG elements with this green color */
+.surveyjs-form-wrapper svg path[fill*="#19B394"],
+.surveyjs-form-wrapper svg path[fill*="#19b394"],
+.surveyjs-form-wrapper svg path[stroke*="#19B394"],
+.surveyjs-form-wrapper svg path[stroke*="#19b394"],
+.surveyjs-form-wrapper svg circle[fill*="#19B394"],
+.surveyjs-form-wrapper svg circle[fill*="#19b394"],
+.surveyjs-form-wrapper svg rect[fill*="#19B394"],
+.surveyjs-form-wrapper svg rect[fill*="#19b394"] {
+  fill: rgb(253, 146, 18) !important;
+  stroke: rgb(253, 146, 18) !important;
+}
+
+/* Force override for all SurveyJS SVG elements - catch computed styles with green */
+.surveyjs-form-wrapper .sv-checkbox__svg,
+.surveyjs-form-wrapper .sv-checkbox__svg path,
+.surveyjs-form-wrapper .sv-checkbox__svg circle,
+.surveyjs-form-wrapper .sv-checkbox__svg rect,
+.surveyjs-form-wrapper .sv-item__icon svg,
+.surveyjs-form-wrapper .sv-item__icon svg path,
+.surveyjs-form-wrapper .sv-item__icon svg circle,
+.surveyjs-form-wrapper .sv-item__icon svg rect,
+.surveyjs-form-wrapper .sv-icon svg,
+.surveyjs-form-wrapper .sv-icon svg path,
+.surveyjs-form-wrapper .sv-icon svg circle,
+.surveyjs-form-wrapper .sv-icon svg rect,
+.surveyjs-form-wrapper .sv-success-icon svg,
+.surveyjs-form-wrapper .sv-success-icon svg path,
+.surveyjs-form-wrapper .sv-success-icon svg circle,
+.surveyjs-form-wrapper .sv-success-icon svg rect,
+.surveyjs-form-wrapper .sv-validation-icon svg,
+.surveyjs-form-wrapper .sv-validation-icon svg path,
+.surveyjs-form-wrapper .sv-validation-icon svg circle,
+.surveyjs-form-wrapper .sv-validation-icon svg rect {
+  fill: rgb(253, 146, 18) !important;
+  stroke: rgb(253, 146, 18) !important;
+  color: rgb(253, 146, 18) !important;
+}
+
+/* Force override all SVG elements - catch any green fills/strokes */
+.surveyjs-form-wrapper svg path,
+.surveyjs-form-wrapper svg circle,
+.surveyjs-form-wrapper svg rect,
+.surveyjs-form-wrapper svg polygon,
+.surveyjs-form-wrapper svg polyline,
+.surveyjs-form-wrapper svg line {
+  /* Override will be applied by more specific selectors above */
+  fill: inherit;
+  stroke: inherit;
+}
+
+/* Specific class-based overrides for common SurveyJS success/checkmark elements */
+.surveyjs-form-wrapper .sv-checkbox--checked .sv-checkbox__svg,
+.surveyjs-form-wrapper .sv-checkbox--checked .sv-checkbox__svg *,
+.surveyjs-form-wrapper .sv-item--checked .sv-item__icon,
+.surveyjs-form-wrapper .sv-item--checked .sv-item__icon *,
+.surveyjs-form-wrapper .sv-item--selected .sv-item__icon,
+.surveyjs-form-wrapper .sv-item--selected .sv-item__icon *,
+.surveyjs-form-wrapper .sv-question--answered .sv-icon,
+.surveyjs-form-wrapper .sv-question--answered .sv-icon * {
+  fill: rgb(253, 146, 18) !important;
+  stroke: rgb(253, 146, 18) !important;
+  color: rgb(253, 146, 18) !important;
+  background-color: rgb(253, 146, 18) !important;
+  border-color: rgb(253, 146, 18) !important;
+}
+
+/* Override any CSS variables that might contain green */
+.surveyjs-form-wrapper,
+.surveyjs-form-wrapper * {
+  --sjs-primary-color: #0185C8 !important;
+  --sjs-success-color: #FD9212 !important;
+  --sjs-success-backcolor: #FD9212 !important;
+  --sjs-success-border-color: #FD9212 !important;
+}
+
+/* AGGRESSIVE OVERRIDE: Force all SVG elements to use orange instead of rgb(25, 179, 148) */
+/* Specific override for all path, circle, rect elements - force orange */
+.surveyjs-form-wrapper svg path,
+.surveyjs-form-wrapper svg circle,
+.surveyjs-form-wrapper svg rect,
+.surveyjs-form-wrapper svg polygon,
+.surveyjs-form-wrapper svg polyline,
+.surveyjs-form-wrapper svg line,
+.surveyjs-form-wrapper svg ellipse,
+.surveyjs-form-wrapper svg g,
+.surveyjs-form-wrapper svg g path,
+.surveyjs-form-wrapper svg g circle,
+.surveyjs-form-wrapper svg g rect,
+.surveyjs-form-wrapper .sv-checkbox__svg path,
+.surveyjs-form-wrapper .sv-checkbox__svg circle,
+.surveyjs-form-wrapper .sv-checkbox__svg rect,
+.surveyjs-form-wrapper .sv-item__icon svg path,
+.surveyjs-form-wrapper .sv-item__icon svg circle,
+.surveyjs-form-wrapper .sv-item__icon svg rect,
+.surveyjs-form-wrapper .sv-icon svg path,
+.surveyjs-form-wrapper .sv-icon svg circle,
+.surveyjs-form-wrapper .sv-icon svg rect,
+.surveyjs-form-wrapper .sv-success-icon svg path,
+.surveyjs-form-wrapper .sv-success-icon svg circle,
+.surveyjs-form-wrapper .sv-success-icon svg rect,
+.surveyjs-form-wrapper .sv-validation-icon svg path,
+.surveyjs-form-wrapper .sv-validation-icon svg circle,
+.surveyjs-form-wrapper .sv-validation-icon svg rect {
+  fill: rgb(253, 146, 18) !important;
+  stroke: rgb(253, 146, 18) !important;
+}
+
+/* Action Button Styles */
+.action-button {
+  flex: 1;
+  min-width: 120px;
+  max-width: 168px;
+  padding: 0.9rem 0.9rem;
+  border-radius: 7.2px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  text-align: left;
+  border: none;
+  animation: pulse 2s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.6rem;
+  text-decoration: none;
+  color: inherit;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: rgba(1, 134, 201, 0.3) !important;
+  z-index: 10 !important;
+}
+
+.action-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+  pointer-events: none !important;
+  z-index: 0;
+}
+
+.action-button:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.action-button:hover {
+  transform: translateY(-8px) scale(1.05);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  animation: none;
+}
+
+.action-button:active {
+  transform: translateY(-2px) scale(1.02);
+}
+
+.post-button {
+  background-color: #0186C9;
+}
+
+.post-button:hover {
+  background-color: #016ba8;
+}
+
+.browse-button {
+  background-color: #FD9212;
+}
+
+.browse-button:hover {
+  background-color: #e47f0a;
+}
+
+.button-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+}
+
+.button-title {
+  font-size: 1.365rem;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+  line-height: 1.2;
+  position: relative;
+  z-index: 1;
+  text-align: left;
+}
+
+.button-subtitle {
+  font-size: 0.819rem;
+  color: rgba(255, 255, 255, 0.95);
+  margin: 0;
+  line-height: 1.4;
+  font-weight: 400;
+  position: relative;
+  z-index: 1;
+  text-align: left;
+}
+
+.button-icon {
+  font-size: 28.8px;
+  position: relative;
+  z-index: 1;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .action-button {
+    min-width: 100%;
+    max-width: 100%;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: rgba(1, 134, 201, 0.3) !important;
+    z-index: 10 !important;
+    position: relative !important;
+  }
+  
+  .action-button::before {
+    pointer-events: none !important;
+  }
+  
+  /* Ensure SurveyJS buttons are clickable on mobile */
+  .surveyjs-form-wrapper[data-theme="defaultV2"] button,
+  .surveyjs-form-wrapper[data-theme="defaultV2"] .sv-btn,
+  .surveyjs-form-wrapper[data-theme="defaultV2"] .sv-btn--action,
+  .surveyjs-form-wrapper[data-theme="default"] button,
+  .surveyjs-form-wrapper[data-theme="default"] .sv-btn,
+  .surveyjs-form-wrapper[data-theme="default"] .sv-btn--action {
+    min-height: 44px !important; /* iOS recommended touch target size */
+    padding: 12px 20px !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: rgba(1, 133, 200, 0.3) !important;
+    z-index: 10 !important;
+    position: relative !important;
+  }
+  
+  /* Ensure action bar buttons are accessible */
+  .surveyjs-form-wrapper[data-theme="defaultV2"] .sv-action-bar,
+  .surveyjs-form-wrapper[data-theme="default"] .sv-action-bar {
+    pointer-events: auto !important;
+    z-index: 10 !important;
+    position: relative !important;
+  }
+}
+
 

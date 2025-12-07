@@ -42,6 +42,7 @@ export default function NewTaskClient() {
   const [geocoding, setGeocoding] = useState(false)
   const [geocodeError, setGeocodeError] = useState<string | null>(null)
   const [selectedProfessions, setSelectedProfessions] = useState<string[]>([])
+  const [taskType, setTaskType] = useState<'helper' | 'professional'>('helper')
   const [requestedHelper, setRequestedHelper] = useState<User | null>(null)
   const [requestedHelperLoading, setRequestedHelperLoading] = useState(false)
   const [helperRequestError, setHelperRequestError] = useState<string | null>(null)
@@ -513,8 +514,6 @@ export default function NewTaskClient() {
         title: formData.title,
         description: formData.description,
         budget: formData.budget && formData.budget.trim() ? parseFloat(formData.budget) : null,
-        category_id: formData.category_id || null,
-        sub_category_id: formData.sub_category_id || null,
         location: formData.location || null,
         postcode: postcode.trim() || null,
         country: country.trim() || null,
@@ -528,6 +527,12 @@ export default function NewTaskClient() {
         assigned_to: requestedHelper ? requestedHelper.id : null,
       }
 
+      // Add category fields only for Helper tasks
+      if (taskType === 'helper') {
+        taskDataToInsert.category_id = formData.category_id || null
+        taskDataToInsert.sub_category_id = formData.sub_category_id || null
+      }
+
       // Try to add optional fields, but handle gracefully if columns don't exist
       let taskData: any = null
       let taskError: any = null
@@ -539,7 +544,8 @@ export default function NewTaskClient() {
       if (requiredSkills.length > 0) {
         fullTaskData.required_skills = requiredSkills
       }
-      if (selectedProfessions.length > 0) {
+      // Add professions only for Professional tasks
+      if (taskType === 'professional' && selectedProfessions.length > 0) {
         fullTaskData.required_professions = selectedProfessions
       }
 
@@ -741,6 +747,48 @@ export default function NewTaskClient() {
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
             {error}
+          </div>
+        )}
+
+        {/* Task Type Selector */}
+        {!isHelperRequest && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              What type of help do you need? <span className="text-red-500">*</span>
+            </label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="taskType"
+                  value="helper"
+                  checked={taskType === 'helper'}
+                  onChange={(e) => {
+                    setTaskType('helper')
+                    // Clear professional fields when switching to helper
+                    setSelectedProfessions([])
+                    setFormData({ ...formData, category_id: '', sub_category_id: '' })
+                  }}
+                  className="w-4 h-4 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                />
+                <span className="text-sm font-medium text-gray-700">Hire a Helper</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="taskType"
+                  value="professional"
+                  checked={taskType === 'professional'}
+                  onChange={(e) => {
+                    setTaskType('professional')
+                    // Clear category fields when switching to professional
+                    setFormData({ ...formData, category_id: '', sub_category_id: '' })
+                  }}
+                  className="w-4 h-4 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                />
+                <span className="text-sm font-medium text-gray-700">Engage a Professional</span>
+              </label>
+            </div>
           </div>
         )}
 
@@ -949,32 +997,35 @@ export default function NewTaskClient() {
                   If no budget is entered, visitors will see "Quote" on your task.
                   <br />
                   <span className="text-xs text-gray-500">
-                    Payments are processed securely via Airwallex (supports Multibanco, cards, and bank transfers).
                   </span>
                 </p>
               </div>
 
-              <div>
-                <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-2">
-                  Category
-                </label>
-                <select
-                  id="category_id"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                  value={formData.category_id}
-                  onChange={(e) => handleCategoryChange(e.target.value)}
-                >
-                  <option value="">Select a category</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Category - Only show for Helper tasks */}
+              {taskType === 'helper' && (
+                <div>
+                  <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-2">
+                    Category
+                  </label>
+                  <select
+                    id="category_id"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                    value={formData.category_id}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
+                  >
+                    <option value="">Select a category</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
-            {formData.category_id && (
+            {/* Sub-Category - Only show for Helper tasks */}
+            {taskType === 'helper' && formData.category_id && (
               <div>
                 <label htmlFor="sub_category_id" className="block text-sm font-medium text-gray-700 mb-2">
                   Sub-Category (Optional)
@@ -1060,8 +1111,8 @@ export default function NewTaskClient() {
               </p>
             </div>
 
-            {/* Professional Roles Selection - Only show if no category is selected */}
-            {!formData.category_id && (
+            {/* Professional Roles Selection - Only show for Professional tasks */}
+            {taskType === 'professional' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Required Professional Roles (Optional)
@@ -1333,4 +1384,5 @@ export default function NewTaskClient() {
     </>
   )
 }
+
 

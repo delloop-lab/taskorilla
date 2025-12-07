@@ -70,3 +70,6 @@ SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual
 FROM pg_policies 
 WHERE tablename = 'task_progress_updates';
 
+
+
+

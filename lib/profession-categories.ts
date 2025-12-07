@@ -113,3 +113,6 @@ export const PROFESSION_CATEGORIES: ProfessionCategory[] = [
 export const ALL_PROFESSIONS = PROFESSION_CATEGORIES.flatMap(category => category.subs)
 
 
+
+
+

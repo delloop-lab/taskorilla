@@ -11,7 +11,6 @@ import { isProfileComplete } from '@/lib/profile-utils'
 import UserProfileModal from '@/components/UserProfileModal'
 import TrafficTracker from '@/components/TrafficTracker'
 import { getPendingReviews } from '@/lib/review-utils'
-import { STANDARD_SKILLS, STANDARD_SERVICES } from '@/lib/helper-constants'
 import { STANDARD_PROFESSIONS } from '@/lib/profession-constants'
 
 export default function TasksPage() {
@@ -23,17 +22,18 @@ export default function TasksPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>('all')
+  const [selectedProfession, setSelectedProfession] = useState<string>('all')
+  const [professions, setProfessions] = useState<string[]>([])
   const [minBudget, setMinBudget] = useState<string>('')
   const [maxBudget, setMaxBudget] = useState<string>('')
   const [categories, setCategories] = useState<Category[]>([])
   const [subCategories, setSubCategories] = useState<Category[]>([])
   const [availableTags, setAvailableTags] = useState<Tag[]>([])
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
-  const [selectedSkill, setSelectedSkill] = useState<string>('')
+  const [selectedSkill, setSelectedSkill] = useState<string>('all')
   const [searchPostcode, setSearchPostcode] = useState('')
   const [searchRadius, setSearchRadius] = useState<string>('')
   const [maxDistance, setMaxDistance] = useState<string>('')
-  const [helperType, setHelperType] = useState<string>('')
   const [minimumRating, setMinimumRating] = useState<string>('')
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [isAdmin, setIsAdmin] = useState<boolean>(false)
@@ -48,6 +48,8 @@ export default function TasksPage() {
   const [pendingReviews, setPendingReviews] = useState<any[]>([])
   const [showPendingReviews, setShowPendingReviews] = useState(false)
   const [showSearchMobile, setShowSearchMobile] = useState(false)
+  const [showSearchField, setShowSearchField] = useState(false)
+  const [showAllFilters, setShowAllFilters] = useState(false)
 
   const loadCategories = async () => {
     try {
@@ -76,6 +78,38 @@ export default function TasksPage() {
       setAvailableTags(data || [])
     } catch (error) {
       console.error('Error loading tags:', error)
+    }
+  }
+
+  const loadProfessions = async () => {
+    try {
+      // Start with standard professions
+      const allProfessions = new Set<string>(STANDARD_PROFESSIONS)
+      
+      // Also fetch professions from database (from profiles who are helpers)
+      const { data: helpersData, error } = await supabase
+        .from('profiles')
+        .select('professions')
+        .eq('is_helper', true)
+        .not('professions', 'is', null)
+
+      if (!error && helpersData) {
+        helpersData.forEach((helper: any) => {
+          if (helper.professions && Array.isArray(helper.professions)) {
+            helper.professions.forEach((profession: string) => {
+              if (profession && profession.trim()) {
+                allProfessions.add(profession.trim())
+              }
+            })
+          }
+        })
+      }
+      
+      setProfessions(Array.from(allProfessions).sort())
+    } catch (error) {
+      console.error('Error loading professions:', error)
+      // Fallback to just standard professions
+      setProfessions(STANDARD_PROFESSIONS)
     }
   }
 
@@ -388,25 +422,25 @@ export default function TasksPage() {
           })
         }
 
-        // Filter by selected skill if specified
-        if (selectedSkill) {
+        // Filter by selected profession if specified
+        if (selectedProfession && selectedProfession !== 'all') {
           tasksWithProfiles = tasksWithProfiles.filter(task => {
-            if (!task.required_skills || !Array.isArray(task.required_skills) || task.required_skills.length === 0) {
-              return false
+            // Check if task has required_professions array
+            if (task.required_professions && Array.isArray(task.required_professions) && task.required_professions.length > 0) {
+              const lowerSelected = selectedProfession.toLowerCase()
+              return task.required_professions.some((prof: string) => {
+                const lowerProf = prof.toLowerCase()
+                return lowerProf === lowerSelected || lowerProf.includes(lowerSelected) || lowerSelected.includes(lowerProf)
+              })
             }
-            // Check if task has the selected skill
-            const lowerSelected = selectedSkill.toLowerCase()
-            return task.required_skills.some((taskSkill: string) => {
-              const lowerTask = taskSkill.toLowerCase()
-              return lowerTask.includes(lowerSelected) || lowerSelected.includes(lowerTask)
-            })
+            return false
           })
         }
 
-        // Filter by category (skills/services/professions) if specified
-        if (selectedCategory !== 'all') {
-          if (selectedCategory.startsWith('skill-')) {
-            // Map dropdown values to actual skill names - use exact matches only
+        // Filter by selected skill if specified
+        if (selectedSkill && selectedSkill !== 'all') {
+          if (selectedSkill.startsWith('skill-')) {
+            // Map dropdown values to actual skill names
             const skillMap: Record<string, string> = {
               'skill-handyman': 'Handyman / Repairs',
               'skill-cleaning': 'Cleaning / Housekeeping',
@@ -419,7 +453,7 @@ export default function TasksPage() {
               'skill-tech': 'Tech Support / Computer Help',
               'skill-tutoring': 'Tutoring / Teaching',
             }
-            const matchingSkill = skillMap[selectedCategory]
+            const matchingSkill = skillMap[selectedSkill]
             if (matchingSkill) {
               tasksWithProfiles = tasksWithProfiles.filter(task => {
                 // First priority: Check required_skills array for exact match
@@ -445,7 +479,12 @@ export default function TasksPage() {
                 return categoryMatch || subCategoryMatch
               })
             }
-          } else if (selectedCategory.startsWith('service-')) {
+          }
+        }
+
+        // Filter by category (services) if specified
+        if (selectedCategory !== 'all') {
+          if (selectedCategory.startsWith('service-')) {
             // Map dropdown values to actual service names
             const serviceMap: Record<string, string> = {
               'service-repairs': 'Home Repairs & Maintenance',
@@ -518,6 +557,13 @@ export default function TasksPage() {
           }
         }
 
+        // Sort by created_at descending (newest first) to ensure proper order
+        tasksWithProfiles.sort((a, b) => {
+          const dateA = new Date(a.created_at).getTime()
+          const dateB = new Date(b.created_at).getTime()
+          return dateB - dateA // Descending order (newest first)
+        })
+
         setTasks(tasksWithProfiles)
       } else {
         setTasks([])
@@ -562,6 +608,7 @@ export default function TasksPage() {
     setLoading(false)
     loadCategories()
     loadTags()
+    loadProfessions()
     loadTasks()
   }
 
@@ -617,10 +664,17 @@ export default function TasksPage() {
   }, [selectedCategory])
 
   useEffect(() => {
+    // Auto-show filters if any filter is active
+    if (searchTerm || selectedCategory !== 'all' || selectedSubCategory !== 'all' || selectedProfession !== 'all' || selectedSkill !== 'all' || minBudget || maxBudget || maxDistance || minimumRating || selectedTagIds.length > 0) {
+      setShowAllFilters(true)
+    }
+  }, [searchTerm, selectedCategory, selectedSubCategory, selectedProfession, selectedSkill, minBudget, maxBudget, maxDistance, minimumRating, selectedTagIds])
+
+  useEffect(() => {
     if (!loading) {
       loadTasks()
     }
-  }, [filter, selectedCategory, selectedSubCategory, selectedTagIds, selectedSkill, minBudget, maxBudget, searchTerm, showArchived, filterBySkills, maxDistance, minimumRating])
+  }, [filter, selectedCategory, selectedSubCategory, selectedProfession, selectedSkill, selectedTagIds, minBudget, maxBudget, searchTerm, showArchived, filterBySkills, maxDistance, minimumRating])
 
   useEffect(() => {
     if (!loading && userLocation !== null) {
@@ -921,49 +975,87 @@ export default function TasksPage() {
         </button>
       </div>
 
-      {/* Search Form - Hidden on mobile by default, always visible on desktop */}
-      <div className={`bg-white rounded-lg shadow mb-6 p-4 ${showSearchMobile ? 'block' : 'hidden'} md:block`}>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            loadTasks()
-            // Close search on mobile after submitting
-            if (window.innerWidth < 768) {
-              setShowSearchMobile(false)
-            }
-          }}
-          className="space-y-3"
-        >
-          {/* Compact Main Search Fields */}
-          <div className="grid gap-3 md:grid-cols-5">
-            {/* Search Bar */}
-            <input
-              type="text"
-              placeholder="Search tasks... (e.g., assemble furniture, clean house)"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
-            />
+      {/* Search Form - Hidden until required */}
+      <div className={`bg-white rounded-lg shadow mb-6 ${showSearchMobile ? 'block' : 'hidden'} md:block`}>
+        {!showAllFilters ? (
+          <button
+            type="button"
+            onClick={() => setShowAllFilters(true)}
+            className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 rounded-lg transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <span className="text-sm font-medium text-gray-700">Show search and filters</span>
+            </div>
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        ) : (
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-gray-700">Search and Filters</h3>
+              <button
+                type="button"
+                onClick={() => setShowAllFilters(false)}
+                className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+              >
+                <span>Hide</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                loadTasks()
+                // Close search on mobile after submitting
+                if (window.innerWidth < 768) {
+                  setShowSearchMobile(false)
+                }
+              }}
+              className="space-y-3"
+            >
+              {/* Compact Main Search Fields */}
+              <div className="grid gap-3 md:grid-cols-6">
+            {/* Search Keyword - Collapsible */}
+            {showSearchField ? (
+              <input
+                type="text"
+                placeholder="Search Keyword... (e.g., assemble furniture, clean house)"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onBlur={() => {
+                  if (!searchTerm) {
+                    setShowSearchField(false)
+                  }
+                }}
+                autoFocus
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowSearchField(true)}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Search Keyword
+              </button>
+            )}
 
-            {/* Category Dropdown */}
+            {/* Services Dropdown */}
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
             >
-              <option value="all">All categories</option>
-              <optgroup label="Skills">
-                <option value="skill-handyman">Handyman / Repairs</option>
-                <option value="skill-cleaning">Cleaning / Housekeeping</option>
-                <option value="skill-gardening">Gardening / Lawn Care</option>
-                <option value="skill-moving">Moving / Heavy Lifting</option>
-                <option value="skill-assembly">Furniture Assembly</option>
-                <option value="skill-delivery">Delivery / Errands</option>
-                <option value="skill-petcare">Pet Care / Dog Walking</option>
-                <option value="skill-childcare">Babysitting / Childcare</option>
-                <option value="skill-tech">Tech Support / Computer Help</option>
-                <option value="skill-tutoring">Tutoring / Teaching</option>
-              </optgroup>
+              <option value="all">All Services</option>
               <optgroup label="Services">
                 <option value="service-repairs">Home Repairs & Maintenance</option>
                 <option value="service-cleaning">Cleaning & Organising</option>
@@ -976,27 +1068,6 @@ export default function TasksPage() {
                 <option value="service-tutoring">Tutoring & Lessons</option>
                 <option value="service-assistance">Personal / Virtual Assistance</option>
               </optgroup>
-              <optgroup label="Professional Roles">
-                <option value="prof-hairdresser">Hairdresser / Barber</option>
-                <option value="prof-nailtech">Nail Technician / Manicurist</option>
-                <option value="prof-makeup">Makeup Artist / Beauty Consultant</option>
-                <option value="prof-massage">Massage Therapist / Physiotherapist</option>
-                <option value="prof-trainer">Personal Trainer / Fitness Coach</option>
-                <option value="prof-yoga">Yoga / Pilates Instructor</option>
-                <option value="prof-marketing">Marketing Consultant / Strategist</option>
-                <option value="prof-social">Social Media Manager</option>
-                <option value="prof-designer">Graphic Designer / Illustrator</option>
-                <option value="prof-developer">Web Developer / Front-End Developer</option>
-                <option value="prof-photographer">Photographer / Videographer</option>
-                <option value="prof-accountant">Accountant / Bookkeeper</option>
-                <option value="prof-lawyer">Lawyer / Legal Consultant</option>
-                <option value="prof-tutor">Tutor / Educational Coach</option>
-                <option value="prof-planner">Event Planner / Coordinator</option>
-                <option value="prof-chef">Chef / Personal Cook</option>
-                <option value="prof-writer">Copywriter / Content Writer</option>
-                <option value="prof-interior">Interior Designer / Home Stylist</option>
-                <option value="prof-it">IT Support / Tech Specialist</option>
-              </optgroup>
             </select>
 
             {/* Skills Dropdown */}
@@ -1005,10 +1076,29 @@ export default function TasksPage() {
               onChange={(e) => setSelectedSkill(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
             >
-              <option value="">All skills</option>
-              {STANDARD_SKILLS.map((skill) => (
-                <option key={skill} value={skill}>
-                  {skill}
+              <option value="all">All Skills</option>
+              <option value="skill-handyman">Handyman / Repairs</option>
+              <option value="skill-cleaning">Cleaning / Housekeeping</option>
+              <option value="skill-gardening">Gardening / Lawn Care</option>
+              <option value="skill-moving">Moving / Heavy Lifting</option>
+              <option value="skill-assembly">Furniture Assembly</option>
+              <option value="skill-delivery">Delivery / Errands</option>
+              <option value="skill-petcare">Pet Care / Dog Walking</option>
+              <option value="skill-childcare">Babysitting / Childcare</option>
+              <option value="skill-tech">Tech Support / Computer Help</option>
+              <option value="skill-tutoring">Tutoring / Teaching</option>
+            </select>
+
+            {/* Professions Dropdown */}
+            <select
+              value={selectedProfession}
+              onChange={(e) => setSelectedProfession(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
+            >
+              <option value="all">All Professions</option>
+              {professions.map((profession) => (
+                <option key={profession} value={profession}>
+                  {profession}
                 </option>
               ))}
             </select>
@@ -1062,24 +1152,6 @@ export default function TasksPage() {
                 </select>
               </div>
 
-              {/* Helper Type Filter */}
-              <div>
-                <label htmlFor="helperType" className="block text-xs font-medium text-gray-700 mb-1">
-                  Helper Type
-                </label>
-                <select
-                  id="helperType"
-                  value={helperType}
-                  onChange={(e) => setHelperType(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
-                >
-                  <option value="">All helpers welcome</option>
-                  <option value="professional">Professional experts</option>
-                  <option value="casual">Casual helpers</option>
-                </select>
-                <p className="mt-1 text-xs text-gray-500">Professionals and casual helpers both welcome!</p>
-              </div>
-
               {/* Rating Filter */}
               <div>
                 <label htmlFor="rating" className="block text-xs font-medium text-gray-700 mb-1">
@@ -1108,13 +1180,12 @@ export default function TasksPage() {
                 setSearchTerm('')
                 setSelectedCategory('all')
                 setSelectedSubCategory('all')
+                setSelectedProfession('all')
                 setMinBudget('')
                 setMaxBudget('')
                 setMaxDistance('')
-                setHelperType('')
                 setMinimumRating('')
                 setSelectedTagIds([])
-                setSelectedSkill('')
               }}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
@@ -1127,7 +1198,9 @@ export default function TasksPage() {
               Search / Apply Filters
             </button>
           </div>
-        </form>
+            </form>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">

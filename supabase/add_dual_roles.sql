@@ -41,3 +41,6 @@ COMMENT ON COLUMN profiles.is_helper IS 'User can browse tasks and submit bids';
 
 
 
+
+
+
