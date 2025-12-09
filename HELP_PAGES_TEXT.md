@@ -186,13 +186,10 @@ This document contains all the text from the Help Center pages for easy editing.
 - **Content:** Posters pay through our secure system. Taskers get paid after the task is confirmed as complete.
 
 **FAQ 2: Are there fees?**
-- **Content:** Yes, Taskorilla takes a small service fee. Taskers get the net amount displayed before accepting.
+- **Content:** Yes, Taskorilla takes a small service fee from the tasker, as of December 2025 that is €2 and 10% from the Helper/Professional.
 
 **FAQ 3: How do I get paid?**
 - **Content:** Add your bank or payment account in settings. Once a task is confirmed, we transfer funds automatically.
-
-**FAQ 4: What if a task isn't paid?**
-- **Content:** Contact support. We'll review the case and mediate if necessary.
 
 ### Safety Guide Category
 
@@ -305,11 +302,11 @@ Ask for reviews after every task. A high rating and positive feedback mean more 
 
 **Guide: Understanding Payments on Taskorilla**
 
-**Step 1: Add Your Payment Method**
-Go to 'Settings' > 'Payment Information.' Add your bank account or preferred payment method. This is required to receive payments as a Tasker.
+**Step 1: Add Your Payout Method**
+Go to 'Settings' > 'Payment Information.' Add your IBAN number. This is required to receive payments as a Helper or Professional.
 
 **Step 2: Understand Fees**
-Taskorilla takes a small service fee from each transaction. The fee is always shown upfront before you post or accept a task. Taskers see their net earnings before accepting.
+Taskorilla takes a small service fee from each transaction. As of December 2025, fees are €2 per task from the tasker and 10% fee from the Helper/Professional.
 
 **Step 3: Make or Receive Payment**
 
@@ -317,14 +314,11 @@ Taskorilla takes a small service fee from each transaction. The fee is always sh
 
 **For Taskers:** Once a task is marked complete and confirmed by the poster, payment is released to your account automatically.
 
-**Step 4: Track Your Payments**
-Check your dashboard for payment history, pending payments, and completed transactions. You'll receive email confirmations for every payment.
+**Step 4: Track Your Payments and Payouts**
+Check your dashboard for payment history, pending payments or payouts, and completed transactions. You'll receive email confirmations for every payment or payout.
 
-**Step 5: Withdrawals (For Taskers)**
-Payments are transferred to your linked account automatically after task confirmation. If there's a delay, check your payment method settings or contact support.
-
-**Step 6: Report Payment Issues**
-If a payment isn't received or there's a dispute, contact support at tee@taskorilla.com. We'll review the case and mediate if necessary.
+**Step 5: Payouts (for Helpers and Professionals)**
+Payments are transferred to your linked account automatically after task confirmation.
 
 **Guide: Disputes and Refunds**
 

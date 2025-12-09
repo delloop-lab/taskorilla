@@ -12,6 +12,7 @@ import UserProfileModal from '@/components/UserProfileModal'
 import TrafficTracker from '@/components/TrafficTracker'
 import { getPendingReviews } from '@/lib/review-utils'
 import { STANDARD_PROFESSIONS } from '@/lib/profession-constants'
+import ReportModal from '@/components/ReportModal'
 
 export default function TasksPage() {
   const router = useRouter()
@@ -50,6 +51,10 @@ export default function TasksPage() {
   const [showSearchMobile, setShowSearchMobile] = useState(false)
   const [showSearchField, setShowSearchField] = useState(false)
   const [showAllFilters, setShowAllFilters] = useState(false)
+  const [reportModalOpen, setReportModalOpen] = useState(false)
+  const [reportTargetId, setReportTargetId] = useState<string | null>(null)
+  const [reportTargetName, setReportTargetName] = useState<string | null>(null)
+  const [reportType, setReportType] = useState<'task' | 'user'>('task')
 
   const loadCategories = async () => {
     try {
@@ -215,10 +220,12 @@ export default function TasksPage() {
           query = query.eq('created_by', '00000000-0000-0000-0000-000000000000')
         }
       } else if (filter === 'new') {
-        // Show tasks created in the last 2 weeks
+        // Show open tasks created in the last 2 weeks
         const twoWeeksAgo = new Date()
         twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
-        query = query.gte('created_at', twoWeeksAgo.toISOString())
+        query = query
+          .eq('status', 'open')
+          .gte('created_at', twoWeeksAgo.toISOString())
       }
 
       // For filters other than 'my_tasks', hide tasks that are assigned to helpers
@@ -799,7 +806,7 @@ export default function TasksPage() {
                             <img
                               src={review.other_user_avatar}
                               alt={review.other_user_name || 'User'}
-                              className="h-8 w-8 rounded-full object-cover"
+                              className="h-8 w-8 rounded-full object-cover object-center"
                             />
                           ) : (
                             <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-semibold text-gray-600">
@@ -842,28 +849,28 @@ export default function TasksPage() {
         </div>
       )}
 
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Tasks</h1>
-        <div className="flex gap-3">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Tasks</h1>
+        <div className="flex gap-2 sm:gap-3 flex-wrap">
           <Link
             href="/tasks/map"
-            className="bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
+            className="bg-gray-600 text-white px-3 sm:px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
           >
             Map View
           </Link>
           <Link
             href="/tasks/new"
-            className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
+            className="bg-primary-600 text-white px-3 sm:px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
           >
             Post New Task
           </Link>
         </div>
       </div>
 
-      <div className="mb-6 flex space-x-4 items-center">
+      <div className="mb-6 flex flex-wrap gap-2 sm:gap-4 items-center">
         <button
           onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-md text-sm font-medium ${
+          className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium ${
             filter === 'all'
               ? 'bg-primary-600 text-white'
               : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -874,7 +881,7 @@ export default function TasksPage() {
         <div className="relative group">
           <button
             onClick={() => setFilter('open')}
-            className={`px-4 py-2 rounded-md text-sm font-medium ${
+            className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium ${
               filter === 'open'
                 ? 'bg-primary-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -893,16 +900,16 @@ export default function TasksPage() {
           <div className="relative group">
             <button
               onClick={() => setFilter('my_tasks')}
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                filter === 'my_tasks'
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              My Tasks
-            </button>
+            className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium ${
+              filter === 'my_tasks'
+                ? 'bg-primary-600 text-white'
+                : 'bg-white text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            My Tasks
+          </button>
             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-              Your Open Tasks
+              Your Tasks
               <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
                 <div className="border-4 border-transparent border-t-gray-900"></div>
               </div>
@@ -918,7 +925,7 @@ export default function TasksPage() {
                 setFilter('new')
               }
             }}
-            className={`px-4 py-2 rounded-md text-sm font-medium ${
+            className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium ${
               filter === 'new'
                 ? 'bg-primary-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -981,15 +988,15 @@ export default function TasksPage() {
           <button
             type="button"
             onClick={() => setShowAllFilters(true)}
-            className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 rounded-lg transition-colors"
+            className="w-full p-4 flex items-center justify-between bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
           >
             <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
               </svg>
-              <span className="text-sm font-medium text-gray-700">Show search and filters</span>
+              <span className="text-sm font-medium">Show Filters</span>
             </div>
-            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </button>
@@ -1335,7 +1342,7 @@ export default function TasksPage() {
                           <img
                             src={task.user.avatar_url}
                             alt={task.user.full_name || task.user.email}
-                            className="w-7 h-7 rounded-full object-cover"
+                            className="w-7 h-7 aspect-square rounded-full object-cover object-center flex-shrink-0"
                           />
                         )}
                         <span className="font-medium">by {task.user.full_name || task.user.email}</span>
@@ -1455,6 +1462,28 @@ export default function TasksPage() {
                   </div>
                 )}
 
+                {/* Report Button - Only show if user is logged in and not the task owner */}
+                {currentUserId && task.created_by !== currentUserId && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setReportTargetId(task.id)
+                      setReportTargetName(task.title)
+                      setReportType('task')
+                      setReportModalOpen(true)
+                    }}
+                    className="flex items-center gap-1.5 text-red-600 hover:text-red-700 font-medium text-sm transition-colors"
+                    title="Report this task"
+                    aria-label="Report this task"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span>Report</span>
+                  </button>
+                )}
+
                 {task.willing_to_help && (
                   <div className="flex items-center gap-1.5">
                     <span className="text-gray-500">🤝</span>
@@ -1526,6 +1555,24 @@ export default function TasksPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Report Modal */}
+      {reportTargetId && (
+        <ReportModal
+          isOpen={reportModalOpen}
+          onClose={() => {
+            setReportModalOpen(false)
+            setReportTargetId(null)
+            setReportTargetName(null)
+          }}
+          reportType={reportType}
+          targetId={reportTargetId}
+          targetName={reportTargetName || undefined}
+          onReportSubmitted={() => {
+            // Optionally refresh data or show success message
+          }}
+        />
       )}
     </div>
   )

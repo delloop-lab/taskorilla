@@ -81,7 +81,31 @@ export default function SuperadminDashboard() {
   const [traffic, setTraffic] = useState<Traffic[]>([])
   const [dailyTraffic, setDailyTraffic] = useState<DailyTraffic[]>([])
   const [trafficDays, setTrafficDays] = useState<number>(30)
-  const [tab, setTab] = useState<'users' | 'tasks' | 'stats' | 'revenue' | 'email' | 'traffic' | 'email_logs' | 'settings'>('users')
+  const [tab, setTab] = useState<'users' | 'tasks' | 'stats' | 'revenue' | 'email' | 'traffic' | 'email_logs' | 'settings' | 'reports'>('users')
+  const [reports, setReports] = useState<any[]>([])
+  const [loadingReports, setLoadingReports] = useState(false)
+  const [deletingReportId, setDeletingReportId] = useState<string | null>(null)
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false)
+  const [reportToDelete, setReportToDelete] = useState<string | null>(null)
+  const [showDeleteErrorModal, setShowDeleteErrorModal] = useState(false)
+  const [deleteErrorMessage, setDeleteErrorMessage] = useState<string>('')
+  
+  // Use a ref to track modal state to avoid closure issues
+  const showDeleteConfirmModalRef = useRef(false)
+  const reportToDeleteRef = useRef<string | null>(null)
+  
+  // Sync refs with state
+  useEffect(() => {
+    showDeleteConfirmModalRef.current = showDeleteConfirmModal
+    reportToDeleteRef.current = reportToDelete
+    console.log('🔴 [STATE SYNC] Updated refs - showDeleteConfirmModal:', showDeleteConfirmModal, 'reportToDelete:', reportToDelete)
+  }, [showDeleteConfirmModal, reportToDelete])
+
+  // Debug logging for modal state
+  useEffect(() => {
+    console.log('🔴 [MODAL STATE] showDeleteConfirmModal changed to:', showDeleteConfirmModal)
+    console.log('🔴 [MODAL STATE] reportToDelete:', reportToDelete)
+  }, [showDeleteConfirmModal, reportToDelete])
   const [emailLogs, setEmailLogs] = useState<any[]>([])
   const [emailMessage, setEmailMessage] = useState('')
   const [emailRecipient, setEmailRecipient] = useState('')
@@ -204,32 +228,42 @@ export default function SuperadminDashboard() {
       fetchTraffic()
       fetchEmailLogs()
       fetchPlatformSettings()
-      
-      // Setup subscriptions and store channel references
-      usersChannelRef.current = supabase
-        .channel('admin-users-channel')
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'profiles' 
-        }, () => {
-          fetchUsers()
-        })
-        .subscribe()
-
-      tasksChannelRef.current = supabase
-        .channel('admin-tasks-channel')
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'tasks' 
-        }, () => {
-          fetchTasks()
-        })
-        .subscribe()
+      fetchReports()
     }
-
+    
     checkRole()
+  }, [])
+
+  // Debug logging for modal state
+  useEffect(() => {
+    console.log('🔴 [MODAL STATE] showDeleteConfirmModal:', showDeleteConfirmModal)
+    console.log('🔴 [MODAL STATE] reportToDelete:', reportToDelete)
+    console.log('🔴 [MODAL STATE] showDeleteErrorModal:', showDeleteErrorModal)
+  }, [showDeleteConfirmModal, reportToDelete, showDeleteErrorModal])
+
+  useEffect(() => {
+    // Setup subscriptions and store channel references
+    usersChannelRef.current = supabase
+      .channel('admin-users-channel')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'profiles' 
+      }, () => {
+        fetchUsers()
+      })
+      .subscribe()
+
+    tasksChannelRef.current = supabase
+      .channel('admin-tasks-channel')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'tasks' 
+      }, () => {
+        fetchTasks()
+      })
+      .subscribe()
 
     return () => {
       // Clean up subscriptions
@@ -243,6 +277,21 @@ export default function SuperadminDashboard() {
       }
     }
   }, [router])
+
+  const loadCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .is('parent_id', null)
+        .order('name')
+
+      if (error) throw error
+      // Categories are loaded but not stored in state in admin page
+    } catch (error) {
+      console.error('Error loading categories:', error)
+    }
+  }
 
   async function fetchUsers() {
     const { data, error } = await supabase
@@ -267,6 +316,278 @@ export default function SuperadminDashboard() {
       console.error('Error fetching tasks:', error)
     } else if (data) {
       setTasks(data)
+    }
+  }
+
+  async function fetchReports() {
+    setLoadingReports(true)
+    try {
+      // Fetch reports first
+      const { data: reportsData, error: reportsError } = await supabase
+        .from('reports')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (reportsError) {
+        console.error('Error fetching reports:', reportsError)
+        setReports([])
+        return
+      }
+
+      if (!reportsData || reportsData.length === 0) {
+        setReports([])
+        return
+      }
+
+      // Get unique IDs for related data
+      const reporterIds = [...new Set(reportsData.map(r => r.reported_by).filter(Boolean))]
+      const taskIds = [...new Set(reportsData.filter(r => r.task_id).map(r => r.task_id).filter(Boolean))]
+      const userIds = [...new Set(reportsData.filter(r => r.reported_user_id).map(r => r.reported_user_id).filter(Boolean))]
+      const reviewerIds = [...new Set(reportsData.filter(r => r.reviewed_by).map(r => r.reviewed_by).filter(Boolean))]
+
+      // Fetch related data in parallel
+      const [reportersResult, tasksResult, usersResult, reviewersResult] = await Promise.all([
+        reporterIds.length > 0 ? supabase.from('profiles').select('id, email, full_name').in('id', reporterIds) : { data: [], error: null },
+        taskIds.length > 0 ? supabase.from('tasks').select('id, title').in('id', taskIds) : { data: [], error: null },
+        userIds.length > 0 ? supabase.from('profiles').select('id, email, full_name').in('id', userIds) : { data: [], error: null },
+        reviewerIds.length > 0 ? supabase.from('profiles').select('id, email, full_name').in('id', reviewerIds) : { data: [], error: null }
+      ])
+
+      // Combine reports with related data
+      const reportsWithData = reportsData.map(report => ({
+        ...report,
+        reporter: reportersResult.data?.find(p => p.id === report.reported_by),
+        reported_task: tasksResult.data?.find(t => t.id === report.task_id),
+        reported_user: usersResult.data?.find(u => u.id === report.reported_user_id),
+        reviewer: reviewersResult.data?.find(r => r.id === report.reviewed_by)
+      }))
+
+      setReports(reportsWithData)
+    } catch (error) {
+      console.error('Error fetching reports:', error)
+      setReports([])
+    } finally {
+      setLoadingReports(false)
+    }
+  }
+
+  const handleDeleteClick = (reportId: string, e?: React.MouseEvent) => {
+    console.log('🔴 [DELETE] ========== DELETE BUTTON CLICKED ==========')
+    console.log('🔴 [DELETE] Event object:', e)
+    console.log('🔴 [DELETE] ReportId:', reportId)
+    console.log('🔴 [DELETE] Current showDeleteConfirmModal state:', showDeleteConfirmModal)
+    console.log('🔴 [DELETE] Current reportToDelete:', reportToDelete)
+    
+    // CRITICAL: Prevent any default behavior or event propagation
+    if (e) {
+      console.log('🔴 [DELETE] Event details - type:', e.type, 'target:', e.target, 'currentTarget:', e.currentTarget)
+      e.preventDefault()
+      e.stopPropagation()
+      if (e.nativeEvent) {
+        e.nativeEvent.stopImmediatePropagation()
+        e.nativeEvent.preventDefault()
+      }
+      console.log('🔴 [DELETE] Event prevented and stopped')
+    }
+    
+    // CRITICAL: Don't proceed if modal is already open
+    if (showDeleteConfirmModal) {
+      console.log('🔴 [DELETE] Modal already open, ignoring click')
+      return
+    }
+    
+    console.log('🔴 [DELETE] Setting reportToDelete to:', reportId)
+    // Use functional update to ensure we get the latest state
+    setReportToDelete(reportId)
+    reportToDeleteRef.current = reportId
+    
+    console.log('🔴 [DELETE] Setting showDeleteConfirmModal to: true')
+    // Use functional update to ensure state is set correctly
+    setShowDeleteConfirmModal((prev) => {
+      console.log('🔴 [DELETE] setShowDeleteConfirmModal called, prev value:', prev)
+      if (prev) {
+        console.log('🔴 [DELETE] ⚠️ WARNING: Modal was already true!')
+      }
+      return true
+    })
+    showDeleteConfirmModalRef.current = true
+    
+    console.log('🔴 [DELETE] Refs updated - showDeleteConfirmModalRef:', showDeleteConfirmModalRef.current, 'reportToDeleteRef:', reportToDeleteRef.current)
+    
+    // CRITICAL: Verify state was actually set after a microtask
+    Promise.resolve().then(() => {
+      console.log('🔴 [DELETE] ========== STATE VERIFICATION (after microtask) ==========')
+      console.log('🔴 [DELETE] showDeleteConfirmModalRef (after microtask):', showDeleteConfirmModalRef.current)
+      console.log('🔴 [DELETE] reportToDeleteRef (after microtask):', reportToDeleteRef.current)
+    })
+    
+    // Verify state was set - use refs to avoid closure issues
+    const stateCheckInterval = setInterval(() => {
+      // Read from refs to get current values, not closure values
+      const currentModalState = showDeleteConfirmModalRef.current
+      const currentReportId = reportToDeleteRef.current
+      const modalInDOM = !!document.querySelector('[data-modal="standard-modal"]')
+      
+      console.log('🔴 [DELETE] ========== STATE CHECK (using refs) ==========')
+      console.log('🔴 [DELETE] showDeleteConfirmModal (ref):', currentModalState)
+      console.log('🔴 [DELETE] reportToDelete (ref):', currentReportId)
+      console.log('🔴 [DELETE] Modal in DOM:', modalInDOM)
+      
+      if (!currentModalState && modalInDOM) {
+        console.error('🔴 [DELETE] ⚠️ STATE MISMATCH: Ref is false but modal is in DOM!')
+        console.error('🔴 [DELETE] This suggests state was reset but portal kept modal visible')
+        console.error('🔴 [DELETE] Forcing modal to stay visible by resetting state...')
+        // Force the modal to stay open
+        setShowDeleteConfirmModal(true)
+        setReportToDelete(reportId)
+      }
+      
+      if (!modalInDOM && currentModalState) {
+        console.error('🔴 [DELETE] ⚠️ STATE MISMATCH: Ref is true but modal is NOT in DOM!')
+      }
+    }, 100)
+    
+    // Clear interval after 3 seconds
+    setTimeout(() => clearInterval(stateCheckInterval), 3000)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!reportToDelete) {
+      console.error('handleDeleteConfirm called but reportToDelete is null')
+      return
+    }
+
+    console.log('Delete confirmed for report:', reportToDelete)
+    // Don't close the modal immediately - let it stay open during deletion
+    // The modal will be closed in the finally block or on error
+    setDeletingReportId(reportToDelete)
+    
+    try {
+      // First, verify the report exists and check its status
+      const reportToDeleteObj = reports.find(r => r.id === reportToDelete)
+      
+      if (!reportToDeleteObj) {
+        setShowDeleteConfirmModal(false)
+        setDeleteErrorMessage('Report not found in the list.')
+        setShowDeleteErrorModal(true)
+        setDeletingReportId(null)
+        setReportToDelete(null)
+        return
+      }
+
+      // Check if report status allows deletion (must be resolved or dismissed)
+      if (reportToDeleteObj.status !== 'resolved' && reportToDeleteObj.status !== 'dismissed') {
+        setShowDeleteConfirmModal(false)
+        setDeleteErrorMessage(`Cannot delete report with status "${reportToDeleteObj.status}". Only resolved or dismissed reports can be deleted.`)
+        setShowDeleteErrorModal(true)
+        setDeletingReportId(null)
+        setReportToDelete(null)
+        return
+      }
+
+      // Verify current user is admin and get session
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      
+      if (authError || !user) {
+        setShowDeleteConfirmModal(false)
+        setDeleteErrorMessage('Authentication error. Please log in again.')
+        setShowDeleteErrorModal(true)
+        setDeletingReportId(null)
+        setReportToDelete(null)
+        return
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError || !profile) {
+        console.error('Error fetching profile:', profileError)
+        setShowDeleteConfirmModal(false)
+        setDeleteErrorMessage('Unable to verify your permissions. Please try again.')
+        setShowDeleteErrorModal(true)
+        setDeletingReportId(null)
+        setReportToDelete(null)
+        return
+      }
+
+      if (profile.role !== 'admin' && profile.role !== 'superadmin') {
+        setShowDeleteConfirmModal(false)
+        setDeleteErrorMessage('You do not have permission to delete reports. Admin access required.')
+        setShowDeleteErrorModal(true)
+        setDeletingReportId(null)
+        setReportToDelete(null)
+        return
+      }
+
+      // Log debug info
+      console.log('Attempting to delete report:', {
+        reportId: reportToDelete,
+        reportStatus: reportToDeleteObj.status,
+        userId: user.id,
+        userRole: profile.role
+      })
+
+      // Attempt deletion
+      const { data, error } = await supabase
+        .from('reports')
+        .delete()
+        .eq('id', reportToDelete)
+        .select()
+
+      if (error) {
+        console.error('Error deleting report:', error)
+        console.error('Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        })
+        
+        // Provide more specific error message based on error code
+        let errorMsg = error.message || 'Failed to delete report'
+        if (error.code === '42501') {
+          errorMsg = 'Permission denied. Please ensure you are logged in as an admin and the report status is "resolved" or "dismissed".'
+        } else if (error.code === 'PGRST116') {
+          errorMsg = 'Report not found. It may have already been deleted.'
+        }
+        
+        setShowDeleteConfirmModal(false)
+        setDeleteErrorMessage(errorMsg)
+        setShowDeleteErrorModal(true)
+        setDeletingReportId(null)
+        setReportToDelete(null)
+        return
+      }
+
+      // Verify deletion was successful
+      if (!data || data.length === 0) {
+        console.error('No rows deleted - RLS policy may be blocking deletion')
+        console.error('Report details:', reportToDeleteObj)
+        setShowDeleteConfirmModal(false)
+        setDeleteErrorMessage('Failed to delete report. The deletion was blocked by security policy. Please ensure: 1) Report status is "resolved" or "dismissed", 2) You have admin/superadmin role.')
+        setShowDeleteErrorModal(true)
+        setDeletingReportId(null)
+        setReportToDelete(null)
+        return
+      }
+
+      console.log('Successfully deleted report:', data)
+
+      // Successfully deleted - close confirmation modal and remove from local state
+      setShowDeleteConfirmModal(false)
+      setReports(reports.filter(r => r.id !== reportToDelete))
+      
+    } catch (error: any) {
+      console.error('Error deleting report:', error)
+      setShowDeleteConfirmModal(false)
+      setDeleteErrorMessage(error.message || 'Failed to delete report. Please try again.')
+      setShowDeleteErrorModal(true)
+    } finally {
+      setDeletingReportId(null)
+      setReportToDelete(null)
     }
   }
 
@@ -858,17 +1179,17 @@ export default function SuperadminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-10">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 md:p-10">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-gray-900">Superadmin Dashboard</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-gray-900">Superadmin Dashboard</h1>
 
         {/* Tabs */}
-        <div className="mb-6 flex flex-wrap gap-2">
-          {(['users', 'tasks', 'stats', 'revenue', 'email', 'traffic', 'email_logs', 'settings'] as const).map(t => (
+        <div className="mb-4 sm:mb-6 flex flex-wrap gap-2">
+          {(['users', 'tasks', 'reports', 'stats', 'revenue', 'email', 'traffic', 'email_logs', 'settings'] as const).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg font-medium transition-colors ${
                 tab === t
                   ? 'bg-blue-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
@@ -881,10 +1202,10 @@ export default function SuperadminDashboard() {
 
         {/* Users Tab */}
         {tab === 'users' && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">Users ({users.length})</h2>
-              <div className="flex items-center gap-2">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
+              <h2 className="text-lg sm:text-xl font-semibold">Users ({users.length})</h2>
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={selectAllUsers}
                   className="text-sm text-blue-600 hover:text-blue-700 px-3 py-1"
@@ -902,7 +1223,7 @@ export default function SuperadminDashboard() {
 
             {/* Actions Toolbar */}
             {selectedUserIds.size > 0 && (
-              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="mb-4 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-medium text-gray-700">
                     {selectedUserIds.size} user{selectedUserIds.size !== 1 ? 's' : ''} selected:
@@ -915,11 +1236,11 @@ export default function SuperadminDashboard() {
                   {selectedUserIds.size > 3 && (
                     <span className="text-xs text-gray-500">+{selectedUserIds.size - 3} more</span>
                   )}
-                  <div className="ml-auto flex gap-2">
+                  <div className="ml-auto flex gap-2 flex-wrap">
                     {getSelectedUsers().some(u => u.is_helper) && getSelectedUsers().filter(u => u.is_helper).length === 1 && (
                       <button
                         onClick={() => openBadgeManager()}
-                        className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded text-sm font-medium"
+                        className="bg-amber-500 hover:bg-amber-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-medium"
                       >
                         🏅 Manage Badges
                       </button>
@@ -933,7 +1254,7 @@ export default function SuperadminDashboard() {
                           }
                           clearSelection()
                         }}
-                        className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded text-sm font-medium"
+                        className="bg-purple-500 hover:bg-purple-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-medium"
                       >
                         ⭐ {getSelectedUsers().filter(u => u.is_helper && u.is_featured).length === getSelectedUsers().filter(u => u.is_helper).length ? 'Unfeature' : 'Feature'} ({getSelectedUsers().filter(u => u.is_helper).length})
                       </button>
@@ -947,7 +1268,7 @@ export default function SuperadminDashboard() {
                           }
                           clearSelection()
                         }}
-                        className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm font-medium"
+                        className="bg-green-500 hover:bg-green-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-medium"
                       >
                         ⬆ Promote to Admin ({getSelectedUsers().filter(u => u.role === 'user').length})
                       </button>
@@ -961,7 +1282,7 @@ export default function SuperadminDashboard() {
                           }
                           clearSelection()
                         }}
-                        className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-medium"
+                        className="bg-gray-500 hover:bg-gray-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-medium"
                       >
                         ⬇ Demote to User ({getSelectedUsers().filter(u => u.role === 'admin').length})
                       </button>
@@ -974,7 +1295,7 @@ export default function SuperadminDashboard() {
                         }
                         clearSelection()
                       }}
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium"
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-medium"
                     >
                       ✉ Send Profile Link ({selectedUserIds.size})
                     </button>
@@ -1008,11 +1329,11 @@ export default function SuperadminDashboard() {
               </div>
             )}
 
-            <div className="overflow-x-auto overflow-y-visible">
+            <div className="overflow-x-auto overflow-y-visible -mx-4 sm:mx-0">
               <table className="min-w-full border border-gray-300" style={{ position: 'relative' }}>
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="border px-4 py-2 text-left w-12">
+                    <th className="border px-2 sm:px-4 py-2 text-left w-12">
                       <input
                         type="checkbox"
                         checked={selectedUserIds.size === users.length && users.length > 0}
@@ -1026,11 +1347,11 @@ export default function SuperadminDashboard() {
                         className="w-4 h-4"
                       />
                     </th>
-                    <th className="border px-4 py-2 text-left">Email</th>
-                    <th className="border px-4 py-2 text-left">Name</th>
-                    <th className="border px-4 py-2 text-left">Role</th>
-                    <th className="border px-4 py-2 text-left">Helper Badges</th>
-                    <th className="border px-4 py-2 text-left">Featured</th>
+                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Email</th>
+                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden sm:table-cell">Name</th>
+                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Role</th>
+                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden md:table-cell">Helper Badges</th>
+                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden lg:table-cell">Featured</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1039,7 +1360,7 @@ export default function SuperadminDashboard() {
                       key={u.id} 
                       className={`hover:bg-gray-50 ${selectedUserIds.has(u.id) ? 'bg-blue-50' : ''}`}
                     >
-                      <td className="border px-4 py-2">
+                      <td className="border px-2 sm:px-4 py-2">
                         <input
                           type="checkbox"
                           checked={selectedUserIds.has(u.id)}
@@ -1047,9 +1368,11 @@ export default function SuperadminDashboard() {
                           className="w-4 h-4"
                         />
                       </td>
-                      <td className="border px-4 py-2">{u.email}</td>
-                      <td className="border px-4 py-2">{u.full_name || 'N/A'}</td>
-                      <td className="border px-4 py-2">
+                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
+                        <div className="truncate max-w-[150px] sm:max-w-none" title={u.email}>{u.email}</div>
+                      </td>
+                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden sm:table-cell">{u.full_name || 'N/A'}</td>
+                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
                         <span className={`px-2 py-1 rounded text-xs font-semibold ${
                           u.role === 'superadmin' ? 'bg-purple-100 text-purple-800' :
                           u.role === 'admin' ? 'bg-blue-100 text-blue-800' :
@@ -1058,7 +1381,7 @@ export default function SuperadminDashboard() {
                           {u.role}
                         </span>
                       </td>
-                      <td className="border px-4 py-2">
+                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden md:table-cell">
                         {u.is_helper ? (
                           <div className="flex flex-wrap gap-1">
                             {u.badges && u.badges.length > 0 ? (
@@ -1093,11 +1416,11 @@ export default function SuperadminDashboard() {
                           <span className="text-xs text-gray-400">Not a helper</span>
                         )}
                       </td>
-                      <td className="border px-4 py-2">
+                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden lg:table-cell">
                         {u.is_helper ? (
                           <button
                             onClick={() => toggleFeatured(u.id, u.is_featured || false)}
-                            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                            className={`px-2 sm:px-3 py-1 rounded text-xs font-medium transition-colors ${
                               u.is_featured
                                 ? 'bg-purple-500 text-white hover:bg-purple-600'
                                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -1204,7 +1527,7 @@ export default function SuperadminDashboard() {
 
         {/* Tasks Tab */}
         {tab === 'tasks' && (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">
                 Tasks ({taskSearchTerm ? tasks.filter(t => 
@@ -1382,16 +1705,16 @@ export default function SuperadminDashboard() {
                 )}
               </div>
             )}
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
               <table className="min-w-full border border-gray-300">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="border px-4 py-2 text-left">Title</th>
-                    <th className="border px-4 py-2 text-left">Status</th>
-                    <th className="border px-4 py-2 text-left">Assigned To</th>
-                    <th className="border px-4 py-2 text-left">Created</th>
-                    <th className="border px-4 py-2 text-left">Visibility</th>
-                    <th className="border px-4 py-2 text-left">Actions</th>
+                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Title</th>
+                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Status</th>
+                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden md:table-cell">Assigned To</th>
+                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden lg:table-cell">Created</th>
+                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden sm:table-cell">Visibility</th>
+                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1409,13 +1732,13 @@ export default function SuperadminDashboard() {
                     })
                     .map(t => (
                     <tr key={t.id} className={`hover:bg-gray-50 ${t.hidden_by_admin ? 'bg-red-50' : ''}`}>
-                      <td className="border px-4 py-2">
+                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
                         {t.hidden_by_admin && (
                           <span className="text-red-600 font-semibold mr-2">🔒</span>
                         )}
-                        {t.title}
+                        <div className="truncate max-w-[200px] sm:max-w-none" title={t.title}>{t.title}</div>
                       </td>
-                      <td className="border px-4 py-2">
+                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
                         <span className={`px-2 py-1 rounded text-xs font-semibold ${
                           t.status === 'completed' ? 'bg-green-100 text-green-800' :
                           t.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
@@ -1425,27 +1748,29 @@ export default function SuperadminDashboard() {
                           {t.status}
                         </span>
                       </td>
-                      <td className="border px-4 py-2">
+                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden md:table-cell">
                         {t.assigned_to ? (
-                          users.find(u => u.id === t.assigned_to)?.email || t.assigned_to
+                          <div className="truncate max-w-[150px]" title={users.find(u => u.id === t.assigned_to)?.email || t.assigned_to}>
+                            {users.find(u => u.id === t.assigned_to)?.email || t.assigned_to}
+                          </div>
                         ) : (
                           'Unassigned'
                         )}
                       </td>
-                      <td className="border px-4 py-2 text-sm text-gray-600">
+                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-600 hidden lg:table-cell">
                         {new Date(t.created_at).toLocaleDateString()}
                       </td>
-                      <td className="border px-4 py-2">
+                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden sm:table-cell">
                         {t.hidden_by_admin ? (
-                          <span className="text-red-600 text-sm font-medium">Hidden</span>
+                          <span className="text-red-600 text-xs sm:text-sm font-medium">Hidden</span>
                         ) : (
-                          <span className="text-green-600 text-sm font-medium">Visible</span>
+                          <span className="text-green-600 text-xs sm:text-sm font-medium">Visible</span>
                         )}
                         {t.hidden_reason && (
-                          <div className="text-xs text-gray-500 mt-1">Reason: {t.hidden_reason}</div>
+                          <div className="text-xs text-gray-500 mt-1 truncate max-w-[150px]" title={`Reason: ${t.hidden_reason}`}>Reason: {t.hidden_reason}</div>
                         )}
                       </td>
-                      <td className="border px-4 py-2">
+                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
                         {t.hidden_by_admin ? (
                           <button
                             onClick={async () => {
@@ -1561,7 +1886,7 @@ export default function SuperadminDashboard() {
 
         {/* Stats Tab */}
         {tab === 'stats' && (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <h2 className="text-2xl font-bold mb-6">Comprehensive Analytics Dashboard</h2>
 
             {/* Key Metrics */}
@@ -1835,7 +2160,7 @@ export default function SuperadminDashboard() {
 
         {/* Revenue Tab */}
         {tab === 'revenue' && (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <h2 className="text-2xl font-bold mb-6">Revenue Dashboard</h2>
 
             {/* Revenue Summary Cards */}
@@ -2025,7 +2350,7 @@ export default function SuperadminDashboard() {
 
         {/* Email Tab */}
         {tab === 'email' && (
-          <div className="bg-white rounded-lg shadow p-6 max-w-2xl">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-2xl">
             <h2 className="text-xl font-semibold mb-4">Send Email</h2>
             <div className="space-y-4">
               <div>
@@ -2506,7 +2831,7 @@ export default function SuperadminDashboard() {
 
         {/* Email Logs Tab */}
         {tab === 'email_logs' && (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <h2 className="text-xl font-semibold mb-4">Email Logs ({emailLogs.length})</h2>
             <div className="mb-4">
               <button
@@ -2517,39 +2842,44 @@ export default function SuperadminDashboard() {
               </button>
             </div>
             {emailLogs.length > 0 ? (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
                 <table className="min-w-full border border-gray-300">
                   <thead className="bg-gray-100">
                     <tr>
-                      <th className="border px-4 py-2 text-left">Date</th>
-                      <th className="border px-4 py-2 text-left">Recipient</th>
-                      <th className="border px-4 py-2 text-left">Subject</th>
-                      <th className="border px-4 py-2 text-left">Type</th>
-                      <th className="border px-4 py-2 text-left">Status</th>
-                      <th className="border px-4 py-2 text-left">Error</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Date</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden md:table-cell">Recipient</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Subject</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden lg:table-cell">Type</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Status</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden xl:table-cell">Error</th>
                     </tr>
                   </thead>
                   <tbody>
                     {emailLogs.map((log) => (
                       <tr key={log.id} className="hover:bg-gray-50">
-                        <td className="border px-4 py-2 text-sm">
-                          {new Date(log.created_at).toLocaleString()}
+                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
+                          <div className="flex flex-col">
+                            <span>{new Date(log.created_at).toLocaleDateString()}</span>
+                            <span className="text-xs text-gray-500">{new Date(log.created_at).toLocaleTimeString()}</span>
+                          </div>
                         </td>
-                        <td className="border px-4 py-2">
+                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden md:table-cell">
                           <div>
-                            <div className="font-medium">{log.recipient_email}</div>
+                            <div className="font-medium truncate max-w-[200px]" title={log.recipient_email}>{log.recipient_email}</div>
                             {log.recipient_name && (
-                              <div className="text-xs text-gray-500">{log.recipient_name}</div>
+                              <div className="text-xs text-gray-500 truncate max-w-[200px]" title={log.recipient_name}>{log.recipient_name}</div>
                             )}
                           </div>
                         </td>
-                        <td className="border px-4 py-2">{log.subject}</td>
-                        <td className="border px-4 py-2">
+                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
+                          <div className="truncate max-w-[200px] sm:max-w-none" title={log.subject}>{log.subject}</div>
+                        </td>
+                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden lg:table-cell">
                           <span className="px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-800">
                             {log.email_type}
                           </span>
                         </td>
-                        <td className="border px-4 py-2">
+                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
                           <span className={`px-2 py-1 rounded text-xs font-semibold ${
                             log.status === 'sent' ? 'bg-green-100 text-green-800' :
                             log.status === 'failed' ? 'bg-red-100 text-red-800' :
@@ -2558,8 +2888,8 @@ export default function SuperadminDashboard() {
                             {log.status}
                           </span>
                         </td>
-                        <td className="border px-4 py-2 text-sm text-red-600">
-                          {log.error_message || '-'}
+                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm text-red-600 hidden xl:table-cell">
+                          <div className="truncate max-w-[200px]" title={log.error_message || '-'}>{log.error_message || '-'}</div>
                         </td>
                       </tr>
                     ))}
@@ -2572,9 +2902,213 @@ export default function SuperadminDashboard() {
           </div>
         )}
 
+        {/* Reports Tab */}
+        {tab === 'reports' && (
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
+              <h2 className="text-lg sm:text-xl font-semibold">
+                Reports ({reports.length})
+              </h2>
+              <button
+                onClick={fetchReports}
+                disabled={loadingReports}
+                className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              >
+                {loadingReports ? 'Loading...' : 'Refresh'}
+              </button>
+            </div>
+
+            {loadingReports ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-2 text-gray-600">Loading reports...</p>
+              </div>
+            ) : reports.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No reports found.
+              </div>
+            ) : (
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reported By</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Target</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Reason</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Date</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {reports.map((report) => (
+                      <tr key={report.id} className="hover:bg-gray-50">
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap">
+                          <span className={`px-2 py-1 text-xs font-medium rounded ${
+                            report.report_type === 'task' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                          }`}>
+                            {report.report_type === 'task' ? 'Task' : 'User'}
+                          </span>
+                        </td>
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                          <div className="truncate max-w-[120px] sm:max-w-none" title={report.reporter?.full_name || report.reporter?.email || 'Unknown'}>
+                            {report.reporter?.full_name || report.reporter?.email || 'Unknown'}
+                          </div>
+                        </td>
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900 hidden sm:table-cell">
+                          {report.report_type === 'task' ? (
+                            report.reported_task ? (
+                              <a href={`/tasks/${report.reported_task.id}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate block max-w-xs">
+                                {report.reported_task.title}
+                              </a>
+                            ) : 'Task not found'
+                          ) : (
+                            report.reported_user ? (
+                              <a href={`/helper/${report.reported_user.id}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate block max-w-xs">
+                                {report.reported_user.full_name || report.reported_user.email || 'Unknown User'}
+                              </a>
+                            ) : 'User not found'
+                          )}
+                        </td>
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-700 hidden md:table-cell">
+                          <div className="max-w-xs truncate" title={report.reason}>
+                            {report.reason}
+                          </div>
+                          {report.details && (
+                            <div className="text-xs text-gray-500 mt-1 max-w-xs truncate" title={report.details}>
+                              {report.details}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap">
+                          <span className={`px-2 py-1 text-xs font-medium rounded ${
+                            report.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            report.status === 'reviewed' ? 'bg-blue-100 text-blue-800' :
+                            report.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {report.status}
+                          </span>
+                        </td>
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-500 hidden lg:table-cell">
+                          <div className="flex flex-col">
+                            <span>{new Date(report.created_at).toLocaleDateString()}</span>
+                            <span className="text-xs">{new Date(report.created_at).toLocaleTimeString()}</span>
+                          </div>
+                        </td>
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm">
+                          <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+                            <select
+                              value={report.status}
+                              onChange={async (e) => {
+                                const newStatus = e.target.value
+                                const { error } = await supabase
+                                  .from('reports')
+                                  .update({
+                                    status: newStatus,
+                                    reviewed_by: (await supabase.auth.getUser()).data.user?.id,
+                                    reviewed_at: new Date().toISOString()
+                                  })
+                                  .eq('id', report.id)
+                                
+                                if (!error) {
+                                  fetchReports()
+                                }
+                              }}
+                              className="text-xs border border-gray-300 rounded px-2 py-1"
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="reviewed">Reviewed</option>
+                              <option value="resolved">Resolved</option>
+                              <option value="dismissed">Dismissed</option>
+                            </select>
+                            {(report.status === 'resolved' || report.status === 'dismissed') && (
+                              <button
+                                onClick={(e) => {
+                                  console.log('🔴 [DELETE BUTTON] Raw click event fired')
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  e.nativeEvent.stopImmediatePropagation()
+                                  handleDeleteClick(report.id, e)
+                                }}
+                                disabled={deletingReportId === report.id || showDeleteConfirmModal}
+                                className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Delete this report"
+                                type="button"
+                              >
+                                {deletingReportId === report.id ? 'Deleting...' : 'Delete'}
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        <StandardModal
+          isOpen={showDeleteConfirmModal}
+          onClose={() => {
+            console.log('🔴 [MODAL CLOSE] ========== MODAL CLOSE CALLED ==========')
+            console.log('🔴 [MODAL CLOSE] deletingReportId:', deletingReportId)
+            console.log('🔴 [MODAL CLOSE] showDeleteConfirmModal:', showDeleteConfirmModal)
+            console.log('🔴 [MODAL CLOSE] reportToDelete:', reportToDelete)
+            console.trace('🔴 [MODAL CLOSE] Stack trace:')
+            
+            // Prevent closing during deletion
+            if (deletingReportId) {
+              console.log('🔴 [MODAL CLOSE] Blocked - deletion in progress')
+              return
+            }
+            
+            console.log('🔴 [MODAL CLOSE] Closing modal and resetting state')
+            setShowDeleteConfirmModal(false)
+            setReportToDelete(null)
+          }}
+          onConfirm={() => {
+            console.log('🔴 [DELETE CONFIRM] ========== CONFIRM BUTTON CLICKED ==========')
+            console.log('🔴 [DELETE CONFIRM] deletingReportId:', deletingReportId)
+            console.log('🔴 [DELETE CONFIRM] reportToDelete:', reportToDelete)
+            console.log('🔴 [DELETE CONFIRM] showDeleteConfirmModal:', showDeleteConfirmModal)
+            
+            // Prevent multiple clicks during deletion
+            if (deletingReportId) {
+              console.log('🔴 [DELETE CONFIRM] Blocked - already deleting')
+              return
+            }
+            
+            console.log('🔴 [DELETE CONFIRM] Calling handleDeleteConfirm')
+            handleDeleteConfirm()
+          }}
+          type="confirm"
+          title="Delete Report"
+          message={deletingReportId ? "Deleting report..." : "Are you sure you want to delete this report? This action cannot be undone."}
+          confirmText={deletingReportId ? "Deleting..." : "Delete"}
+          cancelText="Cancel"
+          isLoading={!!deletingReportId}
+        />
+
+        {/* Delete Error Modal */}
+        <StandardModal
+          isOpen={showDeleteErrorModal}
+          onClose={() => {
+            setShowDeleteErrorModal(false)
+            setDeleteErrorMessage('')
+          }}
+          type="error"
+          title="Delete Failed"
+          message={deleteErrorMessage || 'Failed to delete report. Please try again.'}
+        />
+
         {/* Settings Tab */}
         {tab === 'settings' && (
-          <div className="bg-white rounded-lg shadow p-6 max-w-2xl">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-2xl">
             <h2 className="text-2xl font-bold mb-6">Platform Fee Settings</h2>
             
             <div className="space-y-6">

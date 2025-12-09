@@ -15,36 +15,82 @@ export default function FormTypeSelector() {
       {/* Form Type Selector */}
       <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-center gap-4">
-          <label className="text-sm font-medium text-gray-700 text-center md:text-left">Form Type:</label>
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-            <label className="flex items-start gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
-              <input
-                type="radio"
-                name="formType"
-                value="quick"
-                checked={formType === 'quick'}
-                onChange={(e) => setFormType(e.target.value as 'quick' | 'full')}
-                className="w-4 h-4 text-blue-600 focus:ring-blue-500 focus:ring-2 mt-0.5"
-              />
-              <span className="text-sm text-gray-700">
-                <span className="font-semibold">Quick Form</span>
-                <span className="text-gray-500 ml-1 block sm:inline">a fast step by step flow</span>
-              </span>
-            </label>
-            <label className="flex items-start gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors">
-              <input
-                type="radio"
-                name="formType"
-                value="full"
-                checked={formType === 'full'}
-                onChange={(e) => setFormType(e.target.value as 'quick' | 'full')}
-                className="w-4 h-4 text-blue-600 focus:ring-blue-500 focus:ring-2 mt-0.5"
-              />
-              <span className="text-sm text-gray-700">
-                <span className="font-semibold">Full Form</span>
-                <span className="text-gray-500 ml-1 block sm:inline">a detailed version with tags etc.</span>
-              </span>
-            </label>
+          <label className="text-sm font-medium text-gray-700 text-center md:text-left">
+            How would you like to fill out the form?
+          </label>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            {/* Quick Button */}
+            <button
+              type="button"
+              onClick={() => setFormType('quick')}
+              className={`relative flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                formType === 'quick'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <span>Quick</span>
+              <div className="relative group">
+                <svg
+                  className={`w-4 h-4 ${
+                    formType === 'quick' ? 'text-white' : 'text-gray-500'
+                  }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  Fast and simple, just the essentials.
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
+                    <div className="border-4 border-transparent border-t-gray-900"></div>
+                  </div>
+                </div>
+              </div>
+            </button>
+
+            {/* Full Button */}
+            <button
+              type="button"
+              onClick={() => setFormType('full')}
+              style={formType === 'full' ? { backgroundColor: '#F99723' } : {}}
+              className={`relative flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                formType === 'full'
+                  ? 'text-white hover:opacity-90'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <span>Full</span>
+              <div className="relative group">
+                <svg
+                  className={`w-4 h-4 ${
+                    formType === 'full' ? 'text-white' : 'text-gray-500'
+                  }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  Detailed version with all fields and tags
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
+                    <div className="border-4 border-transparent border-t-gray-900"></div>
+                  </div>
+                </div>
+              </div>
+            </button>
           </div>
         </div>
       </div>

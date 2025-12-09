@@ -679,8 +679,8 @@ function ProfilePageContent() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Setup Required Modal - Cannot be dismissed if setup is required */}
       {showSetupModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 sm:p-6">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6 mx-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-gray-900">Complete Your Profile</h2>
               {!setupRequired && (
@@ -763,7 +763,7 @@ function ProfilePageContent() {
                           <img
                             src={review.other_user_avatar}
                             alt={review.other_user_name || 'User'}
-                            className="h-8 w-8 rounded-full object-cover"
+                            className="h-8 w-8 rounded-full object-cover object-center"
                           />
                         ) : (
                           <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-semibold text-gray-600">
@@ -830,12 +830,15 @@ function ProfilePageContent() {
 
           <div className="space-y-4">
             <div className="flex items-center space-x-6">
-              <div className="h-24 w-24 rounded-full bg-gray-100 overflow-hidden flex items-center justify-center text-2xl font-semibold text-gray-500">
+              <div 
+                className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 aspect-square rounded-full bg-gray-100 overflow-hidden flex items-center justify-center text-lg sm:text-xl md:text-2xl font-semibold text-gray-500 flex-shrink-0 min-w-[64px] min-h-[64px]"
+                style={{ aspectRatio: '1 / 1' }}
+              >
                 {avatarUrl ? (
                   <img
                     src={avatarUrl}
                     alt={`${profile.full_name || user.email}'s avatar`}
-                    className="h-full w-full object-cover"
+                    className="w-full h-full object-cover object-center"
                   />
                 ) : (
                   (profile.full_name?.[0] || user.email?.[0] || '?').toUpperCase()
@@ -843,9 +846,11 @@ function ProfilePageContent() {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-700 mb-2">Profile Photo</p>
-                <p className="text-sm text-gray-500 mb-3">
-                  Upload a square image (recommended 256x256). Supported formats: JPG, PNG.
-                </p>
+                {!avatarUrl && (
+                  <p className="text-sm text-gray-500 mb-3">
+                    Upload a square image (recommended 256x256). Supported formats: JPG, PNG.
+                  </p>
+                )}
                 <div className="flex items-center space-x-3">
                   <label className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer">
                     <input
@@ -2159,8 +2164,8 @@ function ProfilePageContent() {
 
       {/* Success Modal */}
       {showSuccessModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 sm:p-6">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6 mx-4">
             {/* Icon */}
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
               <svg

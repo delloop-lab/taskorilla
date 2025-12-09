@@ -209,16 +209,24 @@ export default function LandingV2() {
           <p className="text-xl opacity-90">
             Post your task today and let Taskorilla handle the heavy lifting — with brains, brawn, and brilliance.
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Link href="/tasks/new">
-              <Button size="lg" variant="secondary" className="text-lg">
-                Post a Task
-              </Button>
+          <div className="flex flex-col items-center gap-4">
+            <Link href="/tasks/new" className="action-button post-button">
+              <div className="button-icon">
+                🆘
+              </div>
+              <div className="button-text">
+                <div className="button-title">Post a Task</div>
+                <div className="button-subtitle">Get help to get things done!</div>
+              </div>
             </Link>
-            <Link href="/tasks">
-              <Button size="lg" variant="outline" className="text-lg bg-transparent border-2 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
-                Browse Tasks
-              </Button>
+            <Link href="/tasks" className="action-button browse-button">
+              <div className="button-icon">
+                💵
+              </div>
+              <div className="button-text">
+                <div className="button-title">Browse Tasks</div>
+                <div className="button-subtitle">Get paid to get things done!</div>
+              </div>
             </Link>
           </div>
         </div>

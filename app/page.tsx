@@ -18,9 +18,18 @@ export default function Home() {
               <h1 className="text-5xl md:text-6xl font-bold text-foreground leading-tight">
                 Brainy. Brawny. Brilliant.
               </h1>
-              <p className="text-xl text-muted-foreground">
-                Big jobs, small jobs, or anything in between. This is the place for people who need things done and for people who can do them. Post your tasks, offer your skills, or be part of both. Whether you want a casual helper or a proper professional, you will find them here. Get hired, get paid, get noticed. Smart, strong, simple.
-              </p>
+              <div className="text-xl text-muted-foreground">
+                <p>
+                  <img 
+                    src="https://flagcdn.com/w20/pt.png" 
+                    alt="Portugal flag" 
+                    className="inline-block h-4 w-6 object-cover mr-2"
+                  /> Whether you're new here or have lived in Portugal for years, Taskorilla helps you get tasks done or earn by helping others.
+                </p>
+                <p>
+                  Big jobs, small jobs, or anything in between, find trusted helpers or professionals, or offer your skills, and get results quickly and safely.
+                </p>
+              </div>
               <div className="flex flex-wrap gap-4 pt-[10px] mb-0">
                 <Link href="/tasks/new" className="action-button post-button">
                   <div className="button-icon">
@@ -74,11 +83,7 @@ export default function Home() {
                   Post Your Task (Free!)
                 </h3>
                 <p className="text-muted-foreground">
-                  Have something that needs doing? Just describe it, set your budget or ask for quotes and post your task! Helpers nearby will see it instantly and can submit offers to get it done. Pay just 2 € when your task is done. Connect with trusted helpers and make life easier. Need tips? Visit our{' '}
-                  <Link href="/help" className="text-primary font-semibold hover:underline">
-                    Help Center
-                  </Link>
-                  .
+                  Need something done in Portugal? Describe your task, set your budget, and post it. Helpers nearby can submit offers instantly. Only €2 per completed task. Connect with trusted helpers and get things done quickly.
                 </p>
               </CardContent>
             </Card>
@@ -92,11 +97,7 @@ export default function Home() {
                   Browse & Earn
                 </h3>
                 <p className="text-muted-foreground">
-                  Pick up extra work, show off your skills, and get hired fast. Earn more and build your reputation, helpers keep their earnings minus a 10% commission, and task posters pay only when the job is done. Highlight your skills with badges, reviews, and a shareable profile. Find out more in the{' '}
-                  <Link href="/help" className="text-primary font-semibold hover:underline">
-                    Help Center
-                  </Link>
-                  .
+                  Pick up extra work, show off your skills, and get hired fast. Helpers keep their earnings minus a 10% commission, and task posters pay only when the job is done. Build your reputation with badges, reviews, and a shareable profile. Perfect for newcomers looking to earn while settling in Portugal.
                 </p>
               </CardContent>
             </Card>
@@ -110,11 +111,7 @@ export default function Home() {
                   Connect & Complete
                 </h3>
                 <p className="text-muted-foreground">
-                  Chat with your helper or tasker, track progress, upload photos, and mark the task done. Reviews go both ways, so everyone knows who's reliable. Every completed task helps build trust and a stronger reputation. Want guidance on leaving reviews or tracking tasks? Check out our{' '}
-                  <Link href="/help" className="text-primary font-semibold hover:underline">
-                    Help Center
-                  </Link>
-                  .
+                  Chat with your helper or tasker, track progress, upload photos, and mark the task done. Leave and receive reviews so everyone knows who's reliable. Every completed task strengthens trust and your reputation. Stay on top of your tasks, whether you're new in town or a long-time resident.
                 </p>
               </CardContent>
             </Card>
@@ -136,7 +133,7 @@ export default function Home() {
                   <div>
                     <h3 className="font-bold text-foreground text-lg mb-2">Brainy and Brawny Helpers</h3>
                     <p className="text-muted-foreground">
-                      Skilled, reliable, and clever. Our helpers tackle tasks big and small with smart efficiency and dependable strength. Show off your skills, services, or professional role, earn badges, collect reviews, and get noticed by taskers near you. Whether you are posting tasks or helping out, Taskorilla makes it simple.
+                      Skilled, reliable, and clever. Our helpers tackle tasks big and small, from everyday errands to professional services. Show off your skills, services, or professional role, earn badges, collect reviews, and get noticed. Whether you're new to Portugal or a long-time resident, Taskorilla makes it simple to get help or offer it.
                     </p>
                   </div>
                 </div>
@@ -150,7 +147,7 @@ export default function Home() {
                   <div>
                     <h3 className="font-bold text-foreground text-lg mb-2">Fast, Local, and Connected</h3>
                     <p className="text-muted-foreground">
-                      Helpers near you can see your tasks immediately, submit offers, and chat in real time. Taskers can also search for helpers by skills, services, or professional role to find the perfect match.
+                      Helpers nearby see your tasks instantly, submit offers, and chat in real time. Taskers can search for helpers by skills, services, or professional role to find the perfect match, whether it's a casual errand or a professional job.
                     </p>
                   </div>
                 </div>
@@ -164,7 +161,7 @@ export default function Home() {
                   <div>
                     <h3 className="font-bold text-foreground text-lg mb-2">Trust and Transparency</h3>
                     <p className="text-muted-foreground">
-                      Reviews go both ways. Taskers can review helpers, and helpers can review taskers. Track progress, upload photos, and see verified feedback so everyone knows who is reliable.
+                      Reviews go both ways. Taskers can review helpers, and helpers can review taskers. Track progress, upload photos, and see verified feedback so everyone knows who's reliable.
                     </p>
                   </div>
                 </div>
@@ -178,7 +175,7 @@ export default function Home() {
                   <div>
                     <h3 className="font-bold text-foreground text-lg mb-2">Flexible and Secure</h3>
                     <p className="text-muted-foreground">
-                      Set your budget, choose the best fit, and stay in control. Your information stays private, and instant alerts keep you in the loop. Dual roles mean you can post tasks and offer help without juggling multiple accounts.
+                      Set your budget, choose the best fit, and stay in control. Your information stays private, and instant alerts keep you in the loop. Post tasks and offer help, from small jobs to professional services, without juggling multiple accounts.
                     </p>
                   </div>
                 </div>
@@ -244,15 +241,15 @@ export default function Home() {
               </div>
             </Link>
             <Link href="/tasks" className="group">
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-8 shadow-lg border-2 border-green-300 hover:shadow-xl hover:border-green-400 transition-all duration-300 hover:-translate-y-1 h-full">
+              <div className="bg-gradient-to-br from-[#FFF4E6] to-[#FFE5CC] rounded-xl p-8 shadow-lg border-2 border-[#FFD4A3] hover:shadow-xl hover:border-[#FD9212] transition-all duration-300 hover:-translate-y-1 h-full">
                 <div className="flex items-start gap-4 mb-4">
-                  <div className="bg-green-500 rounded-lg p-3 group-hover:scale-110 transition-transform duration-300">
+                  <div className="bg-[#FD9212] rounded-lg p-3 group-hover:scale-110 transition-transform duration-300">
                     <Wallet className="w-8 h-8 text-white" />
                   </div>
                   <div className="flex-1">
-                    <h2 className="text-sm font-bold text-green-700 uppercase mb-2">HELPER</h2>
+                    <h2 className="text-sm font-bold text-[#D97706] uppercase mb-2">HELPER</h2>
                     <h3 className="text-2xl font-bold text-gray-900 mb-2">Earn Money Helping Others</h3>
-                    <p className="text-sm text-green-700 font-medium mb-3">Pick tasks that suit you, get paid fast.</p>
+                    <p className="text-sm text-[#D97706] font-medium mb-3">Pick tasks that suit you, get paid fast.</p>
                     <p className="text-gray-700">
                       Pick up tasks that fit your skills, submit bids, and earn money while helping others.
                     </p>
@@ -265,7 +262,7 @@ export default function Home() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-4 bg-gradient-to-br from-primary to-accent text-primary-foreground">
+      <section className="pt-12 md:pt-20 pb-8 md:pb-20 px-4 bg-gradient-to-br from-primary to-accent text-primary-foreground">
         <div className="container mx-auto max-w-6xl">
           <div className="grid md:grid-cols-3 gap-4 items-center">
             <div className="flex justify-center md:justify-end order-2 md:order-1">
@@ -283,16 +280,24 @@ export default function Home() {
               <p className="text-xl opacity-90">
                 Post your task today and let Taskorilla handle the heavy lifting, with brains, brawn, and brilliance.
               </p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <Link href="/tasks/new">
-                  <Button size="lg" variant="secondary" className="text-lg">
-                    Post a Task
-                  </Button>
+              <div className="flex flex-col items-center gap-4">
+                <Link href="/tasks/new" className="action-button post-button">
+                  <div className="button-icon">
+                    🆘
+                  </div>
+                  <div className="button-text">
+                    <div className="button-title">Post a Task</div>
+                    <div className="button-subtitle">Get help to get things done!</div>
+                  </div>
                 </Link>
-                <Link href="/tasks">
-                  <Button size="lg" variant="outline" className="text-lg bg-transparent border-2 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
-                    Browse Tasks/Earn Money
-                  </Button>
+                <Link href="/tasks" className="action-button browse-button">
+                  <div className="button-icon">
+                    💵
+                  </div>
+                  <div className="button-text">
+                    <div className="button-title">Browse Tasks</div>
+                    <div className="button-subtitle">Get paid to get things done!</div>
+                  </div>
                 </Link>
               </div>
             </div>

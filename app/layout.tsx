@@ -2,17 +2,45 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Navbar from '@/components/Navbar'
+import PWAHead from '@/components/PWAHead'
+import InstallPromptModal from '@/components/InstallPromptModal'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Taskorilla - Swing Into Action',
   description: 'A marketplace for posting and bidding on tasks',
-  icons: {
-    icon: '/images/taskorilla-mascot.png',
-    shortcut: '/images/taskorilla-mascot.png',
-    apple: '/images/taskorilla-mascot.png',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Taskorilla',
   },
+  icons: {
+    icon: [
+      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    shortcut: '/icons/icon-192x192.png',
+    apple: [
+      { url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'default',
+    'apple-mobile-web-app-title': 'Taskorilla',
+  },
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: 'cover',
+  themeColor: '#FD9212',
 }
 
 export default function RootLayout({
@@ -23,6 +51,61 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        {/* Global script to catch beforeinstallprompt immediately - prevents browser prompt */}
+        {/* This must run before React hydrates, so it's placed at the top of body */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                // Store the deferred prompt globally so React component can access it
+                window.deferredPrompt = null;
+                window.nativePromptBlocked = false;
+                window.browserPromptShown = false;
+                
+                // Mark that browser might show its prompt
+                // Some browsers show prompts automatically which we can't prevent
+                // We'll check if beforeinstallprompt fires - if it doesn't, browser might show its own
+                var promptCheckTimeout = setTimeout(function() {
+                  // If beforeinstallprompt hasn't fired after 2 seconds, browser might show its own prompt
+                  if (!window.deferredPrompt) {
+                    console.log('⚠️ beforeinstallprompt not fired - browser may show its own prompt');
+                    window.browserPromptShown = true;
+                  }
+                }, 2000);
+                
+                // Listen for beforeinstallprompt event IMMEDIATELY with capture phase
+                // This ensures we catch it before any other handlers
+                var handler = function(e) {
+                  clearTimeout(promptCheckTimeout);
+                  
+                  // Prevent the browser's default install prompt
+                  e.preventDefault();
+                  e.stopImmediatePropagation();
+                  
+                  // Store the event globally
+                  window.deferredPrompt = e;
+                  window.nativePromptBlocked = true;
+                  window.browserPromptShown = false;
+                  
+                  // Dispatch a custom event so React component knows it's available
+                  window.dispatchEvent(new CustomEvent('pwa-install-available'));
+                  
+                  console.log('✅ Install prompt intercepted and deferred');
+                };
+                
+                // Add listener in capture phase (runs first)
+                window.addEventListener('beforeinstallprompt', handler, true);
+                
+                // Also add to document for extra coverage
+                if (document) {
+                  document.addEventListener('beforeinstallprompt', handler, true);
+                }
+              })();
+            `,
+          }}
+        />
+        <PWAHead />
+        <InstallPromptModal />
         <Navbar />
         <main className="min-h-screen bg-gray-50">
           {children}

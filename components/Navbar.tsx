@@ -23,6 +23,10 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [tasksMenuOpen, setTasksMenuOpen] = useState(false)
   const [helpersMenuOpen, setHelpersMenuOpen] = useState(false)
+  const [helpMenuOpen, setHelpMenuOpen] = useState(false)
+  const [tasksMenuTimeout, setTasksMenuTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [helpersMenuTimeout, setHelpersMenuTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [helpMenuTimeout, setHelpMenuTimeout] = useState<NodeJS.Timeout | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -382,6 +386,15 @@ export default function Navbar() {
     }
   }, [user])
 
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (tasksMenuTimeout) clearTimeout(tasksMenuTimeout)
+      if (helpersMenuTimeout) clearTimeout(helpersMenuTimeout)
+      if (helpMenuTimeout) clearTimeout(helpMenuTimeout)
+    }
+  }, [tasksMenuTimeout, helpersMenuTimeout, helpMenuTimeout])
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     setProfileName(null)
@@ -430,10 +443,25 @@ export default function Navbar() {
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center space-x-4">
             {/* TASKS Dropdown Menu */}
-            <div className="relative">
+            <div 
+              className="relative"
+              onMouseEnter={() => {
+                // Clear any pending timeout
+                if (tasksMenuTimeout) {
+                  clearTimeout(tasksMenuTimeout)
+                  setTasksMenuTimeout(null)
+                }
+                setTasksMenuOpen(true)
+              }}
+              onMouseLeave={() => {
+                // Add longer delay before closing
+                const timeout = setTimeout(() => {
+                  setTasksMenuOpen(false)
+                }, 400) // 400ms delay - gives more time to move mouse
+                setTasksMenuTimeout(timeout)
+              }}
+            >
               <button
-                onMouseEnter={() => setTasksMenuOpen(true)}
-                onMouseLeave={() => setTasksMenuOpen(false)}
                 className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1"
               >
                 TASKS
@@ -442,31 +470,62 @@ export default function Navbar() {
                 </svg>
               </button>
               {tasksMenuOpen && (
-                <div
-                  onMouseEnter={() => setTasksMenuOpen(true)}
-                  onMouseLeave={() => setTasksMenuOpen(false)}
-                  className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50"
-                >
-                  <Link
-                    href="/tasks/new"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-primary-600"
+                <>
+                  {/* Invisible bridge area to make it easier to move mouse to submenu */}
+                  <div className="absolute top-full left-0 w-full h-4" />
+                  <div
+                    className="absolute top-full left-0 mt-4 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                    onMouseEnter={() => {
+                      // Keep menu open when hovering over submenu
+                      if (tasksMenuTimeout) {
+                        clearTimeout(tasksMenuTimeout)
+                        setTasksMenuTimeout(null)
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      // Delay closing when leaving submenu
+                      const timeout = setTimeout(() => {
+                        setTasksMenuOpen(false)
+                      }, 400)
+                      setTasksMenuTimeout(timeout)
+                    }}
                   >
-                    Post a Task
-                  </Link>
-                  <Link
-                    href="/tasks"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-primary-600"
-                  >
-                    Browse Tasks
-                  </Link>
-                </div>
+                    <Link
+                      href="/tasks/new"
+                      className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
+                    >
+                      Post a Task
+                    </Link>
+                    <Link
+                      href="/tasks"
+                      className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
+                    >
+                      Browse Tasks
+                    </Link>
+                  </div>
+                </>
               )}
             </div>
             {/* HELPERS Dropdown Menu */}
-            <div className="relative">
+            <div 
+              className="relative"
+              onMouseEnter={() => {
+                // Clear any pending timeout
+                if (helpersMenuTimeout) {
+                  clearTimeout(helpersMenuTimeout)
+                  setHelpersMenuTimeout(null)
+                }
+                setHelpersMenuOpen(true)
+              }}
+              onMouseLeave={() => {
+                // Add longer delay before closing
+                const timeout = setTimeout(() => {
+                  setHelpersMenuOpen(false)
+                }, 400) // 400ms delay - gives more time to move mouse
+                setHelpersMenuTimeout(timeout)
+              }}
+            >
               <button
-                onMouseEnter={() => setHelpersMenuOpen(true)}
-                onMouseLeave={() => setHelpersMenuOpen(false)}
                 className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1"
               >
                 HELPERS
@@ -475,24 +534,116 @@ export default function Navbar() {
                 </svg>
               </button>
               {helpersMenuOpen && (
-                <div
-                  onMouseEnter={() => setHelpersMenuOpen(true)}
-                  onMouseLeave={() => setHelpersMenuOpen(false)}
-                  className="absolute top-full left-0 mt-1 w-56 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50"
-                >
-                  <Link
-                    href="/helpers"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-primary-600"
+                <>
+                  {/* Invisible bridge area to make it easier to move mouse to submenu */}
+                  <div className="absolute top-full left-0 w-full h-4" />
+                  <div
+                    className="absolute top-full left-0 mt-4 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                    onMouseEnter={() => {
+                      // Keep menu open when hovering over submenu
+                      if (helpersMenuTimeout) {
+                        clearTimeout(helpersMenuTimeout)
+                        setHelpersMenuTimeout(null)
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      // Delay closing when leaving submenu
+                      const timeout = setTimeout(() => {
+                        setHelpersMenuOpen(false)
+                      }, 400)
+                      setHelpersMenuTimeout(timeout)
+                    }}
                   >
-                    Browse all Helpers
-                  </Link>
-                  <Link
-                    href="/professionals"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-primary-600"
+                    <Link
+                      href="/helpers"
+                      className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
+                    >
+                      Browse all Helpers
+                    </Link>
+                    <Link
+                      href="/professionals"
+                      className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
+                    >
+                      Browse Professionals
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
+            {/* HELP Dropdown Menu */}
+            <div 
+              className="relative"
+              onMouseEnter={() => {
+                // Clear any pending timeout
+                if (helpMenuTimeout) {
+                  clearTimeout(helpMenuTimeout)
+                  setHelpMenuTimeout(null)
+                }
+                setHelpMenuOpen(true)
+              }}
+              onMouseLeave={() => {
+                // Add longer delay before closing
+                const timeout = setTimeout(() => {
+                  setHelpMenuOpen(false)
+                }, 400) // 400ms delay - gives more time to move mouse
+                setHelpMenuTimeout(timeout)
+              }}
+            >
+              <button
+                className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1"
+              >
+                HELP
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {helpMenuOpen && (
+                <>
+                  {/* Invisible bridge area to make it easier to move mouse to submenu */}
+                  <div className="absolute top-full left-0 w-full h-4" />
+                  <div
+                    className="absolute top-full left-0 mt-4 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                    onMouseEnter={() => {
+                      // Keep menu open when hovering over submenu
+                      if (helpMenuTimeout) {
+                        clearTimeout(helpMenuTimeout)
+                        setHelpMenuTimeout(null)
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      // Delay closing when leaving submenu
+                      const timeout = setTimeout(() => {
+                        setHelpMenuOpen(false)
+                      }, 400)
+                      setHelpMenuTimeout(timeout)
+                    }}
                   >
-                    Browse Professionals
-                  </Link>
-                </div>
+                    <Link
+                      href="/help"
+                      className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
+                    >
+                      Help Center
+                    </Link>
+                    <Link
+                      href="/help/faq"
+                      className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
+                    >
+                      FAQs
+                    </Link>
+                    <Link
+                      href="/help/guides"
+                      className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
+                    >
+                      Guides
+                    </Link>
+                    <a
+                      href="mailto:tee@taskorilla.com"
+                      className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
+                    >
+                      Contact Support
+                    </a>
+                  </div>
+                </>
               )}
             </div>
             {user ? (
@@ -566,9 +717,12 @@ export default function Navbar() {
                 </Link>
                 {user && (
                   <div className="flex items-center">
-                    <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                    <div 
+                      className="h-8 w-8 aspect-square rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0 min-w-[32px] min-h-[32px]"
+                      style={{ aspectRatio: '1 / 1' }}
+                    >
                       {profileAvatar ? (
-                        <img src={profileAvatar} alt="avatar" className="h-full w-full object-cover" />
+                        <img src={profileAvatar} alt="avatar" className="w-full h-full object-cover object-center" />
                       ) : (
                         <span className="text-sm font-semibold text-gray-600">
                           {(profileName?.[0] || user.email?.[0] || '?').toUpperCase()}
@@ -640,9 +794,12 @@ export default function Navbar() {
           <div className="md:hidden border-t border-gray-200 py-4 space-y-2">
             {user && (
               <div className="flex items-center space-x-2 px-4 py-2">
-                <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                <div 
+                  className="h-10 w-10 aspect-square rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0 min-w-[40px] min-h-[40px]"
+                  style={{ aspectRatio: '1 / 1' }}
+                >
                   {profileAvatar ? (
-                    <img src={profileAvatar} alt="avatar" className="h-full w-full object-cover" />
+                    <img src={profileAvatar} alt="avatar" className="w-full h-full object-cover object-center" />
                   ) : (
                     <span className="text-sm font-semibold text-gray-600">
                       {(profileName?.[0] || user.email?.[0] || '?').toUpperCase()}
@@ -690,6 +847,39 @@ export default function Navbar() {
               >
                 Browse Professionals
               </Link>
+            </div>
+
+            {/* HELP Section */}
+            <div className="px-4 py-2">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">HELP</h3>
+              <Link
+                href="/help"
+                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Help Center
+              </Link>
+              <Link
+                href="/help/faq"
+                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                FAQs
+              </Link>
+              <Link
+                href="/help/guides"
+                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Guides
+              </Link>
+              <a
+                href="mailto:tee@taskorilla.com"
+                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Contact Support
+              </a>
             </div>
 
             {user ? (

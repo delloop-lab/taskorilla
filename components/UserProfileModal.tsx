@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import ReportModal from "./ReportModal";
 
 interface UserProfileModalProps {
   userId: string | null;
@@ -29,6 +30,8 @@ export default function UserProfileModal({
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen || !userId) return;
@@ -54,6 +57,14 @@ export default function UserProfileModal({
 
     loadProfile();
   }, [isOpen, userId]);
+
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+    };
+    getCurrentUser();
+  }, []);
 
   if (!isOpen || !userId) {
     return null;
@@ -82,15 +93,18 @@ export default function UserProfileModal({
         ) : profile ? (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="h-16 w-16 rounded-full bg-gray-200 overflow-hidden">
+              <div 
+                className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 aspect-square rounded-full bg-gray-200 overflow-hidden flex-shrink-0 min-w-[48px] min-h-[48px]"
+                style={{ aspectRatio: '1 / 1' }}
+              >
                 {profile.avatar_url ? (
                   <img
                     src={profile.avatar_url}
                     alt={profile.full_name || "Tasker avatar"}
-                    className="h-full w-full object-cover"
+                    className="w-full h-full object-cover object-center"
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center text-xl font-semibold text-gray-500">
+                  <div className="flex h-full w-full items-center justify-center text-base sm:text-lg md:text-xl font-semibold text-gray-500">
                     {(profile.full_name?.[0] || "?").toUpperCase()}
                   </div>
                 )}
@@ -121,11 +135,37 @@ export default function UserProfileModal({
                 </Link>
               </div>
             )}
+
+            {/* Report Button - Only show if user is logged in and not viewing their own profile */}
+            {currentUserId && currentUserId !== userId && (
+              <div className="mt-4 pt-4 border-t">
+                <button
+                  onClick={() => {
+                    setReportModalOpen(true);
+                  }}
+                  className="w-full text-center text-red-600 hover:text-red-700 px-4 py-2 rounded-md border border-red-300 hover:border-red-400 font-medium transition-colors"
+                >
+                  Report User
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <p className="text-gray-500">No profile information available.</p>
         )}
       </div>
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        reportType="user"
+        targetId={userId || ''}
+        targetName={profile?.full_name || undefined}
+        onReportSubmitted={() => {
+          setReportModalOpen(false);
+        }}
+      />
     </div>
   );
 }

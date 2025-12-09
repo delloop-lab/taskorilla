@@ -209,28 +209,24 @@ A: Taskers pay through our secure system. Helpers get paid after the task is
    confirmed as complete.
 
 Q: Are there fees?
-A: Yes, Taskorilla takes a small service fee. Helpers get the net amount 
-   displayed before accepting.
+A: Yes, Taskorilla takes a small service fee from the tasker, as of December 
+   2025 that is €2 and 10% from the Helper/Professional.
 
 Q: How do I get paid?
 A: Add your bank account in settings. Once a task is confirmed, we transfer 
    funds automatically.
 
-Q: What if a task isn't paid?
-A: Contact support. We'll review the case and mediate if necessary.
-
 --- Understanding Payments Guide ---
 
 UNDERSTANDING PAYMENTS ON TASKORILLA
 
-Step 1: Add Your Payment Method
-Go to 'Settings' > 'Payment Information.' Add your bank account or preferred 
-payment method. This is required to receive payments as a Helper.
+Step 1: Add Your Payout Method
+Go to 'Settings' > 'Payment Information.' Add your IBAN number. This is 
+required to receive payments as a Helper or Professional.
 
 Step 2: Understand Fees
-Taskorilla takes a small service fee from each transaction. The fee is always 
-shown upfront before you post or accept a task. Helpers see their net 
-earnings before accepting.
+Taskorilla takes a small service fee from each transaction. As of December 2025, 
+fees are €2 per task from the tasker and 10% fee from the Helper/Professional.
 
 Step 3: Make or Receive Payment
 
@@ -240,18 +236,13 @@ through our platform. Funds are held until the task is confirmed as complete.
 For Helpers: Once a task is marked complete and confirmed by the tasker, 
 payment is released to your account automatically.
 
-Step 4: Track Your Payments
-Check your dashboard for payment history, pending payments, and completed 
-transactions. You'll receive email confirmations for every payment.
+Step 4: Track Your Payments and Payouts
+Check your dashboard for payment history, pending payments or payouts, and 
+completed transactions. You'll receive email confirmations for every payment or payout.
 
-Step 5: Withdrawals (For Helpers)
+Step 5: Payouts (for Helpers and Professionals)
 Payments are transferred to your linked account automatically after task 
-confirmation. If there's a delay, check your payment method settings or 
-contact support.
-
-Step 6: Report Payment Issues
-If a payment isn't received or there's a dispute, contact support at 
-tee@taskorilla.com. We'll review the case and mediate if necessary.
+confirmation.
 
 --- Disputes and Refunds ---
 

@@ -7,6 +7,7 @@ import { User, Review, Task, TaskCompletionPhoto } from '@/lib/types'
 import { format } from 'date-fns'
 import Link from 'next/link'
 import StandardModal from '@/components/StandardModal'
+import ReportModal from '@/components/ReportModal'
 
 function HelperProfileContent() {
   const params = useParams()
@@ -24,6 +25,7 @@ function HelperProfileContent() {
   const [showQrCode, setShowQrCode] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [canMessageHelper, setCanMessageHelper] = useState(false)
+  const [reportModalOpen, setReportModalOpen] = useState(false)
   const [modalState, setModalState] = useState<{
     isOpen: boolean
     type: 'success' | 'error' | 'warning' | 'info' | 'confirm'
@@ -326,12 +328,15 @@ function HelperProfileContent() {
           <div className="flex flex-col md:flex-row gap-6">
             {/* Avatar */}
             <div className="flex-shrink-0">
-              <div className="h-32 w-32 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center text-4xl font-semibold text-gray-500 border-4 border-white shadow-lg">
+              <div 
+                className="h-20 w-20 sm:h-24 sm:w-24 md:h-32 md:w-32 aspect-square rounded-full bg-gray-200 overflow-hidden flex items-center justify-center text-xl sm:text-2xl md:text-4xl font-semibold text-gray-500 border-2 sm:border-4 border-white shadow-lg min-w-[80px] min-h-[80px]"
+                style={{ aspectRatio: '1 / 1' }}
+              >
                 {profile.avatar_url ? (
                   <img
                     src={profile.avatar_url}
                     alt={profile.full_name || 'Helper'}
-                    className="h-full w-full object-cover"
+                    className="w-full h-full object-cover object-center"
                   />
                 ) : (
                   (profile.full_name?.[0] || profile.email?.[0] || '?').toUpperCase()
@@ -343,7 +348,7 @@ function HelperProfileContent() {
             <div className="flex-1">
               <div className="flex items-start justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
                     {profile.full_name || 'Helper'}
                   </h1>
                   {profile.company_name && (
@@ -357,7 +362,7 @@ function HelperProfileContent() {
                 </div>
 
                 {/* Share, Request & QR Code */}
-                <div className="flex flex-wrap gap-2 justify-end">
+                <div className="flex flex-wrap gap-2 justify-start sm:justify-end mt-4 sm:mt-0">
                   {(!currentUserId || currentUserId !== profile.id) && (
                     <button
                       onClick={(e) => {
@@ -365,7 +370,7 @@ function HelperProfileContent() {
                         e.stopPropagation()
                         handleRequestHelper()
                       }}
-                      className="px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-semibold hover:bg-primary-700 transition-colors cursor-pointer relative z-10"
+                      className="px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-md text-xs sm:text-sm font-semibold hover:bg-primary-700 transition-colors cursor-pointer relative z-10"
                       type="button"
                     >
                       Request this helper
@@ -373,7 +378,7 @@ function HelperProfileContent() {
                   )}
                   <button
                     onClick={copyProfileLink}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    className="px-3 sm:px-4 py-2 border border-gray-300 rounded-md text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -383,12 +388,23 @@ function HelperProfileContent() {
                   {qrCodeUrl && (
                     <button
                       onClick={() => setShowQrCode(!showQrCode)}
-                      className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      className="px-3 sm:px-4 py-2 border border-gray-300 rounded-md text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                       </svg>
                       QR Code
+                    </button>
+                  )}
+                  {currentUserId && currentUserId !== profile.id && (
+                    <button
+                      onClick={() => setReportModalOpen(true)}
+                      className="px-3 sm:px-4 py-2 border border-red-300 rounded-md text-xs sm:text-sm font-medium text-red-600 hover:bg-red-50 flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      Report
                     </button>
                   )}
                 </div>
@@ -398,7 +414,7 @@ function HelperProfileContent() {
               {averageRating !== null && (
                 <div className="flex items-center gap-4 mt-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-3xl font-bold text-amber-600">★ {averageRating.toFixed(1)}</span>
+                    <span className="text-2xl sm:text-3xl font-bold text-amber-600">★ {averageRating.toFixed(1)}</span>
                     <span className="text-gray-600">({totalReviews} {totalReviews === 1 ? 'review' : 'reviews'})</span>
                   </div>
                   {(profile.hourly_rate || (profile.professions && profile.professions.length > 0)) && (
@@ -411,8 +427,8 @@ function HelperProfileContent() {
 
               {/* QR Code Modal */}
               {showQrCode && qrCodeUrl && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowQrCode(false)}>
-                  <div className="bg-white rounded-lg p-6 max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 sm:p-6" onClick={() => setShowQrCode(false)}>
+                  <div className="bg-white rounded-lg p-4 sm:p-6 max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
                     <h3 className="text-lg font-semibold mb-4">Scan QR Code</h3>
                     <img src={qrCodeUrl} alt="QR Code" className="mx-auto mb-4" />
                     <p className="text-sm text-gray-600 text-center mb-4">Share this profile with others</p>
@@ -733,6 +749,20 @@ function HelperProfileContent() {
       title={modalState.title}
       message={modalState.message}
     />
+
+    {/* Report Modal */}
+    {profile && (
+      <ReportModal
+        isOpen={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        reportType="user"
+        targetId={profile.id}
+        targetName={profile?.full_name || undefined}
+        onReportSubmitted={() => {
+          setReportModalOpen(false);
+        }}
+      />
+    )}
     </>
   )
 }

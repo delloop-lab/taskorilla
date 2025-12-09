@@ -1472,9 +1472,10 @@ body {
 /* Action Button Styles */
 .action-button {
   flex: 1;
-  min-width: 120px;
-  max-width: 168px;
-  padding: 0.9rem 0.9rem;
+  min-width: 280px;
+  max-width: 400px;
+  width: 100%;
+  padding: 0.7rem 1.2rem;
   border-radius: 7.2px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -1488,7 +1489,7 @@ body {
   flex-direction: row;
   align-items: center;
   justify-content: flex-start;
-  gap: 0.6rem;
+  gap: 0.8rem;
   text-decoration: none;
   color: inherit;
   pointer-events: auto !important;
@@ -1560,7 +1561,7 @@ body {
 }
 
 .button-title {
-  font-size: 1.365rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: white;
   margin: 0;
@@ -1571,10 +1572,10 @@ body {
 }
 
 .button-subtitle {
-  font-size: 0.819rem;
+  font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.95);
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.3;
   font-weight: 400;
   position: relative;
   z-index: 1;

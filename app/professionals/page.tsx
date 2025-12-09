@@ -17,10 +17,18 @@ export default function ProfessionalsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedProfession, setSelectedProfession] = useState<string | null>(null)
   const [availableProfessions, setAvailableProfessions] = useState<string[]>([])
+  const [showFilters, setShowFilters] = useState(false)
 
   useEffect(() => {
     loadProfessionals()
   }, [])
+
+  // Auto-show filters if search term or profession is selected
+  useEffect(() => {
+    if (searchTerm || selectedProfession) {
+      setShowFilters(true)
+    }
+  }, [searchTerm, selectedProfession])
 
   const loadProfessionals = async () => {
     try {
@@ -156,55 +164,70 @@ export default function ProfessionalsPage() {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Professionals</h1>
-          <p className="text-gray-600">
-            Find qualified professionals ready to help with specialized services
-          </p>
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Professionals</h1>
+              <p className="text-gray-600">
+                Find qualified professionals ready to help with specialized services
+              </p>
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              {showFilters ? 'Hide Filters' : 'Show Filters'}
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="space-y-4">
-            {/* Search */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Search Professionals
-              </label>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by name, profession, offerings, or qualifications..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-            </div>
+        {showFilters && (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div className="space-y-4">
+              {/* Search */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Search Professionals
+                </label>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search by name, profession, offerings, or qualifications..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                />
+              </div>
 
-            {/* Profession Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Filter by Profession
-              </label>
-              <select
-                value={selectedProfession || ''}
-                onChange={(e) => {
-                  setSelectedProfession(e.target.value || null)
-                }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
-              >
-                <option value="">All Professions</option>
-                {availableProfessions.length > 0 ? (
-                  availableProfessions.map(profession => (
-                    <option key={profession} value={profession}>{profession}</option>
-                  ))
-                ) : (
-                  STANDARD_PROFESSIONS.map(profession => (
-                    <option key={profession} value={profession}>{profession}</option>
-                  ))
-                )}
-              </select>
+              {/* Profession Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filter by Profession
+                </label>
+                <select
+                  value={selectedProfession || ''}
+                  onChange={(e) => {
+                    setSelectedProfession(e.target.value || null)
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+                >
+                  <option value="">All Professions</option>
+                  {availableProfessions.length > 0 ? (
+                    availableProfessions.map(profession => (
+                      <option key={profession} value={profession}>{profession}</option>
+                    ))
+                  ) : (
+                    STANDARD_PROFESSIONS.map(profession => (
+                      <option key={profession} value={profession}>{profession}</option>
+                    ))
+                  )}
+                </select>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Results Count */}
         <div className="mb-4">
@@ -246,15 +269,18 @@ export default function ProfessionalsPage() {
                         className="flex flex-col items-center p-4 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer border border-transparent hover:border-gray-200"
                       >
                         {/* Avatar */}
-                        <div className="h-20 w-20 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 mb-3">
+                        <div 
+                          className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 aspect-square rounded-full bg-gray-200 overflow-hidden flex-shrink-0 mb-3 min-w-[48px] min-h-[48px]"
+                          style={{ aspectRatio: '1 / 1' }}
+                        >
                           {helper.avatar_url ? (
                             <img
                               src={helper.avatar_url}
                               alt={helper.full_name || 'Professional'}
-                              className="h-full w-full object-cover"
+                              className="w-full h-full object-cover object-center"
                             />
                           ) : (
-                            <div className="h-full w-full flex items-center justify-center text-2xl font-semibold text-gray-500">
+                            <div className="h-full w-full flex items-center justify-center text-sm sm:text-lg md:text-2xl font-semibold text-gray-500">
                               {(helper.full_name?.[0] || helper.email?.[0] || '?').toUpperCase()}
                             </div>
                           )}

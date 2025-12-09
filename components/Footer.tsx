@@ -6,7 +6,7 @@ interface FooterProps {
 }
 
 export default function Footer({ variant = 'default' }: FooterProps) {
-  const version = `Betar V${versionData.version}`
+  const version = `Beta V${versionData.version}`
 
   if (variant === 'centered') {
     return (
