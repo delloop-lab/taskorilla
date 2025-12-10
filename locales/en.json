@@ -1,0 +1,201 @@
+{
+  "common": {
+    "welcome": "Welcome",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "submit": "Submit",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "next": "Next",
+    "previous": "Previous",
+    "back": "Back",
+    "continue": "Continue",
+    "yes": "Yes",
+    "no": "No"
+  },
+
+  "navbar": {
+    "tasks": "TASKS",
+    "postTask": "Post a Task",
+    "browseTasks": "Browse Tasks",
+    "helpers": "HELPERS",
+    "browseAllHelpers": "Browse all Helpers",
+    "browseProfessionals": "Browse Professionals",
+    "help": "HELP",
+    "helpCenter": "Help Center",
+    "faqs": "FAQs",
+    "guides": "Guides",
+    "contactSupport": "Contact Support",
+    "login": "Login",
+    "signup": "Sign Up",
+    "logout": "Logout",
+    "profile": "Profile",
+    "myTasks": "My Tasks",
+    "bidsOnYourTasks": "Bids on your tasks",
+    "acceptedBids": "Accepted Bids",
+    "pendingReviews": "Pending Reviews"
+  },
+
+  "language": {
+    "english": "English",
+    "portuguese": "Portuguese",
+    "switchToEnglish": "Switch to English",
+    "switchToPortuguese": "Switch to Portuguese"
+  },
+
+  "homepage": {
+    "tagline": "Brainy. Brawny. Brilliant.",
+    "description1": "Whether you're new here or consider yourself a local, Taskorilla helps you get tasks done or earn by helping others.",
+    "description2": "Big jobs, small jobs, or anything in between, find trusted helpers or professionals, or offer your skills, and get results quickly and safely.",
+    "postTask": "Post a Task",
+    "postTaskSubtitle": "Get help to get things done!",
+    "browseTasks": "Browse Tasks",
+    "browseTasksSubtitle": "Get paid to get things done!"
+  },
+
+  "landing": {
+    "heroTitle": "Life's full of tasks.",
+    "heroSubtitle": "Simple errands or tricky challenges, Taskorilla connects you with helpers who think fast, work smart, and get things done without the hassle.",
+
+    "howItWorksTitle": "How It Works",
+
+    "step1Title": "Post Your Task (Free!)",
+    "step1Text": "Need something done in Portugal? Describe your task, set your budget, and post it. Helpers nearby can submit offers instantly. Only €2 per completed task. Connect with trusted helpers and get things done quickly.",
+
+    "step2Title": "Browse and Earn",
+    "step2Text": "Pick up extra work, show off your skills, and get hired fast. Helpers keep their earnings minus a 10% commission, and task posters pay only when the job is done. Build your reputation with badges, reviews, and a shareable profile. Perfect for newcomers looking to earn while settling in Portugal.",
+
+    "step3Title": "Connect and Complete",
+    "step3Text": "Chat with your helper or tasker, track progress, upload photos, and mark the task done. Leave and receive reviews so everyone knows who's reliable. Stay on top of your tasks, whether you're new in town or a long-time resident.",
+
+    "whyUseTitle": "Why Use Taskorilla?",
+
+    "brainyBrawnyTitle": "Brainy and Brawny Helpers",
+    "brainyBrawnyText": "Skilled, reliable, and clever. Our helpers tackle tasks big and small, from everyday errands to professional services. Show off your skills, services, or professional role, earn badges, collect reviews, and get noticed.",
+
+    "fastLocalTitle": "Fast, Local, and Connected",
+    "fastLocalText": "Helpers nearby see your tasks instantly, submit offers, and chat in real time. Taskers can search for helpers by skills, services, or professional role to find the perfect match.",
+
+    "trustTitle": "Trust and Transparency",
+    "trustText": "Reviews go both ways. Taskers can review helpers, and helpers can review taskers. Track progress, upload photos, and see verified feedback so everyone knows who's reliable.",
+
+    "flexibleTitle": "Flexible and Secure",
+    "flexibleText": "Set your budget, choose the best fit, and stay in control. Your information stays private, and instant alerts keep you in the loop. Post tasks and offer help without juggling multiple accounts.",
+
+    "communityTitle": "Community with a Clever Twist",
+    "communityText": "Taskorilla is not just a service. It is a community of smart, strong helpers and taskers making life easier. Shareable profiles, badges, and discoverable skills make it simple, fun, and effective.",
+
+    "slogan1": "No Monkey Business. Just Results.",
+    "slogan2": "Strong Hands. Smart Moves.",
+    "slogan3": "Swing Into Action.",
+    "slogan4": "Tasks, Conquered.",
+
+    "mascotTitle": "Stop stressing over tasks.",
+    "mascotText": "Post your task today and let Taskorilla handle the heavy lifting, with brains, brawn, and brilliance."
+  },
+
+  "roles": {
+    "taskerTitle": "TASKER",
+    "taskerDescription": "Post Your Task, Free and Easy",
+    "taskerText": "Share what you need done and get it handled without any fees.",
+
+    "helperTitle": "HELPER",
+    "helperDescription": "Earn Money Helping Others",
+    "helperText": "Pick up tasks that fit your skills, submit bids, and earn money while helping others."
+  },
+
+  "footer": {
+    "rights": "© 2025 Taskorilla. All rights reserved. Swing responsibly.",
+    "helpCenter": "Help Center",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "contact": "Contact"
+  },
+
+  "tasks": {
+    "title": "Tasks",
+    "allTasks": "All Tasks",
+    "openTasks": "Open Tasks",
+    "myTasks": "My Tasks",
+    "newTasks": "New Tasks",
+    "mapView": "Map View",
+    "postNewTask": "Post New Task",
+    "showArchivedTasks": "Show archived tasks",
+    "filterByMySkills": "Filter by my skills",
+    "searchTasks": "Search Tasks",
+    "showFilters": "Show Filters",
+    "hide": "Hide",
+    "searchAndFilters": "Search and Filters",
+    "searchKeyword": "Search Keyword",
+    "searchKeywordPlaceholder": "Search Keyword... (e.g., assemble furniture, clean house)",
+    "allServices": "All Services",
+    "services": "Services",
+    "allSkills": "All Skills",
+    "allProfessions": "All Professions",
+    "minBudget": "Min (€)",
+    "maxBudget": "Max (€)",
+    "moreFilters": "More filters",
+    "maximumDistance": "Maximum Distance",
+    "anyDistance": "Any distance",
+    "within5km": "Within 5 km",
+    "within10km": "Within 10 km",
+    "within25km": "Within 25 km",
+    "within50km": "Within 50 km",
+    "minimumRating": "Minimum Rating",
+    "anyRating": "Any rating",
+    "stars4Plus": "4+ stars",
+    "stars45Plus": "4.5+ stars",
+    "stars5Only": "5 stars only",
+    "stillTakingBids": "Still Taking Bids",
+    "yourTasks": "Your Tasks",
+    "lastTwoWeeks": "Last Two Weeks",
+    "noTasksFound": "No tasks found. Be the first to post a task!"
+  },
+
+  "modal": {
+    "loginRequired": "Login Required",
+    "loginRequiredMessage": "You must be logged in to view task details, post tasks, or access messages.",
+    "loginRequiredCreateTask": "You need to log in to create a task. Your form data has been saved and after you log in, your task will be automatically created and you'll be taken to your new task page.",
+    "login": "Login",
+    "signUp": "Sign Up",
+    "cancel": "Cancel"
+  },
+
+  "helpers": {
+    "browseHelpers": "Browse Helpers",
+    "findSkilledHelpers": "Find skilled helpers ready to complete your tasks",
+    "showFilters": "Show Filters",
+    "hideFilters": "Hide Filters",
+    "searchHelpers": "Search Helpers",
+    "searchPlaceholder": "Search by name, bio, skills, services, or qualifications...",
+    "showOnlyProfessional": "Show only professional helpers",
+    "filterBySkill": "Filter by Skill",
+    "filterByService": "Filter by Service",
+    "filterByProfession": "Filter by Profession",
+    "allSkills": "All Skills",
+    "allServices": "All Services",
+    "allProfessions": "All Professions",
+    "foundHelpers": "Found",
+    "helper": "helper",
+    "helpers": "helpers",
+    "noHelpersFound": "No helpers found matching your criteria.",
+    "clearFilters": "Clear Filters"
+  },
+
+  "help": {
+    "stillNeedHelp": "Still need help?",
+    "cantFindMessage": "Can't find what you're looking for? Our support team is here to help!",
+    "contactSupport": "Contact Support",
+    "responseTime": "We typically respond within 24 hours",
+    "didntFindAnswer": "Didn't find your answer?",
+    "checkGuidesOrContact": "Check out our detailed guides or contact our support team",
+    "viewAllGuides": "View All Guides",
+    "stillHaveQuestions": "Still have questions?",
+    "supportTeamHere": "Our support team is here to help you succeed"
+  }
+}

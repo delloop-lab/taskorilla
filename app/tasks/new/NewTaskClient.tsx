@@ -743,7 +743,7 @@ export default function NewTaskClient() {
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-6 space-y-6">
+      <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-4 sm:p-6 space-y-4 sm:space-y-6">
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
             {error}
@@ -756,7 +756,7 @@ export default function NewTaskClient() {
             <label className="block text-sm font-medium text-gray-700 mb-3">
               What type of help do you need? <span className="text-red-500">*</span>
             </label>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
@@ -793,23 +793,23 @@ export default function NewTaskClient() {
         )}
 
         {(requestedHelperLoading || helperRequestError || requestedHelper) && (
-          <div className="border border-primary-200 bg-primary-50 rounded-lg p-4 space-y-3">
-            <div className="flex items-center gap-3">
+          <div className="border border-primary-200 bg-primary-50 rounded-lg p-3 sm:p-4 space-y-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
               {requestedHelper?.avatar_url ? (
                 <img
                   src={requestedHelper.avatar_url}
                   alt={requestedHelper.full_name || requestedHelper.email || 'Helper'}
-                  className="w-14 h-14 rounded-full object-cover border border-white shadow"
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border border-white shadow flex-shrink-0"
                 />
               ) : (
-                <div className="w-14 h-14 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-lg">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-base sm:text-lg flex-shrink-0">
                   {(requestedHelper?.full_name?.[0] || requestedHelper?.email?.[0] || '?').toUpperCase()}
                 </div>
               )}
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="text-xs uppercase tracking-wide text-primary-600 font-semibold">Requesting helper</p>
                 {requestedHelper ? (
-                  <p className="text-lg font-semibold text-gray-900">
+                  <p className="text-base sm:text-lg font-semibold text-gray-900 break-words">
                     {requestedHelper.full_name || requestedHelper.email}
                   </p>
                 ) : (
@@ -823,7 +823,7 @@ export default function NewTaskClient() {
                 <button
                   type="button"
                   onClick={() => router.push(`/helper/${requestedHelper.profile_slug || requestedHelper.id}`)}
-                  className="text-xs text-primary-700 hover:text-primary-900 underline"
+                  className="text-xs text-primary-700 hover:text-primary-900 underline self-start sm:self-center"
                 >
                   View profile
                 </button>
@@ -831,9 +831,9 @@ export default function NewTaskClient() {
             </div>
 
             {helperRequestError && (
-              <div className="bg-white border border-red-200 text-red-700 text-sm rounded-md p-3 flex items-center justify-between gap-3">
-                <span>{helperRequestError}</span>
-                <button type="button" onClick={clearRequestedHelper} className="text-red-700 font-semibold">
+              <div className="bg-white border border-red-200 text-red-700 text-xs sm:text-sm rounded-md p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3">
+                <span className="flex-1">{helperRequestError}</span>
+                <button type="button" onClick={clearRequestedHelper} className="text-red-700 font-semibold text-xs sm:text-sm">
                   Clear
                 </button>
               </div>
@@ -928,18 +928,18 @@ export default function NewTaskClient() {
             </label>
             <div className="space-y-3">
               {imageUrls.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                   {imageUrls.map((url, index) => (
                     <div key={index} className="relative border-2 border-gray-300 rounded-lg overflow-hidden">
                       <img
                         src={url}
                         alt={`Task preview ${index + 1}`}
-                        className="w-full h-48 object-cover"
+                        className="w-full h-40 sm:h-48 object-cover"
                       />
                       <button
                         type="button"
                         onClick={() => handleRemoveImage(index)}
-                        className="absolute top-2 right-2 bg-red-600 text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-red-700 shadow-lg"
+                        className="absolute top-2 right-2 bg-red-600 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded text-xs sm:text-sm font-medium hover:bg-red-700 shadow-lg"
                       >
                         Remove
                       </button>
@@ -947,12 +947,12 @@ export default function NewTaskClient() {
                   ))}
                 </div>
               )}
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                 <label
                   htmlFor="image-upload"
-                  className="cursor-pointer inline-flex items-center px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:border-primary-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                  className="cursor-pointer inline-flex items-center justify-center px-3 sm:px-4 py-2 sm:py-2.5 border-2 border-dashed border-gray-300 rounded-md text-xs sm:text-sm font-medium text-gray-700 hover:border-primary-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
                 >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                   {imageUploading ? 'Uploading...' : 'Add Images'}
@@ -978,7 +978,7 @@ export default function NewTaskClient() {
 
         {!isHelperRequest && (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label htmlFor="budget" className="block text-sm font-medium text-gray-700 mb-2">
                   Budget (€) <span className="text-gray-500 font-normal">(Optional)</span>
@@ -1204,7 +1204,7 @@ export default function NewTaskClient() {
           </>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           <div>
             <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-2">
               Country <span className="text-red-500">*</span>
@@ -1311,7 +1311,7 @@ export default function NewTaskClient() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           <div>
             <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
               Location (Address)
@@ -1355,18 +1355,18 @@ export default function NewTaskClient() {
           </div>
         )}
 
-        <div className="flex justify-end space-x-4">
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-4">
           <button
             type="button"
             onClick={() => router.back()}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700 disabled:opacity-50"
+            className="w-full sm:w-auto px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700 disabled:opacity-50"
           >
             {loading ? 'Posting...' : 'Post Task'}
           </button>

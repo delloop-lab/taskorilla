@@ -6,7 +6,7 @@ const withPWA = require('next-pwa')({
   fallbacks: {
     document: '/offline.html',
   },
-  buildExcludes: [/app-build-manifest\.json$/],
+  buildExcludes: [/app-build-manifest\.json$/, /_buildManifest\.js$/],
   publicExcludes: ['!noprecache/**/*'],
   runtimeCaching: [
     // Static assets - highest priority, cache first

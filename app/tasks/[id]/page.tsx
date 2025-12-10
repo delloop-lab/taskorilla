@@ -1695,13 +1695,13 @@ export default function TaskDetailPage() {
         ← Back to tasks
       </Link>
 
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <div className="flex gap-6">
+      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
           {(task.images && task.images.length > 0) || task.image_url ? (
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 w-full sm:w-auto">
               {task.images && task.images.length > 0 ? (
                 <div className="space-y-2">
-                  <div className="w-64 h-64 md:w-80 md:h-80 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                  <div className="w-full sm:w-64 sm:h-64 md:w-80 md:h-80 h-48 sm:h-auto bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center mx-auto sm:mx-0">
                     <img
                       src={task.images[0].image_url}
                       alt={task.title}
@@ -1711,7 +1711,7 @@ export default function TaskDetailPage() {
                   {task.images.length > 1 && (
                     <div className="grid grid-cols-3 gap-2">
                       {task.images.slice(1, 4).map((img, index) => (
-                        <div key={img.id} className="w-full h-20 bg-gray-100 rounded overflow-hidden">
+                        <div key={img.id} className="w-full h-16 sm:h-20 bg-gray-100 rounded overflow-hidden">
                           <img
                             src={img.image_url}
                             alt={`${task.title} ${index + 2}`}
@@ -1720,7 +1720,7 @@ export default function TaskDetailPage() {
                         </div>
                       ))}
                       {task.images.length > 4 && (
-                        <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-600">
+                        <div className="w-full h-16 sm:h-20 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-600">
                           +{task.images.length - 4} more
                         </div>
                       )}
@@ -1728,7 +1728,7 @@ export default function TaskDetailPage() {
                   )}
                 </div>
               ) : task.image_url ? (
-                <div className="w-64 h-64 md:w-80 md:h-80 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                <div className="w-full sm:w-64 sm:h-64 md:w-80 md:h-80 h-48 sm:h-auto bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center mx-auto sm:mx-0">
                   <img
                     src={task.image_url}
                     alt={task.title}
@@ -1740,12 +1740,12 @@ export default function TaskDetailPage() {
           ) : null}
           
           <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">{task.title}</h1>
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 break-words">{task.title}</h1>
                 {task.user && (
-                  <div className="flex items-center space-x-2 flex-wrap">
-                    <span className="text-gray-600">Posted by </span>
+                  <div className="flex items-center flex-wrap gap-2">
+                    <span className="text-xs sm:text-sm text-gray-600">Posted by </span>
                     <button
                       onClick={(e) => {
                         e.preventDefault()
@@ -1753,19 +1753,19 @@ export default function TaskDetailPage() {
                         setSelectedUserId(task.created_by)
                         setIsProfileModalOpen(true)
                       }}
-                      className="text-primary-600 hover:text-primary-700 hover:underline flex items-center gap-2"
+                      className="text-primary-600 hover:text-primary-700 hover:underline flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm min-w-0"
                     >
                       {task.user.avatar_url && (
                         <img
                           src={task.user.avatar_url}
                           alt={task.user.full_name || task.user.email}
-                          className="w-6 h-6 rounded-full object-cover"
+                          className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover flex-shrink-0"
                         />
                       )}
-                      <span>{task.user.full_name || task.user.email}</span>
+                      <span className="truncate">{task.user.full_name || task.user.email}</span>
                     </button>
                     {task.user.rating !== null && task.user.rating !== undefined && (
-                      <span className="text-sm text-amber-600 font-semibold flex items-center">
+                      <span className="text-xs sm:text-sm text-amber-600 font-semibold flex items-center whitespace-nowrap">
                         <span className="mr-1">★</span>
                         <span>{task.user.rating.toFixed(1)}</span>
                         {task.user.reviewCount && task.user.reviewCount > 0 && (
@@ -1782,7 +1782,7 @@ export default function TaskDetailPage() {
                 )}
               </div>
               <span
-                className={`px-3 py-1 text-sm font-medium rounded flex-shrink-0 ${
+                className={`px-3 py-1 text-xs sm:text-sm font-medium rounded flex-shrink-0 self-start ${
                   task.status === 'open'
                     ? 'bg-green-100 text-green-800'
                     : task.status === 'in_progress'
@@ -1797,8 +1797,8 @@ export default function TaskDetailPage() {
             </div>
 
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Description</h2>
-              <p className="text-gray-700 whitespace-pre-wrap">{task.description}</p>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Description</h2>
+              <p className="text-sm sm:text-base text-gray-700 whitespace-pre-wrap break-words">{task.description}</p>
             </div>
 
             {task.required_skills && task.required_skills.length > 0 && (
@@ -1830,10 +1830,10 @@ export default function TaskDetailPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
           <div>
-            <p className="text-sm text-gray-500">Budget</p>
-            <p className="text-2xl font-bold text-primary-600">{task.budget ? formatEuro(task.budget, false) : 'Quote'}</p>
+            <p className="text-xs sm:text-sm text-gray-500">Budget</p>
+            <p className="text-xl sm:text-2xl font-bold text-primary-600">{task.budget ? formatEuro(task.budget, false) : 'Quote'}</p>
             {/* Payment Status Badge */}
             {task.payment_status && task.payment_status !== 'pending' && (
               <span className={`inline-block mt-1 px-2 py-1 text-xs font-medium rounded ${
@@ -1856,20 +1856,20 @@ export default function TaskDetailPage() {
           </div>
           {task.category && (
             <div>
-              <p className="text-sm text-gray-500">Category</p>
-              <p className="text-lg font-medium">{task.category}</p>
+              <p className="text-xs sm:text-sm text-gray-500">Category</p>
+              <p className="text-base sm:text-lg font-medium break-words">{task.category}</p>
             </div>
           )}
           {task.location && (
             <div>
-              <p className="text-sm text-gray-500">Location</p>
-              <p className="text-lg font-medium">{extractTownName(task.location)}</p>
+              <p className="text-xs sm:text-sm text-gray-500">Location</p>
+              <p className="text-base sm:text-lg font-medium break-words">{extractTownName(task.location)}</p>
             </div>
           )}
           {task.due_date && (
             <div>
-              <p className="text-sm text-gray-500">Due Date</p>
-              <p className="text-lg font-medium">
+              <p className="text-xs sm:text-sm text-gray-500">Due Date</p>
+              <p className="text-base sm:text-lg font-medium">
                 {format(new Date(task.due_date), 'MMM d, yyyy')}
               </p>
             </div>
@@ -1957,11 +1957,11 @@ export default function TaskDetailPage() {
         )}
 
         {isTaskOwner && (
-          <div className="mb-6 flex space-x-3">
+          <div className="mb-6 flex flex-wrap gap-2 sm:gap-3">
             {task.status === 'open' && (
               <Link
                 href={`/tasks/${taskId}/edit`}
-                className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
+                className="bg-primary-600 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium hover:bg-primary-700 flex-1 sm:flex-none min-w-[120px] text-center"
               >
                 Edit Task
               </Link>
@@ -1969,7 +1969,7 @@ export default function TaskDetailPage() {
             {task.status === 'in_progress' && (
               <button
                 onClick={handleMarkCompleted}
-                className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700"
+                className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium hover:bg-green-700 flex-1 sm:flex-none min-w-[120px]"
               >
                 Mark as Completed
               </button>
@@ -1977,21 +1977,21 @@ export default function TaskDetailPage() {
             {task.archived ? (
               <button
                 onClick={handleUnarchiveTask}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
+                className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium hover:bg-blue-700 flex-1 sm:flex-none min-w-[120px]"
               >
                 Unarchive Task
               </button>
             ) : (
               <button
                 onClick={handleArchiveTask}
-                className="bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
+                className="bg-gray-600 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium hover:bg-gray-700 flex-1 sm:flex-none min-w-[120px]"
               >
                 Archive Task
               </button>
             )}
             <button
               onClick={handleDeleteTask}
-              className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700"
+              className="bg-red-600 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium hover:bg-red-700 flex-1 sm:flex-none min-w-[120px]"
             >
               Delete Task
             </button>
@@ -2015,14 +2015,14 @@ export default function TaskDetailPage() {
               </button>
             </div>
             
-            <div className="flex space-x-3">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               <button
                 onClick={handleCancelTask}
-                className="bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-orange-700"
+                className="bg-orange-600 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium hover:bg-orange-700 flex-1 sm:flex-none min-w-[120px]"
               >
                 Cancel Task
               </button>
-              <label className="cursor-pointer bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700">
+              <label className="cursor-pointer bg-primary-600 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium hover:bg-primary-700 flex-1 sm:flex-none min-w-[120px] text-center">
                 <input
                   type="file"
                   accept="image/*"
@@ -2067,8 +2067,8 @@ export default function TaskDetailPage() {
                     </button>
                   </div>
                 )}
-                <div className="flex items-center gap-3">
-                  <label className="cursor-pointer inline-flex items-center text-sm text-gray-600 hover:text-primary-600">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                  <label className="cursor-pointer inline-flex items-center justify-center text-xs sm:text-sm text-gray-600 hover:text-primary-600 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
                     <input
                       type="file"
                       accept="image/*"
@@ -2076,7 +2076,7 @@ export default function TaskDetailPage() {
                       disabled={uploadingProgressPhoto}
                       className="sr-only"
                     />
-                    <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                     {uploadingProgressPhoto ? 'Uploading...' : 'Add Photo'}
@@ -2084,7 +2084,7 @@ export default function TaskDetailPage() {
                   <button
                     onClick={handleAddProgressUpdate}
                     disabled={addingProgressUpdate || (!newProgressMessage.trim() && !progressPhoto)}
-                    className="ml-auto bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-primary-600 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed sm:ml-auto"
                   >
                     {addingProgressUpdate ? 'Adding...' : 'Add Update'}
                   </button>

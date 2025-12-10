@@ -8,8 +8,10 @@ import Link from 'next/link'
 import FeaturedHelpers from '@/components/FeaturedHelpers'
 import { STANDARD_SKILLS, STANDARD_SERVICES, helperMatchesSearch } from '@/lib/helper-constants'
 import { STANDARD_PROFESSIONS, helperMatchesProfession } from '@/lib/profession-constants'
+import { useLanguage } from '@/lib/i18n'
 
 export default function BrowseHelpersPage() {
+  const { t } = useLanguage()
   const router = useRouter()
   const [helpers, setHelpers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
@@ -171,9 +173,9 @@ export default function BrowseHelpersPage() {
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Browse Helpers</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('helpers.browseHelpers')}</h1>
             <p className="text-gray-600">
-              Find skilled helpers ready to complete your tasks
+              {t('helpers.findSkilledHelpers')}
             </p>
           </div>
           <button
@@ -183,7 +185,7 @@ export default function BrowseHelpersPage() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
             </svg>
-            {showFilters ? 'Hide Filters' : 'Show Filters'}
+            {showFilters ? t('helpers.hideFilters') : t('helpers.showFilters')}
           </button>
         </div>
 
@@ -194,13 +196,13 @@ export default function BrowseHelpersPage() {
             {/* Search */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Search Helpers
+                {t('helpers.searchHelpers')}
               </label>
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by name, bio, skills, services, or qualifications..."
+                placeholder={t('helpers.searchPlaceholder')}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
@@ -220,7 +222,7 @@ export default function BrowseHelpersPage() {
                 className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
               />
               <label htmlFor="professionalsOnly" className="ml-2 block text-sm font-medium text-gray-700">
-                Show only professional helpers
+                {t('helpers.showOnlyProfessional')}
               </label>
             </div>
 
@@ -230,7 +232,7 @@ export default function BrowseHelpersPage() {
               {!showProfessionalsOnly && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Filter by Skill
+                    {t('helpers.filterBySkill')}
                   </label>
                   <select
                     value={selectedSkill || ''}
@@ -239,7 +241,7 @@ export default function BrowseHelpersPage() {
                     }}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
                   >
-                    <option value="">All Skills</option>
+                    <option value="">{t('helpers.allSkills')}</option>
                     {availableSkills.map(skill => (
                       <option key={skill} value={skill}>{skill}</option>
                     ))}
@@ -251,7 +253,7 @@ export default function BrowseHelpersPage() {
               {!showProfessionalsOnly && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Filter by Service
+                    {t('helpers.filterByService')}
                   </label>
                   <select
                     value={selectedService || ''}
@@ -260,7 +262,7 @@ export default function BrowseHelpersPage() {
                     }}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
                   >
-                    <option value="">All Services</option>
+                    <option value="">{t('helpers.allServices')}</option>
                     {availableServices.length > 0 ? (
                       availableServices.map(service => (
                         <option key={service} value={service}>{service}</option>
@@ -277,7 +279,7 @@ export default function BrowseHelpersPage() {
               {/* Profession Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Filter by Profession
+                  {t('helpers.filterByProfession')}
                 </label>
                 <select
                   value={selectedProfession || ''}
@@ -286,7 +288,7 @@ export default function BrowseHelpersPage() {
                   }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
                 >
-                  <option value="">All Professions</option>
+                  <option value="">{t('helpers.allProfessions')}</option>
                   {availableProfessions.length > 0 ? (
                     availableProfessions.map(profession => (
                       <option key={profession} value={profession}>{profession}</option>
@@ -306,7 +308,7 @@ export default function BrowseHelpersPage() {
         {/* Results Count */}
         <div className="mb-4">
           <p className="text-gray-600">
-            Found <span className="font-semibold text-gray-900">{filteredHelpers.length}</span> helper{filteredHelpers.length !== 1 ? 's' : ''}
+            {t('helpers.foundHelpers')} <span className="font-semibold text-gray-900">{filteredHelpers.length}</span> {filteredHelpers.length !== 1 ? t('helpers.helpers') : t('helpers.helper')}
           </p>
         </div>
 
@@ -324,7 +326,7 @@ export default function BrowseHelpersPage() {
               }}
               className="mt-4 text-primary-600 hover:text-primary-700 font-medium"
             >
-              Clear filters
+              {t('helpers.clearFilters')}
             </button>
           </div>
         ) : (

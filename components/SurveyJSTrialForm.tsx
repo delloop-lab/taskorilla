@@ -11,6 +11,7 @@ import { geocodePostcode, isPostcodeComplete, extractTownName } from '@/lib/geoc
 import { formatPostcodeForCountry } from '@/lib/postcode'
 import { formatEuro } from '@/lib/currency'
 import { format } from 'date-fns'
+import { useLanguage } from '@/lib/i18n'
 
 // Import all SurveyJS theme CSS files upfront
 // SurveyJS themes must be imported before use - they don't dynamically load
@@ -37,6 +38,7 @@ if (surveyLocalization && surveyLocalization.locales && surveyLocalization.local
 }
 
 export default function SurveyJSTrialForm() {
+  const { t } = useLanguage()
   const [surveyModel, setSurveyModel] = useState<Model | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [professions, setProfessions] = useState<string[]>([])
@@ -2485,22 +2487,22 @@ export default function SurveyJSTrialForm() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
             <div className="p-6">
-              <h2 className="text-2xl font-bold mb-4 text-gray-900">Login Required</h2>
+              <h2 className="text-2xl font-bold mb-4 text-gray-900">{t('modal.loginRequired')}</h2>
               <p className="text-gray-600 mb-6">
-                You need to log in to create a task. Your form data has been saved and after you log in, your task will be automatically created and you'll be taken to your new task page.
+                {t('modal.loginRequiredCreateTask')}
               </p>
               <div className="flex flex-col gap-3">
                 <a
                   href="/login?redirect=/tasks/new"
                   className="flex-1 bg-primary-600 text-white px-4 py-3 rounded-md text-center hover:bg-primary-700 font-medium transition-colors"
                 >
-                  Login
+                  {t('modal.login')}
                 </a>
                 <a
                   href="/register?redirect=/tasks/new"
                   className="flex-1 bg-gray-200 text-gray-700 px-4 py-3 rounded-md text-center hover:bg-gray-300 font-medium transition-colors"
                 >
-                  Sign Up
+                  {t('modal.signUp')}
                 </a>
                 <button
                   onClick={() => {
@@ -2509,7 +2511,7 @@ export default function SurveyJSTrialForm() {
                   }}
                   className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
                 >
-                  Cancel
+                  {t('modal.cancel')}
                 </button>
               </div>
             </div>

@@ -67,3 +67,6 @@ This will generate icons in `public/icons/` from the source image at `public/ima
 - Icons are generated from the mascot image - ensure it exists before running the script
 - Theme color: #FD9212 (orange)
 - Background color: #ffffff (white)
+
+
+

@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react'
 import { notFound } from 'next/navigation'
 import FAQAccordion from '@/components/FAQAccordion'
 import GuideFeedbackButtons from '@/components/GuideFeedbackButtons'
+import GuideStillNeedHelp from '@/components/GuideStillNeedHelp'
 import { getGuideBySlug, getFAQsByCategory, slugify, getAllGuides } from '@/lib/help-utils'
 
 export function generateStaticParams() {
@@ -103,20 +104,7 @@ export default function GuidePage({ params }: { params: { slug: string } }) {
       </section>
 
       {/* Still Need Help */}
-      <section className="py-12 px-4 bg-white border-t border-gray-200">
-        <div className="container mx-auto max-w-4xl text-center">
-          <h2 className="text-2xl font-bold mb-4">Still have questions?</h2>
-          <p className="text-gray-600 mb-6">
-            Our support team is here to help you succeed
-          </p>
-          <a 
-            href="mailto:tee@taskorilla.com"
-            className="inline-block px-8 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition-colors"
-          >
-            Contact Support
-          </a>
-        </div>
-      </section>
+      <GuideStillNeedHelp />
     </div>
   )
 }

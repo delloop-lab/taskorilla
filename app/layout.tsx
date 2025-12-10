@@ -4,6 +4,7 @@ import './globals.css'
 import Navbar from '@/components/Navbar'
 import PWAHead from '@/components/PWAHead'
 import InstallPromptModal from '@/components/InstallPromptModal'
+import LanguageProviderWrapper from '@/components/LanguageProviderWrapper'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -104,12 +105,14 @@ export default function RootLayout({
             `,
           }}
         />
-        <PWAHead />
-        <InstallPromptModal />
-        <Navbar />
-        <main className="min-h-screen bg-gray-50">
-          {children}
-        </main>
+        <LanguageProviderWrapper>
+          <PWAHead />
+          <InstallPromptModal />
+          <Navbar />
+          <main className="min-h-screen bg-gray-50">
+            {children}
+          </main>
+        </LanguageProviderWrapper>
         {/* Global script to replace rgb(25, 179, 148) with rgb(253, 146, 18) in SurveyJS */}
         <script
           dangerouslySetInnerHTML={{

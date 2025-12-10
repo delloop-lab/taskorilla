@@ -5,8 +5,10 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { getPendingReviews } from '@/lib/review-utils'
+import { useLanguage } from '@/lib/i18n'
 
 export default function Navbar() {
+  const { language, setLanguage, t } = useLanguage()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [profileName, setProfileName] = useState<string | null>(null)
@@ -202,20 +204,28 @@ export default function Navbar() {
 
         const taskIds = userTasks.map(t => t.id)
 
-        // Count pending bids on those tasks
-        const { count, error: bidsError } = await supabase
+        // Get pending bids on those tasks from OTHER users (not the task creator)
+        // Count unique tasks with pending bids (not total bid count)
+        const { data: bidsOnMyTasks, error: bidsError } = await supabase
           .from('bids')
-          .select('id', { count: 'exact', head: true })
+          .select('task_id, user_id')
           .in('task_id', taskIds)
           .eq('status', 'pending')
+          .neq('user_id', user.id) // Only bids from other users, not the task creator
 
         if (bidsError) {
           console.error('Error counting pending bids:', bidsError)
           return
         }
 
-        console.log('🔔 Pending bids count:', count)
-        const bidCount = count || 0
+        // Count unique tasks that have pending bids (not total bid count)
+        // This matches the filter logic which shows unique tasks
+        const uniqueTaskIdsWithBids = bidsOnMyTasks 
+          ? [...new Set(bidsOnMyTasks.map(bid => bid.task_id))] 
+          : []
+        
+        const bidCount = uniqueTaskIdsWithBids.length
+        console.log('🔔 Pending bids - Total bids:', bidsOnMyTasks?.length || 0, 'Unique tasks with bids:', bidCount, 'Task IDs:', uniqueTaskIdsWithBids)
         setPendingBidsCount(bidCount)
         setHasPendingBids(bidCount > 0)
         
@@ -464,7 +474,7 @@ export default function Navbar() {
               <button
                 className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1"
               >
-                TASKS
+                {t('navbar.tasks')}
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -494,13 +504,13 @@ export default function Navbar() {
                       href="/tasks/new"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
-                      Post a Task
+                      {t('navbar.postTask')}
                     </Link>
                     <Link
                       href="/tasks"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
-                      Browse Tasks
+                      {t('navbar.browseTasks')}
                     </Link>
                   </div>
                 </>
@@ -528,7 +538,7 @@ export default function Navbar() {
               <button
                 className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1"
               >
-                HELPERS
+                {t('navbar.helpers')}
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -558,13 +568,13 @@ export default function Navbar() {
                       href="/helpers"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
-                      Browse all Helpers
+                      {t('navbar.browseAllHelpers')}
                     </Link>
                     <Link
                       href="/professionals"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
-                      Browse Professionals
+                      {t('navbar.browseProfessionals')}
                     </Link>
                   </div>
                 </>
@@ -592,7 +602,7 @@ export default function Navbar() {
               <button
                 className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1"
               >
-                HELP
+                {t('navbar.help')}
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -622,49 +632,87 @@ export default function Navbar() {
                       href="/help"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
-                      Help Center
+                      {t('navbar.helpCenter')}
                     </Link>
                     <Link
                       href="/help/faq"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
-                      FAQs
+                      {t('navbar.faqs')}
                     </Link>
                     <Link
                       href="/help/guides"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
-                      Guides
+                      {t('navbar.guides')}
                     </Link>
                     <a
                       href="mailto:tee@taskorilla.com"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
-                      Contact Support
+                      {t('navbar.contactSupport')}
                     </a>
                   </div>
                 </>
               )}
             </div>
+            {/* Language Switcher */}
+            <div className="flex items-center border border-gray-300 rounded-md overflow-hidden">
+              <button
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  console.log('Language switch clicked: EN')
+                  setLanguage('en')
+                }}
+                className={`px-3 py-2 text-sm font-medium transition-colors ${
+                  language === 'en'
+                    ? 'bg-[#FD9212] text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+                title={t('language.switchToEnglish')}
+              >
+                EN
+              </button>
+              <div className="w-px h-6 bg-gray-300" />
+              <button
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  console.log('Language switch clicked: PT')
+                  setLanguage('pt')
+                }}
+                className={`px-3 py-2 text-sm font-medium transition-colors ${
+                  language === 'pt'
+                    ? 'bg-[#FD9212] text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+                title={t('language.switchToPortuguese')}
+              >
+                PT
+              </button>
+            </div>
             {user ? (
               <>
-                {hasPendingBids && (
-                  <button
-                    onClick={() => {
-                      window.dispatchEvent(new Event('bids-viewed'))
-                      router.push('/tasks?filter=my_tasks')
-                    }}
-                    className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium relative cursor-pointer"
-                    title="Bids on your tasks"
-                  >
-                    Bids
-                    {pendingBidsCount > 0 && !bidsViewed && (
-                      <span className="absolute top-0 right-0 bg-green-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center min-w-[20px] px-1 transform translate-x-1/2 -translate-y-1/2">
-                        {pendingBidsCount > 99 ? '99+' : pendingBidsCount}
-                      </span>
-                    )}
-                  </button>
-                )}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    console.log('🔍 Bids button clicked, navigating to /tasks?filter=my_bids')
+                    window.dispatchEvent(new Event('bids-viewed'))
+                    router.push('/tasks?filter=my_bids')
+                  }}
+                  className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium relative cursor-pointer"
+                  title="Bids on your tasks"
+                >
+                  Bids
+                  {hasPendingBids && pendingBidsCount > 0 && !bidsViewed && (
+                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
+                    </span>
+                  )}
+                </button>
                 {acceptedBidsCount > 0 && firstAcceptedTaskId && (
                   <button
                     onClick={() => router.push(`/tasks/${firstAcceptedTaskId}`)}
@@ -758,6 +806,40 @@ export default function Navbar() {
 
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center space-x-2">
+            {/* Language Switcher - Mobile (visible outside menu) */}
+            <div className="flex items-center border border-gray-300 rounded-md overflow-hidden mr-2">
+              <button
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setLanguage('en')
+                }}
+                className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  language === 'en'
+                    ? 'bg-[#FD9212] text-white'
+                    : 'text-gray-700 bg-white hover:bg-gray-50'
+                }`}
+                title={t('language.switchToEnglish')}
+              >
+                EN
+              </button>
+              <div className="w-px h-5 bg-gray-300" />
+              <button
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setLanguage('pt')
+                }}
+                className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  language === 'pt'
+                    ? 'bg-[#FD9212] text-white'
+                    : 'text-gray-700 bg-white hover:bg-gray-50'
+                }`}
+                title={t('language.switchToPortuguese')}
+              >
+                PT
+              </button>
+            </div>
             {user && unreadCount > 0 && (
               <Link
                 href="/messages"
@@ -813,89 +895,96 @@ export default function Navbar() {
             )}
             {/* TASKS Section */}
             <div className="px-4 py-2">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">TASKS</h3>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('navbar.tasks')}</h3>
               <Link
                 href="/tasks/new"
                 className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Post a Task
+                {t('navbar.postTask')}
               </Link>
               <Link
                 href="/tasks"
                 className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Browse Tasks
+                {t('navbar.browseTasks')}
               </Link>
             </div>
 
             {/* HELPERS Section */}
             <div className="px-4 py-2">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">HELPERS</h3>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('navbar.helpers')}</h3>
               <Link
                 href="/helpers"
                 className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Browse all Helpers
+                {t('navbar.browseAllHelpers')}
               </Link>
               <Link
                 href="/professionals"
                 className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Browse Professionals
+                {t('navbar.browseProfessionals')}
               </Link>
             </div>
 
             {/* HELP Section */}
             <div className="px-4 py-2">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">HELP</h3>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('navbar.help')}</h3>
               <Link
                 href="/help"
                 className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Help Center
+                {t('navbar.helpCenter')}
               </Link>
               <Link
                 href="/help/faq"
                 className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                FAQs
+                {t('navbar.faqs')}
               </Link>
               <Link
                 href="/help/guides"
                 className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Guides
+                {t('navbar.guides')}
               </Link>
               <a
                 href="mailto:tee@taskorilla.com"
                 className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Contact Support
+                {t('navbar.contactSupport')}
               </a>
             </div>
 
             {user ? (
               <>
-                {hasPendingBids && (
-                  <Link
-                    href="/tasks?filter=my_tasks"
-                    className={`block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium ${pendingBidsCount > 0 && !bidsViewed ? 'bg-green-50' : ''}`}
-                    onClick={() => {
-                      window.dispatchEvent(new Event('bids-viewed'))
-                      setMobileMenuOpen(false)
-                    }}
-                  >
-                    {pendingBidsCount > 0 && !bidsViewed ? `🔔 New Bids (${pendingBidsCount > 99 ? '99+' : pendingBidsCount})` : 'Bids'}
-                  </Link>
-                )}
+                <Link
+                  href="/tasks?filter=my_bids"
+                  className={`block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium ${hasPendingBids && pendingBidsCount > 0 && !bidsViewed ? 'bg-orange-50' : ''}`}
+                  onClick={(e) => {
+                    console.log('🔍 Mobile Bids link clicked, navigating to /tasks?filter=my_bids')
+                    window.dispatchEvent(new Event('bids-viewed'))
+                    setMobileMenuOpen(false)
+                  }}
+                >
+                  <span className="flex items-center gap-2">
+                    Bids
+                    {hasPendingBids && pendingBidsCount > 0 && !bidsViewed && (
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
+                      </span>
+                    )}
+                  </span>
+                </Link>
                 {acceptedBidsCount > 0 && firstAcceptedTaskId && (
                   <Link
                     href={`/tasks/${firstAcceptedTaskId}`}
@@ -938,7 +1027,7 @@ export default function Navbar() {
                   className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Profile
+                  {t('navbar.profile')}
                 </Link>
                 <button
                   onClick={() => {
@@ -947,7 +1036,7 @@ export default function Navbar() {
                   }}
                   className="block w-full text-left bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
                 >
-                  Logout
+                  {t('navbar.logout')}
                 </button>
               </>
             ) : (
@@ -957,14 +1046,14 @@ export default function Navbar() {
                   className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  LOGIN
+                  {t('navbar.login')}
                 </Link>
                 <Link
                   href="/register"
                   className="block bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700 text-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Sign Up
+                  {t('navbar.signup')}
                 </Link>
               </>
             )}

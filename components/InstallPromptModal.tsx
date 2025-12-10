@@ -132,11 +132,6 @@ export default function InstallPromptModal() {
       window.removeEventListener('pwa-install-available', handlePWAInstallAvailable)
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
     }
-
-    return () => {
-      window.removeEventListener('pwa-install-available', handlePWAInstallAvailable)
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
-    }
   }, [])
 
   const handleInstall = async () => {

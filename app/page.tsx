@@ -1,3 +1,5 @@
+'use client'
+
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -5,8 +7,10 @@ import { CheckCircle, MessageSquare, Star, ClipboardList, Wallet } from 'lucide-
 import { TransparentGorillaImage } from '@/components/TransparentGorillaImage'
 import TrafficTracker from '@/components/TrafficTracker'
 import Footer from '@/components/Footer'
+import { useLanguage } from '@/lib/i18n'
 
 export default function Home() {
+  const { t } = useLanguage()
   return (
     <div className="min-h-screen bg-background">
       <TrafficTracker pageName="home" />
@@ -16,18 +20,14 @@ export default function Home() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="space-y-6 animate-fade-in">
               <h1 className="text-5xl md:text-6xl font-bold text-foreground leading-tight">
-                Brainy. Brawny. Brilliant.
+                {t('homepage.tagline')}
               </h1>
               <div className="text-xl text-muted-foreground">
                 <p>
-                  <img 
-                    src="https://flagcdn.com/w20/pt.png" 
-                    alt="Portugal flag" 
-                    className="inline-block h-4 w-6 object-cover mr-2"
-                  /> Whether you're new here or have lived in Portugal for years, Taskorilla helps you get tasks done or earn by helping others.
+                  {t('homepage.description1')}
                 </p>
                 <p>
-                  Big jobs, small jobs, or anything in between, find trusted helpers or professionals, or offer your skills, and get results quickly and safely.
+                  {t('homepage.description2')}
                 </p>
               </div>
               <div className="flex flex-wrap gap-4 pt-[10px] mb-0">
@@ -36,8 +36,8 @@ export default function Home() {
                     🆘
                   </div>
                   <div className="button-text">
-                    <h2 className="button-title">Post a Task</h2>
-                    <p className="button-subtitle">Get <strong>help</strong> to get things done!</p>
+                    <h2 className="button-title">{t('homepage.postTask')}</h2>
+                    <p className="button-subtitle">{t('homepage.postTaskSubtitle')}</p>
                   </div>
                 </Link>
                 <Link href="/tasks" className="action-button browse-button">
@@ -45,8 +45,8 @@ export default function Home() {
                     💵
                   </div>
                   <div className="button-text">
-                    <h2 className="button-title">Browse Tasks</h2>
-                    <p className="button-subtitle">Get <strong>paid</strong> to get things done!</p>
+                    <h2 className="button-title">{t('homepage.browseTasks')}</h2>
+                    <p className="button-subtitle">{t('homepage.browseTasksSubtitle')}</p>
                   </div>
                 </Link>
               </div>
@@ -62,7 +62,7 @@ export default function Home() {
       <section className="pt-4 md:pt-6 pb-8 md:pb-12 px-4 bg-muted/30">
         <div className="container mx-auto max-w-4xl text-center">
           <p className="text-lg text-muted-foreground">
-            Life's full of tasks. Some are simple errands, others are tricky challenges. Whatever it is, Taskorilla connects you with helpers who think fast, work smart, and get it done without the hassle.
+            {t('landing.heroSubtitle')}
           </p>
         </div>
       </section>
@@ -71,7 +71,7 @@ export default function Home() {
       <section className="py-16 md:py-20 px-4">
         <div className="container mx-auto max-w-6xl">
           <h2 className="text-4xl font-bold text-center mb-16 text-foreground">
-            How It Works
+            {t('landing.howItWorksTitle')}
           </h2>
           <div className="grid md:grid-cols-3 gap-8">
             <Card className="hover-scale">
@@ -80,10 +80,10 @@ export default function Home() {
                   1
                 </div>
                 <h3 className="text-2xl font-semibold text-foreground">
-                  Post Your Task (Free!)
+                  {t('landing.step1Title')}
                 </h3>
                 <p className="text-muted-foreground">
-                  Need something done in Portugal? Describe your task, set your budget, and post it. Helpers nearby can submit offers instantly. Only €2 per completed task. Connect with trusted helpers and get things done quickly.
+                  {t('landing.step1Text')}
                 </p>
               </CardContent>
             </Card>
@@ -94,10 +94,10 @@ export default function Home() {
                   2
                 </div>
                 <h3 className="text-2xl font-semibold text-foreground">
-                  Browse & Earn
+                  {t('landing.step2Title')}
                 </h3>
                 <p className="text-muted-foreground">
-                  Pick up extra work, show off your skills, and get hired fast. Helpers keep their earnings minus a 10% commission, and task posters pay only when the job is done. Build your reputation with badges, reviews, and a shareable profile. Perfect for newcomers looking to earn while settling in Portugal.
+                  {t('landing.step2Text')}
                 </p>
               </CardContent>
             </Card>
@@ -108,10 +108,10 @@ export default function Home() {
                   3
                 </div>
                 <h3 className="text-2xl font-semibold text-foreground">
-                  Connect & Complete
+                  {t('landing.step3Title')}
                 </h3>
                 <p className="text-muted-foreground">
-                  Chat with your helper or tasker, track progress, upload photos, and mark the task done. Leave and receive reviews so everyone knows who's reliable. Every completed task strengthens trust and your reputation. Stay on top of your tasks, whether you're new in town or a long-time resident.
+                  {t('landing.step3Text')}
                 </p>
               </CardContent>
             </Card>
@@ -123,7 +123,7 @@ export default function Home() {
       <section className="pt-12 md:pt-20 pb-20 px-4 bg-muted/30">
         <div className="container mx-auto max-w-6xl">
           <h2 className="text-4xl font-bold text-center mb-16 text-foreground">
-            Why Use Taskorilla?
+            {t('landing.whyUseTitle')}
           </h2>
           <div className="grid md:grid-cols-2 gap-8">
             <Card className="hover-scale">
@@ -131,9 +131,9 @@ export default function Home() {
                 <div className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-secondary flex-shrink-0 mt-1" />
                   <div>
-                    <h3 className="font-bold text-foreground text-lg mb-2">Brainy and Brawny Helpers</h3>
+                    <h3 className="font-bold text-foreground text-lg mb-2">{t('landing.brainyBrawnyTitle')}</h3>
                     <p className="text-muted-foreground">
-                      Skilled, reliable, and clever. Our helpers tackle tasks big and small, from everyday errands to professional services. Show off your skills, services, or professional role, earn badges, collect reviews, and get noticed. Whether you're new to Portugal or a long-time resident, Taskorilla makes it simple to get help or offer it.
+                      {t('landing.brainyBrawnyText')}
                     </p>
                   </div>
                 </div>
@@ -145,9 +145,9 @@ export default function Home() {
                 <div className="flex items-start gap-3">
                   <MessageSquare className="w-6 h-6 text-secondary flex-shrink-0 mt-1" />
                   <div>
-                    <h3 className="font-bold text-foreground text-lg mb-2">Fast, Local, and Connected</h3>
+                    <h3 className="font-bold text-foreground text-lg mb-2">{t('landing.fastLocalTitle')}</h3>
                     <p className="text-muted-foreground">
-                      Helpers nearby see your tasks instantly, submit offers, and chat in real time. Taskers can search for helpers by skills, services, or professional role to find the perfect match, whether it's a casual errand or a professional job.
+                      {t('landing.fastLocalText')}
                     </p>
                   </div>
                 </div>
@@ -159,9 +159,9 @@ export default function Home() {
                 <div className="flex items-start gap-3">
                   <Star className="w-6 h-6 text-secondary flex-shrink-0 mt-1" />
                   <div>
-                    <h3 className="font-bold text-foreground text-lg mb-2">Trust and Transparency</h3>
+                    <h3 className="font-bold text-foreground text-lg mb-2">{t('landing.trustTitle')}</h3>
                     <p className="text-muted-foreground">
-                      Reviews go both ways. Taskers can review helpers, and helpers can review taskers. Track progress, upload photos, and see verified feedback so everyone knows who's reliable.
+                      {t('landing.trustText')}
                     </p>
                   </div>
                 </div>
@@ -173,9 +173,9 @@ export default function Home() {
                 <div className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-secondary flex-shrink-0 mt-1" />
                   <div>
-                    <h3 className="font-bold text-foreground text-lg mb-2">Flexible and Secure</h3>
+                    <h3 className="font-bold text-foreground text-lg mb-2">{t('landing.flexibleTitle')}</h3>
                     <p className="text-muted-foreground">
-                      Set your budget, choose the best fit, and stay in control. Your information stays private, and instant alerts keep you in the loop. Post tasks and offer help, from small jobs to professional services, without juggling multiple accounts.
+                      {t('landing.flexibleText')}
                     </p>
                   </div>
                 </div>
@@ -187,9 +187,9 @@ export default function Home() {
                 <div className="flex items-start gap-3">
                   <CheckCircle className="w-6 h-6 text-secondary flex-shrink-0 mt-1" />
                   <div>
-                    <h3 className="font-bold text-foreground text-lg mb-2">Community with a Clever Twist</h3>
+                    <h3 className="font-bold text-foreground text-lg mb-2">{t('landing.communityTitle')}</h3>
                     <p className="text-muted-foreground">
-                      Taskorilla is not just a service. It is a community of smart, strong helpers and taskers making life easier. Shareable profiles, badges, and discoverable skills make it simple, fun, and effective.
+                      {t('landing.communityText')}
                     </p>
                   </div>
                 </div>
@@ -204,16 +204,16 @@ export default function Home() {
         <div className="container mx-auto max-w-6xl">
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
             <div className="p-6 rounded-lg bg-muted">
-              <p className="text-xl font-bold text-foreground">"No Monkey Business. Just Results."</p>
+              <p className="text-xl font-bold text-foreground">"{t('landing.slogan1')}"</p>
             </div>
             <div className="p-6 rounded-lg bg-muted">
-              <p className="text-xl font-bold text-foreground">"Strong Hands. Smart Moves."</p>
+              <p className="text-xl font-bold text-foreground">"{t('landing.slogan2')}"</p>
             </div>
             <div className="p-6 rounded-lg bg-muted">
-              <p className="text-xl font-bold text-foreground">"Swing Into Action."</p>
+              <p className="text-xl font-bold text-foreground">"{t('landing.slogan3')}"</p>
             </div>
             <div className="p-6 rounded-lg bg-muted">
-              <p className="text-xl font-bold text-foreground">"Tasks, Conquered."</p>
+              <p className="text-xl font-bold text-foreground">"{t('landing.slogan4')}"</p>
             </div>
           </div>
         </div>
@@ -230,11 +230,11 @@ export default function Home() {
                     <ClipboardList className="w-8 h-8 text-white" />
                   </div>
                   <div className="flex-1">
-                    <h2 className="text-sm font-bold text-blue-700 uppercase mb-2">TASKER</h2>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Post Your Task, Free & Easy</h3>
-                    <p className="text-sm text-blue-700 font-medium mb-3">Get help when you need it, no fees.</p>
+                    <h2 className="text-sm font-bold text-blue-700 uppercase mb-2">{t('roles.taskerTitle')}</h2>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{t('roles.taskerDescription')}</h3>
+                    <p className="text-sm text-blue-700 font-medium mb-3">{t('roles.taskerText')}</p>
                     <p className="text-gray-700">
-                      Share what you need done and get it handled without any fees.
+                      {t('roles.taskerText')}
                     </p>
                   </div>
                 </div>
@@ -247,11 +247,11 @@ export default function Home() {
                     <Wallet className="w-8 h-8 text-white" />
                   </div>
                   <div className="flex-1">
-                    <h2 className="text-sm font-bold text-[#D97706] uppercase mb-2">HELPER</h2>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Earn Money Helping Others</h3>
-                    <p className="text-sm text-[#D97706] font-medium mb-3">Pick tasks that suit you, get paid fast.</p>
+                    <h2 className="text-sm font-bold text-[#D97706] uppercase mb-2">{t('roles.helperTitle')}</h2>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{t('roles.helperDescription')}</h3>
+                    <p className="text-sm text-[#D97706] font-medium mb-3">{t('roles.helperText')}</p>
                     <p className="text-gray-700">
-                      Pick up tasks that fit your skills, submit bids, and earn money while helping others.
+                      {t('roles.helperText')}
                     </p>
                   </div>
                 </div>
@@ -275,10 +275,10 @@ export default function Home() {
             </div>
             <div className="text-center space-y-6 order-1 md:order-2">
               <h2 className="text-4xl md:text-5xl font-bold">
-                Stop stressing over tasks.
+                {t('landing.mascotTitle')}
               </h2>
               <p className="text-xl opacity-90">
-                Post your task today and let Taskorilla handle the heavy lifting, with brains, brawn, and brilliance.
+                {t('landing.mascotText')}
               </p>
               <div className="flex flex-col items-center gap-4">
                 <Link href="/tasks/new" className="action-button post-button">
@@ -286,8 +286,8 @@ export default function Home() {
                     🆘
                   </div>
                   <div className="button-text">
-                    <div className="button-title">Post a Task</div>
-                    <div className="button-subtitle">Get help to get things done!</div>
+                    <div className="button-title">{t('homepage.postTask')}</div>
+                    <div className="button-subtitle">{t('homepage.postTaskSubtitle')}</div>
                   </div>
                 </Link>
                 <Link href="/tasks" className="action-button browse-button">
@@ -295,8 +295,8 @@ export default function Home() {
                     💵
                   </div>
                   <div className="button-text">
-                    <div className="button-title">Browse Tasks</div>
-                    <div className="button-subtitle">Get paid to get things done!</div>
+                    <div className="button-title">{t('homepage.browseTasks')}</div>
+                    <div className="button-subtitle">{t('homepage.browseTasksSubtitle')}</div>
                   </div>
                 </Link>
               </div>

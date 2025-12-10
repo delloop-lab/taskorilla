@@ -1,0 +1,201 @@
+{
+  "common": {
+    "welcome": "Bem vindo",
+    "loading": "A carregar...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Fechar",
+    "submit": "Submeter",
+    "search": "Procurar",
+    "filter": "Filtrar",
+    "sort": "Ordenar",
+    "next": "Seguinte",
+    "previous": "Anterior",
+    "back": "Voltar",
+    "continue": "Continuar",
+    "yes": "Sim",
+    "no": "Não"
+  },
+
+  "navbar": {
+    "tasks": "TAREFAS",
+    "postTask": "Publicar Tarefa",
+    "browseTasks": "Ver Tarefas",
+    "helpers": "AJUDANTES",
+    "browseAllHelpers": "Ver todos os Ajudantes",
+    "browseProfessionals": "Ver Profissionais",
+    "help": "AJUDA",
+    "helpCenter": "Centro de Ajuda",
+    "faqs": "Perguntas Frequentes",
+    "guides": "Guias",
+    "contactSupport": "Contactar Suporte",
+    "login": "Entrar",
+    "signup": "Criar Conta",
+    "logout": "Sair",
+    "profile": "Perfil",
+    "myTasks": "As minhas Tarefas",
+    "bidsOnYourTasks": "Propostas nas suas tarefas",
+    "acceptedBids": "Propostas Aceites",
+    "pendingReviews": "Avaliações Pendentes"
+  },
+
+  "language": {
+    "english": "Inglês",
+    "portuguese": "Português",
+    "switchToEnglish": "Mudar para Inglês",
+    "switchToPortuguese": "Mudar para Português"
+  },
+
+  "homepage": {
+    "tagline": "Brilhante. Bravo. Breve.",
+    "description1": "Quer seja novo aqui ou se considere um local, o Taskorilla ajuda a concluir tarefas ou a ganhar dinheiro ajudando outros.",
+    "description2": "Tarefas grandes, pequenas ou pelo meio. Encontre ajudantes de confiança ou ofereça os seus serviços e obtenha resultados de forma rápida e segura.",
+    "postTask": "Publicar Tarefa",
+    "postTaskSubtitle": "Obtenha ajuda para concluir o que precisa!",
+    "browseTasks": "Ver Tarefas",
+    "browseTasksSubtitle": "Ganhe dinheiro a realizar tarefas!"
+  },
+
+  "landing": {
+    "heroTitle": "A vida está cheia de tarefas.",
+    "heroSubtitle": "Desde recados simples a desafios mais complicados, o Taskorilla liga-o a ajudantes que pensam rápido, trabalham bem e resolvem sem complicações.",
+
+    "howItWorksTitle": "Como Funciona",
+
+    "step1Title": "Publique a sua Tarefa (Grátis!)",
+    "step1Text": "Precisa de algo feito em Portugal? Descreva a tarefa, defina o orçamento e publique. Ajudantes perto de si podem enviar propostas de imediato. Apenas €2 por tarefa concluída. Ligue-se a ajudantes de confiança e resolva tudo rapidamente.",
+
+    "step2Title": "Ganhe Dinheiro a Ajudar",
+    "step2Text": "Aproveite trabalho extra, mostre as suas competências e seja contratado rapidamente. Os ajudantes ficam com os ganhos menos 10%. Os utilizadores só pagam quando a tarefa estiver concluída. Construa a sua reputação com medalhas, avaliações e um perfil partilhável.",
+
+    "step3Title": "Conecte e Conclua",
+    "step3Text": "Fale com o seu ajudante, acompanhe o progresso, envie fotos e marque a tarefa como concluída. Avalie e receba avaliações para que todos saibam quem é fiável.",
+
+    "whyUseTitle": "Porque usar o Taskorilla?",
+
+    "brainyBrawnyTitle": "Ajudantes Inteligentes e Fortes",
+    "brainyBrawnyText": "Competentes, fiáveis e espertos. Ajudantes que tratam de tudo, desde tarefas do dia a dia até serviços profissionais. Mostre as suas competências, ganhe medalhas, receba avaliações e ganhe visibilidade.",
+
+    "fastLocalTitle": "Rápido, Local e Ligado",
+    "fastLocalText": "Ajudantes próximos veem as suas tarefas de imediato, enviam propostas e falam consigo em tempo real. Pesquise ajudantes por competências, serviços ou profissão para encontrar o par perfeito.",
+
+    "trustTitle": "Confiança e Transparência",
+    "trustText": "As avaliações funcionam nos dois sentidos. Acompanhe o progresso, envie fotos e veja feedback verificado para saber sempre com quem está a lidar.",
+
+    "flexibleTitle": "Flexível e Seguro",
+    "flexibleText": "Defina o orçamento, escolha o melhor ajudante e mantenha o controlo. A sua informação permanece privada e recebe alertas instantâneos. Publique tarefas e ofereça ajuda sem múltiplas contas.",
+
+    "communityTitle": "Uma Comunidade com Personalidade",
+    "communityText": "O Taskorilla não é apenas um serviço. É uma comunidade de ajudantes e utilizadores inteligentes e trabalhadores a tornar a vida mais simples. Perfis partilháveis, medalhas e competências visíveis tornam tudo mais fácil e eficaz.",
+
+    "slogan1": "Sem macaquices. Só resultados.",
+    "slogan2": "Mãos fortes. Movimentos inteligentes.",
+    "slogan3": "Entre em acção.",
+    "slogan4": "Tarefas, conquistadas.",
+
+    "mascotTitle": "Pare de se preocupar com tarefas.",
+    "mascotText": "Publique sua tarefa hoje e deixe o Taskorilla lidar com o trabalho pesado, com inteligência, força e habilidade."
+  },
+
+  "roles": {
+    "taskerTitle": "UTILIZADOR",
+    "taskerDescription": "Publique a sua tarefa, simples e grátis",
+    "taskerText": "Partilhe o que precisa de fazer e resolva tudo sem taxas.",
+
+    "helperTitle": "AJUDANTE",
+    "helperDescription": "Ganhe dinheiro a ajudar outros",
+    "helperText": "Escolha tarefas que correspondam às suas competências, envie propostas e ganhe enquanto ajuda."
+  },
+
+  "footer": {
+    "rights": "© 2025 Taskorilla. Todos os direitos reservados. Use com responsabilidade.",
+    "helpCenter": "Centro de Ajuda",
+    "privacyPolicy": "Política de Privacidade",
+    "termsOfService": "Termos de Serviço",
+    "contact": "Contacto"
+  },
+
+  "tasks": {
+    "title": "Tarefas",
+    "allTasks": "Todas as Tarefas",
+    "openTasks": "Tarefas Abertas",
+    "myTasks": "As Minhas Tarefas",
+    "newTasks": "Tarefas Novas",
+    "mapView": "Vista de Mapa",
+    "postNewTask": "Publicar Nova Tarefa",
+    "showArchivedTasks": "Mostrar tarefas arquivadas",
+    "filterByMySkills": "Filtrar pelas minhas competências",
+    "searchTasks": "Procurar Tarefas",
+    "showFilters": "Mostrar Filtros",
+    "hide": "Ocultar",
+    "searchAndFilters": "Pesquisa e Filtros",
+    "searchKeyword": "Palavra-chave",
+    "searchKeywordPlaceholder": "Palavra-chave... (ex: montar móveis, limpar casa)",
+    "allServices": "Todos os Serviços",
+    "services": "Serviços",
+    "allSkills": "Todas as Competências",
+    "allProfessions": "Todas as Profissões",
+    "minBudget": "Mín (€)",
+    "maxBudget": "Máx (€)",
+    "moreFilters": "Mais filtros",
+    "maximumDistance": "Distância Máxima",
+    "anyDistance": "Qualquer distância",
+    "within5km": "Até 5 km",
+    "within10km": "Até 10 km",
+    "within25km": "Até 25 km",
+    "within50km": "Até 50 km",
+    "minimumRating": "Avaliação Mínima",
+    "anyRating": "Qualquer avaliação",
+    "stars4Plus": "4+ estrelas",
+    "stars45Plus": "4.5+ estrelas",
+    "stars5Only": "Apenas 5 estrelas",
+    "stillTakingBids": "Ainda a Aceitar Propostas",
+    "yourTasks": "As Suas Tarefas",
+    "lastTwoWeeks": "Últimas Duas Semanas",
+    "noTasksFound": "Nenhuma tarefa encontrada. Seja o primeiro a publicar uma tarefa!"
+  },
+
+  "modal": {
+    "loginRequired": "Início de Sessão Necessário",
+    "loginRequiredMessage": "Deve iniciar sessão para ver detalhes das tarefas, publicar tarefas ou aceder a mensagens.",
+    "loginRequiredCreateTask": "Precisa de iniciar sessão para criar uma tarefa. Os seus dados do formulário foram guardados e, após iniciar sessão, a sua tarefa será criada automaticamente e será redirecionado para a página da nova tarefa.",
+    "login": "Iniciar Sessão",
+    "signUp": "Registar",
+    "cancel": "Cancelar"
+  },
+
+  "helpers": {
+    "browseHelpers": "Ver Ajudantes",
+    "findSkilledHelpers": "Encontre ajudantes qualificados prontos para completar as suas tarefas",
+    "showFilters": "Mostrar Filtros",
+    "hideFilters": "Ocultar Filtros",
+    "searchHelpers": "Procurar Ajudantes",
+    "searchPlaceholder": "Pesquisar por nome, biografia, competências, serviços ou qualificações...",
+    "showOnlyProfessional": "Mostrar apenas ajudantes profissionais",
+    "filterBySkill": "Filtrar por Competência",
+    "filterByService": "Filtrar por Serviço",
+    "filterByProfession": "Filtrar por Profissão",
+    "allSkills": "Todas as Competências",
+    "allServices": "Todos os Serviços",
+    "allProfessions": "Todas as Profissões",
+    "foundHelpers": "Encontrados",
+    "helper": "ajudante",
+    "helpers": "ajudantes",
+    "noHelpersFound": "Nenhum ajudante encontrado que corresponda aos seus critérios.",
+    "clearFilters": "Limpar Filtros"
+  },
+
+  "help": {
+    "stillNeedHelp": "Ainda precisa de ajuda?",
+    "cantFindMessage": "Não encontra o que procura? A nossa equipa de suporte está aqui para ajudar!",
+    "contactSupport": "Contactar Suporte",
+    "responseTime": "Normalmente respondemos em 24 horas",
+    "didntFindAnswer": "Não encontrou a sua resposta?",
+    "checkGuidesOrContact": "Consulte os nossos guias detalhados ou contacte a nossa equipa de suporte",
+    "viewAllGuides": "Ver Todos os Guias",
+    "stillHaveQuestions": "Ainda tem perguntas?",
+    "supportTeamHere": "A nossa equipa de suporte está aqui para o ajudar a ter sucesso"
+  }
+}

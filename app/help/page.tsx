@@ -1,10 +1,14 @@
+'use client'
+
 import Link from 'next/link'
 import { MessageCircle, Search as SearchIcon } from 'lucide-react'
 import HelpSearchBar from '@/components/HelpSearchBar'
 import HelpCategoryCard from '@/components/HelpCategoryCard'
 import { getCategories, getFAQsByCategory, getGuidesByCategory, getCategoryIcon, getCategoryDescription, slugify } from '@/lib/help-utils'
+import { useLanguage } from '@/lib/i18n'
 
 export default function HelpCenter() {
+  const { t } = useLanguage()
   const categories = getCategories()
 
   return (
@@ -50,7 +54,7 @@ export default function HelpCenter() {
               className="px-6 py-3 bg-gray-100 hover:bg-primary hover:text-white rounded-lg font-medium transition-colors flex items-center gap-2"
             >
               <MessageCircle className="w-5 h-5" />
-              Contact Support
+              {t('help.contactSupport')}
             </a>
           </div>
         </div>
@@ -109,19 +113,19 @@ export default function HelpCenter() {
       {/* Contact Support CTA */}
       <section className="py-12 px-4 bg-gradient-to-r from-blue-50 to-green-50">
         <div className="container mx-auto max-w-4xl text-center">
-          <h2 className="text-3xl font-bold mb-4">Still need help?</h2>
+          <h2 className="text-3xl font-bold mb-4">{t('help.stillNeedHelp')}</h2>
           <p className="text-lg text-gray-600 mb-6">
-            Can't find what you're looking for? Our support team is here to help!
+            {t('help.cantFindMessage')}
           </p>
           <a 
             href="mailto:tee@taskorilla.com"
             className="inline-flex items-center gap-2 px-8 py-4 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition-colors text-lg"
           >
             <MessageCircle className="w-6 h-6" />
-            Contact Support
+            {t('help.contactSupport')}
           </a>
           <p className="text-sm text-gray-500 mt-4">
-            We typically respond within 24 hours
+            {t('help.responseTime')}
           </p>
         </div>
       </section>

@@ -1,10 +1,14 @@
+'use client'
+
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import HelpSearchBar from '@/components/HelpSearchBar'
 import FAQAccordion from '@/components/FAQAccordion'
 import { getCategories, getFAQsByCategory } from '@/lib/help-utils'
+import { useLanguage } from '@/lib/i18n'
 
 export default function FAQPage() {
+  const { t } = useLanguage()
   const categories = getCategories()
 
   return (
@@ -46,22 +50,22 @@ export default function FAQPage() {
       {/* Still Need Help */}
       <section className="py-12 px-4 bg-white border-t border-gray-200">
         <div className="container mx-auto max-w-4xl text-center">
-          <h2 className="text-2xl font-bold mb-4">Didn't find your answer?</h2>
+          <h2 className="text-2xl font-bold mb-4">{t('help.didntFindAnswer')}</h2>
           <p className="text-gray-600 mb-6">
-            Check out our detailed guides or contact our support team
+            {t('help.checkGuidesOrContact')}
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link 
               href="/help/guides"
               className="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors"
             >
-              View All Guides
+              {t('help.viewAllGuides')}
             </Link>
             <a 
               href="mailto:tee@taskorilla.com"
               className="px-6 py-3 border-2 border-primary text-primary rounded-lg font-medium hover:bg-primary hover:text-white transition-colors"
             >
-              Contact Support
+              {t('help.contactSupport')}
             </a>
           </div>
         </div>
