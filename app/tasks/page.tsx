@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Task, Category, Tag } from '@/lib/types'
@@ -17,7 +17,25 @@ import { useLanguage } from '@/lib/i18n'
 
 type FilterType = 'all' | 'open' | 'my_tasks' | 'new' | 'my_bids'
 
+// Loading fallback for Suspense
+function TasksPageLoading() {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="text-center">Loading tasks...</div>
+    </div>
+  )
+}
+
+// Main page wrapper with Suspense boundary
 export default function TasksPage() {
+  return (
+    <Suspense fallback={<TasksPageLoading />}>
+      <TasksPageContent />
+    </Suspense>
+  )
+}
+
+function TasksPageContent() {
   const { t } = useLanguage()
   const router = useRouter()
   const searchParams = useSearchParams()
