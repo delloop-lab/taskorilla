@@ -232,7 +232,6 @@ export default function Home() {
                   <div className="flex-1">
                     <h2 className="text-sm font-bold text-blue-700 uppercase mb-2">{t('roles.taskerTitle')}</h2>
                     <h3 className="text-2xl font-bold text-gray-900 mb-2">{t('roles.taskerDescription')}</h3>
-                    <p className="text-sm text-blue-700 font-medium mb-3">{t('roles.taskerText')}</p>
                     <p className="text-gray-700">
                       {t('roles.taskerText')}
                     </p>
