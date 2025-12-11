@@ -111,6 +111,7 @@ export default function SuperadminDashboard() {
   const [selectedUserForEmail, setSelectedUserForEmail] = useState<string>('')
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
   const [sendingProfileEmail, setSendingProfileEmail] = useState<string | null>(null)
+  const [confirmingEmail, setConfirmingEmail] = useState<string | null>(null)
   const [managingBadgesFor, setManagingBadgesFor] = useState<User | null>(null)
   const [selectedBadges, setSelectedBadges] = useState<string[]>([])
   const [savingBadges, setSavingBadges] = useState(false)
