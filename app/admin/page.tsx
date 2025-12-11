@@ -19,23 +19,14 @@ import {
 } from 'chart.js'
 import { getTrafficStats, getDailyTrafficSummary, getDailyTrafficStats } from '@/lib/traffic'
 import StandardModal from '@/components/StandardModal'
+import { User } from '@/lib/types'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend, Filler)
-
-type User = { 
-  id: string
-  email: string
-  full_name: string | null
-  role: string
-  created_at: string
-  is_helper?: boolean
-  badges?: string[] | null
-  is_featured?: boolean | null
-}
 
 // AppUser extends User and includes languages and other custom fields
 interface AppUser extends User {
   languages?: string[] | null
+  role?: string // Add role field for admin page usage
 }
 
 type Task = { 
