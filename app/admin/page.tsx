@@ -31,6 +31,10 @@ type User = {
   is_helper?: boolean
   badges?: string[] | null
   is_featured?: boolean | null
+}
+
+// AppUser extends User and includes languages and other custom fields
+interface AppUser extends User {
   languages?: string[] | null
 }
 
