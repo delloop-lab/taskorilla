@@ -1655,8 +1655,8 @@ export default function TaskDetailPage() {
 
   const isTaskOwner = user && task.created_by === user.id
   const hasBid = user && bids.some(bid => bid.user_id === user.id)
-  const isHelper = userProfile?.is_helper === true
-  const canBid = user && isHelper && !isTaskOwner && task.status === 'open' && !hasBid
+  const userHasHelperRole = userProfile?.is_helper === true
+  const canBid = user && userHasHelperRole && !isTaskOwner && task.status === 'open' && !hasBid
   
   // Helper function to check if user can see bid details
   const canSeeBidDetails = (bid: Bid) => {
@@ -2187,7 +2187,7 @@ export default function TaskDetailPage() {
         )}
       </div>
 
-      {user && !isTaskOwner && task.status === 'open' && !hasBid && !isHelper && (
+      {user && !isTaskOwner && task.status === 'open' && !hasBid && !userHasHelperRole && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg shadow-md p-6 mb-6">
           <div className="flex items-start">
             <div className="flex-shrink-0">
