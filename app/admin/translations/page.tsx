@@ -139,6 +139,10 @@ export default function TranslationsPage() {
 
       if (!response.ok) {
         const error = await response.json()
+        // Check if it's a read-only filesystem error
+        if (error.code === 'READ_ONLY_FS') {
+          throw new Error('Cannot save translations in production. Please update translations via git/deployment. This feature works in local development only.')
+        }
         throw new Error(error.error || 'Failed to save translations')
       }
 
