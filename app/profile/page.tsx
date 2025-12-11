@@ -835,7 +835,7 @@ function ProfilePageContent() {
           <div className="space-y-4">
             <div className="flex items-center space-x-6">
               <div 
-                className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 aspect-square rounded-full bg-gray-100 overflow-hidden flex items-center justify-center text-lg sm:text-xl md:text-2xl font-semibold text-gray-500 flex-shrink-0 min-w-[64px] min-h-[64px]"
+                className="h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 aspect-square rounded-full bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0 min-w-[64px] min-h-[64px]"
                 style={{ aspectRatio: '1 / 1' }}
               >
                 {avatarUrl ? (
