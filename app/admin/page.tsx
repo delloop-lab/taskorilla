@@ -1154,6 +1154,20 @@ export default function SuperadminDashboard() {
     1: reviews.filter(r => r.rating === 1).length,
   }
 
+  // Calculate language statistics
+  const usersWithLanguages = users.filter(u => u.languages && Array.isArray(u.languages) && u.languages.length > 0)
+  const languageCounts: Record<string, number> = {}
+  usersWithLanguages.forEach(user => {
+    if (user.languages && Array.isArray(user.languages)) {
+      user.languages.forEach((lang: string) => {
+        languageCounts[lang] = (languageCounts[lang] || 0) + 1
+      })
+    }
+  })
+  const sortedLanguages = Object.entries(languageCounts)
+    .sort(([, a], [, b]) => b - a)
+    .map(([lang, count]) => ({ language: lang, count }))
+
   const last30Days = Array.from({ length: 30 }, (_, i) => {
     const date = new Date()
     date.setDate(date.getDate() - (29 - i))
@@ -1948,6 +1962,35 @@ export default function SuperadminDashboard() {
                   <p className="text-sm text-gray-600 mb-1">Avg Accepted Bid</p>
                   <p className="text-2xl font-bold text-cyan-600">${avgAcceptedBidAmount.toFixed(2)}</p>
                 </div>
+            </div>
+
+            {/* Language Statistics */}
+            <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200 mb-8">
+              <h3 className="text-lg font-semibold mb-4 text-indigo-900">User Languages</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Users with Languages Set</p>
+                  <p className="text-3xl font-bold text-indigo-600">{usersWithLanguages.length}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {users.length > 0 ? ((usersWithLanguages.length / users.length) * 100).toFixed(1) : 0}% of total users
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Language Distribution</p>
+                  {sortedLanguages.length > 0 ? (
+                    <div className="space-y-2">
+                      {sortedLanguages.map(({ language, count }) => (
+                        <div key={language} className="flex items-center justify-between bg-white px-3 py-2 rounded border">
+                          <span className="font-medium text-gray-700">{language}</span>
+                          <span className="text-indigo-600 font-semibold">{count} user{count !== 1 ? 's' : ''}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 text-sm">No users have set languages yet</p>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Charts Row 1: Task Status & User Roles */}
