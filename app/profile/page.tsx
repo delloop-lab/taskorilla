@@ -15,13 +15,18 @@ import { PROFESSION_CATEGORIES, ALL_PROFESSIONS } from '@/lib/profession-categor
 import { getPendingReviews } from '@/lib/review-utils'
 import { formatPostcodeForCountry } from '@/lib/postcode'
 
+// Profile type that includes all properties used in this component
+type Profile = User & {
+  languages?: string[] | null
+}
+
 function ProfilePageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const setupRequired = searchParams.get('setup') === 'required'
   
   const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<User | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [showSetupModal, setShowSetupModal] = useState(false)
