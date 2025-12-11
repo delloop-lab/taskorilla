@@ -79,7 +79,7 @@ type DailyTraffic = {
 export default function SuperadminDashboard() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [users, setUsers] = useState<User[]>([])
+  const [users, setUsers] = useState<AppUser[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [bids, setBids] = useState<Bid[]>([])
   const [reviews, setReviews] = useState<Review[]>([])
