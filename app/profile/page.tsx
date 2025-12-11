@@ -15,8 +15,8 @@ import { PROFESSION_CATEGORIES, ALL_PROFESSIONS } from '@/lib/profession-categor
 import { getPendingReviews } from '@/lib/review-utils'
 import { formatPostcodeForCountry } from '@/lib/postcode'
 
-// Profile type that includes all properties used in this component
-type Profile = User & {
+// AppUser interface that extends User and includes all properties used in this component
+interface AppUser extends User {
   languages?: string[] | null
 }
 
@@ -26,7 +26,7 @@ function ProfilePageContent() {
   const setupRequired = searchParams.get('setup') === 'required'
   
   const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const [profile, setProfile] = useState<AppUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [showSetupModal, setShowSetupModal] = useState(false)
