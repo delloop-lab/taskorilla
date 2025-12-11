@@ -197,5 +197,13 @@
     "viewAllGuides": "Ver Todos os Guias",
     "stillHaveQuestions": "Ainda tem perguntas?",
     "supportTeamHere": "A nossa equipa de suporte está aqui para o ajudar a ter sucesso"
+  },
+
+  "formType": {
+    "question": "Como prefere preencher o formulário?",
+    "quick": "Rápido",
+    "full": "Completo",
+    "quickTooltip": "Rápido e simples, apenas o essencial.",
+    "fullTooltip": "Versão detalhada com todos os campos e etiquetas"
   }
 }

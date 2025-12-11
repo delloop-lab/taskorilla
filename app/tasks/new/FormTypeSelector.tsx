@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import NewTaskClient from './NewTaskClient'
 import SurveyJSTrialForm from '@/components/SurveyJSTrialForm'
+import { useLanguage } from '@/lib/i18n'
 
 export default function FormTypeSelector() {
   const [formType, setFormType] = useState<'quick' | 'full'>('quick')
+  const { t } = useLanguage()
   
   return (
     <div className="w-full">
@@ -16,7 +18,7 @@ export default function FormTypeSelector() {
       <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-center gap-4">
           <label className="text-sm font-medium text-gray-700 text-center md:text-left">
-            How would you like to fill out the form?
+            {t('formType.question')}
           </label>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             {/* Quick Button */}
@@ -29,7 +31,7 @@ export default function FormTypeSelector() {
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              <span>Quick</span>
+              <span>{t('formType.quick')}</span>
               <div className="relative group">
                 <svg
                   className={`w-4 h-4 ${
@@ -47,7 +49,7 @@ export default function FormTypeSelector() {
                   />
                 </svg>
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                  Fast and simple, just the essentials.
+                  {t('formType.quickTooltip')}
                   <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
                     <div className="border-4 border-transparent border-t-gray-900"></div>
                   </div>
@@ -66,7 +68,7 @@ export default function FormTypeSelector() {
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              <span>Full</span>
+              <span>{t('formType.full')}</span>
               <div className="relative group">
                 <svg
                   className={`w-4 h-4 ${
@@ -84,7 +86,7 @@ export default function FormTypeSelector() {
                   />
                 </svg>
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                  Detailed version with all fields and tags
+                  {t('formType.fullTooltip')}
                   <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
                     <div className="border-4 border-transparent border-t-gray-900"></div>
                   </div>

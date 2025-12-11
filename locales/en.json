@@ -197,5 +197,13 @@
     "viewAllGuides": "View All Guides",
     "stillHaveQuestions": "Still have questions?",
     "supportTeamHere": "Our support team is here to help you succeed"
+  },
+
+  "formType": {
+    "question": "How would you like to fill out the form?",
+    "quick": "Quick",
+    "full": "Full",
+    "quickTooltip": "Fast and simple, just the essentials.",
+    "fullTooltip": "Detailed version with all fields and tags"
   }
 }
