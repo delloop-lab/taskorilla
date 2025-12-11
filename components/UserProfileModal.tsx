@@ -21,6 +21,7 @@ interface Profile {
   country: string | null;
   is_helper?: boolean;
   profile_slug?: string | null;
+  languages?: string[] | null;
 }
 
 export default function UserProfileModal({

@@ -138,7 +138,7 @@ function ProfilePageContent() {
       setIsProfessional((data?.professions?.length || 0) > 0)
       setBadges(data?.badges || [])
       setHourlyRate(data?.hourly_rate?.toString() || '')
-      setLanguages(data?.languages || [])
+      setLanguages(data?.languages ?? [])
       setIban(data?.iban || '')
 
       // Load reviews for this user
@@ -2202,7 +2202,7 @@ function ProfilePageContent() {
                     setSelectedProfessionCategory('')
                     setBadges(profile.badges || [])
                     setHourlyRate(profile.hourly_rate?.toString() || '')
-                    setLanguages(profile.languages || [])
+                    setLanguages(profile.languages ?? [])
                     setIban(profile.iban || '')
                     setNewSkill('')
                     setNewService('')
