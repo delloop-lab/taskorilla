@@ -92,7 +92,7 @@ export default function TranslationsPage() {
       setFilteredPairs(data.pairs)
       
       // Expand all sections by default
-      const sections = new Set(data.pairs.map((p: TranslationPair) => p.key.split('.')[0]))
+      const sections: Set<string> = new Set(data.pairs.map((p: TranslationPair) => p.key.split('.')[0]))
       setExpandedSections(sections)
     } catch (error: any) {
       setModalState({
