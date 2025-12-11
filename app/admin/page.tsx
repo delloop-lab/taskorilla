@@ -1374,6 +1374,7 @@ export default function SuperadminDashboard() {
                     <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Email</th>
                     <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden sm:table-cell">Name</th>
                     <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Role</th>
+                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Email Status</th>
                     <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden md:table-cell">Helper Badges</th>
                     <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden lg:table-cell">Featured</th>
                   </tr>
