@@ -297,7 +297,7 @@ export default function SuperadminDashboard() {
   async function fetchUsers() {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, email, full_name, role, created_at, is_helper, badges, is_featured')
+      .select('id, email, full_name, role, created_at, is_helper, badges, is_featured, languages')
       .order('created_at', { ascending: false })
 
     if (error) {
