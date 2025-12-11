@@ -31,6 +31,7 @@ type User = {
   is_helper?: boolean
   badges?: string[] | null
   is_featured?: boolean | null
+  languages?: string[] | null
 }
 
 type Task = { 
