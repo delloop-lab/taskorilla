@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Bar, Line } from 'react-chartjs-2'
 import {
@@ -847,9 +848,15 @@ export default function SuperadminDashboard() {
 
   async function toggleFeatured(helperId: string, currentStatus: boolean) {
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+
       const response = await fetch('/api/admin/toggle-featured', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
         body: JSON.stringify({
           helperId,
           isFeatured: !currentStatus
@@ -1184,7 +1191,7 @@ export default function SuperadminDashboard() {
         <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-gray-900">Superadmin Dashboard</h1>
 
         {/* Tabs */}
-        <div className="mb-4 sm:mb-6 flex flex-wrap gap-2">
+        <div className="mb-4 sm:mb-6 flex flex-wrap gap-2 items-center">
           {(['users', 'tasks', 'reports', 'stats', 'revenue', 'email', 'traffic', 'email_logs', 'settings'] as const).map(t => (
             <button
               key={t}
@@ -1198,6 +1205,12 @@ export default function SuperadminDashboard() {
               {t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
           ))}
+          <Link
+            href="/admin/translations"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg font-medium bg-purple-600 text-white hover:bg-purple-700 border border-purple-600 transition-colors"
+          >
+            Translations
+          </Link>
         </div>
 
         {/* Users Tab */}
