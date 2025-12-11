@@ -884,6 +884,47 @@ export default function SuperadminDashboard() {
     }
   }
 
+  async function confirmUserEmail(userId: string, userEmail: string) {
+    setConfirmingEmail(userId)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+
+      const response = await fetch('/api/admin/confirm-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify({ userId }),
+      })
+
+      const result = await response.json()
+
+      if (response.ok) {
+        setModalState({
+          isOpen: true,
+          type: 'success',
+          title: 'Success',
+          message: `Email confirmed successfully for ${userEmail}`,
+        })
+        fetchUsers()
+      } else {
+        throw new Error(result.error || 'Failed to confirm email')
+      }
+    } catch (error: any) {
+      console.error('Error confirming email:', error)
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: 'Error confirming email: ' + (error.message || 'Unknown error'),
+      })
+    } finally {
+      setConfirmingEmail(null)
+    }
+  }
+
   async function sendProfileCompletionEmail(userId: string, userEmail: string, userName: string) {
     setSendingProfileEmail(userId)
     try {
@@ -1405,6 +1446,20 @@ export default function SuperadminDashboard() {
                         }`}>
                           {u.role}
                         </span>
+                      </td>
+                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
+                        <button
+                          onClick={() => confirmUserEmail(u.id, u.email)}
+                          disabled={confirmingEmail === u.id}
+                          className={`px-2 sm:px-3 py-1 rounded text-xs font-medium transition-colors ${
+                            confirmingEmail === u.id
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              : 'bg-green-500 text-white hover:bg-green-600'
+                          }`}
+                          title="Click to confirm user's email"
+                        >
+                          {confirmingEmail === u.id ? 'Confirming...' : '✓ Confirm Email'}
+                        </button>
                       </td>
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden md:table-cell">
                         {u.is_helper ? (
