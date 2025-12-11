@@ -94,7 +94,10 @@ export async function GET(request: NextRequest) {
     let nominatimQuery = ''
     
     if (isPortugal && normalizedPostcode) {
-      // For Portuguese postcodes, use exact format: "8500-126, Portugal"
+      // For Portuguese postcodes, try multiple query formats for better accuracy
+      // Format 1: "8600-616, Portugal" (exact postcode)
+      // Format 2: "postalcode:8600-616" (more specific Nominatim parameter)
+      // We'll try both if the first doesn't work
       nominatimQuery = `${normalizedPostcode}, Portugal`
       console.log(`🔍 Geocoding Portuguese postcode with Nominatim: ${normalizedPostcode}`)
     } else if (postcode && country) {
@@ -116,12 +119,26 @@ export async function GET(request: NextRequest) {
     // CRITICAL: For Portuguese postcodes, filter to find EXACT postcode match
     if (isPortugal && normalizedPostcode && data && data.length > 0) {
       const exactMatch = data.find(result => {
+        // Check both structured address field and display_name for postcode
         const returnedPostcode = result.address?.postcode
+        const displayNamePostcode = result.display_name.match(/\b\d{4}-\d{3}\b/)?.[0]
+        
+        // Try to normalize both
         if (returnedPostcode) {
           const normalizedReturned = normalizePortuguesePostcode(returnedPostcode)
-          // Must match EXACTLY - reject wrong postcodes like 8200-269 when searching for 8500-126
-          return normalizedReturned === normalizedPostcode
+          if (normalizedReturned === normalizedPostcode) {
+            return true
+          }
         }
+        
+        // Also check display_name for postcode pattern
+        if (displayNamePostcode) {
+          const normalizedDisplay = normalizePortuguesePostcode(displayNamePostcode)
+          if (normalizedDisplay === normalizedPostcode) {
+            return true
+          }
+        }
+        
         return false
       })
       
@@ -130,7 +147,8 @@ export async function GET(request: NextRequest) {
         data = [exactMatch]
       } else {
         console.error(`❌ No exact postcode match found for ${normalizedPostcode}`)
-        console.error(`   Available postcodes in results:`, data.map(r => r.address?.postcode).filter(Boolean))
+        console.error(`   Available postcodes in address field:`, data.map(r => r.address?.postcode).filter(Boolean))
+        console.error(`   Available postcodes in display_name:`, data.map(r => r.display_name.match(/\b\d{4}-\d{3}\b/)?.[0]).filter(Boolean))
         data = []
       }
     }
@@ -146,11 +164,24 @@ export async function GET(request: NextRequest) {
       // Filter for exact match again
       if (data && data.length > 0) {
         const exactMatch = data.find(result => {
+          // Check both structured address field and display_name for postcode
           const returnedPostcode = result.address?.postcode
+          const displayNamePostcode = result.display_name.match(/\b\d{4}-\d{3}\b/)?.[0]
+          
           if (returnedPostcode) {
             const normalizedReturned = normalizePortuguesePostcode(returnedPostcode)
-            return normalizedReturned === normalizedPostcode
+            if (normalizedReturned === normalizedPostcode) {
+              return true
+            }
           }
+          
+          if (displayNamePostcode) {
+            const normalizedDisplay = normalizePortuguesePostcode(displayNamePostcode)
+            if (normalizedDisplay === normalizedPostcode) {
+              return true
+            }
+          }
+          
           return false
         })
         
@@ -159,8 +190,80 @@ export async function GET(request: NextRequest) {
           data = [exactMatch]
         } else {
           console.error(`❌ No exact postcode match with postalcode parameter for ${normalizedPostcode}`)
-          console.error(`   Available postcodes:`, data.map(r => r.address?.postcode).filter(Boolean))
+          console.error(`   Available postcodes in address:`, data.map(r => r.address?.postcode).filter(Boolean))
+          console.error(`   Available postcodes in display_name:`, data.map(r => r.display_name.match(/\b\d{4}-\d{3}\b/)?.[0]).filter(Boolean))
           data = []
+        }
+      }
+    }
+
+    // Strategy 3: If still no exact match, try with city context for known postcode areas
+    if ((!data || data.length === 0) && isPortugal && normalizedPostcode) {
+      const areaCode = normalizedPostcode.split('-')[0]
+      const areaNum = parseInt(areaCode, 10) || 0
+      
+      // Map known area codes to their cities for better geocoding
+      const cityMap: Record<number, string> = {
+        8600: 'Lagos',
+        8500: 'Portimão',
+        8000: 'Faro',
+        1000: 'Lisboa',
+        2000: 'Porto',
+        3000: 'Coimbra',
+        4000: 'Porto',
+        5000: 'Braga',
+        7000: 'Évora',
+      }
+      
+      const city = cityMap[areaNum]
+      if (city) {
+        console.log(`🔍 Trying geocoding with city context: ${normalizedPostcode}, ${city}, Portugal`)
+        const cityQuery = `${normalizedPostcode}, ${city}, Portugal`
+        data = await fetchFromNominatim({
+          q: cityQuery,
+          countrycodes: 'pt',
+        })
+        
+        // Filter for exact match again
+        if (data && data.length > 0) {
+          const exactMatch = data.find(result => {
+            const returnedPostcode = result.address?.postcode
+            const displayNamePostcode = result.display_name.match(/\b\d{4}-\d{3}\b/)?.[0]
+            
+            if (returnedPostcode) {
+              const normalizedReturned = normalizePortuguesePostcode(returnedPostcode)
+              if (normalizedReturned === normalizedPostcode) {
+                return true
+              }
+            }
+            
+            if (displayNamePostcode) {
+              const normalizedDisplay = normalizePortuguesePostcode(displayNamePostcode)
+              if (normalizedDisplay === normalizedPostcode) {
+                return true
+              }
+            }
+            
+            return false
+          })
+          
+          if (exactMatch) {
+            console.log(`✅ Found exact postcode match with city context: ${normalizedPostcode}`)
+            data = [exactMatch]
+          } else {
+            // Even if not exact, if city matches, use the first result (better than nothing)
+            const cityMatch = data.find(result => {
+              const cityName = result.address?.city || result.address?.town || result.address?.municipality
+              return cityName && cityName.toLowerCase().includes(city.toLowerCase())
+            })
+            
+            if (cityMatch) {
+              console.log(`⚠️ Using city match for ${normalizedPostcode} in ${city} (not exact postcode)`)
+              data = [cityMatch]
+            } else {
+              data = []
+            }
+          }
         }
       }
     }
@@ -178,10 +281,21 @@ export async function GET(request: NextRequest) {
     }
 
     // FINAL VALIDATION: Ensure returned postcode matches requested one
-    if (isPortugal && normalizedPostcode && result.address?.postcode) {
-      const returnedPostcode = normalizePortuguesePostcode(result.address.postcode)
-      if (returnedPostcode !== normalizedPostcode) {
-        console.error(`❌ CRITICAL: Final validation failed - requested "${normalizedPostcode}", got "${returnedPostcode}"`)
+    if (isPortugal && normalizedPostcode) {
+      const returnedPostcode = result.address?.postcode
+      const displayNamePostcode = result.display_name.match(/\b\d{4}-\d{3}\b/)?.[0]
+      
+      let normalizedReturned: string | null = null
+      if (returnedPostcode) {
+        normalizedReturned = normalizePortuguesePostcode(returnedPostcode)
+      } else if (displayNamePostcode) {
+        normalizedReturned = normalizePortuguesePostcode(displayNamePostcode)
+      }
+      
+      if (normalizedReturned && normalizedReturned !== normalizedPostcode) {
+        console.error(`❌ CRITICAL: Final validation failed - requested "${normalizedPostcode}", got "${normalizedReturned}"`)
+        console.error(`   Result display_name: ${result.display_name}`)
+        console.error(`   Result address:`, result.address)
         return NextResponse.json({ result: null })
       }
     }

@@ -6,6 +6,7 @@ import { User } from '@/lib/types'
 import Link from 'next/link'
 import { STANDARD_SKILLS, helperMatchesSearch } from '@/lib/helper-constants'
 import { STANDARD_PROFESSIONS } from '@/lib/profession-constants'
+import { User as UserIcon } from 'lucide-react'
 
 interface FeaturedHelpersProps {
   searchTerm?: string
@@ -183,8 +184,8 @@ export default function FeaturedHelpers({ searchTerm = '', selectedSkill = null,
                         className="h-full w-full object-cover"
                       />
                     ) : (
-                      <div className="h-full w-full flex items-center justify-center text-2xl font-semibold text-gray-500">
-                        {(helper.full_name?.[0] || helper.email?.[0] || '?').toUpperCase()}
+                      <div className="h-full w-full flex items-center justify-center">
+                        <UserIcon className="w-8 h-8 text-gray-400" />
                       </div>
                     )}
                   </div>

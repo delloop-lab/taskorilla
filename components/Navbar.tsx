@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { getPendingReviews } from '@/lib/review-utils'
 import { useLanguage } from '@/lib/i18n'
+import { User as UserIcon } from 'lucide-react'
 
 export default function Navbar() {
   const { language, setLanguage, t } = useLanguage()
@@ -772,9 +773,7 @@ export default function Navbar() {
                       {profileAvatar ? (
                         <img src={profileAvatar} alt="avatar" className="w-full h-full object-cover object-center" />
                       ) : (
-                        <span className="text-sm font-semibold text-gray-600">
-                          {(profileName?.[0] || user.email?.[0] || '?').toUpperCase()}
-                        </span>
+                        <UserIcon className="w-6 h-6 text-gray-400" />
                       )}
                     </div>
                   </div>
@@ -883,9 +882,7 @@ export default function Navbar() {
                   {profileAvatar ? (
                     <img src={profileAvatar} alt="avatar" className="w-full h-full object-cover object-center" />
                   ) : (
-                    <span className="text-sm font-semibold text-gray-600">
-                      {(profileName?.[0] || user.email?.[0] || '?').toUpperCase()}
-                    </span>
+                    <UserIcon className="w-6 h-6 text-gray-400" />
                   )}
                 </div>
                 <span className="text-sm font-semibold text-blue-600">

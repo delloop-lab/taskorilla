@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import ReportModal from "./ReportModal";
+import { User as UserIcon } from "lucide-react";
 
 interface UserProfileModalProps {
   userId: string | null;
@@ -104,8 +105,8 @@ export default function UserProfileModal({
                     className="w-full h-full object-cover object-center"
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center text-base sm:text-lg md:text-xl font-semibold text-gray-500">
-                    {(profile.full_name?.[0] || "?").toUpperCase()}
+                  <div className="flex h-full w-full items-center justify-center">
+                    <UserIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-gray-400" />
                   </div>
                 )}
               </div>

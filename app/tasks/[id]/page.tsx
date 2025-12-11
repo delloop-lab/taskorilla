@@ -12,6 +12,7 @@ import UserProfileModal from '@/components/UserProfileModal'
 import StandardModal from '@/components/StandardModal'
 import { extractTownName } from '@/lib/geocoding'
 import { checkForContactInfo } from '@/lib/content-filter'
+import { User as UserIcon } from 'lucide-react'
 
 export default function TaskDetailPage() {
   const params = useParams()
@@ -23,6 +24,7 @@ export default function TaskDetailPage() {
   const [bids, setBids] = useState<Bid[]>([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
+  const [userProfile, setUserProfile] = useState<any>(null)
   const [bidAmount, setBidAmount] = useState('')
   const [bidMessage, setBidMessage] = useState('')
   const [submittingBid, setSubmittingBid] = useState(false)
@@ -153,6 +155,18 @@ export default function TaskDetailPage() {
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     setUser(user)
+    
+    // Load user profile to check if they are a helper
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_helper')
+        .eq('id', user.id)
+        .single()
+      setUserProfile(profile)
+    } else {
+      setUserProfile(null)
+    }
   }
 
   const loadTask = async () => {
@@ -392,6 +406,17 @@ export default function TaskDetailPage() {
     e.preventDefault()
     if (!user) {
       router.push('/login')
+      return
+    }
+
+    // Check if user is a helper - REQUIRED to bid
+    if (!userProfile?.is_helper) {
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: 'Helper Role Required',
+        message: 'You must enable the Helper role in your profile to bid on tasks. Go to your Profile page and enable the Helper role to start bidding.',
+      })
       return
     }
 
@@ -1630,7 +1655,8 @@ export default function TaskDetailPage() {
 
   const isTaskOwner = user && task.created_by === user.id
   const hasBid = user && bids.some(bid => bid.user_id === user.id)
-  const canBid = user && !isTaskOwner && task.status === 'open' && !hasBid
+  const isHelper = userProfile?.is_helper === true
+  const canBid = user && isHelper && !isTaskOwner && task.status === 'open' && !hasBid
   
   // Helper function to check if user can see bid details
   const canSeeBidDetails = (bid: Bid) => {
@@ -1755,12 +1781,16 @@ export default function TaskDetailPage() {
                       }}
                       className="text-primary-600 hover:text-primary-700 hover:underline flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm min-w-0"
                     >
-                      {task.user.avatar_url && (
+                      {task.user.avatar_url ? (
                         <img
                           src={task.user.avatar_url}
                           alt={task.user.full_name || task.user.email}
                           className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover flex-shrink-0"
                         />
+                      ) : (
+                        <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                          <UserIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
+                        </div>
                       )}
                       <span className="truncate">{task.user.full_name || task.user.email}</span>
                     </button>
@@ -2156,6 +2186,30 @@ export default function TaskDetailPage() {
           </div>
         )}
       </div>
+
+      {user && !isTaskOwner && task.status === 'open' && !hasBid && !isHelper && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg shadow-md p-6 mb-6">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-yellow-600" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3 flex-1">
+              <h3 className="text-sm font-medium text-yellow-800">Helper Role Required</h3>
+              <div className="mt-2 text-sm text-yellow-700">
+                <p>You must enable the Helper role in your profile to bid on tasks.</p>
+                <Link
+                  href="/profile"
+                  className="mt-2 inline-block font-medium text-yellow-800 hover:text-yellow-900 underline"
+                >
+                  Go to Profile to enable Helper role →
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {canBid && (
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">

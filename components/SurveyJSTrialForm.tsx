@@ -19,26 +19,32 @@ import 'survey-core/defaultV2.min.css'
 import 'survey-core/modern.min.css'
 // Note: default and defaultV2 are the same file in v1.12.57
 
+// Import Portuguese localization for SurveyJS UI strings
+import 'survey-core/i18n/portuguese'
+
 // Customize localization strings - change "Page" to "Question"
-if (surveyLocalization && surveyLocalization.locales && surveyLocalization.locales['en']) {
-  surveyLocalization.locales['en'].progressText = 'Question {0} of {1}'
-  // Also try alternative property names
-  if ('progressText' in surveyLocalization.locales['en']) {
+if (surveyLocalization && surveyLocalization.locales) {
+  // English localization
+  if (surveyLocalization.locales['en']) {
     surveyLocalization.locales['en'].progressText = 'Question {0} of {1}'
+    surveyLocalization.locales['en'].previewText = 'Preview Task Before Creating'
   }
-  // Set it on the default locale as well
+  
+  // Portuguese localization
+  if (surveyLocalization.locales['pt']) {
+    surveyLocalization.locales['pt'].progressText = 'Pergunta {0} de {1}'
+    surveyLocalization.locales['pt'].previewText = 'Pré-visualizar Tarefa Antes de Criar'
+  }
+  
+  // Default locale fallback
   if (surveyLocalization.locales['default']) {
     surveyLocalization.locales['default'].progressText = 'Question {0} of {1}'
-  }
-  // Change preview button text
-  surveyLocalization.locales['en'].previewText = 'Preview Task Before Creating'
-  if (surveyLocalization.locales['default']) {
     surveyLocalization.locales['default'].previewText = 'Preview Task Before Creating'
   }
 }
 
 export default function SurveyJSTrialForm() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const [surveyModel, setSurveyModel] = useState<Model | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [professions, setProfessions] = useState<string[]>([])
@@ -269,7 +275,10 @@ export default function SurveyJSTrialForm() {
     // This will trigger the useEffect above to recreate the model
     if (surveyModel && !loading) {
       try {
-        const newModel = createTrialFormModel(categories, professions, theme)
+        const newModel = createTrialFormModel(categories, professions, theme, t)
+        // Set the locale based on current language
+        newModel.locale = language === 'pt' ? 'pt' : 'en'
+        
         newModel.onComplete.add((sender) => {
           const data = sender.data
           setSubmittedData(data)
@@ -297,6 +306,14 @@ export default function SurveyJSTrialForm() {
     }
   }
 
+  // Store reference to current language for the model
+  const currentLanguageRef = useRef<string>(language)
+  
+  // Update ref when language changes
+  useEffect(() => {
+    currentLanguageRef.current = language
+  }, [language])
+
   useEffect(() => {
     // Wait for categories and professions to finish loading (even if empty)
     console.log('%c[EFFECT: Create SurveyModel] Running', 'background: red; color: white', {
@@ -304,13 +321,25 @@ export default function SurveyJSTrialForm() {
       categoriesCount: categories.length,
       professionsCount: professions.length,
       currentTheme,
+      language,
       timestamp: new Date().toISOString()
     })
     
-    if (!loading) {
+    // Check if translations are loaded - if t() returns the key, translations aren't ready yet
+    const testTranslation = t('surveyForm.title')
+    const translationsReady = testTranslation !== 'surveyForm.title'
+    
+    if (!loading && translationsReady) {
       try {
-        console.log('%c[EFFECT: Create SurveyModel] Creating new model...', 'background: red; color: white')
-        const model = createTrialFormModel(categories, professions, currentTheme)
+        console.log('%c[EFFECT: Create SurveyModel] Creating new model...', 'background: red; color: white', {
+          language,
+          testTranslation
+        })
+        const model = createTrialFormModel(categories, professions, currentTheme, t)
+        
+        // Set the locale based on current language (en or pt)
+        model.locale = language === 'pt' ? 'pt' : 'en'
+        console.log(`[SurveyJS] Setting locale to: ${model.locale}, language: ${language}`)
         
         // Handle form completion
         model.onComplete.add((sender) => {
@@ -1002,8 +1031,9 @@ export default function SurveyJSTrialForm() {
     // NOTE: userCountry is intentionally NOT in the dependency array
     // Adding it caused the surveyModel to be recreated when the user's country loaded,
     // which cleared form inputs and caused the "refresh on keystroke" bug for logged-in users
+    // We include language and t to recreate model when translations change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categories, professions, loading, currentTheme])
+  }, [categories, professions, loading, currentTheme, language, t])
 
   const updateLocationQuestionTitle = (model: Model, taskType: string) => {
     const locationQuestion = model.getQuestionByName('postcode')

@@ -8,6 +8,7 @@ import { Category, Tag } from '@/lib/types'
 import { geocodePostcode } from '@/lib/geocoding'
 import { formatPostcodeForCountry, isPortuguesePostcode } from '@/lib/postcode'
 import { checkForContactInfo } from '@/lib/content-filter'
+import { User as UserIcon } from 'lucide-react'
 
 export default function EditTaskPage() {
   const params = useParams()
@@ -1036,8 +1037,8 @@ export default function EditTaskPage() {
                             className="w-12 h-12 rounded-full object-cover"
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-medium">
-                            {(bid.user?.full_name || 'P')[0].toUpperCase()}
+                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                            <UserIcon className="w-6 h-6 text-gray-500" />
                           </div>
                         )}
                         <div className="flex-1">

@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { Message, Conversation } from '@/lib/types'
 import { format } from 'date-fns'
 import Link from 'next/link'
-import { ArrowLeft, Send } from 'lucide-react'
+import { ArrowLeft, Send, User as UserIcon } from 'lucide-react'
 import StandardModal from '@/components/StandardModal'
 import { checkForContactInfo } from '@/lib/content-filter'
 
@@ -345,12 +345,16 @@ export default function ConversationPage() {
         <div className="bg-white rounded-lg shadow-md p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              {otherParticipant?.avatar_url && (
+              {otherParticipant?.avatar_url ? (
                 <img
                   src={otherParticipant.avatar_url}
                   alt={otherParticipant.full_name || otherParticipant.email}
                   className="w-10 h-10 aspect-square rounded-full object-cover object-center flex-shrink-0"
                 />
+              ) : (
+                <div className="w-10 h-10 aspect-square rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                  <UserIcon className="w-5 h-5 text-gray-500" />
+                </div>
               )}
               <div>
                 <h1 className="text-xl font-semibold text-gray-900">

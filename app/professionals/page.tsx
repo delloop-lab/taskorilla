@@ -9,6 +9,7 @@ import FeaturedHelpers from '@/components/FeaturedHelpers'
 import { helperMatchesSearch } from '@/lib/helper-constants'
 import { STANDARD_PROFESSIONS, helperMatchesProfession } from '@/lib/profession-constants'
 import { PROFESSION_CATEGORIES } from '@/lib/profession-categories'
+import { User as UserIcon } from 'lucide-react'
 
 export default function ProfessionalsPage() {
   const router = useRouter()
@@ -280,8 +281,8 @@ export default function ProfessionalsPage() {
                               className="w-full h-full object-cover object-center"
                             />
                           ) : (
-                            <div className="h-full w-full flex items-center justify-center text-sm sm:text-lg md:text-2xl font-semibold text-gray-500">
-                              {(helper.full_name?.[0] || helper.email?.[0] || '?').toUpperCase()}
+                            <div className="h-full w-full flex items-center justify-center">
+                              <UserIcon className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-gray-400" />
                             </div>
                           )}
                         </div>

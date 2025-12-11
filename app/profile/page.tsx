@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { User, Review } from '@/lib/types'
 import Link from 'next/link'
 import { format } from 'date-fns'
+import { User as UserIcon } from 'lucide-react'
 import { geocodePostcode } from '@/lib/geocoding'
 import { isProfileComplete, getMissingFields } from '@/lib/profile-utils'
 import { STANDARD_SKILLS, STANDARD_SERVICES } from '@/lib/helper-constants'
@@ -50,6 +51,7 @@ function ProfilePageContent() {
   const [professions, setProfessions] = useState<string[]>([])
   const [badges, setBadges] = useState<string[]>([])
   const [hourlyRate, setHourlyRate] = useState('')
+  const [languages, setLanguages] = useState<string[]>([])
   const [iban, setIban] = useState('')
   const [newSkill, setNewSkill] = useState('')
   const [newService, setNewService] = useState('')
@@ -136,6 +138,7 @@ function ProfilePageContent() {
       setIsProfessional((data?.professions?.length || 0) > 0)
       setBadges(data?.badges || [])
       setHourlyRate(data?.hourly_rate?.toString() || '')
+      setLanguages(data?.languages || [])
       setIban(data?.iban || '')
 
       // Load reviews for this user
@@ -480,6 +483,7 @@ function ProfilePageContent() {
         badges: badges.length > 0 ? badges : [],
         hourly_rate: hourlyRateValue,
         profile_slug: profileSlug || null,
+        languages: languages.length > 0 ? languages : [],
         iban: iban.trim() || null,
       }
 
@@ -766,8 +770,8 @@ function ProfilePageContent() {
                             className="h-8 w-8 rounded-full object-cover object-center"
                           />
                         ) : (
-                          <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-semibold text-gray-600">
-                            {(review.other_user_name?.[0] || '?').toUpperCase()}
+                          <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                            <UserIcon className="w-4 h-4 text-gray-500" />
                           </div>
                         )}
                         <div>
@@ -841,7 +845,7 @@ function ProfilePageContent() {
                     className="w-full h-full object-cover object-center"
                   />
                 ) : (
-                  (profile.full_name?.[0] || user.email?.[0] || '?').toUpperCase()
+                  <UserIcon className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-gray-400" />
                 )}
               </div>
               <div>
@@ -1127,6 +1131,129 @@ function ProfilePageContent() {
                   disabled
                   className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
                 />
+              )}
+            </div>
+
+            {/* Languages Spoken */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                I speak basic:
+              </label>
+              {editing ? (
+                <div className="flex flex-wrap gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={languages.includes('English')}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setLanguages([...languages.filter(l => l !== 'English'), 'English'])
+                        } else {
+                          setLanguages(languages.filter(l => l !== 'English'))
+                        }
+                      }}
+                      className="w-4 h-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-700">English</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={languages.includes('Portuguese')}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setLanguages([...languages.filter(l => l !== 'Portuguese'), 'Portuguese'])
+                        } else {
+                          setLanguages(languages.filter(l => l !== 'Portuguese'))
+                        }
+                      }}
+                      className="w-4 h-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-700">Portuguese</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={languages.includes('German')}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setLanguages([...languages.filter(l => l !== 'German'), 'German'])
+                        } else {
+                          setLanguages(languages.filter(l => l !== 'German'))
+                        }
+                      }}
+                      className="w-4 h-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-700">German</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={languages.includes('French')}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setLanguages([...languages.filter(l => l !== 'French'), 'French'])
+                        } else {
+                          setLanguages(languages.filter(l => l !== 'French'))
+                        }
+                      }}
+                      className="w-4 h-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-700">French</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={languages.includes('Italian')}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setLanguages([...languages.filter(l => l !== 'Italian'), 'Italian'])
+                        } else {
+                          setLanguages(languages.filter(l => l !== 'Italian'))
+                        }
+                      }}
+                      className="w-4 h-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-700">Italian</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={languages.includes('Greek')}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setLanguages([...languages.filter(l => l !== 'Greek'), 'Greek'])
+                        } else {
+                          setLanguages(languages.filter(l => l !== 'Greek'))
+                        }
+                      }}
+                      className="w-4 h-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-700">Greek</span>
+                  </label>
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2">
+                  {languages.length > 0 ? (
+                    languages.map((lang) => (
+                      <span
+                        key={lang}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                      >
+                        {lang}
+                      </span>
+                    ))
+                  ) : (
+                    <>
+                      <span className="text-gray-500 text-sm">Not set</span>
+                      {!editing && (
+                        <span className="text-xs text-gray-400 italic">
+                          (Click "Edit" above to select languages)
+                        </span>
+                      )}
+                    </>
+                  )}
+                </div>
               )}
             </div>
 
@@ -2075,6 +2202,7 @@ function ProfilePageContent() {
                     setSelectedProfessionCategory('')
                     setBadges(profile.badges || [])
                     setHourlyRate(profile.hourly_rate?.toString() || '')
+                    setLanguages(profile.languages || [])
                     setIban(profile.iban || '')
                     setNewSkill('')
                     setNewService('')
@@ -2132,8 +2260,8 @@ function ProfilePageContent() {
                           className="h-8 w-8 rounded-full"
                         />
                       ) : (
-                        <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs">
-                          {(review.reviewer?.full_name?.[0] || review.reviewer?.email?.[0] || '?').toUpperCase()}
+                        <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                          <UserIcon className="w-4 h-4 text-gray-500" />
                         </div>
                       )}
                       <div>

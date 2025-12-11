@@ -8,6 +8,7 @@ import { format } from 'date-fns'
 import Link from 'next/link'
 import StandardModal from '@/components/StandardModal'
 import ReportModal from '@/components/ReportModal'
+import { User as UserIcon } from 'lucide-react'
 
 function HelperProfileContent() {
   const params = useParams()
@@ -339,7 +340,7 @@ function HelperProfileContent() {
                     className="w-full h-full object-cover object-center"
                   />
                 ) : (
-                  (profile.full_name?.[0] || profile.email?.[0] || '?').toUpperCase()
+                  <UserIcon className="w-16 h-16 text-gray-400" />
                 )}
               </div>
             </div>
@@ -629,8 +630,8 @@ function HelperProfileContent() {
                               className="h-10 w-10 rounded-full"
                             />
                           ) : (
-                            <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-600">
-                              {(review.reviewer?.full_name?.[0] || review.reviewer?.email?.[0] || '?').toUpperCase()}
+                            <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                              <UserIcon className="w-5 h-5 text-gray-500" />
                             </div>
                           )}
                           <div>

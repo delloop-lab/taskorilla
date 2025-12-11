@@ -205,5 +205,36 @@
     "full": "Full",
     "quickTooltip": "Fast and simple, just the essentials.",
     "fullTooltip": "Detailed version with all fields and tags"
+  },
+
+  "surveyForm": {
+    "title": "Create a New Task",
+    "description": "Let's get started! We'll guide you through each step.",
+    "taskTypeQuestion": "What type of help do you need?",
+    "hireHelper": "Hire a Helper",
+    "engageProfessional": "Engage a Professional",
+    "categoryQuestion": "Which category best fits your task?",
+    "noCategoriesAvailable": "No categories available",
+    "selectCategoryPlaceholder": "Select a category (optional)",
+    "professionQuestion": "Which professional role do you need?",
+    "noProfessionsAvailable": "No professions available",
+    "selectProfessionPlaceholder": "Select a professional role (optional)",
+    "taskTitleQuestion": "What task do you need help with?",
+    "taskTitlePlaceholder": "e.g., Need help moving furniture",
+    "descriptionQuestion": "Tell us more about what you need",
+    "descriptionPlaceholder": "Describe what you need done in detail...",
+    "budgetQuestion": "What's your budget? (Optional)",
+    "budgetPlaceholder": "Enter amount (e.g., 50.00)",
+    "budgetDescription": "If no budget is entered, visitors will see \"Quote\"",
+    "locationQuestion": "Where is the helper needed?",
+    "postcodePlaceholder": "Enter postcode (e.g., 8600-545)",
+    "locationDescription": "We'll find the location automatically",
+    "locationAddressTitle": "Location (Address)",
+    "locationAddressPlaceholder": "Address will appear here after entering postcode",
+    "dueDateQuestion": "When is help required?",
+    "dueDatePlaceholder": "Select a date",
+    "previewButton": "Preview Task Before Creating",
+    "nextButton": "Continue",
+    "backButton": "Back"
   }
 }

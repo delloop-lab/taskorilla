@@ -14,6 +14,7 @@ import { getPendingReviews } from '@/lib/review-utils'
 import { STANDARD_PROFESSIONS } from '@/lib/profession-constants'
 import ReportModal from '@/components/ReportModal'
 import { useLanguage } from '@/lib/i18n'
+import { User as UserIcon } from 'lucide-react'
 
 type FilterType = 'all' | 'open' | 'my_tasks' | 'new' | 'my_bids'
 
@@ -985,8 +986,8 @@ function TasksPageContent() {
                               className="h-8 w-8 rounded-full object-cover object-center"
                             />
                           ) : (
-                            <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-semibold text-gray-600">
-                              {(review.other_user_name?.[0] || '?').toUpperCase()}
+                            <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                              <UserIcon className="w-4 h-4 text-gray-500" />
                             </div>
                           )}
                           <div>
@@ -1498,12 +1499,16 @@ function TasksPageContent() {
                         }}
                         className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 hover:underline flex items-center gap-1.5 sm:gap-2 min-w-0"
                       >
-                        {task.user.avatar_url && (
+                        {task.user.avatar_url ? (
                           <img
                             src={task.user.avatar_url}
                             alt={task.user.full_name || task.user.email}
                             className="w-6 h-6 sm:w-7 sm:h-7 aspect-square rounded-full object-cover object-center flex-shrink-0"
                           />
+                        ) : (
+                          <div className="w-6 h-6 sm:w-7 sm:h-7 aspect-square rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                            <UserIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
+                          </div>
                         )}
                         <span className="font-medium truncate">by {task.user.full_name || task.user.email}</span>
                       </button>

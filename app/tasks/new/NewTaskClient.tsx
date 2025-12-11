@@ -9,6 +9,7 @@ import { geocodePostcode } from '@/lib/geocoding'
 import { formatPostcodeForCountry, isPortuguesePostcode } from '@/lib/postcode'
 import { STANDARD_PROFESSIONS } from '@/lib/profession-constants'
 import { checkForContactInfo } from '@/lib/content-filter'
+import { User as UserIcon } from 'lucide-react'
 
 export default function NewTaskClient() {
   const [loading, setLoading] = useState(false)
@@ -802,8 +803,8 @@ export default function NewTaskClient() {
                   className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border border-white shadow flex-shrink-0"
                 />
               ) : (
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold text-base sm:text-lg flex-shrink-0">
-                  {(requestedHelper?.full_name?.[0] || requestedHelper?.email?.[0] || '?').toUpperCase()}
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                  <UserIcon className="w-6 h-6 sm:w-7 sm:h-7 text-primary-700" />
                 </div>
               )}
               <div className="flex-1 min-w-0">

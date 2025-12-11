@@ -205,5 +205,36 @@
     "full": "Completo",
     "quickTooltip": "Rápido e simples, apenas o essencial.",
     "fullTooltip": "Versão detalhada com todos os campos e etiquetas"
+  },
+
+  "surveyForm": {
+    "title": "Criar uma Nova Tarefa",
+    "description": "Vamos começar! Vamos guiá-lo através de cada passo.",
+    "taskTypeQuestion": "Que tipo de ajuda precisa?",
+    "hireHelper": "Contratar um Ajudante",
+    "engageProfessional": "Contratar um Profissional",
+    "categoryQuestion": "Qual categoria melhor se adequa à sua tarefa?",
+    "noCategoriesAvailable": "Nenhuma categoria disponível",
+    "selectCategoryPlaceholder": "Selecionar uma categoria (opcional)",
+    "professionQuestion": "Que papel profissional precisa?",
+    "noProfessionsAvailable": "Nenhuma profissão disponível",
+    "selectProfessionPlaceholder": "Selecionar um papel profissional (opcional)",
+    "taskTitleQuestion": "Com que tarefa precisa de ajuda?",
+    "taskTitlePlaceholder": "ex: Preciso de ajuda para mudar móveis",
+    "descriptionQuestion": "Conte-nos mais sobre o que precisa",
+    "descriptionPlaceholder": "Descreva em detalhe o que precisa de fazer...",
+    "budgetQuestion": "Qual é o seu orçamento? (Opcional)",
+    "budgetPlaceholder": "Inserir valor (ex: 50,00)",
+    "budgetDescription": "Se nenhum orçamento for inserido, os visitantes verão \"Orçamento\"",
+    "locationQuestion": "Onde é necessário o ajudante?",
+    "postcodePlaceholder": "Inserir código postal (ex: 8600-545)",
+    "locationDescription": "Vamos encontrar a localização automaticamente",
+    "locationAddressTitle": "Localização (Morada)",
+    "locationAddressPlaceholder": "A morada aparecerá aqui após inserir o código postal",
+    "dueDateQuestion": "Quando é necessária a ajuda?",
+    "dueDatePlaceholder": "Selecionar uma data",
+    "previewButton": "Pré-visualizar Tarefa Antes de Criar",
+    "nextButton": "Continuar",
+    "backButton": "Voltar"
   }
 }

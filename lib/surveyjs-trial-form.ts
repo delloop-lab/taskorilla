@@ -7,8 +7,10 @@ import { Model, StylesManager } from 'survey-core'
 export function getTrialFormSchema(
   categories: Array<{ id: string; name: string }> = [],
   professions: string[] = [],
-  theme: 'default' | 'defaultV2' | 'modern' | 'custom' = 'modern'
+  theme: 'default' | 'defaultV2' | 'modern' | 'custom' = 'modern',
+  translate?: (key: string) => string
 ) {
+  const t = translate || ((key: string) => key) // Fallback to key if no translate function
   const categoryChoices = categories.map(cat => ({
     value: cat.id,
     text: cat.name
@@ -20,8 +22,8 @@ export function getTrialFormSchema(
   }))
 
   return {
-    title: 'Create a New Task',
-    description: 'Let\'s get started! We\'ll guide you through each step.',
+    title: t('surveyForm.title'),
+    description: t('surveyForm.description'),
     pages: [
       {
         name: 'typePage',
@@ -29,11 +31,11 @@ export function getTrialFormSchema(
           {
             type: 'radiogroup',
             name: 'taskType',
-            title: 'What type of help do you need?',
+            title: t('surveyForm.taskTypeQuestion'),
             isRequired: true,
             choices: [
-              { value: 'helper', text: 'Hire a Helper' },
-              { value: 'professional', text: 'Engage a Professional' }
+              { value: 'helper', text: t('surveyForm.hireHelper') },
+              { value: 'professional', text: t('surveyForm.engageProfessional') }
             ],
             colCount: 0
           }
@@ -45,11 +47,11 @@ export function getTrialFormSchema(
           {
             type: 'dropdown',
             name: 'category',
-            title: 'Which category best fits your task?',
+            title: t('surveyForm.categoryQuestion'),
             choices: categoryChoices.length > 0 
               ? categoryChoices 
-              : [{ value: '', text: 'No categories available' }],
-            placeHolder: 'Select a category (optional)',
+              : [{ value: '', text: t('surveyForm.noCategoriesAvailable') }],
+            placeHolder: t('surveyForm.selectCategoryPlaceholder'),
             showNoneItem: false,
             visibleIf: '{taskType} = "helper"'
           }
@@ -61,11 +63,11 @@ export function getTrialFormSchema(
           {
             type: 'dropdown',
             name: 'requiredProfession',
-            title: 'Which professional role do you need?',
+            title: t('surveyForm.professionQuestion'),
             choices: professionChoices.length > 0 
               ? professionChoices 
-              : [{ value: '', text: 'No professions available' }],
-            placeHolder: 'Select a professional role (optional)',
+              : [{ value: '', text: t('surveyForm.noProfessionsAvailable') }],
+            placeHolder: t('surveyForm.selectProfessionPlaceholder'),
             showNoneItem: false,
             visibleIf: '{taskType} = "professional"'
           }
@@ -77,10 +79,10 @@ export function getTrialFormSchema(
           {
             type: 'comment',
             name: 'title',
-            title: 'What task do you need help with?',
+            title: t('surveyForm.taskTitleQuestion'),
             isRequired: true,
             maxLength: 200,
-            placeHolder: 'e.g., Need help moving furniture',
+            placeHolder: t('surveyForm.taskTitlePlaceholder'),
             rows: 2,
             autoGrow: true
           }
@@ -92,10 +94,10 @@ export function getTrialFormSchema(
           {
             type: 'comment',
             name: 'description',
-            title: 'Tell us more about what you need',
+            title: t('surveyForm.descriptionQuestion'),
             isRequired: true,
             maxLength: 5000,
-            placeHolder: 'Describe what you need done in detail...',
+            placeHolder: t('surveyForm.descriptionPlaceholder'),
             rows: 6
           }
         ]
@@ -106,11 +108,11 @@ export function getTrialFormSchema(
           {
             type: 'text',
             name: 'budget',
-            title: 'What\'s your budget? (Optional)',
+            title: t('surveyForm.budgetQuestion'),
             // NOTE: Changed from inputType: 'number' to regular text input
             // because SurveyJS number inputs were causing refresh issues when logged in
-            placeHolder: 'Enter amount (e.g., 50.00)',
-            description: 'If no budget is entered, visitors will see "Quote"'
+            placeHolder: t('surveyForm.budgetPlaceholder'),
+            description: t('surveyForm.budgetDescription')
           }
         ]
       },
@@ -120,19 +122,19 @@ export function getTrialFormSchema(
           {
             type: 'text',
             name: 'postcode',
-            title: 'Where is the helper needed?',
+            title: t('surveyForm.locationQuestion'),
             isRequired: true,
-            placeHolder: 'Enter postcode (e.g., 8600-545)',
-            description: 'We\'ll find the location automatically',
+            placeHolder: t('surveyForm.postcodePlaceholder'),
+            description: t('surveyForm.locationDescription'),
             enableIf: 'true',
             maxLength: 8 // Portuguese format: xxxx-xxx (8 chars including dash)
           },
           {
             type: 'text',
             name: 'location',
-            title: 'Location (Address)',
+            title: t('surveyForm.locationAddressTitle'),
             readOnly: true,
-            placeHolder: 'Address will appear here after entering postcode',
+            placeHolder: t('surveyForm.locationAddressPlaceholder'),
             startWithNewLine: true
           },
           {
@@ -153,10 +155,10 @@ export function getTrialFormSchema(
           {
             type: 'text',
             name: 'dueDate',
-            title: 'When is help required?',
+            title: t('surveyForm.dueDateQuestion'),
             inputType: 'date',
             isRequired: true,
-            placeHolder: 'Select a date',
+            placeHolder: t('surveyForm.dueDatePlaceholder'),
             defaultValue: new Date().toISOString().split('T')[0] // Default to today's date (YYYY-MM-DD format)
           }
         ]
@@ -219,9 +221,9 @@ export function getTrialFormSchema(
     ],
     showProgressBar: 'top',
     showQuestionNumbers: 'off',
-    completeText: 'Preview Task Before Creating',
-    pageNextText: 'Continue',
-    pagePrevText: 'Back',
+    completeText: t('surveyForm.previewButton'),
+    pageNextText: t('surveyForm.nextButton'),
+    pagePrevText: t('surveyForm.backButton'),
     firstPageIsStarted: false,
     goNextPageAutomatic: false,
     showCompletedPage: false,
@@ -235,9 +237,10 @@ export function getTrialFormSchema(
 export function createTrialFormModel(
   categories: Array<{ id: string; name: string }> = [],
   professions: string[] = [],
-  theme: 'default' | 'defaultV2' | 'modern' | 'custom' = 'modern'
+  theme: 'default' | 'defaultV2' | 'modern' | 'custom' = 'modern',
+  translate?: (key: string) => string
 ) {
-  const schema = getTrialFormSchema(categories, professions, theme)
+  const schema = getTrialFormSchema(categories, professions, theme, translate)
   const model = new Model(schema)
   
   // Apply theme using SurveyJS's built-in theme system
