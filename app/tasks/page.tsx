@@ -1375,7 +1375,7 @@ function TasksPageContent() {
         </div>
       )}
 
-      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-2 items-start">
         {tasks.length === 0 && !loading ? (
           <div className="col-span-full text-center py-12 text-gray-500">
             {t('tasks.noTasksFound')}
@@ -1418,7 +1418,7 @@ function TasksPageContent() {
                   }
                 }}
                 data-task-id={task.id}
-                className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col relative ${
+                className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col relative self-start ${
                   isAdmin && task.hidden_by_admin ? 'border-2 border-red-300 bg-red-50' : ''
                 }`}
               >
