@@ -77,3 +77,4 @@ export function getMultipleUserRatings(
     .filter((rating): rating is UserRatingsSummary => rating !== undefined)
 }
 
+
