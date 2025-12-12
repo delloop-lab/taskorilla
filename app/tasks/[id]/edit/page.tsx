@@ -10,6 +10,7 @@ import { formatPostcodeForCountry, isPortuguesePostcode } from '@/lib/postcode'
 import { checkForContactInfo } from '@/lib/content-filter'
 import { User as UserIcon } from 'lucide-react'
 import { useUserRatings } from '@/lib/useUserRatings'
+import CompactUserRatingsDisplay from '@/components/CompactUserRatingsDisplay'
 
 export default function EditTaskPage() {
   const params = useParams()

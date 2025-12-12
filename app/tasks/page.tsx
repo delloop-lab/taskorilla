@@ -16,7 +16,7 @@ import ReportModal from '@/components/ReportModal'
 import { useLanguage } from '@/lib/i18n'
 import { User as UserIcon } from 'lucide-react'
 import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
-import { CompactUserRatingsDisplay } from '@/components/UserRatingsDisplay'
+import CompactUserRatingsDisplay from '@/components/CompactUserRatingsDisplay'
 
 type FilterType = 'all' | 'open' | 'my_tasks' | 'new' | 'my_bids'
 

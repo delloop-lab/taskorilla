@@ -14,7 +14,7 @@ import { extractTownName } from '@/lib/geocoding'
 import { checkForContactInfo } from '@/lib/content-filter'
 import { User as UserIcon } from 'lucide-react'
 import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
-import { CompactUserRatingsDisplay } from '@/components/UserRatingsDisplay'
+import CompactUserRatingsDisplay from '@/components/CompactUserRatingsDisplay'
 
 export default function TaskDetailPage() {
   const params = useParams()

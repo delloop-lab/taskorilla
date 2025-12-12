@@ -8,7 +8,7 @@ import { STANDARD_SKILLS, helperMatchesSearch } from '@/lib/helper-constants'
 import { STANDARD_PROFESSIONS } from '@/lib/profession-constants'
 import { User as UserIcon } from 'lucide-react'
 import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
-import { CompactUserRatingsDisplay } from '@/components/UserRatingsDisplay'
+import CompactUserRatingsDisplay from '@/components/CompactUserRatingsDisplay'
 
 interface FeaturedHelpersProps {
   searchTerm?: string

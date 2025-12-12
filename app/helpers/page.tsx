@@ -11,7 +11,7 @@ import { STANDARD_PROFESSIONS, helperMatchesProfession } from '@/lib/profession-
 import { useLanguage } from '@/lib/i18n'
 import { User as UserIcon } from 'lucide-react'
 import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
-import { CompactUserRatingsDisplay } from '@/components/UserRatingsDisplay'
+import CompactUserRatingsDisplay from '@/components/CompactUserRatingsDisplay'
 
 export default function BrowseHelpersPage() {
   const { t } = useLanguage()
