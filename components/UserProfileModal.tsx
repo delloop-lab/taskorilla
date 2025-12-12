@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import ReportModal from "./ReportModal";
 import { User as UserIcon } from "lucide-react";
 import { useUserRatings, getUserRatingsById } from "@/lib/useUserRatings";
-import CompactUserRatingsDisplay from "./CompactUserRatingsDisplay";
+import CompactUserRatingsDisplay from "@/components/CompactUserRatingsDisplay";
 
 interface UserProfileModalProps {
   userId: string | null;
