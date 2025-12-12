@@ -9,6 +9,7 @@ import { geocodePostcode } from '@/lib/geocoding'
 import { formatPostcodeForCountry, isPortuguesePostcode } from '@/lib/postcode'
 import { checkForContactInfo } from '@/lib/content-filter'
 import { User as UserIcon } from 'lucide-react'
+import { useUserRatings } from '@/lib/useUserRatings'
 
 export default function EditTaskPage() {
   const params = useParams()
