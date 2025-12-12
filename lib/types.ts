@@ -39,6 +39,13 @@ export interface User {
   iban?: string | null
   languages?: string[] | null // Languages the user speaks (e.g., ["English", "Portuguese"])
   completedTasks?: number
+  userRatings?: {
+    reviewee_id: string
+    tasker_avg_rating: number | null
+    tasker_review_count: number
+    helper_avg_rating: number | null
+    helper_review_count: number
+  } | null
 }
 
 export interface Category {

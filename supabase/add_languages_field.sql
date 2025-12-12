@@ -11,3 +11,5 @@ CREATE INDEX IF NOT EXISTS idx_profiles_languages ON profiles USING GIN(language
 COMMENT ON COLUMN profiles.languages IS 'Array of languages the user speaks (e.g., ["English", "Portuguese"])';
 
 
+
+

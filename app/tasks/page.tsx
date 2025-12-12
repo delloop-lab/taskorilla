@@ -15,6 +15,8 @@ import { STANDARD_PROFESSIONS } from '@/lib/profession-constants'
 import ReportModal from '@/components/ReportModal'
 import { useLanguage } from '@/lib/i18n'
 import { User as UserIcon } from 'lucide-react'
+import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
+import { CompactUserRatingsDisplay } from '@/components/UserRatingsDisplay'
 
 type FilterType = 'all' | 'open' | 'my_tasks' | 'new' | 'my_bids'
 
@@ -40,6 +42,7 @@ function TasksPageContent() {
   const { t } = useLanguage()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { users: userRatings, loading: ratingsLoading } = useUserRatings()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterType>('open') // Default to Open Tasks
@@ -448,9 +451,8 @@ function TasksPageContent() {
       const categoryIds = Array.from(new Set(tasksData.flatMap(t => [t.category_id, t.sub_category_id]).filter(Boolean)))
       const taskIds = tasksData.map(t => t.id)
       
-      const [profilesResult, reviewsResult, categoriesResult, tagsResult, bidsResult] = await Promise.all([
+      const [profilesResult, categoriesResult, tagsResult, bidsResult] = await Promise.all([
         supabase.from('profiles').select('id, email, full_name, avatar_url').in('id', creatorIds),
-        supabase.from('reviews').select('reviewee_id, rating').in('reviewee_id', creatorIds),
         categoryIds.length > 0 
           ? supabase.from('categories').select('*').in('id', categoryIds)
           : Promise.resolve({ data: [] }),
@@ -465,7 +467,6 @@ function TasksPageContent() {
       }
       
       const profilesData = profilesResult.data || []
-      const reviewsData = reviewsResult.data || []
       const categoriesData = categoriesResult.data || []
       const taskTagsData = tagsResult.data || []
       const bidsData = bidsResult.data || []
@@ -482,22 +483,23 @@ function TasksPageContent() {
         if (tt.tags) tagsByTaskId[tt.task_id].push(tt.tags)
       })
       
-      const ratingsByUser: Record<string, { avg: number; count: number }> = {}
-      reviewsData.forEach(review => {
-        if (!ratingsByUser[review.reviewee_id]) {
-          ratingsByUser[review.reviewee_id] = { avg: 0, count: 0 }
-        }
-        ratingsByUser[review.reviewee_id].count++
-        ratingsByUser[review.reviewee_id].avg += review.rating
-      })
-      Object.keys(ratingsByUser).forEach(userId => {
-        ratingsByUser[userId].avg = ratingsByUser[userId].avg / ratingsByUser[userId].count
-      })
+      // Create a map of user ratings from the SQL function results
+      // The SQL function returns 'reviewee_id' as the user identifier
+      const ratingsMap = new Map(
+        userRatings.map((r: any) => [r.reviewee_id, r])
+      )
+      console.log(`📊 Ratings map size: ${ratingsMap.size}, Total ratings: ${userRatings.length}`)
+      console.log('📊 Ratings map keys (user IDs):', Array.from(ratingsMap.keys()).slice(0, 5))
       
       // Map tasks with profiles
       let tasksWithProfiles = tasksData.map(task => {
         const creator = profilesData.find(p => p.id === task.created_by)
-        const rating = ratingsByUser[task.created_by]
+        const userRating = getUserRatingsById(task.created_by, ratingsMap)
+        if (userRating) {
+          console.log(`⭐ Found ratings for ${creator?.full_name || creator?.email} (${task.created_by}): Tasker=${userRating.tasker_avg_rating} (${userRating.tasker_review_count} reviews), Helper=${userRating.helper_avg_rating} (${userRating.helper_review_count} reviews)`)
+        } else if (creator) {
+          console.log(`❌ No ratings found for ${creator?.full_name || creator?.email} (${task.created_by})`)
+        }
         const categoryObj = task.category_id ? categoriesData.find(c => c.id === task.category_id) : null
         const subCategoryObj = task.sub_category_id ? categoriesData.find(c => c.id === task.sub_category_id) : null
         const tags = tagsByTaskId[task.id] || []
@@ -514,7 +516,7 @@ function TasksPageContent() {
         
         return {
           ...task,
-          user: creator ? { ...creator, rating: rating ? rating.avg : null, reviewCount: rating?.count || 0 } : undefined,
+          user: creator ? { ...creator, userRatings: userRating || null } : undefined,
           category_obj: categoryObj || undefined,
           sub_category_obj: subCategoryObj || undefined,
           tags: tags,
@@ -820,6 +822,14 @@ function TasksPageContent() {
       loadTasks('open')
     }
   }, [searchParams])
+
+  // Reload tasks when ratings finish loading (to attach ratings to existing tasks)
+  useEffect(() => {
+    if (!sessionReady || ratingsLoading || tasks.length === 0) return
+    
+    console.log(`🔄 Ratings finished loading, reprocessing tasks to attach ratings`)
+    loadTasks(filter)
+  }, [ratingsLoading, sessionReady])
 
   // Reload when other filters change
   useEffect(() => {
@@ -1512,15 +1522,22 @@ function TasksPageContent() {
                         )}
                         <span className="font-medium truncate">by {task.user.full_name || task.user.email}</span>
                       </button>
-                      {task.user.rating !== null && task.user.rating !== undefined && typeof task.user.rating === 'number' && (
-                        <span className="text-xs sm:text-sm text-amber-600 font-semibold flex items-center whitespace-nowrap">
-                          <span className="mr-1">★</span>
-                          <span>{task.user.rating.toFixed(1)}</span>
-                          {task.user.reviewCount && typeof task.user.reviewCount === 'number' && task.user.reviewCount > 0 && (
-                            <span className="text-gray-500 ml-1">({task.user.reviewCount})</span>
-                          )}
-                        </span>
-                      )}
+                      {(() => {
+                        const ratings = task.user?.userRatings
+                        console.log('🎯 Rendering ratings for task:', {
+                          userId: task.user?.id,
+                          userName: task.user?.full_name || task.user?.email,
+                          hasRatings: !!ratings,
+                          ratings: ratings
+                        })
+                        return (
+                          <CompactUserRatingsDisplay 
+                            ratings={ratings || null} 
+                            size="sm"
+                            className="ml-2"
+                          />
+                        )
+                      })()}
                     </div>
                   )}
                 </div>
@@ -1560,7 +1577,7 @@ function TasksPageContent() {
                     if (city) {
                       return (
                         <div className="flex items-center gap-1.5">
-                          <span className="text-gray-500">📍</span>
+                          <span className="text-gray-500">🏠</span>
                           <span className="text-gray-700 font-medium">
                             {city}{county ? `, ${county}` : ''}
                           </span>

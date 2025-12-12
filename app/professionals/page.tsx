@@ -266,7 +266,7 @@ export default function ProfessionalsPage() {
                     {categoryHelpers.map((helper) => (
                       <Link
                         key={helper.id}
-                        href={`/helper/${helper.profile_slug || helper.id}`}
+                        href={`/user/${helper.profile_slug || helper.id}`}
                         className="flex flex-col items-center p-4 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer border border-transparent hover:border-gray-200"
                       >
                         {/* Avatar */}

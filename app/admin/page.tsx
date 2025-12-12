@@ -3074,7 +3074,7 @@ export default function SuperadminDashboard() {
                             ) : 'Task not found'
                           ) : (
                             report.reported_user ? (
-                              <a href={`/helper/${report.reported_user.id}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate block max-w-xs">
+                              <a href={`/user/${report.reported_user.id}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate block max-w-xs">
                                 {report.reported_user.full_name || report.reported_user.email || 'Unknown User'}
                               </a>
                             ) : 'User not found'

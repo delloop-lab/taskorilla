@@ -10,10 +10,13 @@ import { STANDARD_SKILLS, STANDARD_SERVICES, helperMatchesSearch } from '@/lib/h
 import { STANDARD_PROFESSIONS, helperMatchesProfession } from '@/lib/profession-constants'
 import { useLanguage } from '@/lib/i18n'
 import { User as UserIcon } from 'lucide-react'
+import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
+import { CompactUserRatingsDisplay } from '@/components/UserRatingsDisplay'
 
 export default function BrowseHelpersPage() {
   const { t } = useLanguage()
   const router = useRouter()
+  const { users: userRatings } = useUserRatings()
   const [helpers, setHelpers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -51,7 +54,17 @@ export default function BrowseHelpersPage() {
       if (error) throw error
 
       if (helpersData) {
-        setHelpers(helpersData)
+        // Add ratings from SQL function
+        // The SQL function returns 'reviewee_id' as the user identifier
+        const ratingsMap = new Map(userRatings.map((r: any) => [r.reviewee_id, r]))
+        const helpersWithRatings = helpersData.map((helper: any) => {
+          const userRating = getUserRatingsById(helper.id, ratingsMap)
+          return {
+            ...helper,
+            userRatings: userRating || null
+          }
+        })
+        setHelpers(helpersWithRatings)
         
         // Combine database skills with standard skills for dropdown
         const allSkills = new Set<string>()
@@ -335,7 +348,7 @@ export default function BrowseHelpersPage() {
             {filteredHelpers.map((helper) => (
               <Link
                 key={helper.id}
-                href={`/helper/${helper.profile_slug || helper.id}`}
+                href={`/user/${helper.profile_slug || helper.id}`}
                 className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
               >
                 <div className="p-6">
@@ -370,12 +383,12 @@ export default function BrowseHelpersPage() {
                   </div>
 
                   {/* Rating */}
-                  {helper.rating && (
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-amber-600 font-semibold">★ {helper.rating.toFixed(1)}</span>
-                      {helper.reviewCount && (
-                        <span className="text-sm text-gray-600">({helper.reviewCount} reviews)</span>
-                      )}
+                  {helper.userRatings && (
+                    <div className="mb-3">
+                      <CompactUserRatingsDisplay 
+                        ratings={helper.userRatings} 
+                        size="sm"
+                      />
                     </div>
                   )}
 

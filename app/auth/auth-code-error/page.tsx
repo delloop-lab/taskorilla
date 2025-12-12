@@ -25,7 +25,7 @@ function AuthCodeErrorContent() {
               We've sent a confirmation email to your inbox. Please click the link in the email to verify your account.
             </p>
             <p className="mt-4 text-sm text-gray-500">
-              Didn't receive the email? Check your spam folder or try registering again.
+              Didn't receive the email? <span className="text-red-600 font-medium">Check your spam folder</span>.
             </p>
           </div>
           <div className="space-y-4">

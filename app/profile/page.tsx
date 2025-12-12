@@ -14,6 +14,8 @@ import { STANDARD_PROFESSIONS } from '@/lib/profession-constants'
 import { PROFESSION_CATEGORIES, ALL_PROFESSIONS } from '@/lib/profession-categories'
 import { getPendingReviews } from '@/lib/review-utils'
 import { formatPostcodeForCountry } from '@/lib/postcode'
+import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
+import UserRatingsDisplay from '@/components/UserRatingsDisplay'
 
 // AppUser interface that extends User and includes all properties used in this component
 interface AppUser extends User {
@@ -24,10 +26,12 @@ function ProfilePageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const setupRequired = searchParams.get('setup') === 'required'
+  const { users: userRatings } = useUserRatings()
   
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<AppUser | null>(null)
   const [loading, setLoading] = useState(true)
+  const [userRatingsSummary, setUserRatingsSummary] = useState<any>(null)
   const [editing, setEditing] = useState(false)
   const [showSetupModal, setShowSetupModal] = useState(false)
   const [fullName, setFullName] = useState('')
@@ -102,6 +106,21 @@ function ProfilePageContent() {
     loadProfile()
   }, [])
 
+  // Update ratings when userRatings finish loading
+  useEffect(() => {
+    if (!user || !profile || userRatings.length === 0) return
+    
+    // Get user ratings from SQL function
+    // The SQL function returns 'reviewee_id' as the user identifier
+    console.log('📊 Profile: Loading ratings for user:', user.id)
+    console.log('📊 Profile: Available ratings:', userRatings.length)
+    const ratingsMap = new Map(userRatings.map((r: any) => [r.reviewee_id, r]))
+    console.log('📊 Profile: Ratings map keys:', Array.from(ratingsMap.keys()))
+    const userRating = getUserRatingsById(user.id, ratingsMap)
+    console.log('📊 Profile: Found rating:', userRating)
+    setUserRatingsSummary(userRating)
+  }, [userRatings, user, profile])
+
   const loadProfile = async () => {
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser()
@@ -173,6 +192,8 @@ function ProfilePageContent() {
         setReviews([])
         setAverageRating(null)
       }
+
+      // Ratings will be loaded in a separate useEffect when userRatings finish loading
 
       // Check if profile is complete and show modal if needed
       if (data && !isProfileComplete(data)) {
@@ -371,6 +392,75 @@ function ProfilePageContent() {
     }
   }
 
+  // Auto-save role changes immediately
+  const handleRoleChange = async (role: 'tasker' | 'helper', value: boolean) => {
+    if (!user) return
+
+    // Validate at least one role is enabled
+    if (role === 'tasker' && !value && !isHelper) {
+      setErrorMessage('You must enable at least one role (Tasker or Helper)')
+      return
+    }
+    if (role === 'helper' && !value && !isTasker) {
+      setErrorMessage('You must enable at least one role (Tasker or Helper)')
+      return
+    }
+
+    try {
+      setErrorMessage(null)
+      const updateData: any = {
+        is_tasker: role === 'tasker' ? value : isTasker,
+        is_helper: role === 'helper' ? value : isHelper,
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('id', user.id)
+
+      if (error) {
+        console.error('Error updating role:', error)
+        setErrorMessage('Failed to update role. Please try again.')
+        // Revert the state change on error
+        if (role === 'tasker') {
+          setIsTasker(!value)
+        } else {
+          setIsHelper(!value)
+        }
+        return
+      }
+
+      // Update local state
+      if (role === 'tasker') {
+        setIsTasker(value)
+      } else {
+        setIsHelper(value)
+      }
+
+      // Update profile state
+      if (profile) {
+        setProfile({
+          ...profile,
+          is_tasker: updateData.is_tasker,
+          is_helper: updateData.is_helper,
+        })
+      }
+
+      // Show success message briefly
+      setStatusMessage(`${role === 'tasker' ? 'Tasker' : 'Helper'} role ${value ? 'enabled' : 'disabled'} successfully.`)
+      setTimeout(() => setStatusMessage(null), 3000)
+    } catch (err: any) {
+      console.error('Error updating role:', err)
+      setErrorMessage('Failed to update role. Please try again.')
+      // Revert the state change on error
+      if (role === 'tasker') {
+        setIsTasker(!value)
+      } else {
+        setIsHelper(!value)
+      }
+    }
+  }
+
   const handleUpdateProfile = async () => {
     if (!user) return
 
@@ -421,13 +511,14 @@ function ProfilePageContent() {
         }
       }
 
-      // Generate or update profile slug if helper is enabled
+      // Generate or update profile slug for ALL users (helpers and taskers)
       let profileSlug = profile?.profile_slug
       
       // Check if name has changed (need to regenerate slug)
       const nameChanged = profile?.full_name?.trim() !== fullName.trim()
       
-      if (isHelper && fullName.trim()) {
+      // Generate slug for all users if they have a name
+      if (fullName.trim()) {
         // Generate slug from full name
         const baseSlug = fullName.trim()
           .toLowerCase()
@@ -455,10 +546,8 @@ function ProfilePageContent() {
             profileSlug = slug
           }
         }
-      } else if (!isHelper) {
-        // If helper is disabled, clear the slug
-        profileSlug = null
       }
+      // Note: We generate slugs for ALL users (helpers and taskers) so profiles are shareable
 
       // Parse hourly rate safely
       let hourlyRateValue = null
@@ -1262,6 +1351,26 @@ function ProfilePageContent() {
               )}
             </div>
 
+            {/* Bio - Always visible for all users */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Bio / About Me
+              </label>
+              {editing ? (
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Tell others about yourself, your experience, and what makes you unique..."
+                />
+              ) : (
+                <p className="text-gray-700 whitespace-pre-line">
+                  {profile.bio || 'No bio added yet'}
+                </p>
+              )}
+            </div>
+
             {/* IBAN for Payouts */}
             {isHelper && (
               <div>
@@ -1561,11 +1670,14 @@ function ProfilePageContent() {
                     <input
                       type="checkbox"
                       checked={isTasker}
-                      onChange={(e) => setIsTasker(e.target.checked)}
-                      disabled={!editing}
+                      onChange={(e) => {
+                        const newValue = e.target.checked
+                        setIsTasker(newValue) // Update UI immediately for better UX
+                        handleRoleChange('tasker', newValue) // Auto-save to database
+                      }}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"></div>
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                   </label>
                 </div>
 
@@ -1588,15 +1700,18 @@ function ProfilePageContent() {
                     <input
                       type="checkbox"
                       checked={isHelper}
-                      onChange={(e) => setIsHelper(e.target.checked)}
-                      disabled={!editing}
+                      onChange={(e) => {
+                        const newValue = e.target.checked
+                        setIsHelper(newValue) // Update UI immediately for better UX
+                        handleRoleChange('helper', newValue) // Auto-save to database
+                      }}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"></div>
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                   </label>
                 </div>
 
-                {!isTasker && !isHelper && editing && (
+                {!isTasker && !isHelper && (
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                     <p className="text-sm text-amber-800">
                       ⚠️ You must enable at least one role. Enable Tasker to post tasks or Helper to bid on tasks.
@@ -1649,25 +1764,6 @@ function ProfilePageContent() {
                 )}
 
                 <div className="space-y-4">
-                  {/* Bio */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Bio / About Me
-                    </label>
-                    {editing ? (
-                      <textarea
-                        value={bio}
-                        onChange={(e) => setBio(e.target.value)}
-                        rows={4}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="Tell taskers about yourself, your experience, and what makes you a great helper..."
-                      />
-                    ) : (
-                      <p className="text-gray-700 whitespace-pre-line">
-                        {profile.bio || 'No bio added yet'}
-                      </p>
-                    )}
-                  </div>
 
                   {/* Hourly Rate */}
                   <div>
@@ -2156,14 +2252,14 @@ function ProfilePageContent() {
                       <div className="flex gap-2">
                         <input
                           type="text"
-                          value={`${typeof window !== 'undefined' ? window.location.origin : ''}/helper/${profile.profile_slug}`}
+                          value={`${typeof window !== 'undefined' ? window.location.origin : ''}/user/${profile.profile_slug}`}
                           readOnly
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700"
                         />
                         <button
                           type="button"
                           onClick={() => {
-                            const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/helper/${profile.profile_slug}`
+                            const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/user/${profile.profile_slug}`
                             navigator.clipboard.writeText(url)
                             setStatusMessage('Profile link copied to clipboard!')
                           }}
@@ -2236,19 +2332,18 @@ function ProfilePageContent() {
           </p>
         </div>
 
-        {averageRating !== null && (
-          <div className="border-t pt-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Rating</h2>
-            <div className="flex items-center space-x-2">
-              <span className="text-2xl font-bold text-amber-600">
-                ★ {averageRating.toFixed(1)}
-              </span>
-              <span className="text-gray-600">
-                ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
-              </span>
-            </div>
-          </div>
-        )}
+        <div className="border-t pt-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Ratings</h2>
+          {userRatingsSummary ? (
+            <UserRatingsDisplay 
+              ratings={userRatingsSummary} 
+              size="md"
+              showLabels={false}
+            />
+          ) : (
+            <div className="text-sm text-gray-500">Loading ratings...</div>
+          )}
+        </div>
 
         {reviews.length > 0 && (
           <div className="border-t pt-6">
@@ -2278,7 +2373,7 @@ function ProfilePageContent() {
                         </p>
                       </div>
                     </div>
-                    <div className="text-amber-600 font-semibold">
+                    <div className="text-amber-600 font-semibold text-xs sm:text-sm">
                       {'★'.repeat(review.rating)}
                       <span className="text-gray-300">
                         {'★'.repeat(5 - review.rating)}

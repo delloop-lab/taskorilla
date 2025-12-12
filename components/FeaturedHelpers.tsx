@@ -7,6 +7,8 @@ import Link from 'next/link'
 import { STANDARD_SKILLS, helperMatchesSearch } from '@/lib/helper-constants'
 import { STANDARD_PROFESSIONS } from '@/lib/profession-constants'
 import { User as UserIcon } from 'lucide-react'
+import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
+import { CompactUserRatingsDisplay } from '@/components/UserRatingsDisplay'
 
 interface FeaturedHelpersProps {
   searchTerm?: string
@@ -15,6 +17,7 @@ interface FeaturedHelpersProps {
 }
 
 export default function FeaturedHelpers({ searchTerm = '', selectedSkill = null, maxResults = 6 }: FeaturedHelpersProps) {
+  const { users: userRatings } = useUserRatings()
   const [featuredHelpers, setFeaturedHelpers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -111,13 +114,17 @@ export default function FeaturedHelpers({ searchTerm = '', selectedSkill = null,
           if (!aFeatured && bFeatured) return 1
           
           // If both are featured or both are not featured, prioritize helpers with ratings
-          if (a.rating && !b.rating) return -1
-          if (!a.rating && b.rating) return 1
+          const aHasRating = a.userRatings && (a.userRatings.helper_avg_rating || a.userRatings.tasker_avg_rating)
+          const bHasRating = b.userRatings && (b.userRatings.helper_avg_rating || b.userRatings.tasker_avg_rating)
+          if (aHasRating && !bHasRating) return -1
+          if (!aHasRating && bHasRating) return 1
           
-          // If both have ratings, sort by rating
-          if (a.rating && b.rating) {
-            if (a.rating !== b.rating) {
-              return b.rating - a.rating
+          // If both have ratings, sort by helper rating (or tasker if no helper rating)
+          if (aHasRating && bHasRating) {
+            const aRating = a.userRatings?.helper_avg_rating || a.userRatings?.tasker_avg_rating || 0
+            const bRating = b.userRatings?.helper_avg_rating || b.userRatings?.tasker_avg_rating || 0
+            if (aRating !== bRating) {
+              return bRating - aRating
             }
           }
           
@@ -170,7 +177,7 @@ export default function FeaturedHelpers({ searchTerm = '', selectedSkill = null,
           return (
             <Link
               key={helper.id}
-              href={`/helper/${helper.profile_slug || helper.id}`}
+              href={`/user/${helper.profile_slug || helper.id}`}
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
             >
               <div className="p-6">
@@ -193,12 +200,12 @@ export default function FeaturedHelpers({ searchTerm = '', selectedSkill = null,
                     <h3 className="font-semibold text-gray-900 truncate">
                       {helper.full_name || 'Helper'}
                     </h3>
-                    {helper.rating != null && (
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-amber-600 font-semibold">★ {helper.rating.toFixed(1)}</span>
-                        {helper.reviewCount && helper.reviewCount > 0 && (
-                          <span className="text-sm text-gray-600">({helper.reviewCount})</span>
-                        )}
+                    {helper.userRatings && (
+                      <div className="mt-1">
+                        <CompactUserRatingsDisplay 
+                          ratings={helper.userRatings} 
+                          size="sm"
+                        />
                       </div>
                     )}
                   </div>

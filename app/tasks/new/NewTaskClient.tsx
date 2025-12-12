@@ -823,7 +823,7 @@ export default function NewTaskClient() {
               {requestedHelper && (
                 <button
                   type="button"
-                  onClick={() => router.push(`/helper/${requestedHelper.profile_slug || requestedHelper.id}`)}
+                  onClick={() => router.push(`/user/${requestedHelper.profile_slug || requestedHelper.id}`)}
                   className="text-xs text-primary-700 hover:text-primary-900 underline self-start sm:self-center"
                 >
                   View profile

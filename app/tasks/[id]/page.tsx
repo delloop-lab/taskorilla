@@ -13,12 +13,15 @@ import StandardModal from '@/components/StandardModal'
 import { extractTownName } from '@/lib/geocoding'
 import { checkForContactInfo } from '@/lib/content-filter'
 import { User as UserIcon } from 'lucide-react'
+import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
+import { CompactUserRatingsDisplay } from '@/components/UserRatingsDisplay'
 
 export default function TaskDetailPage() {
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
   const taskId = params.id as string
+  const { users: userRatings } = useUserRatings()
 
   const [task, setTask] = useState<Task | null>(null)
   const [bids, setBids] = useState<Bid[]>([])
@@ -90,6 +93,38 @@ export default function TaskDetailPage() {
       return () => clearTimeout(timer)
     }
   }, [searchParams])
+
+  // Update task userRatings when userRatings finish loading
+  useEffect(() => {
+    if (!task || !task.user || !task.created_by) return
+    
+    // Get user ratings from SQL function
+    const ratingsMap = new Map(userRatings.map((r: any) => [r.reviewee_id, r]))
+    const userRating = getUserRatingsById(task.created_by, ratingsMap)
+    
+    console.log('📊 Task Detail: Updating ratings for tasker:', {
+      taskerId: task.created_by,
+      userRatingsCount: userRatings.length,
+      foundRating: userRating,
+      currentRating: task.user.userRatings
+    })
+    
+    // Only update if ratings weren't set before or if they've changed
+    const currentRatings = task.user.userRatings
+    const ratingsChanged = JSON.stringify(userRating) !== JSON.stringify(currentRatings)
+    
+    if (ratingsChanged) {
+      console.log('📊 Task Detail: Updating task with ratings:', userRating)
+      setTask({
+        ...task,
+        user: {
+          ...task.user,
+          userRatings: userRating || null
+        }
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userRatings, task?.created_by])
 
   useEffect(() => {
     // Only redirect if we've finished loading and confirmed user is not logged in
@@ -246,24 +281,30 @@ export default function TaskDetailPage() {
         ])
 
         const profileData = profileResult.data
-        const reviewsData = reviewsResult.data || []
         const imagesData = imagesResult.data || []
         const completionPhotosData = completionPhotosResult.data || []
         const progressUpdatesData = progressUpdatesResult.data || []
 
-        // Calculate average rating
-        let averageRating = null
-        if (reviewsData.length > 0) {
-          const sum = reviewsData.reduce((acc, r) => acc + r.rating, 0)
-          averageRating = sum / reviewsData.length
+        // Get user ratings from SQL function
+        // The SQL function returns 'reviewee_id' as the user identifier
+        let userRating = null
+        if (userRatings.length > 0) {
+          const ratingsMap = new Map(userRatings.map((r: any) => [r.reviewee_id, r]))
+          userRating = getUserRatingsById(taskData.created_by, ratingsMap)
+          console.log('📊 Task Detail loadTask: Found rating for tasker:', {
+            taskerId: taskData.created_by,
+            rating: userRating,
+            userRatingsCount: userRatings.length
+          })
+        } else {
+          console.log('📊 Task Detail loadTask: userRatings not loaded yet, will update via useEffect')
         }
 
         setTask({
           ...taskData,
           user: profileData ? {
             ...profileData,
-            rating: averageRating,
-            reviewCount: reviewsData.length
+            userRatings: userRating || null
           } : null,
           images: imagesData.length > 0 ? imagesData : undefined,
           completion_photos: completionPhotosData.length > 0 ? completionPhotosData : undefined,
@@ -1794,15 +1835,16 @@ export default function TaskDetailPage() {
                       )}
                       <span className="truncate">{task.user.full_name || task.user.email}</span>
                     </button>
-                    {task.user.rating !== null && task.user.rating !== undefined && (
-                      <span className="text-xs sm:text-sm text-amber-600 font-semibold flex items-center whitespace-nowrap">
-                        <span className="mr-1">★</span>
-                        <span>{task.user.rating.toFixed(1)}</span>
-                        {task.user.reviewCount && task.user.reviewCount > 0 && (
-                          <span className="text-gray-500 ml-1">({task.user.reviewCount})</span>
-                        )}
-                      </span>
-                    )}
+                    {task.user.userRatings ? (
+                      <CompactUserRatingsDisplay 
+                        ratings={task.user.userRatings} 
+                        size="sm"
+                        className="ml-2"
+                      />
+                    ) : userRatings.length > 0 && task.user.userRatings === null ? (
+                      // Ratings loaded but user has no ratings
+                      <span className="text-xs text-gray-400 ml-2">No ratings</span>
+                    ) : null}
                   </div>
                 )}
                 {averageRating && reviews.length > 0 && (
@@ -2284,11 +2326,11 @@ export default function TaskDetailPage() {
                               {bid.user?.is_helper ? (
                                 <>
                                   <Link
-                                    href={`/helper/${bid.user.profile_slug || bid.user_id}`}
+                                    href={`/user/${bid.user.profile_slug || bid.user_id}`}
                                     onClick={(e) => {
                                       e.preventDefault()
                                       e.stopPropagation()
-                                      router.push(`/helper/${bid.user?.profile_slug || bid.user_id}`)
+                                      router.push(`/user/${bid.user?.profile_slug || bid.user_id}`)
                                     }}
                                     className="font-semibold text-primary-600 hover:text-primary-700 hover:underline flex items-center gap-2"
                                   >
@@ -2436,8 +2478,8 @@ export default function TaskDetailPage() {
                               <div className="space-y-3">
                                 {bid.user.recentReviews.map((review: any, idx: number) => (
                                   <div key={idx} className="bg-gray-50 rounded-lg p-3 text-sm">
-                                    <div className="flex items-center justify-between mb-1">
-                                      <span className="text-amber-500 font-medium">
+                                    <div className="flex items-center justify-between mb-1 flex-wrap gap-1 sm:gap-2">
+                                      <span className="text-amber-500 font-medium text-xs sm:text-sm">
                                         {'★'.repeat(review.rating)}
                                         <span className="text-gray-300">{'★'.repeat(5 - review.rating)}</span>
                                       </span>
@@ -2453,7 +2495,7 @@ export default function TaskDetailPage() {
                                 ))}
                                 {(bid.user.reviewCount ?? 0) > 3 && (
                                   <Link
-                                    href={`/helper/${bid.user.profile_slug || bid.user_id}`}
+                                    href={`/user/${bid.user.profile_slug || bid.user_id}`}
                                     className="block text-center text-sm text-primary-600 hover:text-primary-700 font-medium py-2"
                                   >
                                     View all {bid.user.reviewCount} reviews →
@@ -2469,7 +2511,7 @@ export default function TaskDetailPage() {
                                 </p>
                                 {bid.user?.is_helper && (
                                   <Link
-                                    href={`/helper/${bid.user.profile_slug || bid.user_id}`}
+                                    href={`/user/${bid.user.profile_slug || bid.user_id}`}
                                     className="text-sm text-primary-600 hover:text-primary-700 font-medium"
                                   >
                                     View full profile →
@@ -2728,7 +2770,7 @@ export default function TaskDetailPage() {
                       {format(new Date(review.created_at), 'MMM d, yyyy')}
                     </p>
                   </div>
-                  <div className="text-amber-600 font-semibold">
+                  <div className="text-amber-600 font-semibold text-xs sm:text-sm">
                     {'★'.repeat(review.rating)}{' '}
                     <span className="text-gray-400">
                       {'★'.repeat(5 - review.rating)}

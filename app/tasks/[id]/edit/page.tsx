@@ -14,6 +14,7 @@ export default function EditTaskPage() {
   const params = useParams()
   const router = useRouter()
   const taskId = params.id as string
+  const { users: userRatings } = useUserRatings()
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -1046,13 +1047,12 @@ export default function EditTaskPage() {
                             <h4 className="font-medium text-gray-900">
                               {bid.user?.full_name || 'Unknown Professional'}
                             </h4>
-                            {bid.user?.rating && (
-                              <div className="flex items-center gap-1">
-                                <span className="text-yellow-500">★</span>
-                                <span className="text-sm text-gray-600">
-                                  {bid.user.rating.toFixed(1)} ({bid.user.reviewCount} reviews)
-                                </span>
-                              </div>
+                            {bid.user?.userRatings && (
+                              <CompactUserRatingsDisplay 
+                                ratings={bid.user.userRatings} 
+                                size="sm"
+                                className="ml-2"
+                              />
                             )}
                           </div>
                           {bid.user?.professions && bid.user.professions.length > 0 && (

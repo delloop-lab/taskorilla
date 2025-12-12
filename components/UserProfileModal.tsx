@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import ReportModal from "./ReportModal";
 import { User as UserIcon } from "lucide-react";
+import { useUserRatings, getUserRatingsById } from "@/lib/useUserRatings";
+import { CompactUserRatingsDisplay } from "./UserRatingsDisplay";
 
 interface UserProfileModalProps {
   userId: string | null;
@@ -29,11 +30,13 @@ export default function UserProfileModal({
   isOpen,
   onClose,
 }: UserProfileModalProps) {
+  const { users: userRatings } = useUserRatings();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [userRatingsSummary, setUserRatingsSummary] = useState<any>(null);
 
   useEffect(() => {
     if (!isOpen || !userId) return;
@@ -52,6 +55,12 @@ export default function UserProfileModal({
         setError("Unable to load profile");
         setProfile(null);
       } else {
+        console.log("📋 UserProfileModal: Loaded profile:", {
+          userId,
+          is_helper: data?.is_helper,
+          profile_slug: data?.profile_slug,
+          full_name: data?.full_name
+        });
         setProfile(data);
       }
       setLoading(false);
@@ -67,6 +76,17 @@ export default function UserProfileModal({
     };
     getCurrentUser();
   }, []);
+
+  // Update ratings summary when userRatings or userId changes
+  useEffect(() => {
+    if (userId && userRatings.length > 0) {
+      const ratingsMap = new Map(userRatings.map((r: any) => [r.reviewee_id, r]));
+      const rating = getUserRatingsById(userId, ratingsMap);
+      setUserRatingsSummary(rating || null);
+    } else {
+      setUserRatingsSummary(null);
+    }
+  }, [userId, userRatings]);
 
   if (!isOpen || !userId) {
     return null;
@@ -95,8 +115,10 @@ export default function UserProfileModal({
         ) : profile ? (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div 
-                className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 aspect-square rounded-full bg-gray-200 overflow-hidden flex-shrink-0 min-w-[48px] min-h-[48px]"
+              <Link
+                href={`/user/${profile.profile_slug || userId}`}
+                onClick={onClose}
+                className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 aspect-square rounded-full bg-gray-200 overflow-hidden flex-shrink-0 min-w-[48px] min-h-[48px] cursor-pointer hover:ring-2 hover:ring-primary-500 transition-all"
                 style={{ aspectRatio: '1 / 1' }}
               >
                 {profile.avatar_url ? (
@@ -110,11 +132,15 @@ export default function UserProfileModal({
                     <UserIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-gray-400" />
                   </div>
                 )}
-              </div>
-              <div>
-                <p className="text-lg font-semibold text-gray-900">
+              </Link>
+              <div className="flex-1">
+                <Link
+                  href={`/user/${profile.profile_slug || userId}`}
+                  onClick={onClose}
+                  className="text-lg font-semibold text-primary-600 hover:text-primary-700 hover:underline"
+                >
                   {profile.full_name || "Unnamed Tasker"}
-                </p>
+                </Link>
                 {profile.company_name && (
                   <p className="text-sm text-gray-500">{profile.company_name}</p>
                 )}
@@ -125,15 +151,26 @@ export default function UserProfileModal({
                 )}
               </div>
             </div>
+
+            {/* Ratings */}
+            {userRatingsSummary && (
+              <div className="mt-4 pt-4 border-t">
+                <CompactUserRatingsDisplay 
+                  ratings={userRatingsSummary} 
+                  size="sm"
+                />
+              </div>
+            )}
             
-            {profile.is_helper && (
+            {/* View Full Profile Button - Show for all users */}
+            {userId && (
               <div className="mt-4 pt-4 border-t">
                 <Link
-                  href={`/helper/${profile.profile_slug || userId}`}
+                  href={`/user/${profile.profile_slug || userId}`}
                   onClick={onClose}
-                  className="block w-full text-center bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 font-medium"
+                  className="block w-full text-center bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 font-medium transition-colors"
                 >
-                  View Full Helper Profile →
+                  View Full Profile →
                 </Link>
               </div>
             )}
