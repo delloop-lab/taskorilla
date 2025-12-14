@@ -29,11 +29,13 @@ export default function FeaturedHelpers({ searchTerm = '', selectedSkill = null,
     try {
       setLoading(true)
 
-      // Build query for top-rated helpers
+      // Build query for top-rated helpers (exclude admins and taskers who are not Helpers)
       let query = supabase
         .from('profiles')
         .select('*')
         .eq('is_helper', true)
+        .neq('role', 'admin')
+        .neq('role', 'superadmin')
 
       // Apply filters if provided
       if (selectedSkill) {
@@ -47,10 +49,16 @@ export default function FeaturedHelpers({ searchTerm = '', selectedSkill = null,
       if (error) throw error
 
       if (helpersData) {
+        // Filter out admins and ensure only helpers are included
+        let filteredData = helpersData.filter((helper: any) => {
+          return helper.is_helper === true && 
+                 helper.role !== 'admin' && 
+                 helper.role !== 'superadmin'
+        })
+        
         // Filter by search term in JavaScript to include services_offered and standard skills/services
-        let filteredData = helpersData
         if (searchTerm) {
-          filteredData = helpersData.filter(helper => helperMatchesSearch(helper, searchTerm))
+          filteredData = filteredData.filter(helper => helperMatchesSearch(helper, searchTerm))
         }
         
         // Use filtered data

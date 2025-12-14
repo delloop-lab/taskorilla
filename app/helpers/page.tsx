@@ -44,20 +44,30 @@ export default function BrowseHelpersPage() {
     try {
       setLoading(true)
       
-      // Load all helpers
+      // Load only users with Helper status (exclude admins and taskers who are not Helpers)
       const { data: helpersData, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('is_helper', true)
+        .neq('role', 'admin')
+        .neq('role', 'superadmin')
         .order('created_at', { ascending: false })
 
       if (error) throw error
 
       if (helpersData) {
+        // Filter to ensure only users with Helper status are included
+        // Exclude admins, superadmins, and any Taskers who are not Helpers (double-check client-side)
+        const onlyHelpers = helpersData.filter((helper: any) => {
+          return helper.is_helper === true && 
+                 helper.role !== 'admin' && 
+                 helper.role !== 'superadmin'
+        })
+        
         // Add ratings from SQL function
         // The SQL function returns 'reviewee_id' as the user identifier
         const ratingsMap = new Map(userRatings.map((r: any) => [r.reviewee_id, r]))
-        const helpersWithRatings = helpersData.map((helper: any) => {
+        const helpersWithRatings = onlyHelpers.map((helper: any) => {
           const userRating = getUserRatingsById(helper.id, ratingsMap)
           return {
             ...helper,
@@ -81,7 +91,7 @@ export default function BrowseHelpersPage() {
         STANDARD_PROFESSIONS.forEach(profession => allProfessions.add(profession))
         
         // Add skills, services, and professions from helpers
-        helpersData.forEach((helper: any) => {
+        onlyHelpers.forEach((helper: any) => {
           if (helper.skills && Array.isArray(helper.skills)) {
             helper.skills.forEach((skill: string) => allSkills.add(skill))
           }
