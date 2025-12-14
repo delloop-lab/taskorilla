@@ -218,7 +218,7 @@ export default function Home() {
                     />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">Sue Brimacombe</h3>
+                    <h3 className="font-semibold text-foreground">Sue B.</h3>
                   </div>
                 </div>
                 <p className="text-muted-foreground italic">
@@ -239,7 +239,7 @@ export default function Home() {
                     />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">Victoria Bradley</h3>
+                    <h3 className="font-semibold text-foreground">Victoria B.</h3>
                   </div>
                 </div>
                 <p className="text-muted-foreground italic">
@@ -260,7 +260,7 @@ export default function Home() {
                     />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground">Gail Smith</h3>
+                    <h3 className="font-semibold text-foreground">Gail S.</h3>
                   </div>
                 </div>
                 <p className="text-muted-foreground italic">
