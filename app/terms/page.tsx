@@ -61,7 +61,7 @@ const sections = [
   {
     title: "Governing Law",
     content:
-      "These Terms are governed by the laws of Portugal unless local law requires otherwise.",
+      "These Terms are governed by the laws of Australia unless local law requires otherwise.",
   },
 ];
 
