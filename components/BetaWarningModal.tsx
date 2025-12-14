@@ -37,7 +37,7 @@ export default function BetaWarningModal() {
 
         {/* Title */}
         <h2 className="text-2xl font-bold text-gray-900 text-center mb-4">
-          BETA WARNING
+          BETA TEST
         </h2>
 
         {/* Message */}
@@ -58,3 +58,6 @@ export default function BetaWarningModal() {
     </div>
   )
 }
+
+
+
