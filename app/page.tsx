@@ -199,6 +199,79 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Testimonials */}
+      <section className="py-16 md:py-20 px-4 bg-muted/30">
+        <div className="container mx-auto max-w-6xl">
+          <h2 className="text-4xl font-bold text-center mb-12 md:mb-16 text-foreground">
+            What Our Users Say
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Testimonial 1 */}
+            <Card className="hover-scale">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden flex-shrink-0">
+                    <img
+                      src="/images/sue-brimacombe.png"
+                      alt="Sue Brimacombe"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">Sue Brimacombe</h3>
+                  </div>
+                </div>
+                <p className="text-muted-foreground italic">
+                  "I was very impressed with how thorough this guy was. He measured everything precisely. Many would have just shoved it up. It was easy to find help for any task on this site. He responded to my enquiry very quickly and arrived promptly."
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Testimonial 2 */}
+            <Card className="hover-scale">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden flex-shrink-0">
+                    <img
+                      src="/images/victoria-bradley.png"
+                      alt="Victoria Bradley"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">Victoria Bradley</h3>
+                  </div>
+                </div>
+                <p className="text-muted-foreground italic">
+                  "It was super simple to create the task and find help. The person who came to help did an excellent job and was able to complete the task quickly. Just what I needed."
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Testimonial 3 */}
+            <Card className="hover-scale">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden flex-shrink-0">
+                    <img
+                      src="/images/gail-smith.png"
+                      alt="Gail Smith"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">Gail Smith</h3>
+                  </div>
+                </div>
+                <p className="text-muted-foreground italic">
+                  "Taskorilla made it incredibly easy to find help when I needed it. Posting the task was simple, I got responses quickly, and the help I received was spot on. I would definitely use it again."
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       {/* Fun Taglines */}
       <section className="py-16 px-4">
         <div className="container mx-auto max-w-6xl">
