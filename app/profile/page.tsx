@@ -489,6 +489,29 @@ function ProfilePageContent() {
         return
       }
 
+      // Validate postcode is required
+      if (!postcode.trim()) {
+        setErrorMessage('Postcode is required')
+        return
+      }
+
+      // Validate languages (I speak) is required
+      if (!languages || languages.length === 0) {
+        setErrorMessage('Please select at least one language you speak')
+        return
+      }
+
+      // Validate bio is required and at least 50 characters
+      const trimmedBio = bio.trim()
+      if (!trimmedBio) {
+        setErrorMessage('Bio is required')
+        return
+      }
+      if (trimmedBio.length < 50) {
+        setErrorMessage('Bio must be at least 50 characters long')
+        return
+      }
+
       const trimmedCountryValue = country.trim()
       const sanitizedPostcode = formatPostcodeForCountry(postcode.trim(), trimmedCountryValue)
       const normalizedPostcode = sanitizedPostcode.trim()
@@ -1117,6 +1140,7 @@ function ProfilePageContent() {
                       onChange={(e) => handlePostcodeChange(e.target.value)}
                       placeholder="e.g., 1000"
                       disabled={!country.trim()}
+                      required
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100"
                     />
                     {geocoding && (
@@ -1231,7 +1255,7 @@ function ProfilePageContent() {
             {/* Languages Spoken */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                I speak basic:
+                I speak basic: <span className="text-red-500">*</span>
               </label>
               {editing ? (
                 <div className="flex flex-wrap gap-4">
@@ -1354,16 +1378,24 @@ function ProfilePageContent() {
             {/* Bio - Always visible for all users */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Bio / About Me
+                Bio / About Me <span className="text-red-500">*</span>
+                <span className="text-xs text-gray-500 ml-2">(minimum 50 characters)</span>
               </label>
               {editing ? (
-                <textarea
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Tell others about yourself, your experience, and what makes you unique..."
-                />
+                <div>
+                  <textarea
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    rows={4}
+                    required
+                    minLength={50}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="Tell others about yourself, your experience, and what makes you unique..."
+                  />
+                  <p className={`mt-1 text-xs ${bio.trim().length < 50 ? 'text-red-600' : 'text-gray-500'}`}>
+                    {bio.trim().length}/50 characters {bio.trim().length < 50 && `(${50 - bio.trim().length} more required)`}
+                  </p>
+                </div>
               ) : (
                 <p className="text-gray-700 whitespace-pre-line">
                   {profile.bio || 'No bio added yet'}
