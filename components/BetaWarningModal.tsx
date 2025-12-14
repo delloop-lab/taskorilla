@@ -42,7 +42,7 @@ export default function BetaWarningModal() {
 
         {/* Message */}
         <p className="text-gray-700 text-center mb-6 leading-relaxed">
-          This system is currently in beta. Transactions here are not real and are for testing purposes only.
+          This site is currently in beta. All tasks, bids, and transactions are just for testing, no real jobs or payments will take place.
         </p>
 
         {/* Button */}
