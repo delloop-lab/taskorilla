@@ -60,13 +60,23 @@ export default function AboutPage() {
                 </p>
               </div>
               {/* TEE on the right */}
-              <div className="w-40 h-40 sm:w-44 sm:h-44 md:w-48 md:h-48 lg:w-56 lg:h-56 flex-shrink-0 mx-auto md:mx-0 order-first md:order-last">
+              <div className="w-40 h-40 sm:w-44 sm:h-44 md:w-48 md:h-48 lg:w-56 lg:h-56 flex-shrink-0 mx-auto md:mx-0 order-first md:order-last relative">
+                {/* Mobile image */}
+                <Image
+                  src="/images/gorilla-mascot-newer.png"
+                  alt="TEE the gorilla mascot"
+                  width={192}
+                  height={192}
+                  className="object-contain w-full h-full md:hidden"
+                  priority
+                />
+                {/* Desktop image */}
                 <Image
                   src="/images/tee-peeking.png"
                   alt="TEE the gorilla mascot peeking around a corner"
                   width={192}
                   height={192}
-                  className="object-contain w-full h-full"
+                  className="object-contain w-full h-full hidden md:block"
                   priority
                 />
               </div>
