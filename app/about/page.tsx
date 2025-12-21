@@ -51,7 +51,7 @@ export default function AboutPage() {
               <Sparkles className="w-7 h-7 text-primary" />
               {content.teeTitle}
             </h2>
-            <div className="relative pl-48 md:pl-60">
+            <div className="relative pl-52 md:pl-64">
               <p className="text-lg text-gray-700 leading-relaxed">
                 {content.teeText}
               </p>
