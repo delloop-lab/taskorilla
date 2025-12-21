@@ -45,7 +45,7 @@ export default function AboutPage() {
             {/* TEE at top - visible on all screens */}
             <div className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 flex-shrink-0 order-first md:order-last">
               <Image
-                src="/images/tee-corner.png"
+                src="/images/tee-peeking.png"
                 alt="TEE the gorilla mascot peeking around a corner"
                 width={192}
                 height={192}
