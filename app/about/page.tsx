@@ -35,23 +35,11 @@ export default function AboutPage() {
           >
             {content.backText}
           </Link>
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6">
-            <div className="flex-1">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 md:mb-6">{content.title}</h1>
-              <p className="text-base sm:text-lg md:text-xl opacity-90 leading-relaxed">
-                {content.intro}
-              </p>
-            </div>
-            {/* TEE at top - visible on all screens */}
-            <div className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 flex-shrink-0 order-first md:order-last">
-              <Image
-                src="/images/tee-peeking.png"
-                alt="TEE the gorilla mascot peeking around a corner"
-                width={192}
-                height={192}
-                className="object-contain w-full h-full"
-              />
-            </div>
+          <div>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 md:mb-6">{content.title}</h1>
+            <p className="text-base sm:text-lg md:text-xl opacity-90 leading-relaxed">
+              {content.intro}
+            </p>
           </div>
         </div>
       </section>
@@ -60,14 +48,28 @@ export default function AboutPage() {
       <section className="py-8 md:py-12 px-4">
         <div className="container mx-auto max-w-4xl">
           {/* TEE Section */}
-          <div className="bg-white rounded-xl shadow-sm p-6 md:p-8 mb-6 md:mb-8">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
-              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-primary flex-shrink-0" />
-              {content.teeTitle}
-            </h2>
-            <p className="text-base sm:text-lg text-gray-700 leading-relaxed">
-              {content.teeText}
-            </p>
+          <div className="bg-white rounded-xl shadow-sm p-6 md:p-8 mb-6 md:mb-8 relative">
+            <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
+              <div className="flex-1">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                  <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-primary flex-shrink-0" />
+                  {content.teeTitle}
+                </h2>
+                <p className="text-base sm:text-lg text-gray-700 leading-relaxed">
+                  {content.teeText}
+                </p>
+              </div>
+              {/* TEE on the right */}
+              <div className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 flex-shrink-0 order-first md:order-last">
+                <Image
+                  src="/images/tee-peeking.png"
+                  alt="TEE the gorilla mascot peeking around a corner"
+                  width={192}
+                  height={192}
+                  className="object-contain w-full h-full"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Belief Statement */}
