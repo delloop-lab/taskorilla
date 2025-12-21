@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useLanguage } from "@/lib/i18n";
 import { Heart, Sparkles } from "lucide-react";
 
@@ -45,14 +46,25 @@ export default function AboutPage() {
       <section className="py-12 px-4">
         <div className="container mx-auto max-w-4xl">
           {/* TEE Section */}
-          <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
+          <div className="bg-white rounded-xl shadow-sm p-8 mb-8 relative overflow-visible">
             <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
               <Sparkles className="w-7 h-7 text-primary" />
               {content.teeTitle}
             </h2>
-            <p className="text-lg text-gray-700 leading-relaxed">
-              {content.teeText}
-            </p>
+            <div className="relative pr-32 md:pr-40">
+              <p className="text-lg text-gray-700 leading-relaxed">
+                {content.teeText}
+              </p>
+            </div>
+            <div className="absolute bottom-0 right-0 w-32 md:w-40 h-auto z-10">
+              <Image
+                src="/images/tee-corner.png"
+                alt="TEE the gorilla mascot peeking around a corner"
+                width={160}
+                height={160}
+                className="object-contain"
+              />
+            </div>
           </div>
 
           {/* Belief Statement */}
