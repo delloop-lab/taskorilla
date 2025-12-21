@@ -1,6 +1,6 @@
 {
   "name": "task-marketplace",
-  "version": "0.994.000",
+  "version": "0.995.000",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@airwallex/components-sdk": "^1.27.2",
+    "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.38.4",
     "@types/leaflet": "^1.9.21",
     "chart.js": "^4.5.1",

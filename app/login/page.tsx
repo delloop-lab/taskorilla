@@ -17,13 +17,16 @@ function LoginContent() {
   const searchParams = useSearchParams()
   const redirectUrl = searchParams.get('redirect')
   const confirmed = searchParams.get('confirmed')
+  const reset = searchParams.get('reset')
   
-  // Show success message if email was confirmed
+  // Show success message if email was confirmed or password was reset
   useEffect(() => {
     if (confirmed === 'true') {
       setSuccessMessage('Email confirmed successfully! You can now sign in.')
+    } else if (reset === 'success') {
+      setSuccessMessage('Password updated successfully! You can now sign in with your new password.')
     }
-  }, [confirmed])
+  }, [confirmed, reset])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -177,6 +180,15 @@ function LoginContent() {
                 )}
               </button>
             </div>
+          </div>
+
+          <div className="flex items-center justify-end">
+            <Link
+              href="/forgot-password"
+              className="text-sm font-medium text-primary-600 hover:text-primary-500"
+            >
+              Forgot your password?
+            </Link>
           </div>
 
           <div>
