@@ -50,7 +50,7 @@ const sectionsEn = [
   {
     title: "Limitation of Liability",
     content:
-      "Taskorilla is provided on an "as is" and "as available" basis. We do not guarantee uninterrupted service, accuracy, or suitability, and we are not liable for loss or damage connected to using the platform.",
+      "Taskorilla is provided on an 'as is' and 'as available' basis. We do not guarantee uninterrupted service, accuracy, or suitability, and we are not liable for loss or damage connected to using the platform.",
   },
   {
     title: "Termination",
@@ -111,7 +111,7 @@ const sectionsPt = [
   {
     title: "Limitação de Responsabilidade",
     content:
-      "O Taskorilla é fornecido numa base "tal como está" e "conforme disponível". Não garantimos serviço ininterrupto, precisão ou adequação, e não somos responsáveis por perdas ou danos relacionados com o uso da plataforma.",
+      "O Taskorilla é fornecido numa base 'tal como está' e 'conforme disponível'. Não garantimos serviço ininterrupto, precisão ou adequação, e não somos responsáveis por perdas ou danos relacionados com o uso da plataforma.",
   },
   {
     title: "Rescisão",
