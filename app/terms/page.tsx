@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useLanguage } from "@/lib/i18n";
 
-const lastUpdated = "November 17, 2025";
-
-const sections = [
+const sectionsEn = [
   {
     title: "About Taskorilla",
     content:
@@ -22,7 +21,7 @@ const sections = [
   {
     title: "Your Use of the Platform",
     content:
-      "You agree not to break any laws, mislead users, take communication off-platform, post harmful or offensive content, or interfere with Taskorilla’s operation.",
+      "You agree not to break any laws, mislead users, take communication off-platform, post harmful or offensive content, or interfere with Taskorilla's operation.",
   },
   {
     title: "Task Agreements",
@@ -51,7 +50,7 @@ const sections = [
   {
     title: "Limitation of Liability",
     content:
-      "Taskorilla is provided on an “as is” and “as available” basis. We do not guarantee uninterrupted service, accuracy, or suitability, and we are not liable for loss or damage connected to using the platform.",
+      "Taskorilla is provided on an "as is" and "as available" basis. We do not guarantee uninterrupted service, accuracy, or suitability, and we are not liable for loss or damage connected to using the platform.",
   },
   {
     title: "Termination",
@@ -65,23 +64,94 @@ const sections = [
   },
 ];
 
+const sectionsPt = [
+  {
+    title: "Sobre o Taskorilla",
+    content:
+      "O Taskorilla permite que pessoas publiquem tarefas e se conectem com Ajudantes que possam querer completá-las. Não empregamos Ajudantes, não supervisionamos qualquer trabalho nem garantimos resultados.",
+  },
+  {
+    title: "Elegibilidade",
+    content: "Deve ter pelo menos 18 anos de idade para usar o Taskorilla.",
+  },
+  {
+    title: "A Sua Conta",
+    content:
+      "É responsável por manter a sua conta segura. Qualquer atividade que aconteça através da sua conta é da sua responsabilidade.",
+  },
+  {
+    title: "O Seu Uso da Plataforma",
+    content:
+      "Concorda em não violar quaisquer leis, enganar utilizadores, levar comunicações para fora da plataforma, publicar conteúdo prejudicial ou ofensivo, ou interferir com o funcionamento do Taskorilla.",
+  },
+  {
+    title: "Acordos de Tarefas",
+    content:
+      "Todos os acordos são estritamente entre Requisitantes e Ajudantes. O Taskorilla não faz parte de qualquer acordo e não é responsável pelo desempenho, pagamento, disputas, perdas, danos ou questões de segurança.",
+  },
+  {
+    title: "Pagamentos",
+    content:
+      "Os pagamentos podem ser processados por terceiros. O Taskorilla não armazena dados de cartões e não é responsável por erros de pagamento ou disputas, a menos que causados por uma avaria confirmada da plataforma.",
+  },
+  {
+    title: "Segurança",
+    content:
+      "Os utilizadores são os únicos responsáveis pela sua segurança pessoal quando se encontram ou realizam atividades de tarefas.",
+  },
+  {
+    title: "Conteúdo",
+    content:
+      "É responsável por tudo o que publica. Ao publicar, dá ao Taskorilla permissão para exibir esse conteúdo na plataforma.",
+  },
+  {
+    title: "Alterações à Plataforma",
+    content: "Podemos alterar ou remover funcionalidades a qualquer momento.",
+  },
+  {
+    title: "Limitação de Responsabilidade",
+    content:
+      "O Taskorilla é fornecido numa base "tal como está" e "conforme disponível". Não garantimos serviço ininterrupto, precisão ou adequação, e não somos responsáveis por perdas ou danos relacionados com o uso da plataforma.",
+  },
+  {
+    title: "Rescisão",
+    content:
+      "Podemos suspender ou encerrar contas que violem estes Termos.",
+  },
+  {
+    title: "Lei Aplicável",
+    content:
+      "Estes Termos são regidos pelas leis da Austrália, a menos que a lei local exija o contrário.",
+  },
+];
+
 export default function TermsPage() {
+  const { language } = useLanguage();
+  const sections = language === 'pt' ? sectionsPt : sectionsEn;
+  
+  const lastUpdated = language === 'pt' ? "17 de novembro de 2025" : "November 17, 2025";
+  const backText = language === 'pt' ? "← Voltar à Página Inicial" : "← Back to Home";
+  const titleText = language === 'pt' ? "Termos e Condições" : "Terms and Conditions";
+  const lastUpdatedText = language === 'pt' ? "Última atualização" : "Last updated";
+  const introText = language === 'pt' 
+    ? "Bem-vindo ao Taskorilla. Ao usar a plataforma, concorda com estes Termos. Se não concordar, por favor pare de usar a plataforma."
+    : "Welcome to Taskorilla. By using the platform you agree to these Terms. If you do not agree, please stop using the platform.";
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <Link
         href="/"
         className="text-primary-600 hover:text-primary-700 mb-6 inline-block"
       >
-        ← Back to Home
+        {backText}
       </Link>
       <h1 className="text-4xl font-bold text-gray-900 mb-4">
-        Terms and Conditions
+        {titleText}
       </h1>
-      <p className="text-gray-600 mb-8">Last updated: {lastUpdated}</p>
+      <p className="text-gray-600 mb-8">{lastUpdatedText}: {lastUpdated}</p>
 
       <p className="text-gray-700 mb-8">
-        Welcome to Taskorilla. By using the platform you agree to these Terms.
-        If you do not agree, please stop using the platform.
+        {introText}
       </p>
 
       <div className="space-y-6">
@@ -97,5 +167,3 @@ export default function TermsPage() {
     </div>
   );
 }
-
-
