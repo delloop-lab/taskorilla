@@ -27,17 +27,17 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <section className="bg-gradient-to-br from-primary to-accent text-white py-12 md:py-16 px-4 relative overflow-hidden">
+      <section className="bg-gradient-to-br from-primary to-accent text-white py-8 sm:py-12 md:py-16 px-4 relative overflow-hidden">
         <div className="container mx-auto max-w-4xl relative z-10">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-4 md:mb-6 transition-colors text-sm md:text-base"
+            className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-3 sm:mb-4 md:mb-6 transition-colors text-xs sm:text-sm md:text-base"
           >
             {content.backText}
           </Link>
           <div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 md:mb-6">{content.title}</h1>
-            <p className="text-base sm:text-lg md:text-xl opacity-90 leading-relaxed">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 md:mb-6">{content.title}</h1>
+            <p className="text-sm sm:text-base md:text-lg lg:text-xl opacity-90 leading-relaxed">
               {content.intro}
             </p>
           </div>
@@ -48,37 +48,38 @@ export default function AboutPage() {
       <section className="py-8 md:py-12 px-4">
         <div className="container mx-auto max-w-4xl">
           {/* TEE Section */}
-          <div className="bg-white rounded-xl shadow-sm p-6 md:p-8 mb-6 md:mb-8 relative">
-            <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
-              <div className="flex-1">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 md:p-8 mb-6 md:mb-8">
+            <div className="flex flex-col md:flex-row gap-4 md:gap-6 lg:gap-8 items-start md:items-center">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2 sm:gap-3">
                   <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-primary flex-shrink-0" />
                   {content.teeTitle}
                 </h2>
-                <p className="text-base sm:text-lg text-gray-700 leading-relaxed">
+                <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed">
                   {content.teeText}
                 </p>
               </div>
-              {/* TEE on the right */}
-              <div className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 flex-shrink-0 order-first md:order-last">
+              {/* TEE on the right - hidden on very small screens, shown on sm+ */}
+              <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 flex-shrink-0 mx-auto md:mx-0 order-first md:order-last">
                 <Image
                   src="/images/tee-peeking.png"
                   alt="TEE the gorilla mascot peeking around a corner"
                   width={192}
                   height={192}
                   className="object-contain w-full h-full"
+                  priority
                 />
               </div>
             </div>
           </div>
 
           {/* Belief Statement */}
-          <div className="bg-white rounded-xl shadow-sm p-6 md:p-8">
-            <div className="flex items-start gap-3 md:gap-4">
-              <div className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                <Heart className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 md:p-8">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                <Heart className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-primary" />
               </div>
-              <p className="text-base sm:text-lg text-gray-700 leading-relaxed">
+              <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed">
                 {content.belief}
               </p>
             </div>
