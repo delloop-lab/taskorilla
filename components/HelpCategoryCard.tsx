@@ -1,5 +1,8 @@
+'use client'
+
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
+import { useLanguage } from '@/lib/i18n'
 
 interface HelpCategoryCardProps {
   title: string
@@ -16,6 +19,12 @@ export default function HelpCategoryCard({
   itemCount,
   href
 }: HelpCategoryCardProps) {
+  const { language } = useLanguage()
+  
+  const articleText = language === 'pt' 
+    ? (itemCount === 1 ? 'artigo' : 'artigos')
+    : (itemCount === 1 ? 'article' : 'articles')
+
   return (
     <Link href={href}>
       <div className="group bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-primary hover:shadow-lg transition-all duration-300 h-full">
@@ -30,7 +39,7 @@ export default function HelpCategoryCard({
             </p>
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-500">
-                {itemCount} {itemCount === 1 ? 'article' : 'articles'}
+                {itemCount} {articleText}
               </span>
               <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-primary group-hover:translate-x-1 transition-all" />
             </div>

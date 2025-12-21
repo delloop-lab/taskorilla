@@ -1,10 +1,15 @@
+'use client'
+
 import Link from 'next/link'
 import { ArrowLeft, BookOpen } from 'lucide-react'
 import HelpSearchBar from '@/components/HelpSearchBar'
-import { getAllGuides, slugify } from '@/lib/help-utils'
+import { getAllGuides, slugify, type Language } from '@/lib/help-utils'
+import { useLanguage } from '@/lib/i18n'
 
 export default function GuidesPage() {
-  const guides = getAllGuides()
+  const { t, language } = useLanguage()
+  const lang = language as Language
+  const guides = getAllGuides(lang)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -13,13 +18,13 @@ export default function GuidesPage() {
         <div className="container mx-auto max-w-4xl">
           <Link href="/help" className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-6 transition-colors">
             <ArrowLeft className="w-5 h-5" />
-            Back to Help Center
+            {t('help.backToHelpCenter')}
           </Link>
-          <h1 className="text-4xl font-bold mb-4">Taskorilla Guides</h1>
+          <h1 className="text-4xl font-bold mb-4">{t('help.guidesTitle')}</h1>
           <p className="text-xl opacity-90 mb-6">
-            Step-by-step guides to help you get the most out of Taskorilla
+            {t('help.guidesSubtitle')}
           </p>
-          <HelpSearchBar placeholder="Search guides..." />
+          <HelpSearchBar placeholder={t('help.searchGuides')} />
         </div>
       </section>
 

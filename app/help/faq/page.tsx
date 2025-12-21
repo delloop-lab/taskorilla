@@ -4,12 +4,13 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import HelpSearchBar from '@/components/HelpSearchBar'
 import FAQAccordion from '@/components/FAQAccordion'
-import { getCategories, getFAQsByCategory } from '@/lib/help-utils'
+import { getCategories, getFAQsByCategory, type Language } from '@/lib/help-utils'
 import { useLanguage } from '@/lib/i18n'
 
 export default function FAQPage() {
-  const { t } = useLanguage()
-  const categories = getCategories()
+  const { t, language } = useLanguage()
+  const lang = language as Language
+  const categories = getCategories(lang)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -18,13 +19,13 @@ export default function FAQPage() {
         <div className="container mx-auto max-w-4xl">
           <Link href="/help" className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-6 transition-colors">
             <ArrowLeft className="w-5 h-5" />
-            Back to Help Center
+            {t('help.backToHelpCenter')}
           </Link>
-          <h1 className="text-4xl font-bold mb-4">Frequently Asked Questions</h1>
+          <h1 className="text-4xl font-bold mb-4">{t('help.faqTitle')}</h1>
           <p className="text-xl opacity-90 mb-6">
-            Quick answers to common questions about Taskorilla
+            {t('help.faqSubtitle')}
           </p>
-          <HelpSearchBar placeholder="Search FAQs..." />
+          <HelpSearchBar placeholder={t('help.searchFaqs')} />
         </div>
       </section>
 
@@ -32,7 +33,7 @@ export default function FAQPage() {
       <section className="py-12 px-4">
         <div className="container mx-auto max-w-4xl">
           {categories.map((category) => {
-            const faqs = getFAQsByCategory(category)
+            const faqs = getFAQsByCategory(category, lang)
             if (faqs.length === 0) return null
 
             return (

@@ -4,12 +4,22 @@ import Link from 'next/link'
 import { MessageCircle, Search as SearchIcon } from 'lucide-react'
 import HelpSearchBar from '@/components/HelpSearchBar'
 import HelpCategoryCard from '@/components/HelpCategoryCard'
-import { getCategories, getFAQsByCategory, getGuidesByCategory, getCategoryIcon, getCategoryDescription, slugify } from '@/lib/help-utils'
+import { getCategories, getFAQsByCategory, getGuidesByCategory, getCategoryIcon, getCategoryDescription, slugify, getAllFAQs, type Language } from '@/lib/help-utils'
 import { useLanguage } from '@/lib/i18n'
 
 export default function HelpCenter() {
-  const { t } = useLanguage()
-  const categories = getCategories()
+  const { t, language } = useLanguage()
+  const lang = language as Language
+  const categories = getCategories(lang)
+  const allFaqs = getAllFAQs(lang)
+  
+  // Get first FAQ from each main category for popular questions
+  const popularFaqs = [
+    allFaqs.find(f => f.id === 'getting-started-1'),
+    allFaqs.find(f => f.id === 'posting-tasks-1'),
+    allFaqs.find(f => f.id === 'payment-guide-1'),
+    allFaqs.find(f => f.id === 'tasker-guide-1')
+  ].filter(Boolean)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -18,7 +28,7 @@ export default function HelpCenter() {
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-4 mb-4">
-              <h1 className="text-5xl font-bold">How can we help you?</h1>
+              <h1 className="text-5xl font-bold">{t('help.heroTitle')}</h1>
               <img 
                 src="/images/tee_on_fence.png" 
                 alt="Tee on fence" 
@@ -26,10 +36,10 @@ export default function HelpCenter() {
               />
             </div>
             <p className="text-xl opacity-90 mb-8">
-              Find answers, guides, and tips to get the most out of Taskorilla
+              {t('help.findAnswers')}
             </p>
           </div>
-          <HelpSearchBar placeholder="Search for help articles, guides, and FAQs..." />
+          <HelpSearchBar placeholder={t('help.searchPlaceholder')} />
         </div>
       </section>
 
@@ -41,13 +51,13 @@ export default function HelpCenter() {
               href="/help/faq"
               className="px-6 py-3 bg-gray-100 hover:bg-primary hover:text-white rounded-lg font-medium transition-colors"
             >
-              📋 Browse All FAQs
+              📋 {t('help.browseAllFaqs')}
             </Link>
             <Link 
               href="/help/guides"
               className="px-6 py-3 bg-gray-100 hover:bg-primary hover:text-white rounded-lg font-medium transition-colors"
             >
-              📚 View All Guides
+              📚 {t('help.viewAllGuides')}
             </Link>
             <a 
               href="mailto:tee@taskorilla.com"
@@ -63,11 +73,11 @@ export default function HelpCenter() {
       {/* Categories */}
       <section className="py-12 px-4">
         <div className="container mx-auto max-w-6xl">
-          <h2 className="text-3xl font-bold text-center mb-10">Browse by Category</h2>
+          <h2 className="text-3xl font-bold text-center mb-10">{t('help.browseByCategory')}</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {categories.map((category) => {
-              const faqCount = getFAQsByCategory(category).length
-              const guideCount = getGuidesByCategory(category).length
+              const faqCount = getFAQsByCategory(category, lang).length
+              const guideCount = getGuidesByCategory(category, lang).length
               const totalCount = faqCount + guideCount
               
               return (
@@ -75,7 +85,7 @@ export default function HelpCenter() {
                   key={category}
                   title={category}
                   icon={getCategoryIcon(category)}
-                  description={getCategoryDescription(category)}
+                  description={getCategoryDescription(category, lang)}
                   itemCount={totalCount}
                   href={`/help/category/${slugify(category)}`}
                 />
@@ -88,24 +98,20 @@ export default function HelpCenter() {
       {/* Popular Questions */}
       <section className="py-12 px-4 bg-white">
         <div className="container mx-auto max-w-4xl">
-          <h2 className="text-3xl font-bold text-center mb-10">Popular Questions</h2>
+          <h2 className="text-3xl font-bold text-center mb-10">
+            {language === 'pt' ? 'Perguntas Populares' : 'Popular Questions'}
+          </h2>
           <div className="space-y-4">
-            <Link href="/help/faq#getting-started-1" className="block p-6 border-2 border-gray-200 rounded-lg hover:border-primary hover:shadow-md transition-all">
-              <h3 className="font-semibold text-lg text-gray-900 mb-2">How do I create a Taskorilla account?</h3>
-              <p className="text-gray-600 text-sm">Get started in just a few clicks</p>
-            </Link>
-            <Link href="/help/faq#posting-tasks-1" className="block p-6 border-2 border-gray-200 rounded-lg hover:border-primary hover:shadow-md transition-all">
-              <h3 className="font-semibold text-lg text-gray-900 mb-2">How do I post a task?</h3>
-              <p className="text-gray-600 text-sm">Learn how to create your first task</p>
-            </Link>
-            <Link href="/help/faq#payment-guide-1" className="block p-6 border-2 border-gray-200 rounded-lg hover:border-primary hover:shadow-md transition-all">
-              <h3 className="font-semibold text-lg text-gray-900 mb-2">How does payment work?</h3>
-              <p className="text-gray-600 text-sm">Understand our secure payment system</p>
-            </Link>
-            <Link href="/help/faq#tasker-guide-1" className="block p-6 border-2 border-gray-200 rounded-lg hover:border-primary hover:shadow-md transition-all">
-              <h3 className="font-semibold text-lg text-gray-900 mb-2">How do I become a Helper?</h3>
-              <p className="text-gray-600 text-sm">Start earning money helping others</p>
-            </Link>
+            {popularFaqs.map((faq) => faq && (
+              <Link 
+                key={faq.id}
+                href={`/help/faq#${faq.id}`} 
+                className="block p-6 border-2 border-gray-200 rounded-lg hover:border-primary hover:shadow-md transition-all"
+              >
+                <h3 className="font-semibold text-lg text-gray-900 mb-2">{faq.title}</h3>
+                <p className="text-gray-600 text-sm line-clamp-1">{faq.content.substring(0, 80)}...</p>
+              </Link>
+            ))}
           </div>
         </div>
       </section>

@@ -1,0 +1,266 @@
+[
+  {
+    "id": "getting-started-1",
+    "category": "Primeiros Passos",
+    "type": "faq",
+    "title": "Como crio uma conta no Taskorilla?",
+    "content": "Clique em 'Registar', introduza o seu email, escolha uma palavra-passe, selecione entre Ajudante, Requisitante ou ambos, e confirme. Está pronto para publicar ou realizar tarefas.",
+    "tags": ["conta", "registo", "inscrição", "primeiros passos"]
+  },
+  {
+    "id": "getting-started-2",
+    "category": "Primeiros Passos",
+    "type": "faq",
+    "title": "Preciso de verificar a minha identidade para começar?",
+    "content": "Não imediatamente, mas verificar a sua identidade ajuda a construir confiança com outros utilizadores e desbloqueia tarefas de maior valor.",
+    "tags": ["verificação", "identidade", "confiança", "conta"]
+  },
+  {
+    "id": "getting-started-3",
+    "category": "Primeiros Passos",
+    "type": "faq",
+    "title": "Posso usar o Taskorilla no telemóvel?",
+    "content": "Claro que sim. O nosso site funciona em qualquer navegador móvel, e estamos a desenvolver uma aplicação em breve.",
+    "tags": ["móvel", "aplicação", "navegador", "dispositivo"]
+  },
+  {
+    "id": "getting-started-4",
+    "category": "Primeiros Passos",
+    "type": "faq",
+    "title": "Como edito o meu perfil?",
+    "content": "Vá a 'O Meu Perfil', atualize as suas informações, competências ou foto de perfil, e clique em guardar.",
+    "tags": ["perfil", "editar", "definições", "atualizar"]
+  },
+  {
+    "id": "posting-tasks-1",
+    "category": "Publicar Tarefas",
+    "type": "faq",
+    "title": "Como publico uma tarefa?",
+    "content": "Clique em 'Publicar Tarefa', descreva o que precisa, defina a localização, hora e orçamento. Depois clique em 'Publicar'.",
+    "tags": ["publicar tarefa", "criar tarefa", "nova tarefa", "publicação de tarefa"]
+  },
+  {
+    "id": "posting-tasks-2",
+    "category": "Publicar Tarefas",
+    "type": "faq",
+    "title": "Posso editar uma tarefa depois de publicar?",
+    "content": "Sim, pode editar a descrição, orçamento ou prazo antes de alguém aceitar.",
+    "tags": ["editar tarefa", "modificar tarefa", "atualizar tarefa", "alterar tarefa"]
+  },
+  {
+    "id": "posting-tasks-3",
+    "category": "Publicar Tarefas",
+    "type": "faq",
+    "title": "Posso cancelar uma tarefa?",
+    "content": "Pode, mas recomendamos que contacte primeiro qualquer Ajudante atribuído. Podem aplicar-se taxas de cancelamento para tarefas confirmadas.",
+    "tags": ["cancelar tarefa", "eliminar tarefa", "remover tarefa", "cancelamento de tarefa"]
+  },
+  {
+    "id": "posting-tasks-4",
+    "category": "Publicar Tarefas",
+    "type": "faq",
+    "title": "Como encontro Ajudantes para a minha tarefa?",
+    "content": "Depois de publicada, os Ajudantes na sua área recebem uma notificação. Também pode consultar perfis e convidá-los diretamente.",
+    "tags": ["encontrar ajudantes", "contratar", "convidar", "notificações"]
+  },
+  {
+    "id": "tasker-guide-1",
+    "category": "Guia do Ajudante",
+    "type": "faq",
+    "title": "Como me torno um Ajudante?",
+    "content": "Registe-se, complete o seu perfil, verifique a sua identidade e está pronto para explorar tarefas.",
+    "tags": ["tornar-se ajudante", "registo de ajudante", "juntar-se aos ajudantes", "começar a ajudar"]
+  },
+  {
+    "id": "tasker-guide-2",
+    "category": "Guia do Ajudante",
+    "type": "faq",
+    "title": "Posso aceitar várias tarefas ao mesmo tempo?",
+    "content": "Sim, mas aceite apenas o que conseguir realisticamente completar a tempo.",
+    "tags": ["múltiplas tarefas", "aceitar tarefas", "limite de tarefas", "capacidade"]
+  },
+  {
+    "id": "tasker-guide-3",
+    "category": "Guia do Ajudante",
+    "type": "faq",
+    "title": "Como marco uma tarefa como concluída?",
+    "content": "Abra a tarefa no seu painel e clique em 'Marcar como Concluída'. O requisitante irá então confirmar.",
+    "tags": ["completar tarefa", "terminar tarefa", "marcar como feita", "conclusão de tarefa"]
+  },
+  {
+    "id": "tasker-guide-4",
+    "category": "Guia do Ajudante",
+    "type": "faq",
+    "title": "E se não conseguir terminar uma tarefa?",
+    "content": "Comunique imediatamente com o requisitante. Tarefas incompletas podem afetar a sua avaliação.",
+    "tags": ["tarefa incompleta", "não consigo terminar", "problemas com tarefa", "comunicação"]
+  },
+  {
+    "id": "tasker-guide-pricing",
+    "category": "Guia do Ajudante",
+    "type": "faq",
+    "title": "Como devo definir o preço da minha proposta?",
+    "content": "Introduza sempre o seu preço total em euros (incluindo tempo, materiais, transporte e taxas) e use a caixa de Justificação de Preço para explicar o que o requisitante recebe por esse valor. Quando um requisitante aceita a sua proposta, o preço fica fixado, por isso comprometa-se apenas com um valor que está disposto a cumprir.",
+    "tags": ["preços", "propostas", "ajudante", "pagamento", "orçamento"]
+  },
+  {
+    "id": "payment-guide-1",
+    "category": "Guia de Pagamento",
+    "type": "faq",
+    "title": "Como funciona o pagamento?",
+    "content": "Os requisitantes pagam através do nosso sistema seguro. Os Ajudantes recebem após a confirmação da conclusão da tarefa.",
+    "tags": ["pagamento", "como pagar", "processo de pagamento", "pagar ajudante"]
+  },
+  {
+    "id": "payment-guide-2",
+    "category": "Guia de Pagamento",
+    "type": "faq",
+    "title": "Existem taxas?",
+    "content": "Sim, o Taskorilla cobra uma pequena taxa de serviço ao requisitante, desde dezembro de 2025 é €2 e 10% do Ajudante/Profissional.",
+    "tags": ["taxas", "taxa de serviço", "comissão", "custo"]
+  },
+  {
+    "id": "payment-guide-3",
+    "category": "Guia de Pagamento",
+    "type": "faq",
+    "title": "Como recebo o pagamento?",
+    "content": "Adicione a sua conta bancária nas definições. Após a confirmação da tarefa, transferimos os fundos automaticamente.",
+    "tags": ["receber pagamento", "receber dinheiro", "levantamento", "pagamento"]
+  },
+  {
+    "id": "safety-guide-1",
+    "category": "Guia de Segurança",
+    "type": "faq",
+    "title": "Como me mantenho seguro ao encontrar Ajudantes ou Requisitantes?",
+    "content": "Encontre-se em espaços públicos quando possível, verifique os perfis e nunca partilhe informações pessoais desnecessárias.",
+    "tags": ["segurança", "encontro", "proteção", "práticas seguras"]
+  },
+  {
+    "id": "safety-guide-2",
+    "category": "Guia de Segurança",
+    "type": "faq",
+    "title": "E se tiver um problema com um Ajudante ou Requisitante?",
+    "content": "Reporte o problema através da plataforma. Levamos a segurança a sério e ajudaremos a resolver.",
+    "tags": ["reportar", "problema", "questão", "queixa", "disputa"]
+  },
+  {
+    "id": "safety-guide-3",
+    "category": "Guia de Segurança",
+    "type": "faq",
+    "title": "Posso bloquear um Ajudante ou Requisitante?",
+    "content": "Sim. Vá ao perfil da pessoa e clique em 'Bloquear Utilizador'. Essa pessoa não o verá nem poderá enviar-lhe mensagens.",
+    "tags": ["bloquear", "bloquear ajudante", "privacidade", "assédio", "bloquear requisitante"]
+  },
+  {
+    "id": "safety-guide-4",
+    "category": "Guia de Segurança",
+    "type": "faq",
+    "title": "E se algo for danificado durante uma tarefa?",
+    "content": "Documente com fotografias, contacte a outra parte e envolva o suporte se necessário.",
+    "tags": ["danos", "danos materiais", "estragos", "seguro", "reclamação"]
+  },
+  {
+    "id": "platform-technical-1",
+    "category": "Plataforma e Técnico",
+    "type": "faq",
+    "title": "Posso eliminar a minha conta do Taskorilla?",
+    "content": "Sim, mas note que o histórico de tarefas concluídas pode permanecer para efeitos de registo.",
+    "tags": ["eliminar conta", "encerrar conta", "remover conta", "desativar"]
+  },
+  {
+    "id": "platform-technical-2",
+    "category": "Plataforma e Técnico",
+    "type": "faq",
+    "title": "Porque não consigo publicar ou aceitar uma tarefa?",
+    "content": "Verifique se a sua conta está verificada e se não foi suspensa por algum motivo.",
+    "tags": ["não consigo publicar", "não consigo aceitar", "problema de conta", "suspenso", "verificação"]
+  },
+  {
+    "id": "platform-technical-3",
+    "category": "Plataforma e Técnico",
+    "type": "faq",
+    "title": "Como redefino a minha palavra-passe?",
+    "content": "Clique em 'Esqueci a Palavra-passe', introduza o seu email e siga o link que enviamos.",
+    "tags": ["redefinir palavra-passe", "esqueci palavra-passe", "alterar palavra-passe", "recuperar palavra-passe"]
+  },
+  {
+    "id": "platform-technical-4",
+    "category": "Plataforma e Técnico",
+    "type": "faq",
+    "title": "Porque não estou a ver certas tarefas?",
+    "content": "As tarefas são mostradas com base na localização, competências e disponibilidade. Atualize o seu perfil para melhores correspondências.",
+    "tags": ["sem tarefas", "tarefas em falta", "visibilidade de tarefas", "correspondência de tarefas"]
+  },
+  {
+    "id": "platform-technical-5",
+    "category": "Plataforma e Técnico",
+    "type": "faq",
+    "title": "Como contacto o suporte?",
+    "content": "Use o formulário 'Contactar Suporte' no Centro de Ajuda. Normalmente respondemos dentro de 24 horas.",
+    "tags": ["contacto", "suporte", "ajuda", "serviço ao cliente", "assistência"]
+  },
+  {
+    "id": "guide-getting-started",
+    "category": "Primeiros Passos",
+    "type": "guide",
+    "title": "Começar a Usar o Taskorilla",
+    "content": "**Passo 1: Registar**\n\nClique em 'Registar', introduza o seu email, crie uma palavra-passe e confirme. Receberá um email de confirmação, clique no link para verificar a sua conta.\n\n**Passo 2: Verificar a Sua Conta (Opcional mas Recomendado)**\n\nVerificar a sua identidade ajuda a construir confiança com outros utilizadores e desbloqueia tarefas de maior valor. Vá a 'O Meu Perfil' e carregue uma foto de identificação.\n\n**Passo 3: Configurar o Seu Perfil**\n\nAdicione uma foto de perfil, liste as suas competências (se planeia ser Ajudante) e escreva uma breve biografia. Um perfil completo torna-o mais confiável e ajuda-o a ser correspondido com as tarefas certas.\n\n**Passo 4: Explorar Tarefas ou Publicar uma Tarefa**\n\nDecida se quer publicar uma tarefa (se precisa de ajuda) ou explorar tarefas (se quer ganhar dinheiro como Ajudante). Clique em 'Publicar Tarefa' ou 'Explorar Tarefas' no menu principal.\n\n**Passo 5: Verificar Notificações**\n\nAcompanhe mensagens, propostas e atualizações de tarefas através do seu painel e notificações por email. Mantenha-se responsivo para construir uma boa reputação!",
+    "tags": ["primeiros passos", "configuração", "guia para iniciantes", "como começar", "tutorial"]
+  },
+  {
+    "id": "guide-posting-tasks",
+    "category": "Publicar Tarefas",
+    "type": "guide",
+    "title": "Como Publicar uma Tarefa",
+    "content": "**Passo 1: Clique em 'Publicar Tarefa'**\n\nNo menu principal ou página inicial, clique em 'Publicar Tarefa'. Introduza um título claro e descritivo (ex: 'Montar Móvel IKEA') e forneça instruções detalhadas sobre o que precisa ser feito.\n\n**Passo 2: Definir Localização e Horário**\n\nEspecifique onde a tarefa precisa ser realizada (morada ou código postal) e quando a precisa feita. Pode definir uma data/hora específica ou marcar como flexível.\n\n**Passo 3: Definir o Seu Orçamento**\n\nIntroduza o valor que está disposto a pagar. O Taskorilla mostrará a taxa de serviço antecipadamente. Seja justo, orçamentos competitivos atraem melhores Ajudantes!\n\n**Passo 4: Adicionar Fotografias (Opcional)**\n\nCarregue fotografias para dar aos Ajudantes uma melhor ideia do que está envolvido. Isto ajuda-os a fornecer propostas mais precisas.\n\n**Passo 5: Publicar a Sua Tarefa**\n\nClique em 'Publicar'. A sua tarefa fica disponível imediatamente e os Ajudantes próximos são notificados. Receberá propostas e pode conversar com Ajudantes interessados para finalizar detalhes.\n\n**Passo 6: Gerir as Suas Tarefas**\n\nA partir do seu painel, pode editar detalhes da tarefa, cancelar se necessário ou enviar mensagens aos Ajudantes. Quando a tarefa estiver concluída, confirme a conclusão e deixe uma avaliação.",
+    "tags": ["publicar tarefa", "criar tarefa", "guia de publicação", "como publicar", "nova tarefa"]
+  },
+  {
+    "id": "guide-being-tasker",
+    "category": "Guia do Ajudante",
+    "type": "guide",
+    "title": "Trabalhar como Ajudante",
+    "content": "**Passo 1: Complete o Seu Perfil de Ajudante**\n\nApós registar-se, complete o seu perfil de Ajudante. Adicione as suas competências, experiência, disponibilidade, taxa horária e quaisquer ferramentas/equipamentos que tenha. Carregue uma foto de perfil, cria confiança!\n\n**Passo 2: Explorar Tarefas Disponíveis**\n\nVá a 'Explorar Tarefas' para ver tarefas perto de si que correspondem às suas competências. Use filtros para refinar por categoria, distância ou orçamento.\n\n**Passo 3: Submeter uma Proposta**\n\nEncontrou uma tarefa que consegue fazer? Clique em 'Submeter Proposta', explique porque é uma boa escolha e confirme a sua disponibilidade. Seja claro e profissional.\n\n**Passo 4: Comunicar com o Requisitante**\n\nSe a sua proposta for aceite, receberá uma notificação. Envie mensagem ao requisitante para confirmar detalhes, horário e quaisquer requisitos especiais.\n\n**Passo 5: Completar a Tarefa**\n\nApareça a horas, faça um bom trabalho e siga as instruções do requisitante. Tire fotografias do seu trabalho se necessário, ajuda com disputas e constrói a sua reputação.\n\n**Passo 6: Marcar como Concluída**\n\nQuando terminar, clique em 'Marcar como Concluída' no seu painel. O requisitante irá confirmar e receberá o pagamento automaticamente.\n\n**Passo 7: Construir a Sua Reputação**\n\nPeça avaliações após cada tarefa. Uma avaliação alta e feedback positivo significam mais trabalhos e melhor pagamento!",
+    "tags": ["guia do ajudante", "tornar-se ajudante", "trabalhar como ajudante", "ganhar dinheiro", "tutorial de ajudante"]
+  },
+  {
+    "id": "guide-payments",
+    "category": "Guia de Pagamento",
+    "type": "guide",
+    "title": "Compreender os Pagamentos no Taskorilla",
+    "content": "**Passo 1: Adicionar o Seu Método de Pagamento**\n\nVá a 'Definições' > 'Informações de Pagamento'. Adicione o seu número IBAN. Isto é obrigatório para receber pagamentos como Ajudante ou Profissional.\n\n**Passo 2: Compreender as Taxas**\n\nO Taskorilla cobra uma pequena taxa de serviço em cada transação. Desde dezembro de 2025, as taxas são €2 por tarefa do requisitante e 10% do Ajudante/Profissional.\n\n**Passo 3: Fazer ou Receber Pagamento**\n\n**Para Requisitantes:** Quando aceita uma proposta, será solicitado a pagar de forma segura através da nossa plataforma. Os fundos são retidos até a tarefa ser confirmada como concluída.\n\n**Para Ajudantes:** Quando uma tarefa é marcada como concluída e confirmada pelo requisitante, o pagamento é libertado automaticamente para a sua conta.\n\n**Passo 4: Acompanhar os Seus Pagamentos**\n\nConsulte o seu painel para histórico de pagamentos, pagamentos pendentes e transações concluídas. Receberá confirmações por email para cada pagamento.\n\n**Passo 5: Levantamentos (para Ajudantes e Profissionais)**\n\nOs pagamentos são transferidos automaticamente para a sua conta associada após a confirmação da tarefa.",
+    "tags": ["guia de pagamento", "como pagar", "receber pagamento", "processo de pagamento", "taxas", "levantamento"]
+  },
+  {
+    "id": "guide-safety",
+    "category": "Guia de Segurança",
+    "type": "guide",
+    "title": "Manter-se Seguro no Taskorilla",
+    "content": "**Passo 1: Verificar Perfis Antes de Trabalhar Juntos**\n\nVerifique sempre o perfil, avaliações e estado de verificação de um utilizador antes de aceitar ou atribuir uma tarefa. Utilizadores verificados com boas avaliações são mais confiáveis.\n\n**Passo 2: Encontrar-se em Espaços Públicos Quando Possível**\n\nPara tarefas que não requerem estar na casa de alguém (como entregas ou mudanças), combine encontrar-se primeiro num local público.\n\n**Passo 3: Comunicar Claramente Através da Plataforma**\n\nUse o sistema de mensagens do Taskorilla para toda a comunicação. Isto mantém um registo e ajuda a resolver disputas. Nunca partilhe informações de contacto pessoais como números de telefone ou emails no início.\n\n**Passo 4: Proteger as Suas Informações Pessoais**\n\nNão partilhe demasiado. O seu perfil deve incluir o suficiente para construir confiança, mas não detalhes sensíveis como a sua morada completa, informações bancárias ou números de identificação pessoal.\n\n**Passo 5: Documentar Tudo**\n\nTire fotografias antes e depois de completar uma tarefa. Isto protege ambas as partes em caso de reclamações de danos ou disputas sobre a qualidade do trabalho.\n\n**Passo 6: Confie nos Seus Instintos**\n\nSe algo parecer estranho, provavelmente é. Não prossiga com uma tarefa se se sentir desconfortável. Pode sempre cancelar e reportar comportamento suspeito.\n\n**Passo 7: Reportar Problemas Imediatamente**\n\nSe alguém o estiver a assediar, a agir de forma suspeita ou a violar as regras da plataforma, use o botão 'Reportar' no perfil dessa pessoa. Levamos a segurança a sério e investigaremos prontamente.\n\n**Passo 8: Rever Dicas de Segurança Regularmente**\n\nConsulte o nosso Centro de Ajuda para diretrizes de segurança atualizadas. Mantenha-se informado sobre fraudes comuns e como evitá-las.",
+    "tags": ["guia de segurança", "manter-se seguro", "proteção", "dicas de segurança", "proteger-se", "confiança"]
+  },
+  {
+    "id": "guide-marketplace-safety",
+    "category": "Guia de Segurança",
+    "type": "guide",
+    "title": "Diretrizes de Segurança do Marketplace",
+    "content": "**Última Atualização: 17 de novembro de 2025**\n\nO Taskorilla não verifica todos os utilizadores, supervisiona tarefas ou garante que cada experiência será segura. Use sempre precaução.\n\n**Dicas de Segurança**\n\n- Encontre-se em locais públicos sempre que possível.\n- Evite tarefas que pareçam arriscadas ou inseguras.\n- Confie nos seus instintos — afaste-se se algo parecer estranho.\n- Evite partilhar dados de contacto pessoais até se sentir confortável.\n- Reporte comportamento suspeito imediatamente dentro da plataforma.\n\n**Restrições da Plataforma**\n\nO Taskorilla não permite tarefas ilegais, atividades perigosas, comportamento ofensivo ou tentativas de mover conversas para fora da plataforma para evitar as nossas regras.\n\n**Situações de Emergência**\n\nSe alguma vez se sentir inseguro, contacte as autoridades locais imediatamente. O Taskorilla não é um serviço de emergência.",
+    "tags": ["segurança", "diretrizes", "marketplace", "reportar", "restrições", "emergência"]
+  },
+  {
+    "id": "guide-disputes-refunds",
+    "category": "Guia de Pagamento",
+    "type": "guide",
+    "title": "Disputas e Reembolsos",
+    "content": "**Última Atualização: 17 de novembro de 2025**\n\nO Taskorilla não é parte nos acordos entre Requisitantes e Ajudantes. Quaisquer disputas devem ser tratadas diretamente entre esses dois utilizadores.\n\nO Taskorilla não fornece reembolsos para pagamentos de tarefas, a menos que haja um erro confirmado da plataforma, como uma cobrança duplicada causada pela própria plataforma.\n\nNão mediamos desacordos, garantimos resultados ou compensamos utilizadores por tarefas incompletas, insatisfação ou desacordos entre Requisitantes e Ajudantes.",
+    "tags": ["disputas", "reembolsos", "pagamentos", "política", "suporte", "regras da plataforma"]
+  },
+  {
+    "id": "guide-gdpr-addon",
+    "category": "Legal e Privacidade",
+    "type": "guide",
+    "title": "Adenda de Processamento de Dados RGPD",
+    "content": "**Última Atualização: 17 de novembro de 2025**\n\nEsta adenda aplica-se a utilizadores no Espaço Económico Europeu (EEE) e no Reino Unido.\n\n**Responsável pelo Tratamento de Dados**\n\nO Taskorilla é o responsável pelo tratamento das informações que fornece através da plataforma.\n\n**Os Seus Direitos ao Abrigo do RGPD**\n\nPode solicitar acesso, correção, eliminação, restrição de processamento, portabilidade de dados ou retirada de consentimento. Contacte-nos para exercer estes direitos.\n\n**Transferências de Dados**\n\nPodemos transferir dados para fora do EEE ou Reino Unido usando salvaguardas legalmente reconhecidas, como Cláusulas Contratuais-Tipo.\n\n**Obrigações**\n\nNão carregue informações sobre terceiros sem a sua permissão.",
+    "tags": ["RGPD", "dados", "privacidade", "EEE", "Reino Unido", "legal"]
+  }
+]
