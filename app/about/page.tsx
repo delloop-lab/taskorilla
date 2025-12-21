@@ -11,24 +11,24 @@ export default function AboutPage() {
     backText: "← Voltar à Página Inicial",
     title: "Sobre Nós",
     intro: "Somos uma pequena equipa com um objetivo simples: ajudar as pessoas a realizar tarefas do dia a dia enquanto apoiamos ajudantes locais e a comunidade.",
-    belief: "Acreditamos que a tecnologia deve tornar a vida mais fácil, não mais complicada — e estamos aqui para fazer exatamente isso.",
+    belief: "Acreditamos que a tecnologia deve tornar a vida mais fácil, não mais complicada, e estamos aqui para fazer exatamente isso.",
     missionTitle: "A Nossa Missão",
     mission1: "Tornar as tarefas do dia a dia simples e fiáveis",
     mission2: "Apoiar ajudantes locais e a comunidade",
     mission3: "Manter a tecnologia humana e fácil de usar",
     teamTitle: "Conheça a Equipa",
-    teamText: "Apenas algumas pessoas que se preocupam em tornar a vida mais fácil para todos — sem fatos, sem jargão, apenas pessoas reais a construir um serviço que funciona."
+    teamText: "Apenas algumas pessoas que se preocupam em tornar a vida mais fácil para todos, sem fatos, sem jargão, apenas pessoas reais a construir um serviço que funciona."
   } : {
     backText: "← Back to Home",
     title: "About Us",
     intro: "We are a small team with a simple goal: help people get everyday tasks done while supporting local helpers and the community.",
-    belief: "We believe technology should make life easier, not more complicated — and we are here to do just that.",
+    belief: "We believe technology should make life easier, not more complicated, and we are here to do just that.",
     missionTitle: "Our Mission",
     mission1: "Make everyday tasks simple and reliable",
     mission2: "Support local helpers and the community",
     mission3: "Keep technology human and easy to use",
     teamTitle: "Meet the Team",
-    teamText: "Just a few people who care about making life smoother for everyone — no suits, no jargon, just real people building a service that works."
+    teamText: "Just a few people who care about making life smoother for everyone, no suits, no jargon, just real people building a service that works."
   };
 
   return (
