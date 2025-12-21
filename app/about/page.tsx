@@ -59,8 +59,8 @@ export default function AboutPage() {
                   {content.teeText}
                 </p>
               </div>
-              {/* TEE on the right - hidden on very small screens, shown on sm+ */}
-              <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 flex-shrink-0 mx-auto md:mx-0 order-first md:order-last">
+              {/* TEE on the right */}
+              <div className="w-40 h-40 sm:w-44 sm:h-44 md:w-48 md:h-48 lg:w-56 lg:h-56 flex-shrink-0 mx-auto md:mx-0 order-first md:order-last">
                 <Image
                   src="/images/tee-peeking.png"
                   alt="TEE the gorilla mascot peeking around a corner"
