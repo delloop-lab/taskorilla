@@ -51,19 +51,18 @@ export default function AboutPage() {
               <Sparkles className="w-7 h-7 text-primary" />
               {content.teeTitle}
             </h2>
-            <div className="relative pl-44 md:pl-56">
+            <div className="relative pr-44 md:pr-56">
               <p className="text-lg text-gray-700 leading-relaxed">
                 {content.teeText}
               </p>
             </div>
-            <div className="absolute bottom-12 left-0 w-48 md:w-60 h-auto z-10">
+            <div className="absolute bottom-12 right-0 w-48 md:w-60 h-auto z-10">
               <Image
                 src="/images/tee-corner.png"
                 alt="TEE the gorilla mascot peeking around a corner"
                 width={240}
                 height={240}
                 className="object-contain"
-                style={{ transform: 'scaleX(-1)' }}
               />
             </div>
           </div>
