@@ -44,6 +44,9 @@ export default function Footer({ variant = 'default' }: FooterProps) {
             <p className="text-xs opacity-75">{version}</p>
           </div>
           <div className="flex flex-wrap justify-center items-center gap-6 text-sm">
+            <Link href="/about" className="hover:text-foreground transition-colors">
+              {t('footer.aboutUs')}
+            </Link>
             <Link href="/help" className="hover:text-foreground transition-colors">
               {t('footer.helpCenter')}
             </Link>
