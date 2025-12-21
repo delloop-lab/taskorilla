@@ -423,13 +423,28 @@ export default function Navbar() {
       <nav className="bg-white shadow-sm relative z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center text-xl font-bold" style={{ color: '#8B4513' }}>
+            <Link href="/" className="flex items-center text-xl font-bold" style={{ color: '#8B4513' }}>
               <img 
                 src="/images/taskorilla_header_logo.png" 
                 alt="Taskorilla" 
                 className="h-[40px] object-contain"
                 style={{ backgroundColor: 'transparent' }}
               />
+            </Link>
+            {/* Show Login/Register while loading */}
+            <div className="flex items-center space-x-4">
+              <Link
+                href="/login"
+                className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                LOGIN
+              </Link>
+              <Link
+                href="/register"
+                className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
+              >
+                Sign Up
+              </Link>
             </div>
           </div>
         </div>

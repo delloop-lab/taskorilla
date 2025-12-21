@@ -61,7 +61,7 @@ export default function Home() {
       {/* Subheadline */}
       <section className="pt-4 md:pt-6 pb-8 md:pb-12 px-4 bg-muted/30">
         <div className="container mx-auto max-w-4xl text-center">
-          <p className="text-lg text-muted-foreground">
+          <p className="text-lg text-muted-foreground whitespace-pre-line">
             {t('landing.heroSubtitle')}
           </p>
         </div>
