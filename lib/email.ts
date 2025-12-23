@@ -332,10 +332,26 @@ export async function sendAdminEmail(
   recipientEmail: string,
   recipientName: string,
   subject: string,
-  message: string
+  message: string,
+  attachment?: File
 ) {
   try {
     const mailTransporter = ensureTransporter()
+    
+    // Prepare attachments array if file is provided
+    const attachments: any[] = []
+    if (attachment) {
+      // Convert File to buffer
+      const arrayBuffer = await attachment.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+      
+      attachments.push({
+        filename: attachment.name,
+        content: buffer,
+        contentType: attachment.type || undefined,
+      })
+    }
+
     await mailTransporter.sendMail({
       from: getFromAddress(),
       to: recipientEmail,
@@ -352,6 +368,7 @@ export async function sendAdminEmail(
           </p>
         </div>
       `,
+      attachments: attachments.length > 0 ? attachments : undefined,
     })
   } catch (error: any) {
     console.error('Error sending admin email:', error)

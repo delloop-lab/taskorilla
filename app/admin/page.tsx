@@ -108,6 +108,8 @@ export default function SuperadminDashboard() {
   const [emailMessage, setEmailMessage] = useState('')
   const [emailRecipient, setEmailRecipient] = useState('')
   const [emailSubject, setEmailSubject] = useState('')
+  const [emailAttachment, setEmailAttachment] = useState<File | null>(null)
+  const emailAttachmentInputRef = useRef<HTMLInputElement>(null)
   const [sendingEmail, setSendingEmail] = useState(false)
   const [selectedUserForEmail, setSelectedUserForEmail] = useState<string>('')
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
@@ -1180,16 +1182,34 @@ export default function SuperadminDashboard() {
 
       const recipientName = recipientProfile?.full_name || emailRecipient
 
-      const response = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      // Create FormData if there's an attachment, otherwise use JSON
+      let body: FormData | string
+      let headers: Record<string, string> = {}
+
+      if (emailAttachment) {
+        body = new FormData()
+        body.append('type', 'admin_email')
+        body.append('recipientEmail', emailRecipient)
+        body.append('recipientName', recipientName)
+        body.append('subject', emailSubject)
+        body.append('message', emailMessage)
+        body.append('attachment', emailAttachment)
+        // Don't set Content-Type header - browser will set it with boundary for FormData
+      } else {
+        body = JSON.stringify({
           type: 'admin_email',
           recipientEmail: emailRecipient,
           recipientName: recipientName,
           subject: emailSubject,
           message: emailMessage,
-        }),
+        })
+        headers['Content-Type'] = 'application/json'
+      }
+
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: headers,
+        body: body,
       })
 
       const result = await response.json()
@@ -1199,7 +1219,12 @@ export default function SuperadminDashboard() {
         setEmailRecipient('')
         setEmailMessage('')
         setEmailSubject('')
+        setEmailAttachment(null)
         setSelectedUserForEmail('')
+        // Reset file input
+        if (emailAttachmentInputRef.current) {
+          emailAttachmentInputRef.current.value = ''
+        }
         setShowEmailSuccessModal(true)
         fetchEmailLogs() // Refresh email logs
       } else {
@@ -2607,6 +2632,38 @@ export default function SuperadminDashboard() {
                   value={emailMessage}
                   onChange={(e) => setEmailMessage(e.target.value)}
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Attachment (Optional)
+                </label>
+                <input
+                  ref={emailAttachmentInputRef}
+                  type="file"
+                  className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null
+                    setEmailAttachment(file)
+                  }}
+                />
+                {emailAttachment && (
+                  <div className="mt-2 text-sm text-gray-600">
+                    Selected: {emailAttachment.name} ({(emailAttachment.size / 1024).toFixed(2)} KB)
+                    <button
+                      type="button"
+                      className="ml-2 text-red-600 hover:text-red-800"
+                      onClick={() => {
+                        setEmailAttachment(null)
+                        // Reset file input
+                        if (emailAttachmentInputRef.current) {
+                          emailAttachmentInputRef.current.value = ''
+                        }
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
               </div>
               <button
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"

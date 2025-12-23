@@ -17,7 +17,28 @@ export async function POST(request: NextRequest) {
   let emailLogData: any = null
   
   try {
-    const body = await request.json()
+    // Check if request is FormData (for attachments) or JSON
+    const contentType = request.headers.get('content-type') || ''
+    let body: any
+    let attachmentFile: File | null = null
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData()
+      body = {
+        type: formData.get('type'),
+        recipientEmail: formData.get('recipientEmail'),
+        recipientName: formData.get('recipientName'),
+        subject: formData.get('subject'),
+        message: formData.get('message'),
+      }
+      const attachment = formData.get('attachment')
+      if (attachment instanceof File) {
+        attachmentFile = attachment
+      }
+    } else {
+      body = await request.json()
+    }
+
     const { type, ...params } = body
 
     // Get current user for logging
@@ -185,13 +206,16 @@ export async function POST(request: NextRequest) {
           related_user_id: params.relatedUserId,
           metadata: {
             message: params.message,
+            hasAttachment: !!attachmentFile,
+            attachmentName: attachmentFile?.name || null,
           },
         }
         await sendAdminEmail(
           params.recipientEmail,
           params.recipientName,
           params.subject,
-          params.message
+          params.message,
+          attachmentFile || undefined
         )
         break
 
