@@ -20,6 +20,7 @@ import {
 import { getTrafficStats, getDailyTrafficSummary, getDailyTrafficStats } from '@/lib/traffic'
 import StandardModal from '@/components/StandardModal'
 import { User } from '@/lib/types'
+import { STANDARD_SKILLS, STANDARD_SERVICES } from '@/lib/helper-constants'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend, Filler)
 
@@ -78,7 +79,7 @@ export default function SuperadminDashboard() {
   const [traffic, setTraffic] = useState<Traffic[]>([])
   const [dailyTraffic, setDailyTraffic] = useState<DailyTraffic[]>([])
   const [trafficDays, setTrafficDays] = useState<number>(30)
-  const [tab, setTab] = useState<'users' | 'tasks' | 'stats' | 'revenue' | 'email' | 'traffic' | 'email_logs' | 'settings' | 'reports'>('users')
+  const [tab, setTab] = useState<'users' | 'tasks' | 'stats' | 'revenue' | 'email' | 'traffic' | 'email_logs' | 'settings' | 'reports' | 'skills_services'>('users')
   const [reports, setReports] = useState<any[]>([])
   const [loadingReports, setLoadingReports] = useState(false)
   const [deletingReportId, setDeletingReportId] = useState<string | null>(null)
@@ -125,6 +126,11 @@ export default function SuperadminDashboard() {
   const [geocodingResult, setGeocodingResult] = useState<any>(null)
   const [regeocodingPortuguese, setRegeocodingPortuguese] = useState(false)
   const [regeocodingResult, setRegeocodingResult] = useState<any>(null)
+  
+  // Skills & Services state
+  const [allSkills, setAllSkills] = useState<string[]>([])
+  const [allServices, setAllServices] = useState<string[]>([])
+  const [loadingSkillsServices, setLoadingSkillsServices] = useState(false)
   
   // Platform fee settings
   const [platformFeePercent, setPlatformFeePercent] = useState<number>(10) // 10% deducted from helper payout
@@ -227,10 +233,18 @@ export default function SuperadminDashboard() {
       fetchEmailLogs()
       fetchPlatformSettings()
       fetchReports()
+      loadSkillsAndServices()
     }
     
     checkRole()
   }, [])
+
+  // Load skills and services when tab is switched to skills_services
+  useEffect(() => {
+    if (tab === 'skills_services' && allSkills.length === 0 && !loadingSkillsServices) {
+      loadSkillsAndServices()
+    }
+  }, [tab, allSkills.length, loadingSkillsServices])
 
   // Debug logging for modal state
   useEffect(() => {
@@ -288,6 +302,62 @@ export default function SuperadminDashboard() {
       // Categories are loaded but not stored in state in admin page
     } catch (error) {
       console.error('Error loading categories:', error)
+    }
+  }
+
+  const loadSkillsAndServices = async () => {
+    try {
+      setLoadingSkillsServices(true)
+      
+      // Query all profiles
+      const { data: profiles, error } = await supabase
+        .from('profiles')
+        .select('skills, services_offered')
+
+      if (error) throw error
+
+      // Extract unique skills
+      const allSkillsSet = new Set<string>()
+      // Add standard skills
+      STANDARD_SKILLS.forEach(skill => allSkillsSet.add(skill))
+      // Extract from profiles
+      if (profiles) {
+        profiles.forEach(profile => {
+          if (profile.skills && Array.isArray(profile.skills)) {
+            profile.skills.forEach((skill: string) => {
+              if (skill && skill.trim()) {
+                allSkillsSet.add(skill.trim())
+              }
+            })
+          }
+        })
+      }
+      const sortedSkills = Array.from(allSkillsSet).sort()
+
+      // Extract unique services
+      const allServicesSet = new Set<string>()
+      // Add standard services
+      STANDARD_SERVICES.forEach(service => allServicesSet.add(service))
+      // Extract from profiles
+      if (profiles) {
+        profiles.forEach(profile => {
+          if (profile.services_offered && Array.isArray(profile.services_offered)) {
+            profile.services_offered.forEach((service: string) => {
+              if (service && service.trim()) {
+                allServicesSet.add(service.trim())
+              }
+            })
+          }
+        })
+      }
+      const sortedServices = Array.from(allServicesSet).sort()
+
+      setAllSkills(sortedSkills)
+      setAllServices(sortedServices)
+    } catch (error) {
+      console.error('Error loading skills and services:', error)
+    } finally {
+      setLoadingSkillsServices(false)
     }
   }
 
@@ -1244,7 +1314,7 @@ export default function SuperadminDashboard() {
 
         {/* Tabs */}
         <div className="mb-4 sm:mb-6 flex flex-wrap gap-2 items-center">
-          {(['users', 'tasks', 'reports', 'stats', 'revenue', 'email', 'traffic', 'email_logs', 'settings'] as const).map(t => (
+          {(['users', 'tasks', 'reports', 'stats', 'revenue', 'email', 'traffic', 'email_logs', 'settings', 'skills_services'] as const).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -1254,7 +1324,7 @@ export default function SuperadminDashboard() {
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
               }`}
             >
-              {t.charAt(0).toUpperCase() + t.slice(1)}
+              {t === 'skills_services' ? 'Skills & Services' : t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
           ))}
           <Link
@@ -3214,6 +3284,105 @@ export default function SuperadminDashboard() {
           title="Delete Failed"
           message={deleteErrorMessage || 'Failed to delete report. Please try again.'}
         />
+
+        {/* Skills & Services Tab */}
+        {tab === 'skills_services' && (
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+              <h2 className="text-2xl font-bold text-gray-900">Skills & Services</h2>
+              <button
+                onClick={loadSkillsAndServices}
+                disabled={loadingSkillsServices}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {loadingSkillsServices ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Loading...
+                  </>
+                ) : (
+                  <>🔄 Refresh</>
+                )}
+              </button>
+            </div>
+
+            {loadingSkillsServices ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading skills and services...</p>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {/* Skills Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      Skills ({allSkills.length})
+                    </h3>
+                    <span className="text-sm text-gray-500">
+                      {STANDARD_SKILLS.length} standard + {allSkills.length - STANDARD_SKILLS.length} custom
+                    </span>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                      {allSkills.map((skill, index) => {
+                        const isStandard = STANDARD_SKILLS.includes(skill)
+                        return (
+                          <div
+                            key={index}
+                            className={`px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${
+                              isStandard
+                                ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                : 'bg-white text-gray-700 border border-gray-300'
+                            }`}
+                          >
+                            {isStandard && <span className="text-xs">⭐</span>}
+                            <span>{skill}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Services Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      Services ({allServices.length})
+                    </h3>
+                    <span className="text-sm text-gray-500">
+                      {STANDARD_SERVICES.length} standard + {allServices.length - STANDARD_SERVICES.length} custom
+                    </span>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                      {allServices.map((service, index) => {
+                        const isStandard = STANDARD_SERVICES.includes(service)
+                        return (
+                          <div
+                            key={index}
+                            className={`px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 ${
+                              isStandard
+                                ? 'bg-green-100 text-green-800 border border-green-200'
+                                : 'bg-white text-gray-700 border border-gray-300'
+                            }`}
+                          >
+                            {isStandard && <span className="text-xs">⭐</span>}
+                            <span>{service}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Settings Tab */}
         {tab === 'settings' && (

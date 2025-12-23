@@ -4,6 +4,9 @@
 export const STANDARD_SKILLS = [
   'Handyman / Repairs',
   'Cleaning / Housekeeping',
+  'Window Cleaning',
+  'Sofa Cleaning',
+  'Chimney Cleaning',
   'Gardening / Lawn Care',
   'Moving / Heavy Lifting',
   'Furniture Assembly',
