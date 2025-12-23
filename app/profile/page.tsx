@@ -101,10 +101,23 @@ function ProfilePageContent() {
     totalTasks: number
   }>({ tasks: [], totalPaid: 0, totalTasks: 0 })
   const [paymentsExpanded, setPaymentsExpanded] = useState(false)
+  
+  // Share and QR code state
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)
+  const [showQrCode, setShowQrCode] = useState(false)
+  const [showShareSuccess, setShowShareSuccess] = useState(false)
 
   useEffect(() => {
     loadProfile()
   }, [])
+  
+  // Generate QR code when profile loads
+  useEffect(() => {
+    if (profile && profile.profile_slug) {
+      const profileUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/user/${profile.profile_slug || profile.id}`
+      setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(profileUrl)}`)
+    }
+  }, [profile])
 
   // Update ratings when userRatings finish loading
   useEffect(() => {
@@ -853,7 +866,62 @@ function ProfilePageContent() {
         </div>
       )}
 
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Profile</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
+        {profile && profile.profile_slug && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (!profile) return
+                const profileUrl = `${window.location.origin}/user/${profile.profile_slug || profile.id}`
+                navigator.clipboard.writeText(profileUrl)
+                setShowShareSuccess(true)
+                setTimeout(() => setShowShareSuccess(false), 3000)
+              }}
+              className="px-3 sm:px-4 py-2 border border-gray-300 rounded-md text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+              {showShareSuccess ? 'Copied!' : 'Share'}
+            </button>
+            {qrCodeUrl && (
+              <button
+                onClick={() => setShowQrCode(!showQrCode)}
+                className="px-3 sm:px-4 py-2 border border-gray-300 rounded-md text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                </svg>
+                QR Code
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+      
+      {/* QR Code Modal */}
+      {showQrCode && qrCodeUrl && profile && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 sm:p-6" onClick={() => setShowQrCode(false)}>
+          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-4">Scan QR Code</h3>
+            <img src={qrCodeUrl} alt="QR Code" className="mx-auto mb-4" />
+            <p className="text-sm text-gray-600 text-center mb-4">Share this profile with others</p>
+            <div className="mb-4 p-3 bg-gray-50 rounded-md">
+              <p className="text-xs text-gray-500 mb-1">Profile Link:</p>
+              <p className="text-sm text-gray-900 break-all">
+                {typeof window !== 'undefined' ? window.location.origin : ''}/user/{profile.profile_slug || profile.id}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowQrCode(false)}
+              className="w-full bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Pending Reviews Reminder */}
       {pendingReviews.length > 0 && (
