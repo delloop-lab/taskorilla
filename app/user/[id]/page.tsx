@@ -8,7 +8,7 @@ import { format } from 'date-fns'
 import Link from 'next/link'
 import StandardModal from '@/components/StandardModal'
 import ReportModal from '@/components/ReportModal'
-import { User as UserIcon } from 'lucide-react'
+import { User as UserIcon, Star } from 'lucide-react'
 import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
 import UserRatingsDisplay from '@/components/UserRatingsDisplay'
 
@@ -467,9 +467,17 @@ function UserProfileContent() {
             <div className="flex-1">
               <div className="flex items-start justify-between">
                 <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-                    {profile.full_name || 'User'}
-                  </h1>
+                  <div className="flex items-center gap-2 flex-wrap mb-2">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                      {profile.full_name || 'User'}
+                    </h1>
+                    {profile.is_featured && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold whitespace-nowrap">
+                        <Star className="w-3 h-3 fill-purple-700" />
+                        FEATURED
+                      </span>
+                    )}
+                  </div>
                   {profile.company_name && (
                     <p className="text-lg text-gray-600 mb-2">{profile.company_name}</p>
                   )}

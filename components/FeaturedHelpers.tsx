@@ -6,7 +6,7 @@ import { User } from '@/lib/types'
 import Link from 'next/link'
 import { STANDARD_SKILLS, helperMatchesSearch } from '@/lib/helper-constants'
 import { STANDARD_PROFESSIONS } from '@/lib/profession-constants'
-import { User as UserIcon } from 'lucide-react'
+import { User as UserIcon, Star } from 'lucide-react'
 import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
 import CompactUserRatingsDisplay from '@/components/CompactUserRatingsDisplay'
 
@@ -205,9 +205,17 @@ export default function FeaturedHelpers({ searchTerm = '', selectedSkill = null,
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 truncate">
-                      {helper.full_name || 'Helper'}
-                    </h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-semibold text-gray-900 truncate">
+                        {helper.full_name || 'Helper'}
+                      </h3>
+                      {helper.is_featured && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold whitespace-nowrap">
+                          <Star className="w-3 h-3 fill-purple-700" />
+                          FEATURED
+                        </span>
+                      )}
+                    </div>
                     {helper.userRatings && (
                       <div className="mt-1">
                         <CompactUserRatingsDisplay 
@@ -330,4 +338,3 @@ export default function FeaturedHelpers({ searchTerm = '', selectedSkill = null,
     </div>
   )
 }
-
