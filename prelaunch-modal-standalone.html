@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pre-Launch Modal - Standalone</title>
+  <style>
+    /* Modal Styles */
+    .prelaunch-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 9999;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .prelaunch-modal {
+      background: white;
+      border-radius: 0.75rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      max-width: 28rem;
+      width: 100%;
+      padding: 1.5rem;
+      position: relative;
+      animation: slideUp 0.4s ease-out;
+    }
+
+    @media (min-width: 640px) {
+      .prelaunch-modal {
+        padding: 2rem;
+      }
+    }
+
+    .prelaunch-modal-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      color: #9ca3af;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.25rem;
+      border-radius: 9999px;
+      transition: color 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .prelaunch-modal-close:hover {
+      color: #4b5563;
+    }
+
+    .prelaunch-modal-close:focus {
+      outline: 2px solid #0185C8;
+      outline-offset: 2px;
+    }
+
+    .prelaunch-modal-content {
+      text-align: center;
+    }
+
+    .prelaunch-modal-headline {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .prelaunch-modal-headline {
+        font-size: 1.875rem;
+      }
+    }
+
+    .prelaunch-modal-body {
+      color: #374151;
+      margin-bottom: 1.5rem;
+      line-height: 1.75;
+    }
+
+    .prelaunch-modal-body p {
+      margin-bottom: 0.75rem;
+    }
+
+    .prelaunch-modal-body p:last-child {
+      margin-bottom: 0;
+    }
+
+    .prelaunch-modal-body strong {
+      color: #111827;
+      font-weight: 600;
+    }
+
+    .prelaunch-modal-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .prelaunch-modal-buttons {
+        flex-direction: row;
+      }
+    }
+
+    .prelaunch-modal-button {
+      flex: 1;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+      border: none;
+      font-size: 1rem;
+    }
+
+    .prelaunch-modal-button:focus {
+      outline: 2px solid #0185C8;
+      outline-offset: 2px;
+    }
+
+    .prelaunch-modal-button-primary {
+      background-color: #0185C8;
+      color: white;
+    }
+
+    .prelaunch-modal-button-primary:hover {
+      background-color: #0170a8;
+    }
+
+    .prelaunch-modal-button-secondary {
+      background-color: #f3f4f6;
+      color: #374151;
+    }
+
+    .prelaunch-modal-button-secondary:hover {
+      background-color: #e5e7eb;
+    }
+
+    .prelaunch-modal-footer {
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Hide modal when not shown */
+    .prelaunch-modal-hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Your existing page content goes here -->
+  <div style="padding: 2rem; max-width: 800px; margin: 0 auto;">
+    <h1>Your Website Content</h1>
+    <p>This is where your existing page content would be.</p>
+  </div>
+
+  <!-- Pre-Launch Modal -->
+  <div id="prelaunchModal" class="prelaunch-modal-overlay prelaunch-modal-hidden">
+    <div class="prelaunch-modal">
+      <button class="prelaunch-modal-close" id="prelaunchModalClose" aria-label="Close modal">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="5" y1="5" x2="15" y2="15"></line>
+          <line x1="15" y1="5" x2="5" y2="15"></line>
+        </svg>
+      </button>
+
+      <div class="prelaunch-modal-content">
+        <h2 class="prelaunch-modal-headline">Taskorilla is almost here 🦍</h2>
+
+        <div class="prelaunch-modal-body">
+          <p>
+            We're officially launching on <strong>1 February</strong>.
+          </p>
+          <p>
+            If you've got jobs that need doing, now's the perfect time to register and be ready from day one.
+          </p>
+          <p>
+            Early sign ups get first access when we go live.
+          </p>
+        </div>
+
+        <div class="prelaunch-modal-buttons">
+          <a href="/register" class="prelaunch-modal-button prelaunch-modal-button-primary" id="prelaunchModalRegister">
+            Register now
+          </a>
+          <button class="prelaunch-modal-button prelaunch-modal-button-secondary" id="prelaunchModalLookAround">
+            Take a look around
+          </button>
+        </div>
+
+        <p class="prelaunch-modal-footer">
+          No spam. Just a heads up when we launch.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      const MODAL_STORAGE_KEY = 'prelaunch-modal-dismissed';
+      const DISMISS_DURATION_DAYS = 7;
+      const SHOW_DELAY_MS = 2500;
+
+      const modal = document.getElementById('prelaunchModal');
+      const closeButton = document.getElementById('prelaunchModalClose');
+      const registerButton = document.getElementById('prelaunchModalRegister');
+      const lookAroundButton = document.getElementById('prelaunchModalLookAround');
+
+      // Check if modal should be shown
+      function shouldShowModal() {
+        const dismissedData = localStorage.getItem(MODAL_STORAGE_KEY);
+        if (!dismissedData) {
+          return true;
+        }
+
+        try {
+          const dismissedDate = new Date(dismissedData);
+          const now = new Date();
+          const daysSinceDismissed = (now.getTime() - dismissedDate.getTime()) / (1000 * 60 * 60 * 24);
+          return daysSinceDismissed >= DISMISS_DURATION_DAYS;
+        } catch (error) {
+          console.error('Error parsing dismissed date:', error);
+          return true;
+        }
+      }
+
+      // Dismiss modal and store timestamp
+      function dismissModal() {
+        localStorage.setItem(MODAL_STORAGE_KEY, new Date().toISOString());
+        modal.classList.add('prelaunch-modal-hidden');
+      }
+
+      // Show modal
+      function showModal() {
+        if (shouldShowModal()) {
+          setTimeout(function() {
+            modal.classList.remove('prelaunch-modal-hidden');
+          }, SHOW_DELAY_MS);
+        }
+      }
+
+      // Event listeners
+      if (closeButton) {
+        closeButton.addEventListener('click', dismissModal);
+      }
+
+      if (lookAroundButton) {
+        lookAroundButton.addEventListener('click', dismissModal);
+      }
+
+      if (registerButton) {
+        registerButton.addEventListener('click', dismissModal);
+      }
+
+      // Close on overlay click (outside modal)
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+          dismissModal();
+        }
+      });
+
+      // Close on Escape key
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !modal.classList.contains('prelaunch-modal-hidden')) {
+          dismissModal();
+        }
+      });
+
+      // Initialize - show modal if needed
+      showModal();
+    })();
+  </script>
+</body>
+</html>
+

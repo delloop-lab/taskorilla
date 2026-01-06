@@ -4,7 +4,7 @@ import './globals.css'
 import Navbar from '@/components/Navbar'
 import PWAHead from '@/components/PWAHead'
 import InstallPromptModal from '@/components/InstallPromptModal'
-import BetaWarningModal from '@/components/BetaWarningModal'
+import PreLaunchModal from '@/components/PreLaunchModal'
 import LanguageProviderWrapper from '@/components/LanguageProviderWrapper'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -108,7 +108,7 @@ export default function RootLayout({
         />
         <LanguageProviderWrapper>
           <PWAHead />
-          <BetaWarningModal />
+          <PreLaunchModal />
           <InstallPromptModal />
           <Navbar />
           <main className="min-h-screen bg-gray-50">
