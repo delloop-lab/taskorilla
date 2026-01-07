@@ -71,7 +71,7 @@ export default function PreLaunchModal() {
         <div className="text-center">
           {/* Headline */}
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
-            Taskorilla is almost here 🦍
+            Taskorilla is almost here
           </h2>
 
           {/* Body copy */}
