@@ -33,11 +33,13 @@ export function useUserRatings() {
           throw fetchError
         }
 
-        console.log('📊 Fetched user ratings:', data?.length || 0, 'users')
-        if (data && data.length > 0) {
-          console.log('📊 Sample ratings:', data.slice(0, 3))
-          console.log('📊 First rating keys:', Object.keys(data[0]))
-          console.log('📊 First rating full object:', JSON.stringify(data[0], null, 2))
+        if (process.env.NODE_ENV === 'development') {
+          console.log('📊 Fetched user ratings:', data?.length || 0, 'users')
+          if (data && data.length > 0) {
+            console.log('📊 Sample ratings:', data.slice(0, 3))
+            console.log('📊 First rating keys:', Object.keys(data[0]))
+            console.log('📊 First rating full object:', JSON.stringify(data[0], null, 2))
+          }
         }
         setUsers(data || [])
       } catch (err: any) {

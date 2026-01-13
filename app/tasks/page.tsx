@@ -83,6 +83,7 @@ function TasksPageContent() {
   
   // Simple version counter to track which load is current
   const loadVersionRef = useRef(0)
+  const initialLoadDoneRef = useRef(false)
 
   const loadCategories = async () => {
     try {
@@ -208,7 +209,9 @@ function TasksPageContent() {
     loadVersionRef.current += 1
     const thisVersion = loadVersionRef.current
     
-    console.log(`🔍 loadTasks started - Filter: ${activeFilter}, Version: ${thisVersion}`)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔍 loadTasks started - Filter: ${activeFilter}, Version: ${thisVersion}`)
+    }
     
     setLoading(true)
     
@@ -217,7 +220,9 @@ function TasksPageContent() {
       
       // Check if this load is still current
       if (loadVersionRef.current !== thisVersion) {
-        console.log(`⏸️ Load ${thisVersion} cancelled - newer load started`)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`⏸️ Load ${thisVersion} cancelled - newer load started`)
+        }
         return
       }
       
@@ -231,7 +236,9 @@ function TasksPageContent() {
       
       if (activeFilter === 'my_bids') {
         if (!user) {
-          console.log('🔍 my_bids filter - no user, showing empty')
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔍 my_bids filter - no user, showing empty')
+          }
           if (loadVersionRef.current === thisVersion) {
             setTasks([])
             setLoading(false)
@@ -239,7 +246,9 @@ function TasksPageContent() {
           return
         }
         
-        console.log('🔍 my_bids filter - User ID:', user.id)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔍 my_bids filter - User ID:', user.id)
+        }
         
         // Query 1: Get OPEN tasks where user placed bids (with task status join)
         let placedBidsQuery = supabase
@@ -261,7 +270,9 @@ function TasksPageContent() {
         
         const tasksIBidOn = [...new Set((myPlacedBids || []).map(b => b.task_id).filter(Boolean))]
         tasksIBidOn.forEach(id => tasksUserBidOn.add(id))
-        console.log('🔍 my_bids filter - Open tasks I placed bids on:', tasksIBidOn.length, tasksIBidOn)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔍 my_bids filter - Open tasks I placed bids on:', tasksIBidOn.length, tasksIBidOn)
+        }
         
         // Query 2: Get user's OPEN tasks that have bids on them
         let myTasksQuery = supabase
@@ -303,24 +314,32 @@ function TasksPageContent() {
           })
           
           tasksWithBidsOnThem = [...new Set((bidsOnMyTasks || []).map(b => b.task_id).filter(Boolean))]
-          console.log('🔍 my_bids filter - My open tasks with bids from others:', tasksWithBidsOnThem.length, tasksWithBidsOnThem)
-          console.log('🔍 my_bids filter - Bid counts per task:', Object.fromEntries(myTasksWithBidCounts))
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔍 my_bids filter - My open tasks with bids from others:', tasksWithBidsOnThem.length, tasksWithBidsOnThem)
+            console.log('🔍 my_bids filter - Bid counts per task:', Object.fromEntries(myTasksWithBidCounts))
+          }
         }
         
         // Check if cancelled
         if (loadVersionRef.current !== thisVersion) {
-          console.log(`⏸️ Load ${thisVersion} cancelled after bids queries`)
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`⏸️ Load ${thisVersion} cancelled after bids queries`)
+          }
           return
         }
         
         // Combine both: tasks I bid on + my tasks that have bids
         taskIdsWithBids = [...new Set([...tasksIBidOn, ...tasksWithBidsOnThem])]
         
-        console.log(`🔍 my_bids filter - Total unique open tasks: ${taskIdsWithBids.length}`)
-        console.log(`🔍 my_bids filter - Task IDs:`, taskIdsWithBids)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🔍 my_bids filter - Total unique open tasks: ${taskIdsWithBids.length}`)
+          console.log(`🔍 my_bids filter - Task IDs:`, taskIdsWithBids)
+        }
         
         if (taskIdsWithBids.length === 0) {
-          console.log('🔍 my_bids filter - No bid-related open tasks found')
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔍 my_bids filter - No bid-related open tasks found')
+          }
           if (loadVersionRef.current === thisVersion) {
             setTasks([])
             setLoading(false)
@@ -488,16 +507,20 @@ function TasksPageContent() {
       const ratingsMap = new Map(
         userRatings.map((r: any) => [r.reviewee_id, r])
       )
-      console.log(`📊 Ratings map size: ${ratingsMap.size}, Total ratings: ${userRatings.length}`)
-      console.log('📊 Ratings map keys (user IDs):', Array.from(ratingsMap.keys()).slice(0, 5))
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`📊 Ratings map size: ${ratingsMap.size}, Total ratings: ${userRatings.length}`)
+        console.log('📊 Ratings map keys (user IDs):', Array.from(ratingsMap.keys()).slice(0, 5))
+      }
       
       // Map tasks with profiles
       let tasksWithProfiles = tasksData.map(task => {
         const creator = profilesData.find(p => p.id === task.created_by)
         const userRating = getUserRatingsById(task.created_by, ratingsMap)
         if (userRating) {
-          console.log(`⭐ Found ratings for ${creator?.full_name || creator?.email} (${task.created_by}): Tasker=${userRating.tasker_avg_rating} (${userRating.tasker_review_count} reviews), Helper=${userRating.helper_avg_rating} (${userRating.helper_review_count} reviews)`)
-        } else if (creator) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`⭐ Found ratings for ${creator?.full_name || creator?.email} (${task.created_by}): Tasker=${userRating.tasker_avg_rating} (${userRating.tasker_review_count} reviews), Helper=${userRating.helper_avg_rating} (${userRating.helper_review_count} reviews)`)
+          }
+        } else if (creator && process.env.NODE_ENV === 'development') {
           console.log(`❌ No ratings found for ${creator?.full_name || creator?.email} (${task.created_by})`)
         }
         const categoryObj = task.category_id ? categoriesData.find(c => c.id === task.category_id) : null
@@ -709,8 +732,11 @@ function TasksPageContent() {
       if (loadVersionRef.current === thisVersion) {
         setTasks(tasksWithProfiles)
         setLoading(false)
-        console.log(`✅ Load ${thisVersion} complete - ${tasksWithProfiles.length} tasks for filter: ${activeFilter}`)
-      } else {
+        initialLoadDoneRef.current = true // Mark initial load as done
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`✅ Load ${thisVersion} complete - ${tasksWithProfiles.length} tasks for filter: ${activeFilter}`)
+        }
+      } else if (process.env.NODE_ENV === 'development') {
         console.log(`⏸️ Load ${thisVersion} completed but newer load exists, discarding`)
       }
       
@@ -811,31 +837,40 @@ function TasksPageContent() {
     const urlFilter = searchParams.get('filter') as FilterType | null
     if (urlFilter && ['all', 'open', 'my_tasks', 'new', 'my_bids'].includes(urlFilter)) {
       if (filter !== urlFilter) {
-        console.log(`🔄 URL filter changed to: ${urlFilter}`)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🔄 URL filter changed to: ${urlFilter}`)
+        }
         setFilter(urlFilter)
         loadTasks(urlFilter)
       }
     } else if (!urlFilter && filter !== 'open') {
       // Default to 'open' when no URL filter
-      console.log(`🔄 No URL filter, defaulting to: open`)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🔄 No URL filter, defaulting to: open`)
+      }
       setFilter('open')
       loadTasks('open')
     }
   }, [searchParams])
 
   // Reload tasks when ratings finish loading (to attach ratings to existing tasks)
+  // Only reload if we already have tasks loaded (don't reload on initial load)
   useEffect(() => {
-    if (!sessionReady || ratingsLoading || tasks.length === 0) return
+    if (!sessionReady || ratingsLoading || !initialLoadDoneRef.current) return
     
-    console.log(`🔄 Ratings finished loading, reprocessing tasks to attach ratings`)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔄 Ratings finished loading, reprocessing tasks to attach ratings`)
+    }
     loadTasks(filter)
   }, [ratingsLoading, sessionReady])
 
-  // Reload when other filters change
+  // Reload when other filters change (but not on initial load)
   useEffect(() => {
-    if (!sessionReady) return
+    if (!sessionReady || !initialLoadDoneRef.current) return
     
-    console.log(`🔄 Filter parameters changed, reloading with filter: ${filter}`)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔄 Filter parameters changed, reloading with filter: ${filter}`)
+    }
     loadTasks(filter)
   }, [
     selectedCategory,
@@ -869,9 +904,9 @@ function TasksPageContent() {
     }
   }, [searchTerm, selectedCategory, selectedSubCategory, selectedProfession, selectedSkill, minBudget, maxBudget, maxDistance, minimumRating, selectedTagIds])
 
-  // Reload when user location becomes available
+  // Reload when user location becomes available (but not on initial load)
   useEffect(() => {
-    if (sessionReady && userLocation) {
+    if (sessionReady && userLocation && initialLoadDoneRef.current) {
       loadTasks(filter)
     }
   }, [userLocation])
@@ -1524,7 +1559,8 @@ function TasksPageContent() {
                       </button>
                       {(() => {
                         const ratings = task.user?.userRatings
-                        console.log('🎯 Rendering ratings for task:', {
+                        if (process.env.NODE_ENV === 'development') {
+                          console.log('🎯 Rendering ratings for task:', {
                           userId: task.user?.id,
                           userName: task.user?.full_name || task.user?.email,
                           hasRatings: !!ratings,

@@ -145,7 +145,9 @@ export default function SurveyJSTrialForm() {
       return
     }
     
-    console.log('%c[EFFECT: Auth State] Setting up auth listener', 'background: blue; color: white')
+    if (process.env.NODE_ENV === 'development') {
+      console.log('%c[EFFECT: Auth State] Setting up auth listener', 'background: blue; color: white')
+    }
     authListenerSetupRef.current = true
     
     // Get initial user state
@@ -316,14 +318,16 @@ export default function SurveyJSTrialForm() {
 
   useEffect(() => {
     // Wait for categories and professions to finish loading (even if empty)
-    console.log('%c[EFFECT: Create SurveyModel] Running', 'background: red; color: white', {
-      loading,
-      categoriesCount: categories.length,
-      professionsCount: professions.length,
-      currentTheme,
-      language,
-      timestamp: new Date().toISOString()
-    })
+    if (process.env.NODE_ENV === 'development') {
+      console.log('%c[EFFECT: Create SurveyModel] Running', 'background: red; color: white', {
+        loading,
+        categoriesCount: categories.length,
+        professionsCount: professions.length,
+        currentTheme,
+        language,
+        timestamp: new Date().toISOString()
+      })
+    }
     
     // Check if translations are loaded - if t() returns the key, translations aren't ready yet
     const testTranslation = t('surveyForm.title')
@@ -331,15 +335,19 @@ export default function SurveyJSTrialForm() {
     
     if (!loading && translationsReady) {
       try {
-        console.log('%c[EFFECT: Create SurveyModel] Creating new model...', 'background: red; color: white', {
-          language,
-          testTranslation
-        })
+        if (process.env.NODE_ENV === 'development') {
+          console.log('%c[EFFECT: Create SurveyModel] Creating new model...', 'background: red; color: white', {
+            language,
+            testTranslation
+          })
+        }
         const model = createTrialFormModel(categories, professions, currentTheme, t)
         
         // Set the locale based on current language (en or pt)
         model.locale = language === 'pt' ? 'pt' : 'en'
-        console.log(`[SurveyJS] Setting locale to: ${model.locale}, language: ${language}`)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[SurveyJS] Setting locale to: ${model.locale}, language: ${language}`)
+        }
         
         // Handle form completion
         model.onComplete.add((sender) => {
@@ -1021,7 +1029,9 @@ export default function SurveyJSTrialForm() {
           replacePageWithQuestion()
         }, 100)
 
-        console.log('%c[EFFECT: Create SurveyModel] Setting surveyModel state', 'background: red; color: white')
+        if (process.env.NODE_ENV === 'development') {
+          console.log('%c[EFFECT: Create SurveyModel] Setting surveyModel state', 'background: red; color: white')
+        }
         setSurveyModel(model)
       } catch (err) {
         console.error('[EFFECT: Create SurveyModel] Error:', err)
