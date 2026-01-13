@@ -6,8 +6,24 @@ const withPWA = require('next-pwa')({
   fallbacks: {
     document: '/offline.html',
   },
-  buildExcludes: [/app-build-manifest\.json$/, /_buildManifest\.js$/],
+  buildExcludes: [
+    /app-build-manifest\.json$/,
+    /_buildManifest\.js$/,
+    /build-manifest\.json$/,
+    /react-loadable-manifest\.json$/,
+  ],
   publicExcludes: ['!noprecache/**/*'],
+  // Additional configuration to prevent precaching issues
+  swcMinify: true,
+  // Exclude build manifest files from precache
+  exclude: [
+    ({ asset, compilation }) => {
+      if (asset.name.includes('_buildManifest') || asset.name.includes('build-manifest')) {
+        return true;
+      }
+      return false;
+    },
+  ],
   runtimeCaching: [
     // Static assets - highest priority, cache first
     {

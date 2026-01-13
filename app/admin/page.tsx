@@ -19,6 +19,8 @@ import {
 } from 'chart.js'
 import { getTrafficStats, getDailyTrafficSummary, getDailyTrafficStats } from '@/lib/traffic'
 import StandardModal from '@/components/StandardModal'
+import EmailTemplateManager from '@/components/EmailTemplateManager'
+import EmailTemplateEditor from '@/components/EmailTemplateEditor'
 import { User } from '@/lib/types'
 import { STANDARD_SKILLS, STANDARD_SERVICES } from '@/lib/helper-constants'
 
@@ -112,7 +114,17 @@ export default function SuperadminDashboard() {
   const emailAttachmentInputRef = useRef<HTMLInputElement>(null)
   const [sendingEmail, setSendingEmail] = useState(false)
   const [selectedUserForEmail, setSelectedUserForEmail] = useState<string>('')
+  const [viewingEmailLog, setViewingEmailLog] = useState<any | null>(null)
+  // Free-form email mode toggle
+  const [freeFormEmailMode, setFreeFormEmailMode] = useState(false)
+  const [freeFormRecipient, setFreeFormRecipient] = useState<string>('')
+  const [freeFormSubject, setFreeFormSubject] = useState('')
+  const [freeFormContent, setFreeFormContent] = useState('')
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
+  const [deletingEmailLogId, setDeletingEmailLogId] = useState<string | null>(null)
+  const [selectedEmailLogIds, setSelectedEmailLogIds] = useState<string[]>([])
+  const [emailTemplates, setEmailTemplates] = useState<Array<{ id: string; template_type: string; subject: string }>>([])
+  const [selectedEmailTemplate, setSelectedEmailTemplate] = useState<string>('')
   const [sendingProfileEmail, setSendingProfileEmail] = useState<string | null>(null)
   const [confirmingEmail, setConfirmingEmail] = useState<string | null>(null)
   const [managingBadgesFor, setManagingBadgesFor] = useState<User | null>(null)
@@ -247,6 +259,12 @@ export default function SuperadminDashboard() {
       loadSkillsAndServices()
     }
   }, [tab, allSkills.length, loadingSkillsServices])
+
+  useEffect(() => {
+    if (tab === 'email') {
+      fetchEmailTemplates()
+    }
+  }, [tab])
 
   // Debug logging for modal state
   useEffect(() => {
@@ -825,6 +843,28 @@ export default function SuperadminDashboard() {
     }
   }
 
+  async function fetchEmailTemplates() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        return
+      }
+
+      const response = await fetch('/api/admin/email-templates', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setEmailTemplates(result.templates || [])
+      }
+    } catch (error) {
+      console.error('Error fetching email templates:', error)
+    }
+  }
+
   async function fetchPlatformSettings() {
     const { data, error } = await supabase
       .from('platform_settings')
@@ -1240,6 +1280,202 @@ export default function SuperadminDashboard() {
       })
     } finally {
       setSendingEmail(false)
+    }
+  }
+
+  async function sendWelcomeEmail(userId: string, templateType: string) {
+    const user = users.find(u => u.id === userId)
+    if (!user) {
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: 'User not found',
+      })
+      return
+    }
+
+    setSendingEmail(true)
+    try {
+      // Get auth token from Supabase client
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error('Not authenticated')
+      }
+
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          type: 'template_email',
+          templateType: templateType,
+          recipientEmail: user.email,
+          recipientName: user.full_name || user.email,
+          relatedUserId: userId,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (response.ok) {
+        setModalState({
+          isOpen: true,
+          type: 'success',
+          title: 'Email Sent',
+          message: `Email sent successfully to ${user.email}`,
+        })
+        fetchEmailLogs() // Refresh email logs
+        setSelectedUserForEmail('')
+        setSelectedEmailTemplate('')
+      } else {
+        const errorMsg = result.error || 'Failed to send email'
+        // Provide helpful message if template doesn't exist
+        if (errorMsg.includes('Template not found')) {
+          throw new Error(`Template not found. Please create the ${templateType === 'helper_welcome' ? 'Helper Welcome' : 'Tasker Welcome'} template first using the template editor above.`)
+        }
+        throw new Error(errorMsg)
+      }
+    } catch (error: any) {
+      console.error('Error sending welcome email:', error)
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: 'Error sending welcome email: ' + (error.message || 'Unknown error'),
+      })
+    } finally {
+      setSendingEmail(false)
+    }
+  }
+
+  async function sendFreeFormEmail() {
+    const user = users.find(u => u.id === freeFormRecipient)
+    if (!user) {
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: 'Please select a recipient',
+      })
+      return
+    }
+
+    if (!freeFormSubject.trim() || !freeFormContent.trim()) {
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: 'Missing Information',
+        message: 'Please fill in both subject and content',
+      })
+      return
+    }
+
+    setSendingEmail(true)
+    try {
+      // Get auth token from Supabase client
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error('Not authenticated')
+      }
+
+      // Replace variables in content
+      let renderedContent = freeFormContent
+        .replace(/\{\{user_name\}\}/g, user.full_name || user.email || '')
+        .replace(/\{\{user_email\}\}/g, user.email || '')
+      
+      // Replace tee_image if present
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://taskorilla.com'
+      const imageUrl = `${baseUrl}/images/gorilla-mascot-new-email.png`.replace(/([^:]\/)\/+/g, '$1')
+      const mascotImageHtml = `<img src="${imageUrl}" alt="Tee - Taskorilla Mascot" style="height: 150px; display: block; margin: 0; padding: 0;" />`
+      renderedContent = renderedContent.replace(/\{\{tee_image\}\}/gi, mascotImageHtml)
+      renderedContent = renderedContent.replace(/\{\{mascot\}\}/gi, mascotImageHtml)
+
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          type: 'admin_email',
+          recipientEmail: user.email,
+          recipientName: user.full_name || user.email,
+          subject: freeFormSubject.trim(),
+          message: renderedContent,
+          relatedUserId: freeFormRecipient,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (response.ok) {
+        setModalState({
+          isOpen: true,
+          type: 'success',
+          title: 'Email Sent',
+          message: `Email sent successfully to ${user.email}`,
+        })
+        fetchEmailLogs() // Refresh email logs
+        // Clear form
+        setFreeFormSubject('')
+        setFreeFormContent('')
+        setFreeFormRecipient('')
+      } else {
+        throw new Error(result.error || 'Failed to send email')
+      }
+    } catch (error: any) {
+      console.error('Error sending free-form email:', error)
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: 'Error sending email: ' + (error.message || 'Unknown error'),
+      })
+    } finally {
+      setSendingEmail(false)
+    }
+  }
+
+  async function deleteEmailLog(logId: string | string[]) {
+    const idsToDelete = Array.isArray(logId) ? logId : [logId]
+    setDeletingEmailLogId(null) // Close modal first
+    setSelectedEmailLogIds([]) // Clear selection
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error('Not authenticated')
+      }
+
+      const { error } = await supabase
+        .from('email_logs')
+        .delete()
+        .in('id', idsToDelete)
+
+      if (error) {
+        throw error
+      }
+
+      setModalState({
+        isOpen: true,
+        type: 'success',
+        title: idsToDelete.length === 1 ? 'Email Log Deleted' : 'Email Logs Deleted',
+        message: `${idsToDelete.length} email log${idsToDelete.length === 1 ? ' has' : 's have'} been deleted successfully.`,
+      })
+
+      // Refresh email logs
+      fetchEmailLogs()
+    } catch (error: any) {
+      console.error('Error deleting email log:', error)
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to delete email log: ' + (error.message || 'Unknown error'),
+      })
     }
   }
 
@@ -2554,124 +2790,178 @@ export default function SuperadminDashboard() {
 
         {/* Email Tab */}
         {tab === 'email' && (
-          <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-2xl">
-            <h2 className="text-xl font-semibold mb-4">Send Email</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Select User
-                </label>
-                <select
-                  className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  value={selectedUserForEmail}
-                  onChange={(e) => {
-                    const userId = e.target.value
-                    setSelectedUserForEmail(userId)
-                    if (userId) {
-                      const selectedUser = users.find(u => u.id === userId)
-                      if (selectedUser) {
-                        setEmailRecipient(selectedUser.email)
-                      }
-                    } else {
-                      setEmailRecipient('')
-                    }
-                  }}
-                >
-                  <option value="">-- Select a user --</option>
-                  {users
-                    .sort((a, b) => {
-                      const nameA = (a.full_name || a.email || '').toLowerCase()
-                      const nameB = (b.full_name || b.email || '').toLowerCase()
-                      return nameA.localeCompare(nameB)
-                    })
-                    .map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.full_name || user.email} ({user.email})
-                      </option>
-                    ))}
-                </select>
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-4xl">
+            <div className="mb-6 border-b border-gray-200 pb-4">
+              <h2 className="text-xl font-semibold mb-2">Email Templates</h2>
+              <p className="text-sm text-gray-600">Manage welcome email templates for Helpers and Taskers</p>
+            </div>
+            
+            <EmailTemplateManager onTemplateSent={fetchEmailLogs} onTemplateChange={fetchEmailTemplates} />
+            
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Send Email</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setFreeFormEmailMode(false)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                      !freeFormEmailMode
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    Template Email
+                  </button>
+                  <button
+                    onClick={() => setFreeFormEmailMode(true)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                      freeFormEmailMode
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    Free Form Email
+                  </button>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Recipient Email
-                </label>
-                <input
-                  type="email"
-                  placeholder="user@example.com"
-                  className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  value={emailRecipient}
-                  onChange={(e) => {
-                    setEmailRecipient(e.target.value)
-                    // Clear user selection if email is manually edited
-                    if (e.target.value !== users.find(u => u.id === selectedUserForEmail)?.email) {
-                      setSelectedUserForEmail('')
-                    }
-                  }}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Subject
-                </label>
-                <input
-                  type="text"
-                  placeholder="Email subject"
-                  className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  value={emailSubject}
-                  onChange={(e) => setEmailSubject(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Message
-                </label>
-                <textarea
-                  placeholder="Your message here..."
-                  className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  rows={8}
-                  value={emailMessage}
-                  onChange={(e) => setEmailMessage(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Attachment (Optional)
-                </label>
-                <input
-                  ref={emailAttachmentInputRef}
-                  type="file"
-                  className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] || null
-                    setEmailAttachment(file)
-                  }}
-                />
-                {emailAttachment && (
-                  <div className="mt-2 text-sm text-gray-600">
-                    Selected: {emailAttachment.name} ({(emailAttachment.size / 1024).toFixed(2)} KB)
-                    <button
-                      type="button"
-                      className="ml-2 text-red-600 hover:text-red-800"
-                      onClick={() => {
-                        setEmailAttachment(null)
-                        // Reset file input
-                        if (emailAttachmentInputRef.current) {
-                          emailAttachmentInputRef.current.value = ''
-                        }
+
+              {!freeFormEmailMode ? (
+                // Template-based email section
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Select User
+                    </label>
+                    <select
+                      className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      value={selectedUserForEmail}
+                      onChange={(e) => {
+                        const userId = e.target.value
+                        setSelectedUserForEmail(userId)
                       }}
                     >
-                      Remove
+                      <option value="">-- Select a user --</option>
+                      {users
+                        .sort((a, b) => {
+                          const nameA = (a.full_name || a.email || '').toLowerCase()
+                          const nameB = (b.full_name || b.email || '').toLowerCase()
+                          return nameA.localeCompare(nameB)
+                        })
+                        .map((user) => (
+                          <option key={user.id} value={user.id}>
+                            {user.full_name || user.email} ({user.email}) {user.is_helper ? '[Helper]' : '[Tasker]'}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                  
+                  {selectedUserForEmail && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Select Email Template
+                        </label>
+                        <select
+                          className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          value={selectedEmailTemplate}
+                          onChange={(e) => setSelectedEmailTemplate(e.target.value)}
+                        >
+                          <option value="">-- Select a template --</option>
+                          {emailTemplates.map((template) => (
+                            <option key={template.id} value={template.template_type}>
+                              {template.template_type} - {template.subject}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <button
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => sendWelcomeEmail(selectedUserForEmail, selectedEmailTemplate)}
+                        disabled={sendingEmail || !selectedEmailTemplate}
+                      >
+                        {sendingEmail ? 'Sending...' : 'Send Email'}
+                      </button>
+                      <p className="text-sm text-gray-600">
+                        💡 <strong>Tip:</strong> Make sure you've created and saved the email templates above before sending emails.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                // Free-form email section
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Select Recipient
+                    </label>
+                    <select
+                      className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      value={freeFormRecipient}
+                      onChange={(e) => setFreeFormRecipient(e.target.value)}
+                    >
+                      <option value="">-- Select a user --</option>
+                      {users
+                        .sort((a, b) => {
+                          const nameA = (a.full_name || a.email || '').toLowerCase()
+                          const nameB = (b.full_name || b.email || '').toLowerCase()
+                          return nameA.localeCompare(nameB)
+                        })
+                        .map((user) => (
+                          <option key={user.id} value={user.id}>
+                            {user.full_name || user.email} ({user.email}) {user.is_helper ? '[Helper]' : '[Tasker]'}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Subject
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter email subject"
+                      value={freeFormSubject}
+                      onChange={(e) => setFreeFormSubject(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email Content
+                    </label>
+                    <EmailTemplateEditor
+                      value={freeFormContent}
+                      onChange={setFreeFormContent}
+                      height={300}
+                    />
+                    <p className="mt-2 text-xs text-gray-500">
+                      💡 You can use HTML formatting. Available variables: {'{{user_name}}'}, {'{{user_email}}'}, {'{{tee_image}}'} (mascot)
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={sendFreeFormEmail}
+                      disabled={sendingEmail || !freeFormRecipient || !freeFormSubject.trim() || !freeFormContent.trim()}
+                    >
+                      {sendingEmail ? 'Sending...' : 'Send Email'}
+                    </button>
+                    <button
+                      className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-2 rounded-lg font-medium"
+                      onClick={() => {
+                        setFreeFormSubject('')
+                        setFreeFormContent('')
+                        setFreeFormRecipient('')
+                      }}
+                    >
+                      Clear
                     </button>
                   </div>
-                )}
-              </div>
-              <button
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={sendEmail}
-                disabled={sendingEmail || !emailRecipient || !emailMessage || !emailSubject}
-              >
-                {sendingEmail ? 'Sending...' : 'Send Email'}
-              </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -3069,31 +3359,74 @@ export default function SuperadminDashboard() {
         {tab === 'email_logs' && (
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <h2 className="text-xl font-semibold mb-4">Email Logs ({emailLogs.length})</h2>
-            <div className="mb-4">
+            <div className="mb-4 flex gap-2 flex-wrap">
               <button
                 onClick={fetchEmailLogs}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
               >
                 Refresh Logs
               </button>
+              {selectedEmailLogIds.length > 0 && (
+                <button
+                  onClick={() => setDeletingEmailLogId('bulk')}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete Selected ({selectedEmailLogIds.length})
+                </button>
+              )}
             </div>
             {emailLogs.length > 0 ? (
               <div className="overflow-x-auto -mx-4 sm:mx-0">
-                <table className="min-w-full border border-gray-300">
+                <table className="w-full border border-gray-300" style={{ tableLayout: 'auto' }}>
                   <thead className="bg-gray-100">
                     <tr>
-                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Date</th>
-                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden md:table-cell">Recipient</th>
-                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Subject</th>
-                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden lg:table-cell">Type</th>
-                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Status</th>
-                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden xl:table-cell">Error</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm whitespace-nowrap w-12">
+                        <input
+                          type="checkbox"
+                          checked={selectedEmailLogIds.length === emailLogs.length && emailLogs.length > 0}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedEmailLogIds(emailLogs.map(log => log.id))
+                            } else {
+                              setSelectedEmailLogIds([])
+                            }
+                          }}
+                          className="cursor-pointer"
+                          title="Select all"
+                        />
+                      </th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm whitespace-nowrap">Date</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden md:table-cell whitespace-nowrap">Recipient</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm whitespace-nowrap">Subject</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden lg:table-cell whitespace-nowrap">Type</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm whitespace-nowrap">Status</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden xl:table-cell whitespace-nowrap">Error</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm whitespace-nowrap sticky right-[80px] bg-gray-100 z-10">View</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm whitespace-nowrap sticky right-0 bg-gray-100 z-10">Delete</th>
                     </tr>
                   </thead>
                   <tbody>
                     {emailLogs.map((log) => (
-                      <tr key={log.id} className="hover:bg-gray-50">
+                      <tr key={log.id} className={`hover:bg-gray-50 ${selectedEmailLogIds.includes(log.id) ? 'bg-blue-50' : ''}`}>
                         <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
+                          <input
+                            type="checkbox"
+                            checked={selectedEmailLogIds.includes(log.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedEmailLogIds([...selectedEmailLogIds, log.id])
+                              } else {
+                                setSelectedEmailLogIds(selectedEmailLogIds.filter(id => id !== log.id))
+                              }
+                            }}
+                            className="cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </td>
+                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm whitespace-nowrap">
                           <div className="flex flex-col">
                             <span>{new Date(log.created_at).toLocaleDateString()}</span>
                             <span className="text-xs text-gray-500">{new Date(log.created_at).toLocaleTimeString()}</span>
@@ -3101,22 +3434,22 @@ export default function SuperadminDashboard() {
                         </td>
                         <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden md:table-cell">
                           <div>
-                            <div className="font-medium truncate max-w-[200px]" title={log.recipient_email}>{log.recipient_email}</div>
+                            <div className="font-medium truncate max-w-[150px]" title={log.recipient_email}>{log.recipient_email}</div>
                             {log.recipient_name && (
-                              <div className="text-xs text-gray-500 truncate max-w-[200px]" title={log.recipient_name}>{log.recipient_name}</div>
+                              <div className="text-xs text-gray-500 truncate max-w-[150px]" title={log.recipient_name}>{log.recipient_name}</div>
                             )}
                           </div>
                         </td>
                         <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
-                          <div className="truncate max-w-[200px] sm:max-w-none" title={log.subject}>{log.subject}</div>
+                          <div className="truncate max-w-[200px] sm:max-w-[300px]" title={log.subject}>{log.subject}</div>
                         </td>
                         <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden lg:table-cell">
-                          <span className="px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-800">
+                          <span className="px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-800 whitespace-nowrap">
                             {log.email_type}
                           </span>
                         </td>
                         <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
-                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                          <span className={`px-2 py-1 rounded text-xs font-semibold whitespace-nowrap ${
                             log.status === 'sent' ? 'bg-green-100 text-green-800' :
                             log.status === 'failed' ? 'bg-red-100 text-red-800' :
                             'bg-yellow-100 text-yellow-800'
@@ -3125,7 +3458,32 @@ export default function SuperadminDashboard() {
                           </span>
                         </td>
                         <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm text-red-600 hidden xl:table-cell">
-                          <div className="truncate max-w-[200px]" title={log.error_message || '-'}>{log.error_message || '-'}</div>
+                          <div className="truncate max-w-[150px]" title={log.error_message || '-'}>{log.error_message || '-'}</div>
+                        </td>
+                        <td className={`border px-2 sm:px-4 py-2 text-xs sm:text-sm sticky right-[80px] z-10 ${selectedEmailLogIds.includes(log.id) ? 'bg-blue-50' : 'bg-white'}`}>
+                          <button
+                            onClick={() => setViewingEmailLog(log)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-2 sm:px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 whitespace-nowrap"
+                            title="View email content"
+                          >
+                            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <span className="hidden sm:inline">View</span>
+                          </button>
+                        </td>
+                        <td className={`border px-2 sm:px-4 py-2 text-xs sm:text-sm sticky right-0 z-10 ${selectedEmailLogIds.includes(log.id) ? 'bg-blue-50' : 'bg-white'}`}>
+                          <button
+                            onClick={() => setDeletingEmailLogId(log.id)}
+                            className="bg-red-600 hover:bg-red-700 text-white px-2 sm:px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 whitespace-nowrap"
+                            title="Delete email log"
+                          >
+                            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span className="hidden sm:inline">Delete</span>
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -3441,6 +3799,30 @@ export default function SuperadminDashboard() {
           </div>
         )}
 
+        {/* Delete Email Log Confirmation Modal */}
+        {deletingEmailLogId && (
+          <StandardModal
+            isOpen={!!deletingEmailLogId}
+            onClose={() => setDeletingEmailLogId(null)}
+            type="warning"
+            title={deletingEmailLogId === 'bulk' ? "Delete Selected Email Logs" : "Delete Email Log"}
+            message={
+              deletingEmailLogId === 'bulk'
+                ? `Are you sure you want to delete ${selectedEmailLogIds.length} email log${selectedEmailLogIds.length === 1 ? '' : 's'}? This action cannot be undone.\n\nThis will permanently remove the selected email log${selectedEmailLogIds.length === 1 ? '' : 's'} from the database.`
+                : `Are you sure you want to delete this email log? This action cannot be undone.\n\nThis will permanently remove the email log from the database.`
+            }
+            confirmText="Delete"
+            cancelText="Cancel"
+            onConfirm={() => {
+              if (deletingEmailLogId === 'bulk') {
+                deleteEmailLog(selectedEmailLogIds)
+              } else {
+                deleteEmailLog(deletingEmailLogId)
+              }
+            }}
+          />
+        )}
+
         {/* Settings Tab */}
         {tab === 'settings' && (
           <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-2xl">
@@ -3543,6 +3925,111 @@ export default function SuperadminDashboard() {
                   </p>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* View Email Modal - Full Screen for Better Email Viewing */}
+        {viewingEmailLog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold text-gray-800">{viewingEmailLog.subject}</h2>
+                  <div className="mt-2 text-sm text-gray-600 space-y-1">
+                    <p><strong>To:</strong> {viewingEmailLog.recipient_email}</p>
+                    <p><strong>Date:</strong> {new Date(viewingEmailLog.created_at).toLocaleString()}</p>
+                    <p><strong>Type:</strong> {viewingEmailLog.email_type} | <strong>Status:</strong> <span className={`${
+                      viewingEmailLog.status === 'sent' ? 'text-green-600' :
+                      viewingEmailLog.status === 'failed' ? 'text-red-600' :
+                      'text-yellow-600'
+                    }`}>{viewingEmailLog.status}</span></p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setViewingEmailLog(null)}
+                  className="ml-4 text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                  title="Close"
+                >
+                  ×
+                </button>
+              </div>
+              
+              {/* Email Content */}
+              <div className="flex-1 overflow-auto p-6 bg-gray-50">
+                {(() => {
+                  // Extract body content from full HTML if it's a full HTML document
+                  let htmlContent = viewingEmailLog.metadata?.html_content || ''
+                  
+                  if (htmlContent) {
+                    // If it's a full HTML document, extract just the body content
+                    const bodyMatch = htmlContent.match(/<body[^>]*>([\s\S]*)<\/body>/i)
+                    if (bodyMatch) {
+                      htmlContent = bodyMatch[1]
+                    }
+                    // Also check for rendered_content if available
+                    if (!htmlContent && viewingEmailLog.metadata?.rendered_content) {
+                      htmlContent = viewingEmailLog.metadata.rendered_content
+                    }
+                  }
+                  
+                  if (htmlContent) {
+                    return (
+                      <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                        <div 
+                          dangerouslySetInnerHTML={{ __html: htmlContent }}
+                          className="email-preview"
+                          style={{ 
+                            fontFamily: 'Arial, sans-serif', 
+                            lineHeight: '1.6', 
+                            color: '#333',
+                            maxWidth: '100%'
+                          }}
+                        />
+                      </div>
+                    )
+                  } else if (viewingEmailLog.metadata?.message) {
+                    return (
+                      <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                        <div className="whitespace-pre-wrap">{viewingEmailLog.metadata.message}</div>
+                      </div>
+                    )
+                  } else if (viewingEmailLog.subject) {
+                    return (
+                      <div className="bg-yellow-50 rounded-lg border border-yellow-200 p-6">
+                        <p className="font-semibold mb-2 text-yellow-800">⚠️ Email HTML content not stored in log</p>
+                        <p className="text-gray-700"><strong>Subject:</strong> {viewingEmailLog.subject}</p>
+                        <p className="mt-2 text-sm text-gray-600">This email was sent but the HTML content was not saved to the log.</p>
+                        {viewingEmailLog.metadata && Object.keys(viewingEmailLog.metadata).length > 0 && (
+                          <div className="mt-4 text-sm">
+                            <p className="font-semibold mb-2">Available Metadata:</p>
+                            <pre className="bg-white p-3 rounded text-xs overflow-auto border border-gray-200 mt-2">
+                              {JSON.stringify(viewingEmailLog.metadata, null, 2)}
+                            </pre>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  } else {
+                    return (
+                      <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 text-center text-gray-500">
+                        <p>No email content available in log</p>
+                      </div>
+                    )
+                  }
+                })()}
+              </div>
+              
+              {/* Footer */}
+              <div className="p-4 border-t border-gray-200 flex justify-end">
+                <button
+                  onClick={() => setViewingEmailLog(null)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -55,57 +55,60 @@ export default function RootLayout({
       <body className={inter.className}>
         {/* Global script to catch beforeinstallprompt immediately - prevents browser prompt */}
         {/* This must run before React hydrates, so it's placed at the top of body */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                // Store the deferred prompt globally so React component can access it
-                window.deferredPrompt = null;
-                window.nativePromptBlocked = false;
-                window.browserPromptShown = false;
-                
-                // Mark that browser might show its prompt
-                // Some browsers show prompts automatically which we can't prevent
-                // We'll check if beforeinstallprompt fires - if it doesn't, browser might show its own
-                var promptCheckTimeout = setTimeout(function() {
-                  // If beforeinstallprompt hasn't fired after 2 seconds, browser might show its own prompt
-                  if (!window.deferredPrompt) {
-                    console.log('⚠️ beforeinstallprompt not fired - browser may show its own prompt');
-                    window.browserPromptShown = true;
-                  }
-                }, 2000);
-                
-                // Listen for beforeinstallprompt event IMMEDIATELY with capture phase
-                // This ensures we catch it before any other handlers
-                var handler = function(e) {
-                  clearTimeout(promptCheckTimeout);
-                  
-                  // Prevent the browser's default install prompt
-                  e.preventDefault();
-                  e.stopImmediatePropagation();
-                  
-                  // Store the event globally
-                  window.deferredPrompt = e;
-                  window.nativePromptBlocked = true;
+        {/* Only run in production - PWA is disabled in development */}
+        {process.env.NODE_ENV === 'production' && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                (function() {
+                  // Store the deferred prompt globally so React component can access it
+                  window.deferredPrompt = null;
+                  window.nativePromptBlocked = false;
                   window.browserPromptShown = false;
                   
-                  // Dispatch a custom event so React component knows it's available
-                  window.dispatchEvent(new CustomEvent('pwa-install-available'));
+                  // Mark that browser might show its prompt
+                  // Some browsers show prompts automatically which we can't prevent
+                  // We'll check if beforeinstallprompt fires - if it doesn't, browser might show its own
+                  var promptCheckTimeout = setTimeout(function() {
+                    // If beforeinstallprompt hasn't fired after 2 seconds, browser might show its own prompt
+                    if (!window.deferredPrompt) {
+                      console.log('⚠️ beforeinstallprompt not fired - browser may show its own prompt');
+                      window.browserPromptShown = true;
+                    }
+                  }, 2000);
                   
-                  console.log('✅ Install prompt intercepted and deferred');
-                };
-                
-                // Add listener in capture phase (runs first)
-                window.addEventListener('beforeinstallprompt', handler, true);
-                
-                // Also add to document for extra coverage
-                if (document) {
-                  document.addEventListener('beforeinstallprompt', handler, true);
-                }
-              })();
-            `,
-          }}
-        />
+                  // Listen for beforeinstallprompt event IMMEDIATELY with capture phase
+                  // This ensures we catch it before any other handlers
+                  var handler = function(e) {
+                    clearTimeout(promptCheckTimeout);
+                    
+                    // Prevent the browser's default install prompt
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    
+                    // Store the event globally
+                    window.deferredPrompt = e;
+                    window.nativePromptBlocked = true;
+                    window.browserPromptShown = false;
+                    
+                    // Dispatch a custom event so React component knows it's available
+                    window.dispatchEvent(new CustomEvent('pwa-install-available'));
+                    
+                    console.log('✅ Install prompt intercepted and deferred');
+                  };
+                  
+                  // Add listener in capture phase (runs first)
+                  window.addEventListener('beforeinstallprompt', handler, true);
+                  
+                  // Also add to document for extra coverage
+                  if (document) {
+                    document.addEventListener('beforeinstallprompt', handler, true);
+                  }
+                })();
+              `,
+            }}
+          />
+        )}
         <LanguageProviderWrapper>
           <PWAHead />
           <PreLaunchModal />

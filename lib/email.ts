@@ -358,14 +358,7 @@ export async function sendAdminEmail(
       subject: subject,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">${subject}</h2>
-          <p>Hi ${recipientName},</p>
-          <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0; white-space: pre-wrap;">${message}</p>
-          </div>
-          <p style="margin-top: 20px; color: #6b7280; font-size: 12px;">
-            This is an administrative message from Taskorilla.
-          </p>
+          ${message}
         </div>
       `,
       attachments: attachments.length > 0 ? attachments : undefined,
@@ -373,6 +366,113 @@ export async function sendAdminEmail(
   } catch (error: any) {
     console.error('Error sending admin email:', error)
     throw new Error(`Failed to send admin email: ${error.message || 'Unknown error'}`)
+  }
+}
+
+/**
+ * Get the base URL for the application
+ * For emails, we need an absolute URL that's publicly accessible
+ */
+function getBaseUrl(): string {
+  // Server-side: use environment variable or default
+  // Priority: NEXT_PUBLIC_SITE_URL > NEXT_PUBLIC_VERCEL_URL > NEXT_PUBLIC_APP_URL > default
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '') // Remove trailing slash
+  }
+  if (process.env.NEXT_PUBLIC_VERCEL_URL) {
+    return `https://${process.env.NEXT_PUBLIC_VERCEL_URL.replace(/^https?:\/\//, '')}` // Ensure https
+  }
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')
+  }
+  // Default fallback - use localhost for development, production domain for production
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:3000'
+  }
+  return 'https://taskorilla.com'
+}
+
+/**
+ * Render email template with variables
+ * Replaces {{variable_name}} placeholders with actual values
+ * Also handles special shortcodes like {{tee_image}}
+ */
+export function renderEmailTemplate(
+  htmlContent: string,
+  variables: Record<string, string>
+): string {
+  let rendered = htmlContent
+  
+  // Handle special shortcodes first
+  const baseUrl = getBaseUrl()
+  
+  // Construct absolute image URL - ensure no double slashes
+  const imageUrl = `${baseUrl}/images/gorilla-mascot-new-email.png`.replace(/([^:]\/)\/+/g, '$1')
+  
+  // Log for debugging (only in development)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[Email] TEE Image URL:', imageUrl)
+    console.log('[Email] Base URL:', baseUrl)
+  }
+  
+  // Replace {{tee_image}} or {{mascot}} with the mascot image
+  // Use absolute URL and add display:block to prevent spacing issues
+  const mascotImageHtml = `<img src="${imageUrl}" alt="Tee - Taskorilla Mascot" style="height: 150px; display: block; margin: 0; padding: 0;" />`
+  rendered = rendered.replace(/\{\{tee_image\}\}/gi, mascotImageHtml)
+  rendered = rendered.replace(/\{\{mascot\}\}/gi, mascotImageHtml)
+  
+  // Replace regular variables
+  for (const [key, value] of Object.entries(variables)) {
+    const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g')
+    rendered = rendered.replace(regex, value || '')
+  }
+  
+  return rendered
+}
+
+/**
+ * Send email using a template
+ */
+export async function sendTemplateEmail(
+  recipientEmail: string,
+  recipientName: string,
+  subject: string,
+  htmlContent: string,
+  variables: Record<string, string> = {}
+): Promise<string> {
+  try {
+    const mailTransporter = ensureTransporter()
+    
+    // Render template with variables
+    const renderedHtml = renderEmailTemplate(htmlContent, {
+      user_name: recipientName,
+      user_email: recipientEmail,
+      ...variables,
+    })
+
+    // Wrap email content in clean HTML structure - minimal styling, no spacing
+    const emailHtml = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0;">
+${renderedHtml}
+</body>
+</html>`
+    
+    await mailTransporter.sendMail({
+      from: getFromAddress(),
+      to: recipientEmail,
+      subject: subject,
+      html: emailHtml,
+    })
+
+    return emailHtml // Return full HTML email for logging
+  } catch (error: any) {
+    console.error('Error sending template email:', error)
+    throw new Error(`Failed to send template email: ${error.message || 'Unknown error'}`)
   }
 }
 
@@ -416,9 +516,6 @@ export async function sendProfileCompletionEmail(
           <p style="color: #6b7280; font-size: 12px; margin-top: 30px;">
             Or copy and paste this link into your browser:<br>
             <a href="${profileLink}" style="color: #2563eb; word-break: break-all;">${profileLink}</a>
-          </p>
-          <p style="margin-top: 20px; color: #6b7280; font-size: 12px;">
-            This is an administrative message from Taskorilla.
           </p>
         </div>
       `,

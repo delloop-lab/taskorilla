@@ -4,6 +4,11 @@ import { useEffect } from 'react'
 
 export default function PWAHead() {
   useEffect(() => {
+    // Only run in production - PWA is disabled in development
+    if (process.env.NODE_ENV !== 'production') {
+      return
+    }
+
     // Register service worker manually if next-pwa auto-registration doesn't work
     // Service workers are disabled in dev mode, so only register in production builds
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {

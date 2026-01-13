@@ -9,9 +9,10 @@ import {
   sendTaskCancelledNotification,
   sendAdminEmail,
   sendProfileCompletionEmail,
+  sendTemplateEmail,
 } from '@/lib/email'
 import { logEmail } from '@/lib/email-logger'
-import { supabase } from '@/lib/supabase'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
 
 export async function POST(request: NextRequest) {
   let emailLogData: any = null
@@ -41,6 +42,9 @@ export async function POST(request: NextRequest) {
 
     const { type, ...params } = body
 
+    // Create authenticated Supabase client
+    const supabase = createServerSupabaseClient(request)
+    
     // Get current user for logging
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -197,6 +201,13 @@ export async function POST(request: NextRequest) {
         break
 
       case 'admin_email':
+        // Generate HTML for admin email
+        const adminEmailHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            ${params.message}
+          </div>
+        `
+        
         emailLogData = {
           recipient_email: params.recipientEmail,
           recipient_name: params.recipientName,
@@ -206,6 +217,7 @@ export async function POST(request: NextRequest) {
           related_user_id: params.relatedUserId,
           metadata: {
             message: params.message,
+            html_content: adminEmailHtml,
             hasAttachment: !!attachmentFile,
             attachmentName: attachmentFile?.name || null,
           },
@@ -232,6 +244,82 @@ export async function POST(request: NextRequest) {
           params.recipientEmail,
           params.recipientName
         )
+        break
+
+      case 'template_email':
+        // Get template from database
+        const { data: template, error: templateError } = await supabase
+          .from('email_templates')
+          .select('*')
+          .eq('template_type', params.templateType)
+          .single()
+
+        if (templateError) {
+          console.error('Error fetching template:', templateError)
+          console.error('Template type:', params.templateType)
+          console.error('User:', user?.id)
+          
+          // Check if it's a permission error
+          if (templateError.code === 'PGRST301' || templateError.message?.includes('permission') || templateError.message?.includes('policy')) {
+            return NextResponse.json(
+              { error: 'Permission denied. Admin access required to fetch templates.' },
+              { status: 403 }
+            )
+          }
+          
+          return NextResponse.json(
+            { error: `Template not found: ${params.templateType}. Error: ${templateError.message || templateError.code}` },
+            { status: 404 }
+          )
+        }
+
+        if (!template) {
+          return NextResponse.json(
+            { error: `Template not found: ${params.templateType}. Please create the template first.` },
+            { status: 404 }
+          )
+        }
+
+        // Get user registration date if available
+        let registrationDate = ''
+        if (params.relatedUserId) {
+          const { data: userProfile } = await supabase
+            .from('profiles')
+            .select('created_at')
+            .eq('id', params.relatedUserId)
+            .single()
+          
+          if (userProfile?.created_at) {
+            registrationDate = new Date(userProfile.created_at).toLocaleDateString()
+          }
+        }
+
+        // Render and send template email
+        const fullEmailHtml = await sendTemplateEmail(
+          params.recipientEmail,
+          params.recipientName,
+          template.subject,
+          template.html_content,
+          {
+            registration_date: registrationDate,
+            ...params.variables,
+          }
+        )
+
+        emailLogData = {
+          recipient_email: params.recipientEmail,
+          recipient_name: params.recipientName,
+          subject: template.subject,
+          email_type: params.templateType,
+          sent_by: user?.id,
+          related_user_id: params.relatedUserId,
+          metadata: {
+            template_id: template.id,
+            template_type: template.template_type,
+            html_content: fullEmailHtml, // Full HTML email with DOCTYPE, html, body tags
+            variables: params.variables || {},
+          },
+        }
         break
 
       default:
