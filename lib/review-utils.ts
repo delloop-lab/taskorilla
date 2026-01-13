@@ -32,7 +32,7 @@ export async function getPendingReviews(userId: string): Promise<PendingReview[]
       .or(`created_by.eq.${userId},assigned_to.eq.${userId}`)
       .limit(100) // Limit to prevent large queries
 
-    const { data: completedTasks, error: tasksError } = await withTimeout(queryPromise as Promise<any>).catch(() => {
+    const { data: completedTasks, error: tasksError } = await withTimeout(queryPromise as unknown as Promise<any>).catch(() => {
       console.warn('Timeout fetching completed tasks for pending reviews')
       return { data: null, error: { message: 'Request timeout' } }
     }) as any
@@ -50,7 +50,7 @@ export async function getPendingReviews(userId: string): Promise<PendingReview[]
       .eq('reviewer_id', userId)
       .limit(200) // Limit to prevent large queries
 
-    const { data: existingReviews, error: reviewsError } = await withTimeout(reviewsQueryPromise as Promise<any>).catch(() => {
+    const { data: existingReviews, error: reviewsError } = await withTimeout(reviewsQueryPromise as unknown as Promise<any>).catch(() => {
       console.warn('Timeout fetching existing reviews')
       return { data: null, error: { message: 'Request timeout' } }
     }) as any
@@ -71,7 +71,7 @@ export async function getPendingReviews(userId: string): Promise<PendingReview[]
       .in('task_id', completedTasks.map(t => t.id))
       .limit(500) // Limit to prevent large queries
 
-    const { data: allTaskReviews, error: allReviewsError } = await withTimeout(allReviewsQueryPromise as Promise<any>).catch(() => {
+    const { data: allTaskReviews, error: allReviewsError } = await withTimeout(allReviewsQueryPromise as unknown as Promise<any>).catch(() => {
       console.warn('Timeout fetching all task reviews')
       return { data: null, error: { message: 'Request timeout' } }
     }) as any
@@ -115,7 +115,7 @@ export async function getPendingReviews(userId: string): Promise<PendingReview[]
               .eq('id', task.assigned_to)
               .single()
 
-            const { data: helperProfile } = await withTimeout(profileQuery as Promise<any>, 5000).catch(() => {
+            const { data: helperProfile } = await withTimeout(profileQuery as unknown as Promise<any>, 5000).catch(() => {
               console.warn('Timeout fetching helper profile')
               return { data: null }
             }) as any
@@ -154,7 +154,7 @@ export async function getPendingReviews(userId: string): Promise<PendingReview[]
                 .eq('id', task.created_by)
                 .single()
 
-              const { data: taskerProfile } = await withTimeout(profileQuery as Promise<any>, 5000).catch(() => {
+              const { data: taskerProfile } = await withTimeout(profileQuery as unknown as Promise<any>, 5000).catch(() => {
                 console.warn('Timeout fetching tasker profile')
                 return { data: null }
               }) as any
