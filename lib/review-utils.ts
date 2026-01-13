@@ -61,14 +61,14 @@ export async function getPendingReviews(userId: string): Promise<PendingReview[]
     }
 
     const reviewedTaskIds = new Set(
-      existingReviews?.map(r => `${r.task_id}-${r.reviewee_id}`) || []
+      existingReviews?.map((r: any) => `${r.task_id}-${r.reviewee_id}`) || []
     )
 
     // Get all reviews for these tasks to check if tasker has reviewed (for helpers)
     const allReviewsQueryPromise = supabase
       .from('reviews')
       .select('task_id, reviewer_id, reviewee_id')
-      .in('task_id', completedTasks.map(t => t.id))
+      .in('task_id', completedTasks.map((t: any) => t.id))
       .limit(500) // Limit to prevent large queries
 
     const { data: allTaskReviews, error: allReviewsError } = await withTimeout(allReviewsQueryPromise as unknown as Promise<any>).catch(() => {
@@ -84,10 +84,10 @@ export async function getPendingReviews(userId: string): Promise<PendingReview[]
     // Build map of tasker reviews by task
     const taskerReviewsByTask = new Map<string, boolean>()
     if (allTaskReviews) {
-      completedTasks.forEach(task => {
+      completedTasks.forEach((task: any) => {
         if (task.created_by && task.assigned_to) {
           const taskerHasReviewed = allTaskReviews.some(
-            r => r.task_id === task.id && r.reviewer_id === task.created_by && r.reviewee_id === task.assigned_to
+            (r: any) => r.task_id === task.id && r.reviewer_id === task.created_by && r.reviewee_id === task.assigned_to
           )
           taskerReviewsByTask.set(task.id, taskerHasReviewed)
         }
