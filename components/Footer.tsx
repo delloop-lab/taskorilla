@@ -24,10 +24,10 @@ export default function Footer({ variant = 'default' }: FooterProps) {
               href="https://www.facebook.com/profile.php?id=61584791914940" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-700 transition-colors"
+              className="text-blue-600 hover:text-blue-700 transition-colors inline-flex items-center"
               aria-label="Follow us on Facebook"
             >
-              <Facebook className="w-4 h-4" />
+              <Facebook className="w-6 h-6" />
             </a>
           </div>
         </div>
@@ -53,10 +53,10 @@ export default function Footer({ variant = 'default' }: FooterProps) {
             href="https://www.facebook.com/profile.php?id=61584791914940" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-700 transition-colors"
+            className="text-blue-600 hover:text-blue-700 transition-colors inline-flex items-center"
             aria-label="Follow us on Facebook"
           >
-            <Facebook className="w-4 h-4" />
+            <Facebook className="w-6 h-6" />
           </a>
         </div>
         <div className="flex justify-center items-center gap-2 mt-2 text-xs text-muted-foreground/70">

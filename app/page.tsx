@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { CheckCircle, MessageSquare, Star, ClipboardList, Wallet } from 'lucide-react'
+import { CheckCircle, MessageSquare, Star, ClipboardList, Wallet, Sparkles } from 'lucide-react'
 import { TransparentGorillaImage } from '@/components/TransparentGorillaImage'
 import TrafficTracker from '@/components/TrafficTracker'
 import Footer from '@/components/Footer'
@@ -125,6 +125,25 @@ export default function Home() {
           <h2 className="text-4xl font-bold text-center mb-16 text-foreground">
             {t('landing.whyUseTitle')}
           </h2>
+          
+          {/* What makes Taskorilla Different Card */}
+          <Card className="hover-scale mb-8">
+            <CardContent className="p-6 md:p-8 space-y-4">
+              <div className="flex items-start gap-4">
+                <Sparkles className="w-8 h-8 text-secondary flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-bold text-foreground text-xl mb-3">What makes Taskorilla Different?</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Taskorilla isn't just another service marketplace, it's built for simplicity, speed, and local connections. Unlike bigger platforms where you're scrolling through endless profiles and waiting for quotes, Taskorilla gets straight to the point: you post your task, local helpers see it instantly, and you can hire someone fast, often the same day.
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed mt-3">
+                    It's perfect for the stuff that doesn't need an engineer or major planning but does need to get done right now - from fixing that leaking tap, mending a broken light switch, assembling furniture, moving a sofa, or running errands. And unlike other marketplaces, Taskorilla also connects you with professionals like therapists, coaches, and other specialists, all in the same easy-to-use platform.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="grid md:grid-cols-2 gap-8">
             <Card className="hover-scale">
               <CardContent className="p-6 space-y-3">
