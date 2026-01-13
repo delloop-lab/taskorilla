@@ -99,22 +99,15 @@ const withPWA = require('next-pwa')({
         ],
       },
     },
-    // External API calls (Supabase, etc.) - GET requests only
+    // Internal API routes - GET requests only
     {
       urlPattern: ({ request, url }) => {
-        // Only match GET requests to external domains or API routes
+        // Only match GET requests to internal API routes
         if (request.method !== 'GET') {
           return false;
         }
-        // Match external URLs (https://)
-        if (url.origin !== location.origin) {
-          return true;
-        }
-        // Match internal API routes
-        if (url.pathname.startsWith('/api/')) {
-          return true;
-        }
-        return false;
+        // Match internal API routes only
+        return url.pathname.startsWith('/api/');
       },
       handler: 'NetworkFirst',
       options: {
