@@ -445,7 +445,9 @@ function TasksPageContent() {
       
       // Check if cancelled
       if (loadVersionRef.current !== thisVersion) {
-        console.log(`⏸️ Load ${thisVersion} cancelled after tasks query`)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`⏸️ Load ${thisVersion} cancelled after tasks query`)
+        }
         return
       }
       
@@ -455,7 +457,9 @@ function TasksPageContent() {
         return
       }
       
-      console.log(`📦 Query returned ${tasksData?.length || 0} tasks for filter: ${activeFilter}`)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`📦 Query returned ${tasksData?.length || 0} tasks for filter: ${activeFilter}`)
+      }
       
       if (!tasksData || tasksData.length === 0) {
         if (loadVersionRef.current === thisVersion) {
@@ -481,7 +485,9 @@ function TasksPageContent() {
       
       // Check if cancelled
       if (loadVersionRef.current !== thisVersion) {
-        console.log(`⏸️ Load ${thisVersion} cancelled after related data query`)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`⏸️ Load ${thisVersion} cancelled after related data query`)
+        }
         return
       }
       
@@ -1561,11 +1567,12 @@ function TasksPageContent() {
                         const ratings = task.user?.userRatings
                         if (process.env.NODE_ENV === 'development') {
                           console.log('🎯 Rendering ratings for task:', {
-                          userId: task.user?.id,
-                          userName: task.user?.full_name || task.user?.email,
-                          hasRatings: !!ratings,
-                          ratings: ratings
-                        })
+                            userId: task.user?.id,
+                            userName: task.user?.full_name || task.user?.email,
+                            hasRatings: !!ratings,
+                            ratings: ratings
+                          })
+                        }
                         return (
                           <CompactUserRatingsDisplay 
                             ratings={ratings || null} 
