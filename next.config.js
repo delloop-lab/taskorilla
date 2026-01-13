@@ -13,8 +13,6 @@ const withPWA = require('next-pwa')({
     /react-loadable-manifest\.json$/,
   ],
   publicExcludes: ['!noprecache/**/*'],
-  // Additional configuration to prevent precaching issues
-  swcMinify: true,
   // Exclude build manifest files from precache
   exclude: [
     ({ asset, compilation }) => {
