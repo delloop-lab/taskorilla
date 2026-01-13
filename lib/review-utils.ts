@@ -9,6 +9,20 @@ export interface PendingReview {
   is_tasker: boolean // true if current user is tasker, false if helper
 }
 
+interface ReviewRecord {
+  task_id: string
+  reviewer_id: string
+  reviewee_id: string
+}
+
+interface CompletedTask {
+  id: string
+  title: string
+  created_by: string
+  assigned_to: string
+  status: string
+}
+
 /**
  * Helper function to add timeout to promises
  */
@@ -32,10 +46,10 @@ export async function getPendingReviews(userId: string): Promise<PendingReview[]
       .or(`created_by.eq.${userId},assigned_to.eq.${userId}`)
       .limit(100) // Limit to prevent large queries
 
-    const { data: completedTasks, error: tasksError } = await withTimeout(queryPromise as unknown as Promise<any>).catch(() => {
+    const { data: completedTasks, error: tasksError } = await withTimeout(queryPromise as unknown as Promise<{ data: CompletedTask[] | null; error: any }>).catch(() => {
       console.warn('Timeout fetching completed tasks for pending reviews')
       return { data: null, error: { message: 'Request timeout' } }
-    }) as any
+    }) as { data: CompletedTask[] | null; error: any }
 
     if (tasksError) {
       console.warn('Error fetching completed tasks for pending reviews:', tasksError)
@@ -61,14 +75,14 @@ export async function getPendingReviews(userId: string): Promise<PendingReview[]
     }
 
     const reviewedTaskIds = new Set(
-      existingReviews?.map((r: any) => `${r.task_id}-${r.reviewee_id}`) || []
+      (existingReviews as ReviewRecord[] | null)?.map((r: ReviewRecord) => `${r.task_id}-${r.reviewee_id}`) || []
     )
 
     // Get all reviews for these tasks to check if tasker has reviewed (for helpers)
     const allReviewsQueryPromise = supabase
       .from('reviews')
       .select('task_id, reviewer_id, reviewee_id')
-      .in('task_id', completedTasks.map((t: any) => t.id))
+      .in('task_id', completedTasks.map((t: { id: string }) => t.id))
       .limit(500) // Limit to prevent large queries
 
     const { data: allTaskReviews, error: allReviewsError } = await withTimeout(allReviewsQueryPromise as unknown as Promise<any>).catch(() => {
@@ -84,11 +98,11 @@ export async function getPendingReviews(userId: string): Promise<PendingReview[]
     // Build map of tasker reviews by task
     const taskerReviewsByTask = new Map<string, boolean>()
     if (allTaskReviews) {
-      completedTasks.forEach((task: any) => {
+      completedTasks.forEach((task: CompletedTask) => {
         if (task.created_by && task.assigned_to) {
-          const taskerHasReviewed = allTaskReviews.some(
-            (r: any) => r.task_id === task.id && r.reviewer_id === task.created_by && r.reviewee_id === task.assigned_to
-          )
+          const taskerHasReviewed = (allTaskReviews as ReviewRecord[] | null)?.some(
+            (r: ReviewRecord) => r.task_id === task.id && r.reviewer_id === task.created_by && r.reviewee_id === task.assigned_to
+          ) || false
           taskerReviewsByTask.set(task.id, taskerHasReviewed)
         }
       })
