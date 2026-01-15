@@ -27,7 +27,7 @@ export default function EmailTemplateEditor({
     }
   }, [value])
 
-  // Normalize HTML - convert divs to <br> tags to preserve exact spacing
+  // Normalize HTML - preserve line breaks and paragraph structure for email rendering
   const normalizeHTML = (html: string): string => {
     if (!html || !html.trim()) return ''
     
@@ -35,51 +35,44 @@ export default function EmailTemplateEditor({
     const temp = document.createElement('div')
     temp.innerHTML = html
     
-    // Convert all divs to <br> tags (preserves line breaks without extra spacing)
+    // Convert all divs to paragraphs (better email client support)
+    // This preserves the line break structure that contentEditable creates
     const allDivs = Array.from(temp.querySelectorAll('div'))
     allDivs.forEach(div => {
-      // If div is empty, replace with <br>
-      if (!div.innerHTML.trim()) {
+      // If div is empty or only contains whitespace, replace with <br> for blank lines
+      if (!div.innerHTML.trim() && !div.textContent?.trim()) {
         const br = document.createElement('br')
         div.parentNode?.replaceChild(br, div)
       } else {
-        // If div has content, insert content + <br> before it, then remove div
-        const br = document.createElement('br')
-        div.parentNode?.insertBefore(br, div)
-        // Move children out of div
-        while (div.firstChild) {
-          div.parentNode?.insertBefore(div.firstChild, div)
-        }
-        div.parentNode?.removeChild(div)
+        // Convert div to paragraph to preserve structure and line breaks
+        const p = document.createElement('p')
+        p.innerHTML = div.innerHTML
+        div.parentNode?.replaceChild(p, div)
       }
     })
     
-    // Convert paragraphs to <br> tags as well (no spacing)
+    // Process paragraphs - preserve them as they represent line breaks
     const allParagraphs = Array.from(temp.querySelectorAll('p'))
     allParagraphs.forEach(p => {
-      if (!p.innerHTML.trim()) {
+      // If paragraph is completely empty, replace with <br> for blank line
+      if (!p.innerHTML.trim() && !p.textContent?.trim()) {
         const br = document.createElement('br')
         p.parentNode?.replaceChild(br, p)
-      } else {
-        const br = document.createElement('br')
-        p.parentNode?.insertBefore(br, p)
-        // Move children out of paragraph
-        while (p.firstChild) {
-          p.parentNode?.insertBefore(p.firstChild, p)
-        }
-        p.parentNode?.removeChild(p)
       }
+      // Otherwise keep the paragraph - it represents a line break
     })
     
     // Get normalized HTML
     let normalized = temp.innerHTML
     
-    // Clean up empty tags
-    normalized = normalized.replace(/<p>\s*<\/p>/gi, '')
-    normalized = normalized.replace(/<div>\s*<\/div>/gi, '')
+    // Clean up completely empty tags (shouldn't happen after processing, but just in case)
+    normalized = normalized.replace(/<p>\s*<\/p>/gi, '<br>')
+    normalized = normalized.replace(/<div>\s*<\/div>/gi, '<br>')
     
-    // Replace multiple consecutive <br> tags (more than 2) with just 2
-    normalized = normalized.replace(/(<br\s*\/?>){3,}/gi, '<br><br>')
+    // Preserve <br> tags - don't collapse them excessively
+    // Allow up to 3 consecutive <br> tags (for intentional blank lines)
+    // Collapse only if there are more than 3
+    normalized = normalized.replace(/(<br\s*\/?>){4,}/gi, '<br><br><br>')
     
     return normalized
   }

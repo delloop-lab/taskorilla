@@ -450,14 +450,37 @@ export async function sendTemplateEmail(
       ...variables,
     })
 
-    // Wrap email content in clean HTML structure - minimal styling, no spacing
+    // Wrap email content in clean HTML structure with proper line break preservation
     const emailHtml = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    color: #333;
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+  }
+  p {
+    margin: 0 0 1em 0;
+    padding: 0;
+  }
+  p:last-child {
+    margin-bottom: 0;
+  }
+  br {
+    line-height: 1.6;
+  }
+  /* Preserve whitespace and line breaks */
+  [style*="white-space"] {
+    white-space: pre-wrap;
+  }
+</style>
 </head>
-<body style="font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0;">
+<body style="font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0; line-height: 1.6;">
 ${renderedHtml}
 </body>
 </html>`
