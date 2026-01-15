@@ -122,9 +122,99 @@ export default function EmailTemplateEditor({
   }
 
   const insertLink = () => {
-    const url = prompt('Enter URL:')
-    if (url) {
-      execCommand('createLink', url)
+    if (!editorRef.current) return
+    
+    const selection = window.getSelection()
+    const selectedText = selection?.toString().trim() || ''
+    
+    // Get the URL from user
+    let url = prompt('Enter URL:', selectedText || 'https://')
+    if (!url) return
+    
+    // Validate and normalize URL
+    url = url.trim()
+    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('mailto:')) {
+      url = 'https://' + url
+    }
+    
+    // Get link text - use selected text if available, otherwise ask or use URL
+    let linkText = selectedText
+    if (!linkText) {
+      const textInput = prompt('Enter link text (or leave empty to use URL):', url)
+      linkText = textInput?.trim() || url
+    }
+    
+    // Escape HTML in link text to prevent XSS (but not the URL)
+    const escapeHTML = (text: string) => {
+      const div = document.createElement('div')
+      div.textContent = text
+      return div.innerHTML
+    }
+    
+    // Escape URL attributes (but preserve the URL structure)
+    const escapeURL = (url: string) => {
+      return url.replace(/"/g, '&quot;').replace(/'/g, '&#x27;')
+    }
+    
+    // Create the link HTML
+    const linkHTML = `<a href="${escapeURL(url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(linkText)}</a>`
+    
+    try {
+      // If text is selected, replace it with the link
+      if (selection && selection.rangeCount > 0 && selectedText) {
+        const range = selection.getRangeAt(0)
+        range.deleteContents()
+        
+        const tempDiv = document.createElement('div')
+        tempDiv.innerHTML = linkHTML
+        const linkNode = tempDiv.firstChild
+        
+        if (linkNode) {
+          range.insertNode(linkNode)
+          // Move cursor after the link
+          range.setStartAfter(linkNode)
+          range.collapse(true)
+          selection.removeAllRanges()
+          selection.addRange(range)
+        }
+      } else {
+        // Insert at cursor position or at end
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0)
+          const container = range.commonAncestorContainer
+          
+          // Check if cursor is in editor
+          if (editorRef.current.contains(container) || container === editorRef.current) {
+            range.deleteContents()
+            const tempDiv = document.createElement('div')
+            tempDiv.innerHTML = linkHTML
+            const linkNode = tempDiv.firstChild
+            
+            if (linkNode) {
+              range.insertNode(linkNode)
+              // Move cursor after the link
+              range.setStartAfter(linkNode)
+              range.collapse(true)
+              selection.removeAllRanges()
+              selection.addRange(range)
+            }
+          } else {
+            // Fallback: insert at end
+            editorRef.current.innerHTML += linkHTML
+          }
+        } else {
+          // No selection, insert at end
+          editorRef.current.innerHTML += linkHTML
+        }
+      }
+      
+      editorRef.current.focus()
+      handleInput()
+    } catch (error) {
+      console.error('Error inserting link:', error)
+      // Fallback: just append the link HTML
+      editorRef.current.innerHTML += linkHTML
+      handleInput()
     }
   }
 
