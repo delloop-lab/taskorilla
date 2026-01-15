@@ -16,6 +16,7 @@ import { getPendingReviews } from '@/lib/review-utils'
 import { formatPostcodeForCountry } from '@/lib/postcode'
 import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
 import UserRatingsDisplay from '@/components/UserRatingsDisplay'
+import { compressAvatar } from '@/lib/image-utils'
 
 // AppUser interface that extends User and includes all properties used in this component
 interface AppUser extends User {
@@ -729,16 +730,21 @@ function ProfilePageContent() {
         throw new Error('You must be logged in to upload an avatar')
       }
 
-      console.log('Uploading avatar for user:', authUser.id)
-      console.log('File path will be:', `${authUser.id}/${Date.now()}.${file.name.split('.').pop()}`)
-
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Date.now()}.${fileExt}`
+      // Compress the image before uploading (256x256, ~20-50KB instead of 3-5MB)
+      const compressedImage = await compressAvatar(file)
+      
+      // Use appropriate extension based on whether compression succeeded
+      const isCompressed = compressedImage.type === 'image/jpeg'
+      const ext = isCompressed ? 'jpg' : (file.name.split('.').pop() || 'jpg')
+      const fileName = `${Date.now()}.${ext}`
       const filePath = `${authUser.id}/${fileName}`
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file, { upsert: true })
+        .upload(filePath, compressedImage, { 
+          upsert: true,
+          contentType: compressedImage.type || 'image/jpeg'
+        })
 
       if (uploadError) throw uploadError
 

@@ -1,12 +1,16 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { getPendingReviews } from '@/lib/review-utils'
 import { useLanguage } from '@/lib/i18n'
 import { User as UserIcon } from 'lucide-react'
+
+// Debug logging - only in development
+const isDev = process.env.NODE_ENV === 'development'
+const debugLog = (...args: any[]) => isDev && console.log(...args)
 
 export default function Navbar() {
   const { language, setLanguage, t } = useLanguage()
@@ -154,92 +158,72 @@ export default function Navbar() {
       return
     }
 
+    let isActive = true // Prevent state updates after unmount
+    
     const loadPendingBids = async () => {
       try {
-        console.log('🔔 Loading pending bids for user:', user.id)
-        
         // Get user's open tasks (excluding archived and hidden)
-        // Use or filter to handle cases where columns might be NULL (not explicitly false)
         const { data: userTasks, error: tasksError } = await supabase
           .from('tasks')
-          .select('id, title, status, archived, hidden_by_admin')
+          .select('id')
           .eq('created_by', user.id)
           .eq('status', 'open')
           .or('archived.eq.false,archived.is.null')
           .or('hidden_by_admin.eq.false,hidden_by_admin.is.null')
 
-        if (tasksError) {
-          console.error('Error loading user tasks:', tasksError)
+        if (tasksError || !isActive) {
+          if (tasksError) console.error('Error loading user tasks:', tasksError)
           return
         }
 
-        console.log('🔔 User open tasks (non-archived, non-hidden):', userTasks?.map(t => ({
-          id: t.id,
-          title: t.title,
-          status: t.status,
-          archived: t.archived,
-          hidden_by_admin: t.hidden_by_admin
-        })))
-
-        // Debug: Also fetch ALL tasks by user to see what's being filtered out
-        const { data: allUserTasks } = await supabase
-          .from('tasks')
-          .select('id, title, status, archived, hidden_by_admin')
-          .eq('created_by', user.id)
-        
-        console.log('🔔 ALL user tasks (for debugging):', allUserTasks?.map(t => ({
-          id: t.id,
-          title: t.title,
-          status: t.status,
-          archived: t.archived,
-          hidden_by_admin: t.hidden_by_admin,
-          shouldCount: t.status === 'open' && !t.archived && !t.hidden_by_admin
-        })))
-
         if (!userTasks || userTasks.length === 0) {
-          console.log('🔔 No open tasks found for user')
-          setPendingBidsCount(0)
-          setHasPendingBids(false)
+          if (isActive) {
+            setPendingBidsCount(0)
+            setHasPendingBids(false)
+          }
           return
         }
 
         const taskIds = userTasks.map(t => t.id)
 
-        // Get pending bids on those tasks from OTHER users (not the task creator)
-        // Count unique tasks with pending bids (not total bid count)
+        // Get pending bids on those tasks from OTHER users
         const { data: bidsOnMyTasks, error: bidsError } = await supabase
           .from('bids')
-          .select('task_id, user_id')
+          .select('task_id')
           .in('task_id', taskIds)
           .eq('status', 'pending')
-          .neq('user_id', user.id) // Only bids from other users, not the task creator
+          .neq('user_id', user.id)
 
-        if (bidsError) {
-          console.error('Error counting pending bids:', bidsError)
+        if (bidsError || !isActive) {
+          if (bidsError) console.error('Error counting pending bids:', bidsError)
           return
         }
 
-        // Count unique tasks that have pending bids (not total bid count)
-        // This matches the filter logic which shows unique tasks
+        // Count unique tasks that have pending bids
         const uniqueTaskIdsWithBids = bidsOnMyTasks 
           ? [...new Set(bidsOnMyTasks.map(bid => bid.task_id))] 
           : []
         
         const bidCount = uniqueTaskIdsWithBids.length
-        console.log('🔔 Pending bids - Total bids:', bidsOnMyTasks?.length || 0, 'Unique tasks with bids:', bidCount, 'Task IDs:', uniqueTaskIdsWithBids)
-        setPendingBidsCount(bidCount)
-        setHasPendingBids(bidCount > 0)
-        
-        // If there are new bids and user had previously viewed, show badge again
+        // Only log if there are pending bids (more useful information)
         if (bidCount > 0) {
-          setBidsViewed(false)
+          debugLog('🔔 Pending bids:', bidCount)
+        }
+        
+        if (isActive) {
+          setPendingBidsCount(bidCount)
+          setHasPendingBids(bidCount > 0)
+          if (bidCount > 0) {
+            setBidsViewed(false)
+          }
         }
       } catch (error) {
         console.error('Error loading pending bids:', error)
       }
     }
 
-    loadPendingBids()
+    // Debounce the initial load slightly to prevent rapid re-calls
+    const timeoutId = setTimeout(loadPendingBids, 100)
 
     // Listen for custom event when bids are viewed (to hide the badge but keep the word)
     const handleBidsViewed = () => {
@@ -265,10 +249,12 @@ export default function Navbar() {
       .subscribe()
 
     return () => {
+      isActive = false
+      clearTimeout(timeoutId)
       window.removeEventListener('bids-viewed', handleBidsViewed)
       supabase.removeChannel(channel)
     }
-  }, [user])
+  }, [user?.id]) // Only re-run when user.id changes, not the whole user object
 
   // Load accepted bids count (for helpers - when their bids are accepted)
   useEffect(() => {
@@ -368,16 +354,23 @@ export default function Navbar() {
 
     const loadPendingReviews = async () => {
       try {
+        // Don't block - run in background
         const pendingReviews = await getPendingReviews(user.id)
         setPendingReviewsCount(pendingReviews.length)
         // Store the first pending review's task ID for direct navigation
         setFirstPendingReviewTaskId(pendingReviews.length > 0 ? pendingReviews[0].task_id : null)
       } catch (error) {
-        console.error('Error loading pending reviews:', error)
+        // Silently fail - don't spam console with errors
+        console.warn('Error loading pending reviews:', error)
+        setPendingReviewsCount(0)
+        setFirstPendingReviewTaskId(null)
       }
     }
 
-    loadPendingReviews()
+    // Load in background without blocking - use setTimeout to defer
+    setTimeout(() => {
+      loadPendingReviews()
+    }, 100)
 
     // Refresh every 30 seconds
     const interval = setInterval(loadPendingReviews, 30000)
@@ -786,7 +779,13 @@ export default function Navbar() {
                       style={{ aspectRatio: '1 / 1' }}
                     >
                       {profileAvatar ? (
-                        <img src={profileAvatar} alt="avatar" className="w-full h-full object-cover object-center" />
+                        <img 
+                          src={profileAvatar} 
+                          alt="avatar" 
+                          className="w-full h-full object-cover object-center" 
+                          loading="lazy"
+                          decoding="async"
+                        />
                       ) : (
                         <UserIcon className="w-6 h-6 text-gray-400" />
                       )}
@@ -895,7 +894,13 @@ export default function Navbar() {
                   style={{ aspectRatio: '1 / 1' }}
                 >
                   {profileAvatar ? (
-                    <img src={profileAvatar} alt="avatar" className="w-full h-full object-cover object-center" />
+                    <img 
+                      src={profileAvatar} 
+                      alt="avatar" 
+                      className="w-full h-full object-cover object-center" 
+                      loading="lazy"
+                      decoding="async"
+                    />
                   ) : (
                     <UserIcon className="w-6 h-6 text-gray-400" />
                   )}

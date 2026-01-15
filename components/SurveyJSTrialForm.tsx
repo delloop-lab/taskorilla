@@ -12,6 +12,7 @@ import { formatPostcodeForCountry } from '@/lib/postcode'
 import { formatEuro } from '@/lib/currency'
 import { format } from 'date-fns'
 import { useLanguage } from '@/lib/i18n'
+import { compressTaskImage } from '@/lib/image-utils'
 
 // Import all SurveyJS theme CSS files upfront
 // SurveyJS themes must be imported before use - they don't dynamically load
@@ -184,13 +185,21 @@ export default function SurveyJSTrialForm() {
         if (pendingImageFile && session?.user) {
           try {
             setImageUploading(true)
-            const fileExt = pendingImageFile.name.split('.').pop()
-            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+            // Compress image before upload
+            const compressedImage = await compressTaskImage(pendingImageFile)
+            
+            // Use appropriate extension based on whether compression succeeded
+            const isCompressed = compressedImage.type === 'image/jpeg'
+            const ext = isCompressed ? 'jpg' : (pendingImageFile.name.split('.').pop() || 'jpg')
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`
             const filePath = `${session.user.id}/${fileName}`
 
             const { error: uploadError } = await supabase.storage
               .from('images')
-              .upload(filePath, pendingImageFile, { upsert: true })
+              .upload(filePath, compressedImage, { 
+                upsert: true,
+                contentType: compressedImage.type || 'image/jpeg'
+              })
 
             if (!uploadError) {
               const { data } = supabase.storage
@@ -410,14 +419,21 @@ export default function SurveyJSTrialForm() {
               return
             }
 
-            // Upload to Supabase
-            const fileExt = file.name.split('.').pop()
-            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+            // Compress image before upload (1200x1200 max, ~100-200KB instead of 3-5MB)
+            const compressedImage = await compressTaskImage(file)
+            
+            // Use appropriate extension based on whether compression succeeded
+            const isCompressed = compressedImage.type === 'image/jpeg'
+            const ext = isCompressed ? 'jpg' : (file.name.split('.').pop() || 'jpg')
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`
             const filePath = `${authUser.id}/${fileName}`
 
             const { error: uploadError } = await supabase.storage
               .from('images')
-              .upload(filePath, file, { upsert: true })
+              .upload(filePath, compressedImage, { 
+                upsert: true,
+                contentType: compressedImage.type || 'image/jpeg'
+              })
 
             if (uploadError) {
               throw uploadError
@@ -2134,13 +2150,21 @@ export default function SurveyJSTrialForm() {
       if (pendingImageFile && !uploadedImageUrl) {
         try {
           setImageUploading(true)
-          const fileExt = pendingImageFile.name.split('.').pop()
-          const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+          // Compress image before upload
+          const compressedImage = await compressTaskImage(pendingImageFile)
+          
+          // Use appropriate extension based on whether compression succeeded
+          const isCompressed = compressedImage.type === 'image/jpeg'
+          const ext = isCompressed ? 'jpg' : (pendingImageFile.name.split('.').pop() || 'jpg')
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`
           const filePath = `${authUser.id}/${fileName}`
 
           const { error: uploadError } = await supabase.storage
             .from('images')
-            .upload(filePath, pendingImageFile, { upsert: true })
+            .upload(filePath, compressedImage, { 
+              upsert: true,
+              contentType: compressedImage.type || 'image/jpeg'
+            })
 
           if (!uploadError) {
             const { data: urlData } = supabase.storage

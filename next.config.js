@@ -23,6 +23,21 @@ const withPWA = require('next-pwa')({
     },
   ],
   runtimeCaching: [
+    // Supabase storage (avatars, task images) - cache first for fast loading
+    {
+      urlPattern: /^https:\/\/.*\.supabase\.(co|in)\/storage\/v1\/object\/public\/.*/,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'supabase-images',
+        expiration: {
+          maxEntries: 200,
+          maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+        },
+        cacheableResponse: {
+          statuses: [0, 200],
+        },
+      },
+    },
     // Static assets - highest priority, cache first
     {
       urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico|css|js|woff|woff2|ttf|eot)$/,
@@ -170,6 +185,25 @@ const withPWA = require('next-pwa')({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.supabase.in',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
+    // Enable image optimization
+    formats: ['image/avif', 'image/webp'],
+    // Increase image quality for better visual results
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+  },
 }
 
 module.exports = withPWA(nextConfig)

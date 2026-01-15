@@ -69,11 +69,21 @@ export default function FeaturedHelpers({ searchTerm = '', selectedSkill = null,
           return
         }
         
-        // Get ratings for each helper
-        const { data: reviewsData } = await supabase
-          .from('reviews')
-          .select('reviewee_id, rating')
-          .in('reviewee_id', helperIds)
+        // Run ratings and tasks queries in PARALLEL (not sequential)
+        const [reviewsResult, tasksResult] = await Promise.all([
+          supabase
+            .from('reviews')
+            .select('reviewee_id, rating')
+            .in('reviewee_id', helperIds),
+          supabase
+            .from('tasks')
+            .select('assigned_to')
+            .in('assigned_to', helperIds)
+            .eq('status', 'completed')
+        ])
+
+        const reviewsData = reviewsResult.data
+        const tasksData = tasksResult.data
 
         // Calculate average ratings
         const ratingsByHelper: Record<string, { sum: number; count: number }> = {}
@@ -84,13 +94,6 @@ export default function FeaturedHelpers({ searchTerm = '', selectedSkill = null,
           ratingsByHelper[review.reviewee_id].sum += review.rating
           ratingsByHelper[review.reviewee_id].count += 1
         })
-
-        // Get completed tasks count for activity
-        const { data: tasksData } = await supabase
-          .from('tasks')
-          .select('assigned_to')
-          .in('assigned_to', helperIds)
-          .eq('status', 'completed')
 
         const tasksByHelper: Record<string, number> = {}
         tasksData?.forEach(task => {
@@ -196,7 +199,9 @@ export default function FeaturedHelpers({ searchTerm = '', selectedSkill = null,
                       <img
                         src={helper.avatar_url}
                         alt={helper.full_name || 'Helper'}
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover rounded-full"
+                        loading="lazy"
+                        decoding="async"
                       />
                     ) : (
                       <div className="h-full w-full flex items-center justify-center">

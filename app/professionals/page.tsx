@@ -10,8 +10,10 @@ import { helperMatchesSearch } from '@/lib/helper-constants'
 import { STANDARD_PROFESSIONS, helperMatchesProfession } from '@/lib/profession-constants'
 import { PROFESSION_CATEGORIES } from '@/lib/profession-categories'
 import { User as UserIcon } from 'lucide-react'
+import { useLanguage } from '@/lib/i18n'
 
 export default function ProfessionalsPage() {
+  const { t } = useLanguage()
   const router = useRouter()
   const [helpers, setHelpers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
@@ -36,7 +38,6 @@ export default function ProfessionalsPage() {
       setLoading(true)
       
       // Load all helpers, then filter for professionals in JavaScript
-      // (Supabase doesn't easily support filtering array columns for non-null)
       const { data: helpersData, error } = await supabase
         .from('profiles')
         .select('*')
@@ -149,7 +150,7 @@ export default function ProfessionalsPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading professionals...</p>
+          <p className="mt-4 text-gray-600">{t('professionals.loading')}</p>
         </div>
       </div>
     )
@@ -167,9 +168,9 @@ export default function ProfessionalsPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Professionals</h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('professionals.title')}</h1>
               <p className="text-gray-600">
-                Find qualified professionals ready to help with specialized services
+                {t('professionals.subtitle')}
               </p>
             </div>
             <button
@@ -179,7 +180,7 @@ export default function ProfessionalsPage() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
               </svg>
-              {showFilters ? 'Hide Filters' : 'Show Filters'}
+              {showFilters ? t('professionals.hideFilters') : t('professionals.showFilters')}
             </button>
           </div>
         </div>
@@ -191,13 +192,13 @@ export default function ProfessionalsPage() {
               {/* Search */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Search Professionals
+                  {t('professionals.searchProfessionals')}
                 </label>
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search by name, profession, offerings, or qualifications..."
+                  placeholder={t('professionals.searchPlaceholder')}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
@@ -205,7 +206,7 @@ export default function ProfessionalsPage() {
               {/* Profession Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Filter by Profession
+                  {t('professionals.filterByProfession')}
                 </label>
                 <select
                   value={selectedProfession || ''}
@@ -214,7 +215,7 @@ export default function ProfessionalsPage() {
                   }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
                 >
-                  <option value="">All Professions</option>
+                  <option value="">{t('professionals.allProfessions')}</option>
                   {availableProfessions.length > 0 ? (
                     availableProfessions.map(profession => (
                       <option key={profession} value={profession}>{profession}</option>
@@ -233,14 +234,14 @@ export default function ProfessionalsPage() {
         {/* Results Count */}
         <div className="mb-4">
           <p className="text-gray-600">
-            Found <span className="font-semibold text-gray-900">{filteredHelpers.length}</span> professional{filteredHelpers.length !== 1 ? 's' : ''}
+            {t('professionals.found')} <span className="font-semibold text-gray-900">{filteredHelpers.length}</span> {filteredHelpers.length !== 1 ? t('professionals.foundProfessionals') : t('professionals.foundProfessional')}
           </p>
         </div>
 
         {/* Professionals Grouped by Category */}
         {filteredHelpers.length === 0 ? (
           <div className="bg-white rounded-lg shadow-md p-12 text-center">
-            <p className="text-gray-600 text-lg">No professionals found matching your criteria.</p>
+            <p className="text-gray-600 text-lg">{t('professionals.noProfessionalsFound')}</p>
             <button
               onClick={() => {
                 setSearchTerm('')
@@ -248,7 +249,7 @@ export default function ProfessionalsPage() {
               }}
               className="mt-4 text-primary-600 hover:text-primary-700 font-medium"
             >
-              Clear filters
+              {t('professionals.clearFilters')}
             </button>
           </div>
         ) : (
@@ -271,14 +272,16 @@ export default function ProfessionalsPage() {
                       >
                         {/* Avatar */}
                         <div 
-                          className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 aspect-square rounded-full bg-gray-200 overflow-hidden flex-shrink-0 mb-3 min-w-[48px] min-h-[48px]"
+                          className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 aspect-square rounded-full bg-gray-200 overflow-hidden flex-shrink-0 mb-3 min-w-[48px] min-h-[48px] relative"
                           style={{ aspectRatio: '1 / 1' }}
                         >
                           {helper.avatar_url ? (
                             <img
                               src={helper.avatar_url}
                               alt={helper.full_name || 'Professional'}
-                              className="w-full h-full object-cover object-center"
+                              className="w-full h-full object-cover object-center rounded-full"
+                              loading="lazy"
+                              decoding="async"
                             />
                           ) : (
                             <div className="h-full w-full flex items-center justify-center">

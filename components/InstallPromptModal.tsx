@@ -1,6 +1,42 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useLanguage } from '@/lib/i18n'
+
+// Debug logging - only in development, and only for important events
+const isDev = process.env.NODE_ENV === 'development'
+const debugLog = (...args: any[]) => isDev && console.log(...args)
+const debugWarn = (...args: any[]) => {
+  // Only show warnings once per session to reduce noise
+  if (isDev && !(window as any).__pwaWarningsShown) {
+    (window as any).__pwaWarningsShown = true
+    console.warn(...args)
+  }
+}
+
+// Translations for the install modal
+const translations = {
+  en: {
+    title: 'Install Taskorilla',
+    subtitle: 'Get the full app experience!',
+    description: 'Install our app for quick access, offline support, and a better experience.',
+    worksOffline: 'Works offline',
+    fasterLoading: 'Faster loading',
+    homeScreenAccess: 'Home screen access',
+    notNow: 'Not Now',
+    install: 'Install'
+  },
+  pt: {
+    title: 'Instalar Taskorilla',
+    subtitle: 'Tenha a experiência completa!',
+    description: 'Instale a nossa app para acesso rápido, suporte offline e uma melhor experiência.',
+    worksOffline: 'Funciona offline',
+    fasterLoading: 'Carregamento mais rápido',
+    homeScreenAccess: 'Acesso no ecrã inicial',
+    notNow: 'Agora Não',
+    install: 'Instalar'
+  }
+}
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -13,8 +49,24 @@ export default function InstallPromptModal() {
   const [isInstalled, setIsInstalled] = useState(false)
   const [isDismissed, setIsDismissed] = useState(false)
   const [browserPromptDetected, setBrowserPromptDetected] = useState(false)
+  const [modalLanguage, setModalLanguage] = useState<'en' | 'pt'>('en') // Default to English
+  const { setLanguage } = useLanguage()
+  const effectRunRef = useRef(false)
+  
+  // Get translations based on modal language
+  const t = translations[modalLanguage]
+  
+  // Toggle language for modal and also update global language
+  const toggleLanguage = () => {
+    const newLang = modalLanguage === 'pt' ? 'en' : 'pt'
+    setModalLanguage(newLang)
+    setLanguage(newLang)
+  }
 
   useEffect(() => {
+    // Prevent duplicate runs (React StrictMode causes double renders in dev)
+    if (effectRunRef.current) return
+    effectRunRef.current = true
     // Check if app is already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true)
@@ -52,7 +104,7 @@ export default function InstallPromptModal() {
     const checkExistingPrompt = () => {
       // First check if browser is showing its prompt
       if (checkForBrowserPrompt()) {
-        console.log('⚠️ Browser native prompt detected, hiding custom modal')
+        debugLog('⚠️ Browser native prompt detected, hiding custom modal')
         return
       }
 
@@ -68,7 +120,7 @@ export default function InstallPromptModal() {
         }, 3000)
       } else {
         // If native prompt wasn't blocked, don't show our custom modal
-        console.log('⚠️ Native prompt not blocked, hiding custom modal')
+        debugWarn('⚠️ Native prompt not blocked, hiding custom modal')
         setBrowserPromptDetected(true)
       }
     }
@@ -145,10 +197,10 @@ export default function InstallPromptModal() {
       const { outcome } = await deferredPrompt.userChoice
 
       if (outcome === 'accepted') {
-        console.log('User accepted the install prompt')
+        debugLog('User accepted the install prompt')
         setIsInstalled(true)
       } else {
-        console.log('User dismissed the install prompt')
+        debugLog('User dismissed the install prompt')
       }
     } catch (error) {
       console.error('Error showing install prompt:', error)
@@ -174,6 +226,39 @@ export default function InstallPromptModal() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative">
+        {/* Language toggle - Portuguese flag */}
+        <button
+          onClick={toggleLanguage}
+          className="absolute top-4 left-4 w-7 h-5 overflow-hidden hover:opacity-80 transition-opacity"
+          aria-label={modalLanguage === 'pt' ? 'Switch to English' : 'Mudar para Português'}
+          title={modalLanguage === 'pt' ? 'Switch to English' : 'Mudar para Português'}
+        >
+          {modalLanguage === 'pt' ? (
+            // UK flag for English
+            <svg viewBox="0 0 60 30" className="w-full h-full">
+              <clipPath id="s"><path d="M0,0 v30 h60 v-30 z"/></clipPath>
+              <clipPath id="t"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath>
+              <g clipPath="url(#s)">
+                <path d="M0,0 v30 h60 v-30 z" fill="#012169"/>
+                <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" strokeWidth="6"/>
+                <path d="M0,0 L60,30 M60,0 L0,30" clipPath="url(#t)" stroke="#C8102E" strokeWidth="4"/>
+                <path d="M30,0 v30 M0,15 h60" stroke="#fff" strokeWidth="10"/>
+                <path d="M30,0 v30 M0,15 h60" stroke="#C8102E" strokeWidth="6"/>
+              </g>
+            </svg>
+          ) : (
+            // Portuguese flag
+            <svg viewBox="0 0 60 40" className="w-full h-full">
+              <rect width="60" height="40" fill="#FF0000"/>
+              <rect width="24" height="40" fill="#006600"/>
+              <circle cx="24" cy="20" r="8" fill="#FFCC00"/>
+              <circle cx="24" cy="20" r="6" fill="#FF0000"/>
+              <circle cx="24" cy="20" r="5" fill="#fff"/>
+              <circle cx="24" cy="20" r="3" fill="#002FA7"/>
+            </svg>
+          )}
+        </button>
+
         {/* Close button */}
         <button
           onClick={handleDismiss}
@@ -197,13 +282,13 @@ export default function InstallPromptModal() {
         {/* Content */}
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Install Taskorilla
+            {t.title}
           </h2>
           <p className="text-gray-600 mb-1">
-            Get the full app experience!
+            {t.subtitle}
           </p>
           <p className="text-sm text-gray-500">
-            Install our app for quick access, offline support, and a better experience.
+            {t.description}
           </p>
         </div>
 
@@ -213,19 +298,19 @@ export default function InstallPromptModal() {
             <svg className="w-5 h-5 text-[#FD9212] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
-            Works offline
+            {t.worksOffline}
           </div>
           <div className="flex items-center text-sm text-gray-700">
             <svg className="w-5 h-5 text-[#FD9212] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
-            Faster loading
+            {t.fasterLoading}
           </div>
           <div className="flex items-center text-sm text-gray-700">
             <svg className="w-5 h-5 text-[#FD9212] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
-            Home screen access
+            {t.homeScreenAccess}
           </div>
         </div>
 
@@ -235,13 +320,13 @@ export default function InstallPromptModal() {
             onClick={handleDismiss}
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
           >
-            Not Now
+            {t.notNow}
           </button>
           <button
             onClick={handleInstall}
             className="flex-1 px-4 py-2 bg-[#FD9212] text-white rounded-lg font-medium hover:bg-[#e8820f] transition-colors shadow-sm"
           >
-            Install
+            {t.install}
           </button>
         </div>
       </div>

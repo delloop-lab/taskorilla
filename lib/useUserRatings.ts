@@ -21,36 +21,42 @@ export function useUserRatings() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchRatings = async () => {
-      try {
-        setLoading(true)
-        setError(null)
+    // Defer ratings loading to not block initial page render
+    // Load in background after a short delay
+    const timeoutId = setTimeout(() => {
+      const fetchRatings = async () => {
+        try {
+          setLoading(true)
+          setError(null)
 
-        const { data, error: fetchError } = await supabase
-          .rpc('get_user_ratings_summary')
+          const { data, error: fetchError } = await supabase
+            .rpc('get_user_ratings_summary')
 
-        if (fetchError) {
-          throw fetchError
-        }
-
-        if (process.env.NODE_ENV === 'development') {
-          console.log('📊 Fetched user ratings:', data?.length || 0, 'users')
-          if (data && data.length > 0) {
-            console.log('📊 Sample ratings:', data.slice(0, 3))
-            console.log('📊 First rating keys:', Object.keys(data[0]))
-            console.log('📊 First rating full object:', JSON.stringify(data[0], null, 2))
+          if (fetchError) {
+            throw fetchError
           }
-        }
-        setUsers(data || [])
-      } catch (err: any) {
-        setError(err.message || 'Failed to fetch user ratings')
-        console.error('Error fetching user ratings:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
 
-    fetchRatings()
+          if (process.env.NODE_ENV === 'development') {
+            console.log('📊 Fetched user ratings:', data?.length || 0, 'users')
+            if (data && data.length > 0) {
+              console.log('📊 Sample ratings:', data.slice(0, 3))
+              console.log('📊 First rating keys:', Object.keys(data[0]))
+              console.log('📊 First rating full object:', JSON.stringify(data[0], null, 2))
+            }
+          }
+          setUsers(data || [])
+        } catch (err: any) {
+          setError(err.message || 'Failed to fetch user ratings')
+          console.error('Error fetching user ratings:', err)
+        } finally {
+          setLoading(false)
+        }
+      }
+
+      fetchRatings()
+    }, 100) // Small delay to let page start loading first
+
+    return () => clearTimeout(timeoutId)
   }, [])
 
   return { users, loading, error }

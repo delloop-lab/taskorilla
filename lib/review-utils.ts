@@ -26,7 +26,7 @@ interface CompletedTask {
 /**
  * Helper function to add timeout to promises
  */
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 10000): Promise<T> {
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 5000): Promise<T> {
   const timeoutPromise = new Promise<never>((_, reject) => {
     setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
   })
@@ -38,15 +38,16 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 10000): Promise
  */
 export async function getPendingReviews(userId: string): Promise<PendingReview[]> {
   try {
-    // Get all completed tasks where user participated
+    // Get all completed tasks where user participated (optimized with limit and order)
     const queryPromise = supabase
       .from('tasks')
       .select('id, title, created_by, assigned_to, status')
       .eq('status', 'completed')
       .or(`created_by.eq.${userId},assigned_to.eq.${userId}`)
-      .limit(100) // Limit to prevent large queries
+      .order('updated_at', { ascending: false }) // Most recent first
+      .limit(50) // Reduced limit for faster queries
 
-    const { data: completedTasks, error: tasksError } = await withTimeout(queryPromise as unknown as Promise<{ data: CompletedTask[] | null; error: any }>).catch(() => {
+    const { data: completedTasks, error: tasksError } = await withTimeout(queryPromise as unknown as Promise<{ data: CompletedTask[] | null; error: any }>, 3000).catch(() => {
       console.warn('Timeout fetching completed tasks for pending reviews')
       return { data: null, error: { message: 'Request timeout' } }
     }) as { data: CompletedTask[] | null; error: any }
@@ -57,14 +58,18 @@ export async function getPendingReviews(userId: string): Promise<PendingReview[]
     }
     if (!completedTasks || completedTasks.length === 0) return []
 
-    // Get all reviews the user has already left
+    // Get all reviews the user has already left (only for the tasks we're checking)
+    const taskIds = completedTasks.map((t: CompletedTask) => t.id)
+    if (taskIds.length === 0) return []
+    
     const reviewsQueryPromise = supabase
       .from('reviews')
       .select('task_id, reviewer_id, reviewee_id')
       .eq('reviewer_id', userId)
-      .limit(200) // Limit to prevent large queries
+      .in('task_id', taskIds) // Only get reviews for tasks we're checking
+      .limit(100) // Reduced limit
 
-    const { data: existingReviews, error: reviewsError } = await withTimeout(reviewsQueryPromise as unknown as Promise<any>).catch(() => {
+    const { data: existingReviews, error: reviewsError } = await withTimeout(reviewsQueryPromise as unknown as Promise<any>, 3000).catch(() => {
       console.warn('Timeout fetching existing reviews')
       return { data: null, error: { message: 'Request timeout' } }
     }) as any
@@ -79,13 +84,14 @@ export async function getPendingReviews(userId: string): Promise<PendingReview[]
     )
 
     // Get all reviews for these tasks to check if tasker has reviewed (for helpers)
+    // Only get reviews where tasker reviewed helper (for helper review eligibility check)
     const allReviewsQueryPromise = supabase
       .from('reviews')
       .select('task_id, reviewer_id, reviewee_id')
-      .in('task_id', completedTasks.map((t: { id: string }) => t.id))
-      .limit(500) // Limit to prevent large queries
+      .in('task_id', taskIds)
+      .limit(100) // Reduced limit
 
-    const { data: allTaskReviews, error: allReviewsError } = await withTimeout(allReviewsQueryPromise as unknown as Promise<any>).catch(() => {
+    const { data: allTaskReviews, error: allReviewsError } = await withTimeout(allReviewsQueryPromise as unknown as Promise<any>, 3000).catch(() => {
       console.warn('Timeout fetching all task reviews')
       return { data: null, error: { message: 'Request timeout' } }
     }) as any
@@ -110,6 +116,9 @@ export async function getPendingReviews(userId: string): Promise<PendingReview[]
 
     // Filter tasks that need reviews
     const pendingReviews: PendingReview[] = []
+    
+    // Collect all user IDs we need profiles for (to batch fetch)
+    const userIdsToFetch = new Set<string>()
 
     for (const task of completedTasks) {
       if (!task.assigned_to || !task.created_by) continue
@@ -121,38 +130,15 @@ export async function getPendingReviews(userId: string): Promise<PendingReview[]
         // Tasker can review immediately
         const reviewKey = `${task.id}-${task.assigned_to}`
         if (!reviewedTaskIds.has(reviewKey)) {
-          // Get helper profile (with timeout)
-          try {
-            const profileQuery = supabase
-              .from('profiles')
-              .select('full_name, avatar_url')
-              .eq('id', task.assigned_to)
-              .single()
-
-            const { data: helperProfile } = await withTimeout(profileQuery as unknown as Promise<any>, 5000).catch(() => {
-              console.warn('Timeout fetching helper profile')
-              return { data: null }
-            }) as any
-
-            pendingReviews.push({
-              task_id: task.id,
-              task_title: task.title,
-              other_user_id: task.assigned_to,
-              other_user_name: helperProfile?.full_name || null,
-              other_user_avatar: helperProfile?.avatar_url || null,
-              is_tasker: true,
-            })
-          } catch (error) {
-            // If profile fetch fails, still add the review but without profile data
-            pendingReviews.push({
-              task_id: task.id,
-              task_title: task.title,
-              other_user_id: task.assigned_to,
-              other_user_name: null,
-              other_user_avatar: null,
-              is_tasker: true,
-            })
-          }
+          userIdsToFetch.add(task.assigned_to)
+          pendingReviews.push({
+            task_id: task.id,
+            task_title: task.title,
+            other_user_id: task.assigned_to,
+            other_user_name: null, // Will be filled after batch fetch
+            other_user_avatar: null,
+            is_tasker: true,
+          })
         }
       } else if (isHelper) {
         // Helper can only review after tasker has reviewed
@@ -160,40 +146,48 @@ export async function getPendingReviews(userId: string): Promise<PendingReview[]
         if (taskerHasReviewed) {
           const reviewKey = `${task.id}-${task.created_by}`
           if (!reviewedTaskIds.has(reviewKey)) {
-            // Get tasker profile (with timeout)
-            try {
-              const profileQuery = supabase
-                .from('profiles')
-                .select('full_name, avatar_url')
-                .eq('id', task.created_by)
-                .single()
-
-              const { data: taskerProfile } = await withTimeout(profileQuery as unknown as Promise<any>, 5000).catch(() => {
-                console.warn('Timeout fetching tasker profile')
-                return { data: null }
-              }) as any
-
-              pendingReviews.push({
-                task_id: task.id,
-                task_title: task.title,
-                other_user_id: task.created_by,
-                other_user_name: taskerProfile?.full_name || null,
-                other_user_avatar: taskerProfile?.avatar_url || null,
-                is_tasker: false,
-              })
-            } catch (error) {
-              // If profile fetch fails, still add the review but without profile data
-              pendingReviews.push({
-                task_id: task.id,
-                task_title: task.title,
-                other_user_id: task.created_by,
-                other_user_name: null,
-                other_user_avatar: null,
-                is_tasker: false,
-              })
-            }
+            userIdsToFetch.add(task.created_by)
+            pendingReviews.push({
+              task_id: task.id,
+              task_title: task.title,
+              other_user_id: task.created_by,
+              other_user_name: null, // Will be filled after batch fetch
+              other_user_avatar: null,
+              is_tasker: false,
+            })
           }
         }
+      }
+    }
+
+    // Batch fetch all profiles at once (much faster than individual queries)
+    if (userIdsToFetch.size > 0) {
+      try {
+        const profileQuery = supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .in('id', Array.from(userIdsToFetch))
+          .limit(50)
+
+        const { data: profiles } = await withTimeout(profileQuery as unknown as Promise<any>, 3000).catch(() => {
+          console.warn('Timeout fetching profiles for pending reviews')
+          return { data: null }
+        }) as any
+
+        if (profiles && Array.isArray(profiles)) {
+          const profileMap = new Map(profiles.map((p: any) => [p.id, p]))
+          // Fill in profile data
+          pendingReviews.forEach(review => {
+            const profile = profileMap.get(review.other_user_id)
+            if (profile) {
+              review.other_user_name = profile.full_name || null
+              review.other_user_avatar = profile.avatar_url || null
+            }
+          })
+        }
+      } catch (error) {
+        console.warn('Error fetching profiles for pending reviews:', error)
+        // Continue without profile data - reviews will still work
       }
     }
 

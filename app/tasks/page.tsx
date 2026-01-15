@@ -17,14 +17,81 @@ import { useLanguage } from '@/lib/i18n'
 import { User as UserIcon } from 'lucide-react'
 import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
 import CompactUserRatingsDisplay from '@/components/CompactUserRatingsDisplay'
+import { getCachedTasks, setCachedTasks, clearTasksCache } from '@/lib/tasks-cache'
+
+// Debug logging - only in development
+const isDev = process.env.NODE_ENV === 'development'
+const debugLog = (...args: any[]) => isDev && console.log(...args)
+const debugWarn = (...args: any[]) => isDev && console.warn(...args)
 
 type FilterType = 'all' | 'open' | 'my_tasks' | 'new' | 'my_bids'
 
-// Loading fallback for Suspense
+// Skeleton card component for loading state
+function TaskSkeletonCard() {
+  return (
+    <div className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
+      {/* Image placeholder */}
+      <div className="w-full h-48 bg-gray-200"></div>
+      
+      <div className="p-4 sm:p-6">
+        {/* Title and price row */}
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex-1">
+            <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
+            <div className="h-8 bg-gray-200 rounded w-24"></div>
+          </div>
+          <div className="h-6 bg-gray-200 rounded w-16"></div>
+        </div>
+        
+        {/* Description */}
+        <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-5/6 mb-4"></div>
+        
+        {/* User row */}
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-7 h-7 bg-gray-200 rounded-full"></div>
+          <div className="h-4 bg-gray-200 rounded w-32"></div>
+        </div>
+        
+        {/* Bottom info */}
+        <div className="border-t border-gray-200 pt-4 mt-4">
+          <div className="flex flex-wrap gap-3">
+            <div className="h-4 bg-gray-200 rounded w-24"></div>
+            <div className="h-4 bg-gray-200 rounded w-20"></div>
+            <div className="h-4 bg-gray-200 rounded w-16"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Loading fallback for Suspense - show immediately with realistic skeleton
 function TasksPageLoading() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="text-center">Loading tasks...</div>
+      {/* Header skeleton */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
+        <div className="flex gap-2">
+          <div className="h-10 bg-gray-200 rounded w-24 animate-pulse"></div>
+          <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
+        </div>
+      </div>
+      
+      {/* Filter tabs skeleton */}
+      <div className="flex gap-2 mb-6">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-10 bg-gray-200 rounded w-24 animate-pulse"></div>
+        ))}
+      </div>
+      
+      {/* Task cards skeleton */}
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-2">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <TaskSkeletonCard key={i} />
+        ))}
+      </div>
     </div>
   )
 }
@@ -42,6 +109,7 @@ function TasksPageContent() {
   const { t } = useLanguage()
   const router = useRouter()
   const searchParams = useSearchParams()
+  // Load ratings in background - don't block page rendering
   const { users: userRatings, loading: ratingsLoading } = useUserRatings()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
@@ -80,10 +148,14 @@ function TasksPageContent() {
   const [reportTargetName, setReportTargetName] = useState<string | null>(null)
   const [reportType, setReportType] = useState<'task' | 'user'>('task')
   const [sessionReady, setSessionReady] = useState(false)
+  const [compactView, setCompactView] = useState(false) // Default to full cards view
   
   // Simple version counter to track which load is current
   const loadVersionRef = useRef(0)
   const initialLoadDoneRef = useRef(false)
+  const initialLoadStartedRef = useRef(false) // Prevent duplicate initial loads
+  const loadTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isLoadingRef = useRef(false)
 
   const loadCategories = async () => {
     try {
@@ -203,28 +275,66 @@ function TasksPageContent() {
   /**
    * Load tasks based on the provided filter
    * Uses version counter to ignore stale results
+   * Uses caching for faster repeat visits
    */
-  const loadTasks = async (activeFilter: FilterType) => {
+  const loadTasks = async (activeFilter: FilterType, skipCache: boolean = false) => {
+    const startTime = performance.now()
+    
+    // Check cache first for instant display (only for simple 'open' filter with no extra filters)
+    const hasNoExtraFilters = 
+      selectedCategory === 'all' &&
+      selectedSubCategory === 'all' &&
+      !minBudget &&
+      !maxBudget &&
+      !searchTerm.trim() &&
+      !showArchived &&
+      !isAdmin
+    
+    if (!skipCache && activeFilter === 'open' && hasNoExtraFilters) {
+      const cachedTasks = getCachedTasks('open')
+      if (cachedTasks && cachedTasks.length > 0) {
+        debugLog(`⏱️ Using cached tasks - instant display`)
+        setTasks(cachedTasks)
+        setLoading(false)
+        initialLoadDoneRef.current = true
+        // Still fetch fresh data in background
+        setTimeout(() => loadTasks(activeFilter, true), 100)
+        return
+      }
+    }
+    
     // Increment version to invalidate any in-progress loads
     loadVersionRef.current += 1
     const thisVersion = loadVersionRef.current
+    isLoadingRef.current = true
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🔍 loadTasks started - Filter: ${activeFilter}, Version: ${thisVersion}`)
+    debugLog(`⏱️ [${thisVersion}] loadTasks START - Filter: ${activeFilter} @ ${startTime.toFixed(2)}ms`)
+    
+    // Show loading state immediately (don't wait for anything)
+    // Only show loading if we don't have tasks yet (to avoid flicker)
+    if (tasks.length === 0) {
+      setLoading(true)
     }
     
-    setLoading(true)
-    
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
       // Check if this load is still current
       if (loadVersionRef.current !== thisVersion) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`⏸️ Load ${thisVersion} cancelled - newer load started`)
-        }
+        debugLog(`⏱️ [${thisVersion}] CANCELLED early @ ${(performance.now() - startTime).toFixed(2)}ms`)
+        isLoadingRef.current = false
         return
       }
+      
+      // For 'open' filter, skip user check entirely - not needed for query
+      // For other filters, get user as needed
+      let user: any = null
+      if (activeFilter !== 'open') {
+        const userCheckStart = performance.now()
+        const { data: { user: authUser } } = await supabase.auth.getUser()
+        user = authUser
+        debugLog(`⏱️ [${thisVersion}] User check: ${(performance.now() - userCheckStart).toFixed(2)}ms`)
+      }
+      
+      const queryBuildStart = performance.now()
       
       // For 'my_bids' filter, get task IDs related to user's bidding activity
       // This includes (ONLY OPEN TASKS):
@@ -235,19 +345,13 @@ function TasksPageContent() {
       let myTasksWithBidCounts: Map<string, number> = new Map() // Track bid counts on user's tasks
       
       if (activeFilter === 'my_bids') {
+        const myBidsStart = performance.now()
         if (!user) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('🔍 my_bids filter - no user, showing empty')
-          }
           if (loadVersionRef.current === thisVersion) {
             setTasks([])
             setLoading(false)
           }
           return
-        }
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔍 my_bids filter - User ID:', user.id)
         }
         
         // Query 1: Get OPEN tasks where user placed bids (with task status join)
@@ -270,9 +374,6 @@ function TasksPageContent() {
         
         const tasksIBidOn = [...new Set((myPlacedBids || []).map(b => b.task_id).filter(Boolean))]
         tasksIBidOn.forEach(id => tasksUserBidOn.add(id))
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔍 my_bids filter - Open tasks I placed bids on:', tasksIBidOn.length, tasksIBidOn)
-        }
         
         // Query 2: Get user's OPEN tasks that have bids on them
         let myTasksQuery = supabase
@@ -314,162 +415,159 @@ function TasksPageContent() {
           })
           
           tasksWithBidsOnThem = [...new Set((bidsOnMyTasks || []).map(b => b.task_id).filter(Boolean))]
-          if (process.env.NODE_ENV === 'development') {
-            console.log('🔍 my_bids filter - My open tasks with bids from others:', tasksWithBidsOnThem.length, tasksWithBidsOnThem)
-            console.log('🔍 my_bids filter - Bid counts per task:', Object.fromEntries(myTasksWithBidCounts))
-          }
         }
         
         // Check if cancelled
         if (loadVersionRef.current !== thisVersion) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`⏸️ Load ${thisVersion} cancelled after bids queries`)
-          }
+          isLoadingRef.current = false
           return
         }
         
         // Combine both: tasks I bid on + my tasks that have bids
         taskIdsWithBids = [...new Set([...tasksIBidOn, ...tasksWithBidsOnThem])]
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`🔍 my_bids filter - Total unique open tasks: ${taskIdsWithBids.length}`)
-          console.log(`🔍 my_bids filter - Task IDs:`, taskIdsWithBids)
-        }
+        debugLog(`⏱️ [${thisVersion}] my_bids queries: ${(performance.now() - myBidsStart).toFixed(2)}ms, Found ${taskIdsWithBids.length} tasks`)
         
         if (taskIdsWithBids.length === 0) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('🔍 my_bids filter - No bid-related open tasks found')
-          }
           if (loadVersionRef.current === thisVersion) {
             setTasks([])
             setLoading(false)
+            isLoadingRef.current = false
           }
           return
         }
       }
       
-      // Build query
-      let query = supabase.from('tasks').select('*')
+      // hasNoExtraFilters is defined at the top of the function
       
-      // Check admin status
-      let userIsAdmin = false
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single()
-        userIsAdmin = profile?.role === 'admin' || profile?.role === 'superadmin'
-        setIsAdmin(userIsAdmin)
-      }
+      const queryBuildTime = performance.now() - queryBuildStart
+      const queryStartTime = performance.now()
+      debugLog(`⏱️ [${thisVersion}] Query build: ${queryBuildTime.toFixed(2)}ms`)
       
-      // Filter hidden tasks for non-admins
-      if (!userIsAdmin) {
-        query = query.eq('hidden_by_admin', false)
-      }
+      let tasksData: any[] | null = null
+      let error: any = null
       
-      // Filter archived tasks based on showArchived checkbox
-      // This applies to ALL filters now (including my_bids and my_tasks)
-      if (!showArchived) {
-        query = query.eq('archived', false)
-      }
-      
-      // Apply filter-specific conditions
-      switch (activeFilter) {
-        case 'open':
-          query = query.eq('status', 'open')
-          break
-          
-        case 'my_tasks':
-          if (user) {
-            query = query.or(`created_by.eq.${user.id},assigned_to.eq.${user.id}`)
-          } else {
-            query = query.eq('created_by', '00000000-0000-0000-0000-000000000000')
-          }
-          break
-          
-        case 'new':
-          const sevenDaysAgo = new Date()
-          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-          query = query
+      // Use fast RPC function for simple 'open' filter (bypasses RLS for speed)
+      if (activeFilter === 'open' && hasNoExtraFilters) {
+        debugLog(`⏱️ [${thisVersion}] Using fast RPC function for open tasks`)
+        const result = await supabase.rpc('get_open_tasks', { task_limit: 50 })
+        tasksData = result.data
+        error = result.error
+        
+        // Fallback to regular query if RPC fails (function might not exist yet)
+        if (error && error.code === 'PGRST202') {
+          debugLog(`⏱️ [${thisVersion}] RPC function not found, falling back to regular query`)
+          error = null
+          const fallbackResult = await supabase
+            .from('tasks')
+            .select('*')
             .eq('status', 'open')
-            .gte('created_at', sevenDaysAgo.toISOString())
-          break
-          
-        case 'my_bids':
-          if (taskIdsWithBids.length > 0) {
-            query = query
-              .in('id', taskIdsWithBids)
-              .eq('status', 'open') // Only show open tasks in Bids filter
-          }
-          break
-          
-        case 'all':
-        default:
-          // No filter - handled client-side
-          break
-      }
-      
-      // Apply additional filters
-      if (selectedCategory !== 'all' && !selectedCategory.startsWith('skill-') && !selectedCategory.startsWith('service-') && !selectedCategory.startsWith('prof-')) {
-        query = query.eq('category_id', selectedCategory)
-      }
-      
-      if (selectedSubCategory !== 'all' && selectedSubCategory) {
-        query = query.eq('sub_category_id', selectedSubCategory)
-      }
-      
-      if (minBudget) {
-        query = query.gte('budget', Number(minBudget))
-      }
-      
-      if (maxBudget) {
-        query = query.lte('budget', Number(maxBudget))
-      }
-      
-      if (searchTerm.trim()) {
-        const words = searchTerm.trim().split(/\s+/).filter(w => w.length > 0)
-        if (words.length > 0) {
-          const searchConditions = words.map(word => {
-            const escapedWord = word.replace(/[%_\\]/g, '\\$&')
-            return `title.ilike.%${escapedWord}%,description.ilike.%${escapedWord}%`
-          }).join(',')
-          query = query.or(searchConditions)
+            .eq('hidden_by_admin', false)
+            .eq('archived', false)
+            .order('created_at', { ascending: false })
+            .limit(50)
+          tasksData = fallbackResult.data
+          error = fallbackResult.error
         }
+      } else {
+        // Build regular query for other filters
+        let query = supabase.from('tasks').select('*')
+        
+        // Apply essential filters first (most selective)
+        if (!isAdmin) {
+          query = query.eq('hidden_by_admin', false)
+        }
+        if (!showArchived) {
+          query = query.eq('archived', false)
+        }
+        
+        // Apply filter-specific conditions (most selective first)
+        switch (activeFilter) {
+          case 'open':
+            query = query.eq('status', 'open')
+            break
+          case 'my_tasks':
+            if (user) {
+              query = query.or(`created_by.eq.${user.id},assigned_to.eq.${user.id}`)
+            } else {
+              query = query.eq('created_by', '00000000-0000-0000-0000-000000000000')
+            }
+            break
+          case 'new':
+            const sevenDaysAgo = new Date()
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+            query = query.eq('status', 'open').gte('created_at', sevenDaysAgo.toISOString())
+            break
+          case 'my_bids':
+            if (taskIdsWithBids.length > 0) {
+              query = query.in('id', taskIdsWithBids).eq('status', 'open')
+            }
+            break
+        }
+        
+        // Apply additional filters (less selective, but still important)
+        if (selectedCategory !== 'all' && !selectedCategory.startsWith('skill-') && !selectedCategory.startsWith('service-') && !selectedCategory.startsWith('prof-')) {
+          query = query.eq('category_id', selectedCategory)
+        }
+        if (selectedSubCategory !== 'all' && selectedSubCategory) {
+          query = query.eq('sub_category_id', selectedSubCategory)
+        }
+        if (minBudget) {
+          query = query.gte('budget', Number(minBudget))
+        }
+        if (maxBudget) {
+          query = query.lte('budget', Number(maxBudget))
+        }
+        if (searchTerm.trim()) {
+          const words = searchTerm.trim().split(/\s+/).filter(w => w.length > 0)
+          if (words.length > 0) {
+            const searchConditions = words.map(word => {
+              const escapedWord = word.replace(/[%_\\]/g, '\\$&')
+              return `title.ilike.%${escapedWord}%,description.ilike.%${escapedWord}%`
+            }).join(',')
+            query = query.or(searchConditions)
+          }
+        }
+        
+        // Execute query immediately - this is the critical path
+        query = query.order('created_at', { ascending: false }).limit(50)
+        
+        const result = await query
+        tasksData = result.data
+        error = result.error
       }
       
-      // Execute query
-      query = query.order('created_at', { ascending: false })
-      
-      const { data: tasksData, error } = await query
+      const queryEndTime = performance.now()
+      const queryTime = queryEndTime - queryStartTime
+      debugLog(`⏱️ [${thisVersion}] Main query: ${queryTime.toFixed(2)}ms, Got ${tasksData?.length || 0} tasks`)
+      if (queryTime > 2000) {
+        debugWarn(`⚠️ Slow query detected (${(queryTime/1000).toFixed(1)}s). Run database indexes: supabase/optimize_tasks_query_performance.sql`)
+      }
       
       // Check if cancelled
       if (loadVersionRef.current !== thisVersion) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`⏸️ Load ${thisVersion} cancelled after tasks query`)
-        }
+        debugLog(`⏱️ [${thisVersion}] CANCELLED after query @ ${(performance.now() - startTime).toFixed(2)}ms`)
+        isLoadingRef.current = false
         return
       }
       
       if (error) {
-        console.error('Query error:', error)
+        console.error(`⏱️ [${thisVersion}] Query error @ ${(performance.now() - startTime).toFixed(2)}ms:`, error)
         setLoading(false)
+        isLoadingRef.current = false
         return
-      }
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`📦 Query returned ${tasksData?.length || 0} tasks for filter: ${activeFilter}`)
       }
       
       if (!tasksData || tasksData.length === 0) {
         if (loadVersionRef.current === thisVersion) {
           setTasks([])
           setLoading(false)
+          isLoadingRef.current = false
         }
         return
       }
       
-      // Fetch related data
+      // Fetch related data in parallel
+      const relatedDataStart = performance.now()
       const creatorIds = Array.from(new Set(tasksData.map(t => t.created_by)))
       const categoryIds = Array.from(new Set(tasksData.flatMap(t => [t.category_id, t.sub_category_id]).filter(Boolean)))
       const taskIds = tasksData.map(t => t.id)
@@ -483,11 +581,13 @@ function TasksPageContent() {
         supabase.from('bids').select('task_id, id').in('task_id', taskIds)
       ])
       
+      const relatedDataEnd = performance.now()
+      debugLog(`⏱️ [${thisVersion}] Related data queries: ${(relatedDataEnd - relatedDataStart).toFixed(2)}ms`)
+      
       // Check if cancelled
       if (loadVersionRef.current !== thisVersion) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`⏸️ Load ${thisVersion} cancelled after related data query`)
-        }
+        debugLog(`⏱️ [${thisVersion}] CANCELLED after related data @ ${(performance.now() - startTime).toFixed(2)}ms`)
+        isLoadingRef.current = false
         return
       }
       
@@ -509,33 +609,28 @@ function TasksPageContent() {
       })
       
       // Create a map of user ratings from the SQL function results
-      // The SQL function returns 'reviewee_id' as the user identifier
+      const processStart = performance.now()
       const ratingsMap = new Map(
         userRatings.map((r: any) => [r.reviewee_id, r])
       )
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`📊 Ratings map size: ${ratingsMap.size}, Total ratings: ${userRatings.length}`)
-        console.log('📊 Ratings map keys (user IDs):', Array.from(ratingsMap.keys()).slice(0, 5))
-      }
       
-      // Map tasks with profiles
+      // Map tasks with profiles (optimized - no excessive logging)
       let tasksWithProfiles = tasksData.map(task => {
         const creator = profilesData.find(p => p.id === task.created_by)
         const userRating = getUserRatingsById(task.created_by, ratingsMap)
-        if (userRating) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`⭐ Found ratings for ${creator?.full_name || creator?.email} (${task.created_by}): Tasker=${userRating.tasker_avg_rating} (${userRating.tasker_review_count} reviews), Helper=${userRating.helper_avg_rating} (${userRating.helper_review_count} reviews)`)
-          }
-        } else if (creator && process.env.NODE_ENV === 'development') {
-          console.log(`❌ No ratings found for ${creator?.full_name || creator?.email} (${task.created_by})`)
-        }
         const categoryObj = task.category_id ? categoriesData.find(c => c.id === task.category_id) : null
         const subCategoryObj = task.sub_category_id ? categoriesData.find(c => c.id === task.sub_category_id) : null
         const tags = tagsByTaskId[task.id] || []
         
+        // Calculate distance if user location is available (non-blocking)
         let distance: number | undefined = undefined
         if (userLocation && task.latitude && task.longitude) {
-          distance = calculateDistance(userLocation.lat, userLocation.lng, task.latitude, task.longitude)
+          try {
+            distance = calculateDistance(userLocation.lat, userLocation.lng, task.latitude, task.longitude)
+          } catch (err) {
+            // Distance calculation failed, continue without it
+            debugWarn('Distance calculation failed:', err)
+          }
         }
         
         let matchesSkills = false
@@ -735,21 +830,31 @@ function TasksPageContent() {
       })
       
       // Final check before updating state
+      const processEnd = performance.now()
+      debugLog(`⏱️ [${thisVersion}] Processing tasks: ${(processEnd - processStart).toFixed(2)}ms`)
+      
       if (loadVersionRef.current === thisVersion) {
         setTasks(tasksWithProfiles)
         setLoading(false)
-        initialLoadDoneRef.current = true // Mark initial load as done
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`✅ Load ${thisVersion} complete - ${tasksWithProfiles.length} tasks for filter: ${activeFilter}`)
+        initialLoadDoneRef.current = true
+        isLoadingRef.current = false
+        const totalTime = performance.now() - startTime
+        debugLog(`⏱️ [${thisVersion}] ✅ COMPLETE - ${tasksWithProfiles.length} tasks, Total: ${totalTime.toFixed(2)}ms`)
+        
+        // Cache the results for faster subsequent loads (only for 'open' filter with no extra filters)
+        if (activeFilter === 'open' && hasNoExtraFilters) {
+          setCachedTasks(tasksWithProfiles, 'open')
         }
-      } else if (process.env.NODE_ENV === 'development') {
-        console.log(`⏸️ Load ${thisVersion} completed but newer load exists, discarding`)
+      } else {
+        debugLog(`⏱️ [${thisVersion}] DISCARDED (newer load exists) @ ${(performance.now() - startTime).toFixed(2)}ms`)
+        isLoadingRef.current = false
       }
       
     } catch (error) {
       console.error('Error loading tasks:', error)
       if (loadVersionRef.current === thisVersion) {
         setLoading(false)
+        isLoadingRef.current = false
       }
     }
   }
@@ -763,23 +868,40 @@ function TasksPageContent() {
     return 'open' // Default to Open Tasks
   }
 
-  // Initialize page
+  // Initialize page - CRITICAL: Run immediately, don't wait for anything
   useEffect(() => {
     if (typeof window === 'undefined') return
+    
+    // Prevent duplicate initial loads (check BEFORE starting)
+    if (initialLoadStartedRef.current) return
+    initialLoadStartedRef.current = true
+
+    // Start loading tasks IMMEDIATELY - before anything else
+    const activeFilter = getActiveFilter()
+    setFilter(activeFilter)
+    setSessionReady(true)
+    loadTasks(activeFilter) // Load tasks FIRST, don't wait
 
     const storedLastView = localStorage.getItem('tasks_last_view_time')
     setLastViewTime(storedLastView)
 
     const initPage = async () => {
+      // Load other data in parallel (non-blocking) - tasks already loading
       const { data: { user: authUser } } = await supabase.auth.getUser()
       
       if (authUser) {
         setCurrentUserId(authUser.id)
+        
+        // Check profile completeness and admin status in one query
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name, country, phone_country_code, phone_number, skills')
+          .select('full_name, country, phone_country_code, phone_number, skills, role')
           .eq('id', authUser.id)
           .single()
+
+        // Check admin status once and cache it
+        const userIsAdmin = profile?.role === 'admin' || profile?.role === 'superadmin'
+        setIsAdmin(userIsAdmin)
 
         if (!isProfileComplete(profile)) {
           router.push('/profile?setup=required')
@@ -790,21 +912,20 @@ function TasksPageContent() {
           setUserSkills(profile.skills)
         }
         
-        await loadUserLocation()
+        // Load user location in background (non-blocking)
+        loadUserLocation().catch(err => console.error('Error loading location:', err))
       } else {
         setCurrentUserId(null)
         setUserLocation(null)
+        setIsAdmin(false)
       }
 
-      loadCategories()
-      loadTags()
-      loadProfessions()
-      
-      // Mark session ready and load tasks
-      setSessionReady(true)
-      const activeFilter = getActiveFilter()
-      setFilter(activeFilter)
-      loadTasks(activeFilter)
+      // Load categories, tags, professions in parallel (non-blocking)
+      Promise.all([
+        loadCategories(),
+        loadTags(),
+        loadProfessions()
+      ]).catch(err => console.error('Error loading filter data:', err))
     }
 
     initPage()
@@ -836,48 +957,84 @@ function TasksPageContent() {
     }
   }, [])
 
-  // Sync filter from URL when URL changes
+  // Sync filter from URL when URL changes (but not on initial mount - that's handled by initPage)
   useEffect(() => {
-    if (!sessionReady) return
+    if (!sessionReady || !initialLoadDoneRef.current) return // Don't run on initial mount
     
     const urlFilter = searchParams.get('filter') as FilterType | null
+    // Only react to explicit URL filter changes - don't default here (getActiveFilter handles defaults)
     if (urlFilter && ['all', 'open', 'my_tasks', 'new', 'my_bids'].includes(urlFilter)) {
       if (filter !== urlFilter) {
+        // Clear any pending reload
+        if (loadTimeoutRef.current) {
+          clearTimeout(loadTimeoutRef.current)
+        }
+        
         if (process.env.NODE_ENV === 'development') {
-          console.log(`🔄 URL filter changed to: ${urlFilter}`)
+          debugLog(`🔄 URL filter changed to: ${urlFilter}`)
         }
         setFilter(urlFilter)
+        // Load immediately for filter changes (no debounce needed)
         loadTasks(urlFilter)
       }
-    } else if (!urlFilter && filter !== 'open') {
-      // Default to 'open' when no URL filter
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🔄 No URL filter, defaulting to: open`)
-      }
-      setFilter('open')
-      loadTasks('open')
     }
-  }, [searchParams])
+    // Removed: else clause that was defaulting to 'open' - this was causing duplicate loads
+    // The initial load already handles defaults via getActiveFilter()
+  }, [searchParams, sessionReady, filter])
 
-  // Reload tasks when ratings finish loading (to attach ratings to existing tasks)
-  // Only reload if we already have tasks loaded (don't reload on initial load)
+  // Reload tasks when ratings finish loading (to attach ratings to tasks)
+  // This ensures tasks get ratings even if they loaded before ratings were ready
+  // Use debouncing to prevent rapid reloads
   useEffect(() => {
-    if (!sessionReady || ratingsLoading || !initialLoadDoneRef.current) return
+    if (!sessionReady || ratingsLoading) return
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🔄 Ratings finished loading, reprocessing tasks to attach ratings`)
+    // Only reload if initial load is done (to avoid double-loading on initial mount)
+    // After initial load completes, reload when ratings become available
+    if (initialLoadDoneRef.current && userRatings.length > 0) {
+      // Clear any pending reload
+      if (loadTimeoutRef.current) {
+        clearTimeout(loadTimeoutRef.current)
+      }
+      
+      // Debounce the reload
+      loadTimeoutRef.current = setTimeout(() => {
+        if (process.env.NODE_ENV === 'development') {
+          debugLog(`🔄 Ratings finished loading (${userRatings.length} users), reprocessing tasks to attach ratings`)
+        }
+        loadTasks(filter)
+      }, 300) // 300ms debounce
     }
-    loadTasks(filter)
-  }, [ratingsLoading, sessionReady])
+
+    return () => {
+      if (loadTimeoutRef.current) {
+        clearTimeout(loadTimeoutRef.current)
+      }
+    }
+  }, [ratingsLoading, sessionReady, userRatings.length, filter])
 
   // Reload when other filters change (but not on initial load)
+  // Use debouncing to prevent rapid reloads when user is typing/selecting
   useEffect(() => {
     if (!sessionReady || !initialLoadDoneRef.current) return
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🔄 Filter parameters changed, reloading with filter: ${filter}`)
+    // Clear any pending reload
+    if (loadTimeoutRef.current) {
+      clearTimeout(loadTimeoutRef.current)
     }
-    loadTasks(filter)
+    
+    // Debounce the reload - wait 500ms after last filter change
+    loadTimeoutRef.current = setTimeout(() => {
+      if (process.env.NODE_ENV === 'development') {
+        debugLog(`🔄 Filter parameters changed, reloading with filter: ${filter}`)
+      }
+      loadTasks(filter)
+    }, 500) // 500ms debounce for filter changes
+
+    return () => {
+      if (loadTimeoutRef.current) {
+        clearTimeout(loadTimeoutRef.current)
+      }
+    }
   }, [
     selectedCategory,
     selectedSubCategory,
@@ -890,7 +1047,9 @@ function TasksPageContent() {
     showArchived,
     filterBySkills,
     maxDistance,
-    minimumRating
+    minimumRating,
+    filter,
+    sessionReady
   ])
 
   // Load subcategories when category changes
@@ -911,33 +1070,53 @@ function TasksPageContent() {
   }, [searchTerm, selectedCategory, selectedSubCategory, selectedProfession, selectedSkill, minBudget, maxBudget, maxDistance, minimumRating, selectedTagIds])
 
   // Reload when user location becomes available (but not on initial load)
+  // Use debouncing to prevent rapid reloads
   useEffect(() => {
     if (sessionReady && userLocation && initialLoadDoneRef.current) {
-      loadTasks(filter)
+      // Clear any pending reload
+      if (loadTimeoutRef.current) {
+        clearTimeout(loadTimeoutRef.current)
+      }
+      
+      // Debounce the reload
+      loadTimeoutRef.current = setTimeout(() => {
+        loadTasks(filter)
+      }, 300)
     }
-  }, [userLocation])
 
-  // Load pending reviews
+    return () => {
+      if (loadTimeoutRef.current) {
+        clearTimeout(loadTimeoutRef.current)
+      }
+    }
+  }, [userLocation, sessionReady, filter])
+
+  // Load pending reviews in background (non-blocking)
   useEffect(() => {
-    const loadPendingReviewsData = async () => {
-      if (!currentUserId) {
-        setPendingReviews([])
-        return
-      }
-
-      try {
-        const reviews = await getPendingReviews(currentUserId)
-        setPendingReviews(reviews)
-        if (typeof window !== 'undefined') {
-          const params = new URLSearchParams(window.location.search)
-          setShowPendingReviews(params.get('pending_reviews') === 'true')
-        }
-      } catch (error) {
-        console.error('Error loading pending reviews:', error)
-      }
+    if (!currentUserId) {
+      setPendingReviews([])
+      return
     }
 
-    loadPendingReviewsData()
+    // Load reviews after a delay to not block initial page load
+    const timeoutId = setTimeout(() => {
+      const loadPendingReviewsData = async () => {
+        try {
+          const reviews = await getPendingReviews(currentUserId)
+          setPendingReviews(reviews)
+          if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search)
+            setShowPendingReviews(params.get('pending_reviews') === 'true')
+          }
+        } catch (error) {
+          console.error('Error loading pending reviews:', error)
+          // Don't block page - just log error
+        }
+      }
+      loadPendingReviewsData()
+    }, 2000) // Load after 2 seconds, after main page content loads
+
+    return () => clearTimeout(timeoutId)
   }, [currentUserId])
 
   // Track task views for NEW banner
@@ -986,7 +1165,7 @@ function TasksPageContent() {
 
   // Handle filter button click
   const handleFilterClick = (newFilter: FilterType) => {
-    console.log(`🖱️ Filter button clicked: ${newFilter}`)
+    debugLog(`🖱️ Filter button clicked: ${newFilter}`)
     setFilter(newFilter)
     router.push(`/tasks?filter=${newFilter}`)
     loadTasks(newFilter)
@@ -995,7 +1174,28 @@ function TasksPageContent() {
   if (loading && tasks.length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center">Loading tasks...</div>
+        {/* Header skeleton */}
+        <div className="flex justify-between items-center mb-6">
+          <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
+          <div className="flex gap-2">
+            <div className="h-10 bg-gray-200 rounded w-24 animate-pulse"></div>
+            <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
+          </div>
+        </div>
+        
+        {/* Filter tabs skeleton */}
+        <div className="flex gap-2 mb-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-10 bg-gray-200 rounded w-24 animate-pulse"></div>
+          ))}
+        </div>
+        
+        {/* Task cards skeleton */}
+        <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-2">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <TaskSkeletonCard key={i} />
+          ))}
+        </div>
       </div>
     )
   }
@@ -1019,7 +1219,7 @@ function TasksPageContent() {
                   You have {pendingReviews.length} pending review{pendingReviews.length !== 1 ? 's' : ''}!
                 </h3>
                 <p className="text-sm text-gray-700 mb-4">
-                  Please leave reviews for completed tasks to help build trust in the community.
+                  {t('tasks.pendingReviewsMessage')}
                 </p>
                 <div className="space-y-2">
                   {pendingReviews.slice(0, 3).map((review) => (
@@ -1150,14 +1350,14 @@ function TasksPageContent() {
         {currentUserId && (
           <button
             onClick={() => handleFilterClick('my_bids')}
-            title="All Bids"
+            title={t('tasks.allBids')}
             className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium ${
               filter === 'my_bids'
                 ? 'bg-primary-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-50'
             }`}
           >
-            Bids
+            {t('tasks.bids')}
           </button>
         )}
         {currentUserId && (
@@ -1426,7 +1626,47 @@ function TasksPageContent() {
         </div>
       )}
 
-      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-2 items-start">
+      {/* View toggle and results count */}
+      {!loading && tasks.length > 0 && (
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm text-gray-600">
+            {tasks.length} {tasks.length !== 1 ? t('tasks.tasksFound') : t('tasks.taskFound')}
+          </p>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500 hidden sm:inline">{t('tasks.view')}:</span>
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setCompactView(true)}
+                className={`p-2 rounded-md transition-colors ${
+                  compactView 
+                    ? 'bg-white text-primary-600 shadow-sm' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                title={t('tasks.compactView')}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setCompactView(false)}
+                className={`p-2 rounded-md transition-colors ${
+                  !compactView 
+                    ? 'bg-white text-primary-600 shadow-sm' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                title={t('tasks.fullView')}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className={`grid gap-4 sm:gap-6 items-start ${compactView ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-2'}`}>
         {tasks.length === 0 && !loading ? (
           <div className="col-span-full text-center py-12 text-gray-500">
             {t('tasks.noTasksFound')}
@@ -1473,122 +1713,174 @@ function TasksPageContent() {
                   isAdmin && task.hidden_by_admin ? 'border-2 border-red-300 bg-red-50' : ''
                 }`}
               >
-                {showSampleSash && (
-                  <div className="absolute top-0 left-0 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[0.7875rem] font-bold px-[5.4] py-[1.8] rounded-br-lg shadow-lg z-10 transform -rotate-12 origin-top-left uppercase tracking-wider">
-                    SAMPLE
-                  </div>
-                )}
-                {isNew && !isSample && (
-                  <div className="absolute top-0 right-0 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold px-3 sm:px-4 py-1 rounded-bl-lg rounded-tr-lg shadow-lg z-10 transform rotate-12 origin-top-right">
-                    NEW
-                  </div>
-                )}
-                {task.image_url && (
-                  <div className="w-full h-48 sm:h-64 bg-gray-100 overflow-hidden flex items-center justify-center">
-                    <img
-                      src={task.image_url}
-                      alt={task.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-
-                <div className="p-4 sm:p-6 flex flex-col">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 sm:mb-2 break-words">{task.title}</h3>
-                      <p className="text-2xl sm:text-3xl font-bold text-primary-600">{task.budget ? `€${task.budget}` : 'Quote'}</p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap flex-shrink-0">
-                    {isAdmin && task.hidden_by_admin && (
-                      <span className="px-2 sm:px-2.5 py-1 text-xs font-bold rounded uppercase bg-red-600 text-white whitespace-nowrap">
-                        🔒 HIDDEN
-                      </span>
+                {/* COMPACT VIEW */}
+                {compactView ? (
+                  <div className="p-4">
+                    {/* Title - first line */}
+                    <h3 className="text-base font-semibold text-gray-900 mb-1 line-clamp-2">{task.title}</h3>
+                    
+                    {/* Short description */}
+                    {task.description && (
+                      <p className="text-sm text-gray-500 mb-2 line-clamp-1">
+                        {task.description.length > 80 ? task.description.substring(0, 80) + '...' : task.description}
+                      </p>
                     )}
-                    {/* Bid relationship badges - show in Bids filter */}
-                    {filter === 'my_bids' && (task as any).userPlacedBid && (
-                      <span className="px-2 sm:px-2.5 py-1 text-xs font-bold rounded uppercase bg-blue-100 text-blue-700 whitespace-nowrap">
-                        ✋ You Bid
-                      </span>
-                    )}
-                    {filter === 'my_bids' && (task as any).bidsReceivedCount > 0 && task.created_by === currentUserId && (
-                      <span className="px-2 sm:px-2.5 py-1 text-xs font-bold rounded uppercase bg-green-100 text-green-700 whitespace-nowrap">
-                        📥 {(task as any).bidsReceivedCount} Bid{(task as any).bidsReceivedCount !== 1 ? 's' : ''} Received
-                      </span>
-                    )}
-                    {currentUserId && task.created_by === currentUserId && filter !== 'my_bids' && (
-                      <span className="px-2 sm:px-2.5 py-1 text-xs font-bold rounded uppercase bg-red-100 text-red-700 whitespace-nowrap">
-                        My Task
-                      </span>
-                    )}
-                      <span
-                        className={`px-2 sm:px-2.5 py-1 text-xs font-medium rounded whitespace-nowrap ${
-                          task.status === 'open'
-                            ? 'bg-green-100 text-green-800'
-                            : task.status === 'in_progress'
-                            ? 'bg-blue-100 text-blue-800'
-                            : task.status === 'completed'
-                            ? 'bg-gray-100 text-gray-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}
-                      >
-                        {task.status.replace('_', ' ')}
-                      </span>
-                    </div>
-                  </div>
-
-                  <p className="text-gray-600 text-xs sm:text-sm mb-3 line-clamp-2 break-words">{task.description}</p>
-
-                  {task.user && (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          setSelectedUserId(task.user?.id || null)
-                          setIsProfileModalOpen(true)
-                        }}
-                        className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 hover:underline flex items-center gap-1.5 sm:gap-2 min-w-0"
-                      >
-                        {task.user.avatar_url ? (
-                          <img
-                            src={task.user.avatar_url}
-                            alt={task.user.full_name || task.user.email}
-                            className="w-6 h-6 sm:w-7 sm:h-7 aspect-square rounded-full object-cover object-center flex-shrink-0"
-                          />
-                        ) : (
-                          <div className="w-6 h-6 sm:w-7 sm:h-7 aspect-square rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                            <UserIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
-                          </div>
+                    
+                    {/* Price and badges row */}
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <p className="text-2xl font-bold text-primary-600">{task.budget ? `€${task.budget}` : t('tasks.quote')}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                        {showSampleSash && (
+                          <span className="px-2 py-0.5 text-xs font-bold rounded bg-gradient-to-r from-yellow-400 to-orange-500 text-white uppercase">
+                            {t('tasks.sample')}
+                          </span>
                         )}
-                        <span className="font-medium truncate">by {task.user.full_name || task.user.email}</span>
-                      </button>
-                      {(() => {
-                        const ratings = task.user?.userRatings
-                        if (process.env.NODE_ENV === 'development') {
-                          console.log('🎯 Rendering ratings for task:', {
-                            userId: task.user?.id,
-                            userName: task.user?.full_name || task.user?.email,
-                            hasRatings: !!ratings,
-                            ratings: ratings
-                          })
-                        }
-                        return (
+                        {isNew && !isSample && (
+                          <span className="px-2 py-0.5 text-xs font-bold rounded bg-gradient-to-r from-red-500 to-orange-500 text-white uppercase">
+                            {t('tasks.new')}
+                          </span>
+                        )}
+                        {isAdmin && task.hidden_by_admin && (
+                          <span className="px-2 py-0.5 text-xs font-bold rounded bg-red-600 text-white">
+                            🔒 {t('tasks.hidden')}
+                          </span>
+                        )}
+                        {currentUserId && task.created_by === currentUserId && (
+                          <span className="px-2 py-0.5 text-xs font-bold rounded bg-red-100 text-red-700">
+                            {t('tasks.myTaskBadge')}
+                          </span>
+                        )}
+                        <span
+                          className={`px-2 py-0.5 text-xs font-medium rounded ${
+                            task.status === 'open'
+                              ? 'bg-green-100 text-green-800'
+                              : task.status === 'in_progress'
+                              ? 'bg-blue-100 text-blue-800'
+                              : task.status === 'completed'
+                              ? 'bg-gray-100 text-gray-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}
+                        >
+                          {task.status === 'open' ? t('tasks.statusOpen') : task.status === 'in_progress' ? t('tasks.statusInProgress') : task.status === 'completed' ? t('tasks.statusCompleted') : task.status.replace('_', ' ')}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Location row */}
+                    {task.location && (
+                      <div className="flex items-center">
+                        <span className="text-xs text-gray-500 truncate">
+                          📍 {task.location.split(',')[0]}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* FULL VIEW */
+                  <>
+                    {showSampleSash && (
+                      <div className="absolute top-0 left-0 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[0.7875rem] font-bold px-[5.4] py-[1.8] rounded-br-lg shadow-lg z-10 transform -rotate-12 origin-top-left uppercase tracking-wider">
+                        {t('tasks.sample')}
+                      </div>
+                    )}
+                    {isNew && !isSample && (
+                      <div className="absolute top-0 right-0 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold px-3 sm:px-4 py-1 rounded-bl-lg rounded-tr-lg shadow-lg z-10 transform rotate-12 origin-top-right">
+                        {t('tasks.new')}
+                      </div>
+                    )}
+                    {task.image_url && (
+                      <div className="w-full h-48 sm:h-64 bg-gray-100 overflow-hidden flex items-center justify-center">
+                        <img
+                          src={task.image_url}
+                          alt={task.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+
+                    <div className="p-4 sm:p-6 flex flex-col">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 sm:mb-2 break-words">{task.title}</h3>
+                          <p className="text-2xl sm:text-3xl font-bold text-primary-600">{task.budget ? `€${task.budget}` : t('tasks.quote')}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap flex-shrink-0">
+                        {isAdmin && task.hidden_by_admin && (
+                          <span className="px-2 sm:px-2.5 py-1 text-xs font-bold rounded uppercase bg-red-600 text-white whitespace-nowrap">
+                            🔒 {t('tasks.hidden')}
+                          </span>
+                        )}
+                        {/* Bid relationship badges - show in Bids filter */}
+                        {filter === 'my_bids' && (task as any).userPlacedBid && (
+                          <span className="px-2 sm:px-2.5 py-1 text-xs font-bold rounded uppercase bg-blue-100 text-blue-700 whitespace-nowrap">
+                            ✋ {t('tasks.youBid')}
+                          </span>
+                        )}
+                        {filter === 'my_bids' && (task as any).bidsReceivedCount > 0 && task.created_by === currentUserId && (
+                          <span className="px-2 sm:px-2.5 py-1 text-xs font-bold rounded uppercase bg-green-100 text-green-700 whitespace-nowrap">
+                            📥 {(task as any).bidsReceivedCount} {(task as any).bidsReceivedCount !== 1 ? t('tasks.bidsReceived') : t('tasks.bidReceived')}
+                          </span>
+                        )}
+                        {currentUserId && task.created_by === currentUserId && filter !== 'my_bids' && (
+                          <span className="px-2 sm:px-2.5 py-1 text-xs font-bold rounded uppercase bg-red-100 text-red-700 whitespace-nowrap">
+                            {t('tasks.myTaskBadge')}
+                          </span>
+                        )}
+                          <span
+                            className={`px-2 sm:px-2.5 py-1 text-xs font-medium rounded whitespace-nowrap ${
+                              task.status === 'open'
+                                ? 'bg-green-100 text-green-800'
+                                : task.status === 'in_progress'
+                                ? 'bg-blue-100 text-blue-800'
+                                : task.status === 'completed'
+                                ? 'bg-gray-100 text-gray-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {task.status === 'open' ? t('tasks.statusOpen') : task.status === 'in_progress' ? t('tasks.statusInProgress') : task.status === 'completed' ? t('tasks.statusCompleted') : task.status.replace('_', ' ')}
+                          </span>
+                        </div>
+                      </div>
+
+                      <p className="text-gray-600 text-xs sm:text-sm mb-3 line-clamp-2 break-words">{task.description}</p>
+
+                      {task.user && (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              setSelectedUserId(task.user?.id || null)
+                              setIsProfileModalOpen(true)
+                            }}
+                            className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 hover:underline flex items-center gap-1.5 sm:gap-2 min-w-0"
+                          >
+                            {task.user.avatar_url ? (
+                              <img
+                                src={task.user.avatar_url}
+                                alt={task.user.full_name || task.user.email}
+                                className="w-6 h-6 sm:w-7 sm:h-7 aspect-square rounded-full object-cover object-center flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="w-6 h-6 sm:w-7 sm:h-7 aspect-square rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                <UserIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
+                              </div>
+                            )}
+                            <span className="font-medium truncate">by {task.user.full_name || task.user.email}</span>
+                          </button>
                           <CompactUserRatingsDisplay 
-                            ratings={ratings || null} 
+                            ratings={task.user?.userRatings || null} 
                             size="sm"
                             className="ml-2"
                           />
-                        )
-                      })()}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                <div className="px-4 sm:px-6 mb-4 pb-4 border-b border-gray-200"></div>
+                    <div className="px-4 sm:px-6 mb-4 pb-4 border-b border-gray-200"></div>
 
-                <div className="px-4 sm:px-6 pb-4 sm:pb-6 flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm">
-                  {task.location && (() => {
+                    <div className="px-4 sm:px-6 pb-4 sm:pb-6 flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+                      {task.location && (() => {
                     const parts = task.location.split(',').map(p => p.trim())
                     let city = ''
                     let county = ''
@@ -1643,7 +1935,7 @@ function TasksPageContent() {
                     <div className="flex items-center gap-1.5">
                       <span className="text-gray-500">💰</span>
                       <span className="text-gray-700 font-medium">
-                        {(task as any).bidCount} bid{(task as any).bidCount === 1 ? '' : 's'}
+                        {(task as any).bidCount} {(task as any).bidCount === 1 ? t('tasks.bid') : t('tasks.bidPlural')}
                       </span>
                     </div>
                   )}
@@ -1661,11 +1953,11 @@ function TasksPageContent() {
                     <div className="flex items-center gap-1.5">
                       <span className="text-gray-500">📅</span>
                       <span className="text-gray-700">
-                        Due: {(() => {
+                        {t('tasks.due')}: {(() => {
                           try {
                             return format(new Date(task.due_date!), 'MMM d, yyyy')
                           } catch (e) {
-                            return 'Invalid date'
+                            return t('tasks.invalidDate')
                           }
                         })()}
                       </span>
@@ -1703,19 +1995,21 @@ function TasksPageContent() {
                   )}
                 </div>
 
-                {task.tags && Array.isArray(task.tags) && task.tags.length > 0 && (
-                  <div className="px-4 sm:px-6 pb-4 flex flex-wrap gap-1.5">
-                    {task.tags.map((tag) =>
-                      tag && tag.id && tag.name ? (
-                        <span
-                          key={tag.id}
-                          className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800"
-                        >
-                          {tag.name}
-                        </span>
-                      ) : null
+                    {task.tags && Array.isArray(task.tags) && task.tags.length > 0 && (
+                      <div className="px-4 sm:px-6 pb-4 flex flex-wrap gap-1.5">
+                        {task.tags.map((tag) =>
+                          tag && tag.id && tag.name ? (
+                            <span
+                              key={tag.id}
+                              className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800"
+                            >
+                              {tag.name}
+                            </span>
+                          ) : null
+                        )}
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
               </Link>
             )

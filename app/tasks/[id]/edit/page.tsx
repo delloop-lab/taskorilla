@@ -9,6 +9,7 @@ import { geocodePostcode } from '@/lib/geocoding'
 import { formatPostcodeForCountry, isPortuguesePostcode } from '@/lib/postcode'
 import { checkForContactInfo } from '@/lib/content-filter'
 import { User as UserIcon } from 'lucide-react'
+import { compressTaskImage } from '@/lib/image-utils'
 import { useUserRatings } from '@/lib/useUserRatings'
 import CompactUserRatingsDisplay from '@/components/CompactUserRatingsDisplay'
 
@@ -504,13 +505,21 @@ export default function EditTaskPage() {
       }
 
       const uploadPromises = Array.from(files).map(async (file) => {
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${taskId}-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+        // Compress image before upload (1200x1200 max, ~100-200KB instead of 3-5MB)
+        const compressedImage = await compressTaskImage(file)
+        
+        // Use appropriate extension based on whether compression succeeded
+        const isCompressed = compressedImage.type === 'image/jpeg'
+        const ext = isCompressed ? 'jpg' : (file.name.split('.').pop() || 'jpg')
+        const fileName = `${taskId}-${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`
         const filePath = `${authUser.id}/${fileName}`
 
         const { error: uploadError } = await supabase.storage
           .from('images')
-          .upload(filePath, file, { upsert: true })
+          .upload(filePath, compressedImage, { 
+            upsert: true,
+            contentType: compressedImage.type || 'image/jpeg'
+          })
 
         if (uploadError) throw uploadError
 

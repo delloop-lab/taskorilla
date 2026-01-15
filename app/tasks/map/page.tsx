@@ -1,11 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Task } from '@/lib/types'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { geocodePostcode, geocodeAddress } from '@/lib/geocoding'
+
+// Debug logging - only in development
+const isDev = process.env.NODE_ENV === 'development'
+const debugLog = (...args: any[]) => isDev && console.log(...args)
 
 // Dynamically import Map component to avoid SSR issues
 const Map = dynamic(() => import('@/components/Map'), { ssr: false })
@@ -14,8 +18,12 @@ export default function TasksMapPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const loadStartedRef = useRef(false)
 
   useEffect(() => {
+    // Prevent duplicate loads (React StrictMode causes double renders in dev)
+    if (loadStartedRef.current) return
+    loadStartedRef.current = true
     loadTasks()
   }, [])
 
@@ -65,7 +73,7 @@ export default function TasksMapPage() {
         throw error
       }
 
-      console.log(`📊 Found ${tasksData?.length || 0} tasks matching filters`)
+      debugLog(`📊 Found ${tasksData?.length || 0} tasks matching filters`)
 
       if (tasksData) {
         // Fetch profiles for task creators
@@ -75,30 +83,57 @@ export default function TasksMapPage() {
           .select('id, email, full_name, avatar_url')
           .in('id', creatorIds)
 
-        console.log(`📋 Processing ${tasksData.length} tasks...`)
+        debugLog(`📋 Processing ${tasksData.length} tasks...`)
         
-        // Process tasks: geocode those with postcodes but no coordinates
-        const tasksWithProfiles = await Promise.all(
-          tasksData.map(async (task, index) => {
-            const user = profilesData?.find(p => p.id === task.created_by)
-            
-            console.log(`\n[${index + 1}/${tasksData.length}] Processing task "${task.title}":`, {
-              id: task.id,
-              postcode: task.postcode,
-              country: task.country,
-              location: task.location,
-              hasLat: !!task.latitude,
-              hasLon: !!task.longitude,
-              lat: task.latitude,
-              lon: task.longitude
-            })
-            
-            // Ensure coordinates are numbers (Supabase DECIMAL can return as strings)
-            let latitude = typeof task.latitude === 'string' ? parseFloat(task.latitude) : (task.latitude ?? null)
-            let longitude = typeof task.longitude === 'string' ? parseFloat(task.longitude) : (task.longitude ?? null)
-            
-            // Check if coordinates are valid
-            const hasValidCoords = latitude && longitude && !isNaN(latitude) && !isNaN(longitude) && latitude !== 0 && longitude !== 0
+        // Separate tasks into those that need geocoding and those that don't
+        const tasksNeedingGeocode: typeof tasksData = []
+        const tasksWithValidCoords: typeof tasksData = []
+        
+        // First pass: quickly identify which tasks need geocoding
+        tasksData.forEach((task) => {
+          const latitude = typeof task.latitude === 'string' ? parseFloat(task.latitude) : (task.latitude ?? null)
+          const longitude = typeof task.longitude === 'string' ? parseFloat(task.longitude) : (task.longitude ?? null)
+          const hasValidCoords = latitude && longitude && !isNaN(latitude) && !isNaN(longitude) && latitude !== 0 && longitude !== 0
+          
+          if (hasValidCoords && task.country?.toLowerCase() === 'portugal') {
+            // Quick validation for Portugal bounds
+            const isInPortugalBounds = latitude >= 36 && latitude <= 43 && longitude >= -10 && longitude <= -5
+            if (isInPortugalBounds) {
+              tasksWithValidCoords.push(task)
+              return
+            }
+          } else if (hasValidCoords) {
+            tasksWithValidCoords.push(task)
+            return
+          }
+          
+          // Task needs geocoding
+          if (task.postcode || task.location) {
+            tasksNeedingGeocode.push(task)
+          }
+        })
+        
+        debugLog(`✅ ${tasksWithValidCoords.length} tasks already have valid coordinates`)
+        debugLog(`🔄 ${tasksNeedingGeocode.length} tasks need geocoding`)
+        
+        // Process tasks that need geocoding (in parallel, but limit concurrency)
+        const geocodeBatchSize = 3 // Process 3 at a time to avoid rate limits
+        const geocodedTasks: typeof tasksData = []
+        
+        for (let i = 0; i < tasksNeedingGeocode.length; i += geocodeBatchSize) {
+          const batch = tasksNeedingGeocode.slice(i, i + geocodeBatchSize)
+          const batchResults = await Promise.all(
+            batch.map(async (task, index) => {
+              const user = profilesData?.find(p => p.id === task.created_by)
+              
+              debugLog(`\n[${i + index + 1}/${tasksNeedingGeocode.length}] Processing task "${task.title}"`)
+              
+              // Ensure coordinates are numbers
+              let latitude = typeof task.latitude === 'string' ? parseFloat(task.latitude) : (task.latitude ?? null)
+              let longitude = typeof task.longitude === 'string' ? parseFloat(task.longitude) : (task.longitude ?? null)
+              
+              // Check if coordinates are valid
+              const hasValidCoords = latitude && longitude && !isNaN(latitude) && !isNaN(longitude) && latitude !== 0 && longitude !== 0
             
             // Validate coordinates are reasonable for Portugal (if country is Portugal)
             let coordsSeemIncorrect = false
@@ -129,14 +164,10 @@ export default function TasksMapPage() {
             
             // If task has postcode but no valid coordinates OR coordinates seem incorrect, try to geocode it
             if (!hasValidCoords || coordsSeemIncorrect) {
-              if (coordsSeemIncorrect) {
-                console.log(`  🔄 Re-geocoding task with incorrect coordinates`)
-              }
               let geocodeResult = null
               
               // Try postcode first if available
               if (task.postcode && task.country) {
-                console.log(`  🔍 Attempting to geocode with postcode: ${task.postcode}, country: ${task.country}`)
                 try {
                   geocodeResult = await geocodePostcode(task.postcode, task.country)
                   if (geocodeResult) {
@@ -151,27 +182,18 @@ export default function TasksMapPage() {
                       
                       // If coordinates are more than 1 degree away from expected Algarve location, reject them
                       if (latDiff > 1 || lonDiff > 1) {
-                        console.warn(`  ⚠️ Rejecting geocoded coordinates - too far from Algarve: lat=${geocodeResult.latitude}, lon=${geocodeResult.longitude}`)
+                        debugLog(`  ⚠️ Rejecting geocoded coordinates - too far from Algarve`)
                         geocodeResult = null
-                      } else {
-                        console.log(`  ✅ Postcode geocoding successful:`, geocodeResult)
                       }
-                    } else {
-                      console.log(`  ✅ Postcode geocoding successful:`, geocodeResult)
                     }
-                  } else {
-                    console.log(`  ⚠️ Postcode geocoding returned null`)
                   }
                 } catch (error) {
                   console.error(`  ❌ Error geocoding postcode:`, error)
                 }
-              } else {
-                console.log(`  ⚠️ Task missing postcode or country (postcode: ${task.postcode}, country: ${task.country})`)
               }
               
               // If postcode geocoding failed or returned wrong coordinates, try using address/location field
               if (!geocodeResult && task.location && task.country) {
-                console.log(`  🔍 Attempting to geocode with address: "${task.location}"`)
                 try {
                   geocodeResult = await geocodeAddress(task.location, task.postcode || undefined, task.country)
                   if (geocodeResult) {
@@ -184,16 +206,10 @@ export default function TasksMapPage() {
                       const lonDiff = Math.abs(geocodeResult.longitude - (-8.67))
                       
                       if (latDiff > 1 || lonDiff > 1) {
-                        console.warn(`  ⚠️ Rejecting address geocoded coordinates - too far from Algarve: lat=${geocodeResult.latitude}, lon=${geocodeResult.longitude}`)
+                        debugLog(`  ⚠️ Rejecting address geocoded coordinates - too far from Algarve`)
                         geocodeResult = null
-                      } else {
-                        console.log(`  ✅ Address geocoding successful:`, geocodeResult)
                       }
-                    } else {
-                      console.log(`  ✅ Address geocoding successful:`, geocodeResult)
                     }
-                  } else {
-                    console.log(`  ⚠️ Address geocoding returned null`)
                   }
                 } catch (error) {
                   console.error(`  ❌ Error geocoding address:`, error)
@@ -202,86 +218,70 @@ export default function TasksMapPage() {
               
               
               if (geocodeResult && geocodeResult.latitude && geocodeResult.longitude) {
-                const oldLat = latitude
-                const oldLon = longitude
                 latitude = geocodeResult.latitude
                 longitude = geocodeResult.longitude
+                debugLog(`  ✅ Geocoded task: ${task.title}`)
                 
-                console.log(`  📍 Coordinate update:`, {
-                  old: { lat: oldLat, lon: oldLon },
-                  new: { lat: latitude, lon: longitude },
-                  postcode: task.postcode,
-                  location: task.location
-                })
-                
-                // Update the task in the database with the geocoded coordinates
-                const { error: updateError } = await supabase
-                  .from('tasks')
-                  .update({
-                    latitude: geocodeResult.latitude,
-                    longitude: geocodeResult.longitude,
-                    location: geocodeResult.closest_address || geocodeResult.display_name || task.location || task.postcode
-                  })
-                  .eq('id', task.id)
-                
-                if (updateError) {
-                  console.error(`  ❌ Error updating task in database:`, updateError)
-                } else {
-                  console.log(`  ✅ Updated task in database with corrected coordinates`)
-                }
+                // Defer database update to background (don't block map loading)
+                setTimeout(async () => {
+                  const { error: updateError } = await supabase
+                    .from('tasks')
+                    .update({
+                      latitude: geocodeResult.latitude,
+                      longitude: geocodeResult.longitude,
+                      location: geocodeResult.closest_address || geocodeResult.display_name || task.location || task.postcode
+                    })
+                    .eq('id', task.id)
+                  
+                  if (updateError) {
+                    console.error(`  ❌ Error updating task ${task.id} in database:`, updateError)
+                  }
+                }, 0)
               } else {
                 console.warn(`  ⚠️ Failed to geocode task - will be excluded from map`)
               }
-            } else {
-              // Validate coordinates one more time before accepting them
-              if (task.country?.toLowerCase() === 'portugal') {
-                const isInPortugalBounds = latitude >= 36 && latitude <= 43 && longitude >= -10 && longitude <= -5
-                if (!isInPortugalBounds) {
-                  console.warn(`  ⚠️ Task has coordinates outside Portugal bounds but geocoding was skipped: lat=${latitude}, lon=${longitude}`)
-                } else {
-                  console.log(`  ✅ Task already has valid coordinates: lat=${latitude}, lon=${longitude}`)
-                }
-              } else {
-                console.log(`  ✅ Task already has valid coordinates: lat=${latitude}, lon=${longitude}`)
-              }
             }
             
-            // Validate coordinates are valid numbers and within reasonable ranges
-            if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
-              // Log coordinates for debugging (especially for Portuguese tasks)
-              if (task.country?.toLowerCase() === 'portugal') {
-                console.log(`📍 Portuguese Task "${task.title}" (${task.postcode}): lat=${latitude}, lon=${longitude}`)
-                // Warn if coordinates seem wrong for Portugal (lat should be 36-43, lon should be -10 to -5)
-                if (latitude < 36 || latitude > 43 || longitude < -10 || longitude > -5) {
-                  console.warn(`⚠️ Task "${task.title}" coordinates seem incorrect for Portugal: lat=${latitude}, lon=${longitude}`)
-                }
+            // Return task with coordinates (or null if invalid)
+            if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude) && latitude !== 0 && longitude !== 0) {
+              return {
+                ...task,
+                latitude,
+                longitude,
+                user: user || undefined
               }
-            } else {
-              console.warn(`⚠️ Task "${task.title}" has invalid coordinates:`, { latitude, longitude, rawLat: task.latitude, rawLon: task.longitude, postcode: task.postcode, country: task.country })
             }
-            
-            return {
-              ...task,
-              latitude: latitude || null,
-              longitude: longitude || null,
-              user: user || undefined
-            }
-          })
-        )
+            return null
+            })
+          )
+          
+          // Filter out null results
+          geocodedTasks.push(...batchResults.filter(t => t !== null))
+        }
+        
+        // Combine tasks with valid coords and newly geocoded tasks
+        const tasksWithProfiles = [
+          ...tasksWithValidCoords.map(task => ({
+            ...task,
+            latitude: typeof task.latitude === 'string' ? parseFloat(task.latitude) : (task.latitude ?? null),
+            longitude: typeof task.longitude === 'string' ? parseFloat(task.longitude) : (task.longitude ?? null),
+            user: profilesData?.find(p => p.id === task.created_by) || undefined
+          })),
+          ...geocodedTasks
+        ]
 
         // Filter out tasks that still don't have valid coordinates
         const tasksWithValidCoordinates = tasksWithProfiles.filter(
           task => {
             const hasValid = task.latitude && task.longitude && !isNaN(task.latitude) && !isNaN(task.longitude) && task.latitude !== 0 && task.longitude !== 0
             if (!hasValid) {
-              console.log(`  ❌ Excluding task "${task.title}" - invalid coordinates:`, { lat: task.latitude, lon: task.longitude })
+              debugLog(`  ❌ Excluding task "${task.title}" - invalid coordinates`)
             }
             return hasValid
           }
         )
 
-        console.log(`\n✅ Final result: ${tasksWithValidCoordinates.length} tasks with valid coordinates out of ${tasksData.length} total`)
-        console.log(`📍 Tasks to display on map:`, tasksWithValidCoordinates.map(t => ({ title: t.title, lat: t.latitude, lon: t.longitude })))
+        debugLog(`✅ Final result: ${tasksWithValidCoordinates.length} tasks with valid coordinates out of ${tasksData.length} total`)
 
         setTasks(tasksWithValidCoordinates)
       } else {
@@ -323,24 +323,26 @@ export default function TasksMapPage() {
       </div>
 
       {selectedTask && (
-        <div className="bg-white border-t p-4 max-h-48 overflow-y-auto">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900">{selectedTask.title}</h3>
-              <p className="text-sm text-gray-600 mt-1 line-clamp-2">{selectedTask.description}</p>
-              <div className="flex items-center gap-4 mt-2">
-                <span className="text-lg font-bold text-primary-600">{selectedTask.budget ? `€${selectedTask.budget}` : 'Quote'}</span>
-                {selectedTask.postcode && (
-                  <span className="text-sm text-gray-500">{selectedTask.postcode}</span>
-                )}
+        <div className="bg-white border-t shadow-lg">
+          <div className="p-4 max-h-64 overflow-y-auto">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-gray-900 mb-2">{selectedTask.title}</h3>
+                <p className="text-sm text-gray-600 mb-3 whitespace-pre-wrap break-words">{selectedTask.description || 'No description provided.'}</p>
+                <div className="flex items-center gap-4 flex-wrap">
+                  <span className="text-lg font-bold text-primary-600">{selectedTask.budget ? `€${selectedTask.budget}` : 'Quote'}</span>
+                  {selectedTask.postcode && (
+                    <span className="text-sm text-gray-500">📍 {selectedTask.postcode}</span>
+                  )}
+                </div>
               </div>
+              <Link
+                href={`/tasks/${selectedTask.id}`}
+                className="flex-shrink-0 px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700 whitespace-nowrap"
+              >
+                View Details
+              </Link>
             </div>
-            <Link
-              href={`/tasks/${selectedTask.id}`}
-              className="ml-4 px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700"
-            >
-              View Details
-            </Link>
           </div>
         </div>
       )}

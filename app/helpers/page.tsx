@@ -33,6 +33,43 @@ export default function BrowseHelpersPage() {
     loadHelpers()
   }, [])
 
+  // Calculate profile completion score based on key profile fields
+  function calculateProfileCompletionScore(helper: User): number {
+    let score = 0
+    
+    // Bio (1 point)
+    if (helper.bio && helper.bio.trim().length > 0) {
+      score += 1
+    }
+    
+    // Avatar (1 point)
+    if (helper.avatar_url && helper.avatar_url.trim().length > 0) {
+      score += 1
+    }
+    
+    // Skills (1 point)
+    if (helper.skills && Array.isArray(helper.skills) && helper.skills.length > 0) {
+      score += 1
+    }
+    
+    // Services Offered (1 point)
+    if (helper.services_offered && Array.isArray(helper.services_offered) && helper.services_offered.length > 0) {
+      score += 1
+    }
+    
+    // Professions (1 point) - professional roles
+    if (helper.professions && Array.isArray(helper.professions) && helper.professions.length > 0) {
+      score += 1
+    }
+    
+    // Professional Offerings (1 point) - professional services
+    if (helper.professional_offerings && Array.isArray(helper.professional_offerings) && helper.professional_offerings.length > 0) {
+      score += 1
+    }
+    
+    return score
+  }
+
   // Auto-show filters if search term or any filter is selected
   useEffect(() => {
     if (searchTerm || selectedSkill || selectedService || selectedProfession || showProfessionalsOnly) {
@@ -51,7 +88,6 @@ export default function BrowseHelpersPage() {
         .eq('is_helper', true)
         .neq('role', 'admin')
         .neq('role', 'superadmin')
-        .order('created_at', { ascending: false })
 
       if (error) throw error
 
@@ -74,7 +110,43 @@ export default function BrowseHelpersPage() {
             userRatings: userRating || null
           }
         })
-        setHelpers(helpersWithRatings)
+        
+        // Sort helpers by profile completion score, then badges, featured status, rating, and date
+        const sortedHelpers = helpersWithRatings.sort((a: any, b: any) => {
+          // Calculate completion scores
+          const scoreA = calculateProfileCompletionScore(a)
+          const scoreB = calculateProfileCompletionScore(b)
+          
+          // Primary sort: Profile completion score (highest first)
+          if (scoreB !== scoreA) {
+            return scoreB - scoreA
+          }
+          
+          // Secondary sort: Badge count (helpers with more badges appear before those with fewer badges)
+          const aBadgeCount = (a.badges && Array.isArray(a.badges)) ? a.badges.length : 0
+          const bBadgeCount = (b.badges && Array.isArray(b.badges)) ? b.badges.length : 0
+          if (bBadgeCount !== aBadgeCount) {
+            return bBadgeCount - aBadgeCount
+          }
+          
+          // Tertiary sort: Featured status (featured first)
+          const aFeatured = a.is_featured || false
+          const bFeatured = b.is_featured || false
+          if (aFeatured && !bFeatured) return -1
+          if (!aFeatured && bFeatured) return 1
+          
+          // Quaternary sort: Helper rating (if available)
+          const aRating = a.userRatings?.helper_avg_rating || 0
+          const bRating = b.userRatings?.helper_avg_rating || 0
+          if (bRating !== aRating) {
+            return bRating - aRating
+          }
+          
+          // Final sort: Newest first (created_at)
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        })
+        
+        setHelpers(sortedHelpers)
         
         // Combine database skills with standard skills for dropdown
         const allSkills = new Set<string>()
@@ -369,7 +441,9 @@ export default function BrowseHelpersPage() {
                         <img
                           src={helper.avatar_url}
                           alt={helper.full_name || 'Helper'}
-                          className="h-full w-full object-cover"
+                          className="h-full w-full object-cover rounded-full"
+                          loading="lazy"
+                          decoding="async"
                         />
                       ) : (
                         <div className="h-full w-full flex items-center justify-center">

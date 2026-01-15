@@ -456,6 +456,8 @@ function UserProfileContent() {
                     src={profile.avatar_url}
                     alt={profile.full_name || 'User'}
                     className="w-full h-full object-cover object-center"
+                    loading="lazy"
+                    decoding="async"
                   />
                 ) : (
                   <UserIcon className="w-16 h-16 text-gray-400" />

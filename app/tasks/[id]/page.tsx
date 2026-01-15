@@ -13,6 +13,7 @@ import StandardModal from '@/components/StandardModal'
 import { extractTownName } from '@/lib/geocoding'
 import { checkForContactInfo } from '@/lib/content-filter'
 import { User as UserIcon } from 'lucide-react'
+import { compressTaskImage } from '@/lib/image-utils'
 import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
 import CompactUserRatingsDisplay from '@/components/CompactUserRatingsDisplay'
 
@@ -1050,13 +1051,21 @@ export default function TaskDetailPage() {
 
     setUploadingProgressPhoto(true)
     try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `progress-${taskId}-${Date.now()}.${fileExt}`
+      // Compress image before upload (1200x1200 max, ~100-200KB instead of 3-5MB)
+      const compressedImage = await compressTaskImage(file)
+      
+      // Use appropriate extension based on whether compression succeeded
+      const isCompressed = compressedImage.type === 'image/jpeg'
+      const ext = isCompressed ? 'jpg' : (file.name.split('.').pop() || 'jpg')
+      const fileName = `progress-${taskId}-${Date.now()}.${ext}`
       const filePath = `${user.id}/${fileName}`
 
       const { error: uploadError } = await supabase.storage
         .from('images')
-        .upload(filePath, file, { upsert: true })
+        .upload(filePath, compressedImage, { 
+          upsert: true,
+          contentType: compressedImage.type || 'image/jpeg'
+        })
 
       if (uploadError) throw uploadError
 
@@ -1773,6 +1782,8 @@ export default function TaskDetailPage() {
                       src={task.images[0].image_url}
                       alt={task.title}
                       className="w-full h-full object-contain"
+                      loading="lazy"
+                      decoding="async"
                     />
                   </div>
                   {task.images.length > 1 && (
@@ -1783,6 +1794,8 @@ export default function TaskDetailPage() {
                             src={img.image_url}
                             alt={`${task.title} ${index + 2}`}
                             className="w-full h-full object-cover"
+                            loading="lazy"
+                            decoding="async"
                           />
                         </div>
                       ))}
@@ -1799,6 +1812,8 @@ export default function TaskDetailPage() {
                   <img
                     src={task.image_url}
                     alt={task.title}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-contain"
                   />
                 </div>

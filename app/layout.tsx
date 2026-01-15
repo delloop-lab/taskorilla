@@ -6,6 +6,7 @@ import PWAHead from '@/components/PWAHead'
 import InstallPromptModal from '@/components/InstallPromptModal'
 import PreLaunchModal from '@/components/PreLaunchModal'
 import LanguageProviderWrapper from '@/components/LanguageProviderWrapper'
+import SupabasePrewarm from '@/components/SupabasePrewarm'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -111,6 +112,7 @@ export default function RootLayout({
         )}
         <LanguageProviderWrapper>
           <PWAHead />
+          <SupabasePrewarm />
           <PreLaunchModal />
           <InstallPromptModal />
           <Navbar />

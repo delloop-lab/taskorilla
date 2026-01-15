@@ -126,6 +126,8 @@ export default function UserProfileModal({
                     src={profile.avatar_url}
                     alt={profile.full_name || "Tasker avatar"}
                     className="w-full h-full object-cover object-center"
+                    loading="lazy"
+                    decoding="async"
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center">

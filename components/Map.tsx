@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -149,17 +149,16 @@ export default function TaskMap({ tasks, onTaskClick }: MapProps) {
     }
   }
 
-  // Debug: Log when markers should be rendered
+  // Debug: Log when markers should be rendered (only in development, and only once per task set)
+  const isDev = process.env.NODE_ENV === 'development'
+  const lastTasksLengthRef = useRef(0)
   useEffect(() => {
-    console.log(`🗺️ Map component received ${tasks.length} tasks to render`)
-    if (tasks.length > 0) {
-      console.log(`📍 Task coordinates:`, tasks.map(t => ({ 
-        title: t.title, 
-        lat: t.latitude, 
-        lon: t.longitude 
-      })))
+    // Only log if task count actually changed (prevents duplicate logs from React StrictMode)
+    if (isDev && tasks.length !== lastTasksLengthRef.current) {
+      lastTasksLengthRef.current = tasks.length
+      console.log(`🗺️ Map: ${tasks.length} tasks`)
     }
-  }, [tasks])
+  }, [tasks.length, isDev])
 
   // Fix for iOS Safari viewport height issues
   useEffect(() => {
@@ -214,8 +213,6 @@ export default function TaskMap({ tasks, onTaskClick }: MapProps) {
             console.error(`Task ${task.id} has invalid coordinates:`, { lat, lon })
             return null
           }
-
-          console.log(`📍 Rendering task ${task.id} at:`, { lat, lon, title: task.title, originalLat: task.latitude, originalLon: task.longitude })
 
           // Format budget for marker display
           const budgetDisplay = task.budget ? `€${task.budget}` : 'Quote'
