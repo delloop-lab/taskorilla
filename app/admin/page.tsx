@@ -1382,8 +1382,12 @@ export default function SuperadminDashboard() {
       }
 
       // Replace variables in content
+      const userName = user.full_name || user.email || ''
+      const userFirstName = userName ? userName.split(' ')[0] : ''
+      
       let renderedContent = freeFormContent
-        .replace(/\{\{user_name\}\}/g, user.full_name || user.email || '')
+        .replace(/\{\{user_name\}\}/g, userName)
+        .replace(/\{\{user_first_name\}\}/g, userFirstName)
         .replace(/\{\{user_email\}\}/g, user.email || '')
       
       // Replace tee_image if present
@@ -2937,7 +2941,7 @@ export default function SuperadminDashboard() {
                       height={300}
                     />
                     <p className="mt-2 text-xs text-gray-500">
-                      💡 You can use HTML formatting. Available variables: {'{{user_name}}'}, {'{{user_email}}'}, {'{{tee_image}}'} (mascot)
+                      💡 You can use HTML formatting. Available variables: {'{{user_name}}'}, {'{{user_first_name}}'}, {'{{user_email}}'}, {'{{tee_image}}'} (mascot)
                     </p>
                   </div>
 

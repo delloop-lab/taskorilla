@@ -436,9 +436,6 @@ export default function EmailTemplateManager({ onTemplateSent, onTemplateChange 
               onChange={setHtmlContent}
               height={400}
             />
-            <p className="mt-2 text-xs text-gray-500">
-              💡 Available variables: {'{{user_name}}'}, {'{{user_email}}'}, {'{{tee_image}}'} (mascot)
-            </p>
           </div>
 
           <div className="flex gap-3 mt-4">

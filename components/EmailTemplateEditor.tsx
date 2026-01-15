@@ -27,6 +27,46 @@ export default function EmailTemplateEditor({
     }
   }, [value])
 
+  // Inject styles for list elements to ensure bullets are visible
+  useEffect(() => {
+    if (editorRef.current) {
+      // Add styles to the editor element
+      const styleId = 'email-editor-list-styles'
+      if (!document.getElementById(styleId)) {
+        const style = document.createElement('style')
+        style.id = styleId
+        style.textContent = `
+          [contenteditable="true"] ul {
+            list-style-type: disc !important;
+            margin-left: 1.5em !important;
+            padding-left: 0.5em !important;
+            margin-top: 0.5em !important;
+            margin-bottom: 0.5em !important;
+          }
+          [contenteditable="true"] ol {
+            list-style-type: decimal !important;
+            margin-left: 1.5em !important;
+            padding-left: 0.5em !important;
+            margin-top: 0.5em !important;
+            margin-bottom: 0.5em !important;
+          }
+          [contenteditable="true"] li {
+            display: list-item !important;
+            margin-bottom: 0.25em !important;
+          }
+          [contenteditable="true"] ul ul {
+            list-style-type: circle !important;
+            margin-left: 1.5em !important;
+          }
+          [contenteditable="true"] ul ul ul {
+            list-style-type: square !important;
+          }
+        `
+        document.head.appendChild(style)
+      }
+    }
+  }, [])
+
   // Normalize HTML - preserve line breaks and paragraph structure for email rendering
   const normalizeHTML = (html: string): string => {
     if (!html || !html.trim()) return ''
@@ -35,10 +75,15 @@ export default function EmailTemplateEditor({
     const temp = document.createElement('div')
     temp.innerHTML = html
     
-    // Convert all divs to paragraphs (better email client support)
-    // This preserves the line break structure that contentEditable creates
+    // IMPORTANT: Preserve list elements (ul, ol, li) - don't convert them
+    // Only convert divs that are NOT inside list elements
     const allDivs = Array.from(temp.querySelectorAll('div'))
     allDivs.forEach(div => {
+      // Skip if div is inside a list element
+      if (div.closest('ul') || div.closest('ol') || div.closest('li')) {
+        return
+      }
+      
       // If div is empty or only contains whitespace, replace with <br> for blank lines
       if (!div.innerHTML.trim() && !div.textContent?.trim()) {
         const br = document.createElement('br')
@@ -47,27 +92,57 @@ export default function EmailTemplateEditor({
         // Convert div to paragraph to preserve structure and line breaks
         const p = document.createElement('p')
         p.innerHTML = div.innerHTML
+        // Add inline styles for proper wrapping
+        p.style.wordWrap = 'break-word'
+        p.style.wordBreak = 'break-word'
+        p.style.overflowWrap = 'break-word'
+        p.style.maxWidth = '100%'
         div.parentNode?.replaceChild(p, div)
       }
     })
     
     // Process paragraphs - preserve them as they represent line breaks
+    // But skip paragraphs inside list elements
     const allParagraphs = Array.from(temp.querySelectorAll('p'))
     allParagraphs.forEach(p => {
+      // Skip if paragraph is inside a list element
+      if (p.closest('ul') || p.closest('ol') || p.closest('li')) {
+        return
+      }
+      
       // If paragraph is completely empty, replace with <br> for blank line
       if (!p.innerHTML.trim() && !p.textContent?.trim()) {
         const br = document.createElement('br')
         p.parentNode?.replaceChild(br, p)
+      } else {
+        // Add inline styles for proper wrapping to existing paragraphs
+        p.style.wordWrap = 'break-word'
+        p.style.wordBreak = 'break-word'
+        p.style.overflowWrap = 'break-word'
+        p.style.maxWidth = '100%'
       }
-      // Otherwise keep the paragraph - it represents a line break
     })
     
     // Get normalized HTML
     let normalized = temp.innerHTML
     
     // Clean up completely empty tags (shouldn't happen after processing, but just in case)
+    // But preserve list structure
     normalized = normalized.replace(/<p>\s*<\/p>/gi, '<br>')
     normalized = normalized.replace(/<div>\s*<\/div>/gi, '<br>')
+    
+    // Add inline styles to paragraphs that don't already have style attributes
+    // This ensures text wrapping works even if CSS is stripped by email clients
+    normalized = normalized.replace(/<p(?!\s+style)/gi, '<p style="word-wrap: break-word; word-break: break-word; overflow-wrap: break-word; max-width: 100%;"')
+    
+    // For paragraphs that already have styles, append wrapping styles
+    normalized = normalized.replace(/<p\s+style="([^"]*)"/gi, (match, existingStyles) => {
+      // Don't add if styles already include word-wrap or word-break
+      if (existingStyles.includes('word-wrap') || existingStyles.includes('word-break')) {
+        return match
+      }
+      return `<p style="${existingStyles}; word-wrap: break-word; word-break: break-word; overflow-wrap: break-word; max-width: 100%;"`
+    })
     
     // Preserve <br> tags - don't collapse them excessively
     // Allow up to 3 consecutive <br> tags (for intentional blank lines)
@@ -326,7 +401,7 @@ export default function EmailTemplateEditor({
 
       {/* Footer with variable hints */}
       <div className="px-3 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-600">
-        <strong>Available variables:</strong> {'{{user_name}}'}, {'{{user_email}}'}, {'{{registration_date}}'}, {'{{tee_image}}'} (mascot)
+        <strong>Available variables:</strong> {'{{user_name}}'}, {'{{user_first_name}}'}, {'{{user_email}}'}, {'{{registration_date}}'}, {'{{tee_image}}'} (mascot)
       </div>
     </div>
   )

@@ -443,14 +443,18 @@ export async function sendTemplateEmail(
   try {
     const mailTransporter = ensureTransporter()
     
+    // Extract first name from recipientName (first word before space)
+    const userFirstName = recipientName ? recipientName.split(' ')[0] : ''
+    
     // Render template with variables
     const renderedHtml = renderEmailTemplate(htmlContent, {
       user_name: recipientName,
+      user_first_name: userFirstName,
       user_email: recipientEmail,
       ...variables,
     })
 
-    // Wrap email content in clean HTML structure with proper line break preservation
+    // Wrap email content in clean HTML structure with proper line break preservation and width constraints
     const emailHtml = `<!DOCTYPE html>
 <html>
 <head>
@@ -463,10 +467,23 @@ export async function sendTemplateEmail(
     margin: 0;
     padding: 0;
     line-height: 1.6;
+    background-color: #ffffff;
+  }
+  .email-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
   }
   p {
     margin: 0 0 1em 0;
     padding: 0;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
   }
   p:last-child {
     margin-bottom: 0;
@@ -474,22 +491,84 @@ export async function sendTemplateEmail(
   br {
     line-height: 1.6;
   }
+  ul, ol {
+    margin: 0.5em 0;
+    padding-left: 1.5em;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+  li {
+    margin-bottom: 0.25em;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+  a {
+    word-break: break-all;
+    overflow-wrap: break-word;
+    max-width: 100%;
+  }
+  /* Ensure all text elements wrap properly */
+  * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
   /* Preserve whitespace and line breaks */
   [style*="white-space"] {
     white-space: pre-wrap;
   }
+  /* Force text wrapping on all text elements */
+  div, span, p, li, td, th {
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
 </style>
 </head>
-<body style="font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0; line-height: 1.6;">
-${renderedHtml}
+<body style="font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0; line-height: 1.6; background-color: #ffffff; width: 100%;">
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="width: 100%; max-width: 600px; margin: 0 auto;">
+  <tr>
+    <td style="padding: 20px; word-wrap: break-word; word-break: break-word; overflow-wrap: break-word;">
+      ${renderedHtml}
+    </td>
+  </tr>
+</table>
 </body>
 </html>`
     
+    // Generate plain text version for email clients that strip HTML
+    // Convert HTML to plain text by stripping tags and preserving structure
+    const plainText = renderedHtml
+      .replace(/<img[^>]*alt="([^"]*)"[^>]*>/gi, '$1') // Replace images with alt text
+      .replace(/<img[^>]*src="([^"]*)"[^>]*>/gi, '$1') // Or use src URL if no alt
+      .replace(/<a[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>/gi, '$2 ($1)') // Convert links to "text (url)"
+      .replace(/<li[^>]*>/gi, '• ') // Convert list items to bullet points
+      .replace(/<\/li>/gi, '\n') // Add line break after list items
+      .replace(/<ul[^>]*>|<\/ul>|<ol[^>]*>|<\/ol>/gi, '') // Remove list tags
+      .replace(/<p[^>]*>/gi, '\n') // Convert paragraphs to line breaks
+      .replace(/<\/p>/gi, '\n')
+      .replace(/<br\s*\/?>/gi, '\n') // Convert br to line breaks
+      .replace(/<strong[^>]*>|<\/strong>/gi, '**') // Convert bold
+      .replace(/<b[^>]*>|<\/b>/gi, '**')
+      .replace(/<em[^>]*>|<\/em>/gi, '*') // Convert italic
+      .replace(/<i[^>]*>|<\/i>/gi, '*')
+      .replace(/<[^>]+>/g, '') // Remove all remaining HTML tags
+      .replace(/&nbsp;/g, ' ') // Convert HTML entities
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\n{3,}/g, '\n\n') // Collapse multiple line breaks
+      .trim()
+
     await mailTransporter.sendMail({
       from: getFromAddress(),
       to: recipientEmail,
       subject: subject,
       html: emailHtml,
+      text: plainText, // Plain text alternative for email clients that strip HTML
     })
 
     return emailHtml // Return full HTML email for logging
