@@ -697,8 +697,14 @@ export default function Navbar() {
                 }`}
                 title={t('language.switchToEnglish')}
               >
-                <span className="inline-flex items-center gap-1">
-                  <span className="text-base">🇬🇧</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <svg className="w-4 h-3" viewBox="0 0 5 3" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="5" height="3" fill="#012169"/>
+                    <path d="M0,0 L5,3 M5,0 L0,3" stroke="#fff" strokeWidth="0.6"/>
+                    <path d="M0,0 L5,3 M5,0 L0,3" stroke="#C8102E" strokeWidth="0.3" strokeLinecap="round"/>
+                    <path d="M2.5,0 V3 M0,1.5 H5" stroke="#fff" strokeWidth="1"/>
+                    <path d="M2.5,0 V3 M0,1.5 H5" stroke="#C8102E" strokeWidth="0.6"/>
+                  </svg>
                   <span>EN</span>
                 </span>
               </button>
@@ -717,8 +723,11 @@ export default function Navbar() {
                 }`}
                 title={t('language.switchToPortuguese')}
               >
-                <span className="inline-flex items-center gap-1">
-                  <span className="text-base">🇵🇹</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <svg className="w-4 h-3" viewBox="0 0 5 3" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="2" height="3" fill="#006600"/>
+                    <rect x="2" width="3" height="3" fill="#FF0000"/>
+                  </svg>
                   <span>PT</span>
                 </span>
               </button>
@@ -856,8 +865,14 @@ export default function Navbar() {
                 }`}
                 title={t('language.switchToEnglish')}
               >
-                <span className="inline-flex items-center gap-1">
-                  <span className="text-sm">🇬🇧</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <svg className="w-4 h-3" viewBox="0 0 5 3" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="5" height="3" fill="#012169"/>
+                    <path d="M0,0 L5,3 M5,0 L0,3" stroke="#fff" strokeWidth="0.6"/>
+                    <path d="M0,0 L5,3 M5,0 L0,3" stroke="#C8102E" strokeWidth="0.3" strokeLinecap="round"/>
+                    <path d="M2.5,0 V3 M0,1.5 H5" stroke="#fff" strokeWidth="1"/>
+                    <path d="M2.5,0 V3 M0,1.5 H5" stroke="#C8102E" strokeWidth="0.6"/>
+                  </svg>
                   <span>EN</span>
                 </span>
               </button>
@@ -875,8 +890,11 @@ export default function Navbar() {
                 }`}
                 title={t('language.switchToPortuguese')}
               >
-                <span className="inline-flex items-center gap-1">
-                  <span className="text-sm">🇵🇹</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <svg className="w-4 h-3" viewBox="0 0 5 3" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="2" height="3" fill="#006600"/>
+                    <rect x="2" width="3" height="3" fill="#FF0000"/>
+                  </svg>
                   <span>PT</span>
                 </span>
               </button>
