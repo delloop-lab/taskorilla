@@ -697,7 +697,7 @@ export default function Navbar() {
                 }`}
                 title={t('language.switchToEnglish')}
               >
-                EN
+                🇬🇧 EN
               </button>
               <div className="w-px h-6 bg-gray-300" />
               <button
@@ -714,7 +714,7 @@ export default function Navbar() {
                 }`}
                 title={t('language.switchToPortuguese')}
               >
-                PT
+                🇵🇹 PT
               </button>
             </div>
             {user ? (
@@ -850,7 +850,7 @@ export default function Navbar() {
                 }`}
                 title={t('language.switchToEnglish')}
               >
-                EN
+                🇬🇧 EN
               </button>
               <div className="w-px h-5 bg-gray-300" />
               <button
@@ -866,7 +866,7 @@ export default function Navbar() {
                 }`}
                 title={t('language.switchToPortuguese')}
               >
-                PT
+                🇵🇹 PT
               </button>
             </div>
             {user && unreadCount > 0 && (
