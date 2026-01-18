@@ -139,7 +139,7 @@ export default function TermsPage() {
   const { language } = useLanguage();
   const sections = language === 'pt' ? sectionsPt : sectionsEn;
   
-  const lastUpdated = language === 'pt' ? "17 de novembro de 2025" : "November 17, 2025";
+  const lastUpdated = language === 'pt' ? "18 de janeiro de 2026" : "January 18, 2026";
   const backText = language === 'pt' ? "← Voltar à Página Inicial" : "← Back to Home";
   const titleText = language === 'pt' ? "Termos de Serviço" : "Terms of Service";
   const lastUpdatedText = language === 'pt' ? "Última atualização" : "Last updated";
