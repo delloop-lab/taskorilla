@@ -463,13 +463,16 @@ export default function Navbar() {
             <div className="hidden md:flex items-center space-x-4">
             {/* TASKS Dropdown Menu */}
             <div 
-              className="relative"
+              className="relative z-50"
               onMouseEnter={() => {
                 // Clear any pending timeout
                 if (tasksMenuTimeout) {
                   clearTimeout(tasksMenuTimeout)
                   setTasksMenuTimeout(null)
                 }
+                // Close other menus
+                setHelpersMenuOpen(false)
+                setHelpMenuOpen(false)
                 setTasksMenuOpen(true)
               }}
               onMouseLeave={() => {
@@ -527,13 +530,16 @@ export default function Navbar() {
             </div>
             {/* HELPERS Dropdown Menu */}
             <div 
-              className="relative"
+              className="relative z-50"
               onMouseEnter={() => {
                 // Clear any pending timeout
                 if (helpersMenuTimeout) {
                   clearTimeout(helpersMenuTimeout)
                   setHelpersMenuTimeout(null)
                 }
+                // Close other menus
+                setTasksMenuOpen(false)
+                setHelpMenuOpen(false)
                 setHelpersMenuOpen(true)
               }}
               onMouseLeave={() => {
@@ -555,9 +561,9 @@ export default function Navbar() {
               {helpersMenuOpen && (
                 <>
                   {/* Invisible bridge area to make it easier to move mouse to submenu */}
-                  <div className="absolute top-full left-0 w-full h-4" />
+                  <div className="absolute top-full left-0 w-full h-4 z-50" />
                   <div
-                    className="absolute top-full left-0 mt-4 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                    className="absolute top-full left-0 mt-4 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[60]"
                     onMouseEnter={() => {
                       // Keep menu open when hovering over submenu
                       if (helpersMenuTimeout) {
@@ -591,13 +597,16 @@ export default function Navbar() {
             </div>
             {/* HELP Dropdown Menu */}
             <div 
-              className="relative"
+              className="relative z-50"
               onMouseEnter={() => {
                 // Clear any pending timeout
                 if (helpMenuTimeout) {
                   clearTimeout(helpMenuTimeout)
                   setHelpMenuTimeout(null)
                 }
+                // Close other menus
+                setTasksMenuOpen(false)
+                setHelpersMenuOpen(false)
                 setHelpMenuOpen(true)
               }}
               onMouseLeave={() => {
@@ -619,9 +628,9 @@ export default function Navbar() {
               {helpMenuOpen && (
                 <>
                   {/* Invisible bridge area to make it easier to move mouse to submenu */}
-                  <div className="absolute top-full left-0 w-full h-4" />
+                  <div className="absolute top-full left-0 w-full h-4 z-50" />
                   <div
-                    className="absolute top-full left-0 mt-4 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                    className="absolute top-full left-0 mt-4 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[60]"
                     onMouseEnter={() => {
                       // Keep menu open when hovering over submenu
                       if (helpMenuTimeout) {
