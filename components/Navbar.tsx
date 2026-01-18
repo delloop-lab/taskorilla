@@ -679,7 +679,7 @@ export default function Navbar() {
               href="/pricing"
               className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium"
             >
-              PRICE
+              {t('navbar.price')}
             </Link>
             {/* Language Switcher */}
             <div className="flex items-center border border-gray-300 rounded-md overflow-hidden">
@@ -1004,7 +1004,7 @@ export default function Navbar() {
                 className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                PRICE
+                {t('navbar.price')}
               </Link>
             </div>
 
