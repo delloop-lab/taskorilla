@@ -14,8 +14,8 @@
  * 4. Updates blog post metadata (if needed)
  */
 
-import { blogs, needsOgImage } from '../lib/blog-data'
-import { getOgImagePath, generateOgImagePrompt } from '../lib/blog-image-utils'
+import { blogs } from '../lib/blog-data'
+import { getOgImagePath, generateOgImagePrompt, needsOgImage } from '../lib/blog-image-utils'
 import { mkdir, writeFile } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
