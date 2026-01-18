@@ -15,7 +15,7 @@ export default function AboutPage() {
     teeTitle: "Conheça o TEE",
     teeText: "Também verá o TEE pelo site. O TEE é a nossa mascote gorila, inspirada na força, fiabilidade e foco calmo pelos quais os gorilas são conhecidos. Ele aparece como um guia amigável para tornar a experiência mais acolhedora e menos stressante. Sem ruído, sem pressão, apenas um ajudante constante que representa como queremos que a plataforma se sinta.",
     builtFromScratch: "O Taskorilla é único, pois foi construído de raiz para servir tanto Taskers como Ajudantes melhor do que qualquer outra coisa por aí. Não é uma cópia de nenhum outro marketplace—cada funcionalidade, fluxo de trabalho e detalhe é único, projetado para tornar a procura, gestão e conclusão de tarefas simples, justa e eficaz.",
-    belief: "Acreditamos que a tecnologia deve tornar a vida mais fácil, não mais complicada, e tudo o que criamos segue essa ideia."
+    belief: "Acreditamos que a tecnologia deve tornar a vida mais fácil, não mais complicada, e tudo o que criamos segue esse princípio. Com o Taskorilla, realizar tarefas e ajudar a sua comunidade simplesmente faz sentido."
   } : {
     backText: "← Back to Home",
     title: "About Us",
@@ -23,7 +23,7 @@ export default function AboutPage() {
     teeTitle: "Meet TEE",
     teeText: "You will also see TEE around the site. TEE is our gorilla mascot, inspired by the strength, reliability and calm focus that gorillas are known for. He shows up as a friendly guide to make the experience warmer and less stressful. No noise, no pressure, just a steady helper who represents how we want the platform to feel.",
     builtFromScratch: "Taskorilla is unique as it was built from the ground up to serve both Taskers and Helpers better than anything else out there. It's not a copy of any other marketplace—every feature, workflow, and detail is unique, designed to make finding, managing, and completing tasks simple, fair, and effective.",
-    belief: "We believe technology should make life easier, not more complicated, and everything we create follows that idea."
+    belief: "We believe technology should make life easier, not more complicated, and everything we create follows that principle. With Taskorilla, getting tasks done and helping your community just makes sense."
   };
 
   return (
