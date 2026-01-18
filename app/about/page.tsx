@@ -14,7 +14,7 @@ export default function AboutPage() {
     introHeading: "Ajudando Pessoas, Apoiando Comunidades",
     intro: "Somos uma pequena equipa com uma missão simples: tornar mais fácil realizar tarefas do dia a dia enquanto apoiamos Ajudantes locais e a comunidade. Tudo o que criamos é projetado para ser humano, simples e genuinamente útil.",
     teeTitle: "Conheça o TEE",
-    teeText: "Também verá o TEE pelo site. O TEE é a nossa mascote gorila, inspirada na força, fiabilidade e foco calmo pelos quais os gorilas são conhecidos. Ele aparece como um guia amigável para tornar a experiência mais acolhedora e menos stressante. Sem ruído, sem pressão, apenas um ajudante constante que representa como queremos que a plataforma se sinta.",
+    teeText: "Verá o TEE pelo site, a nossa mascote gorila. Inspirado na força, fiabilidade e foco calmo dos gorilas reais, o TEE atua como um guia amigável para tornar a sua experiência mais acolhedora e menos stressante. Sem ruído, sem pressão—apenas apoio constante, refletindo como queremos que o Taskorilla se sinta.",
     builtFromScratch: "O Taskorilla é único, pois foi construído de raiz para servir tanto Taskers como Ajudantes melhor do que qualquer outra coisa por aí. Não é uma cópia de nenhum outro marketplace—cada funcionalidade, fluxo de trabalho e detalhe é único, projetado para tornar a procura, gestão e conclusão de tarefas simples, justa e eficaz.",
     belief: "Acreditamos que a tecnologia deve tornar a vida mais fácil, não mais complicada, e tudo o que criamos segue esse princípio. Com o Taskorilla, realizar tarefas e ajudar a sua comunidade simplesmente faz sentido."
   } : {
@@ -23,7 +23,7 @@ export default function AboutPage() {
     introHeading: "Helping People, Supporting Communities",
     intro: "We're a small team with a simple mission: make getting everyday tasks done easier while supporting local Helpers and the community. Everything we create is designed to be human, simple, and genuinely useful.",
     teeTitle: "Meet TEE",
-    teeText: "You will also see TEE around the site. TEE is our gorilla mascot, inspired by the strength, reliability and calm focus that gorillas are known for. He shows up as a friendly guide to make the experience warmer and less stressful. No noise, no pressure, just a steady helper who represents how we want the platform to feel.",
+    teeText: "You'll see TEE around the site, our gorilla mascot. Inspired by the strength, reliability, and calm focus of real gorillas, TEE acts as a friendly guide to make your experience warmer and less stressful. No noise, no pressure—just steady support, reflecting how we want Taskorilla to feel.",
     builtFromScratch: "Taskorilla is unique as it was built from the ground up to serve both Taskers and Helpers better than anything else out there. It's not a copy of any other marketplace—every feature, workflow, and detail is unique, designed to make finding, managing, and completing tasks simple, fair, and effective.",
     belief: "We believe technology should make life easier, not more complicated, and everything we create follows that principle. With Taskorilla, getting tasks done and helping your community just makes sense."
   };
