@@ -35,6 +35,7 @@ export default function PricingPage() {
       helpersEx3: "Multiple bids → commission only on completed tasks",
       startHelpingBtn: "Start Helping Today",
       compareTitle: "How Taskorilla Compares",
+      compareSubtitle: "Some platforms keep you guessing on fees and leave you wishing for basic features. Taskorilla does the opposite: simple, clear pricing and all the tools you'd ever want, no compromises.",
       tableHeaders: {
         platform: "Platform",
         posterCost: "Task Poster Cost",
@@ -122,6 +123,7 @@ export default function PricingPage() {
       helpersEx3: "Várias ofertas → comissão apenas em tarefas concluídas",
       startHelpingBtn: "Comece a Ajudar Hoje",
       compareTitle: "Como o Taskorilla se Compara",
+      compareSubtitle: "Algumas plataformas deixam-no a adivinhar taxas e desejando funcionalidades básicas. O Taskorilla faz o oposto: preços simples e claros e todas as ferramentas que poderia desejar, sem compromissos.",
       tableHeaders: {
         platform: "Plataforma",
         posterCost: "Custo do Anunciante",
@@ -310,9 +312,12 @@ export default function PricingPage() {
 
         {/* Taskorilla vs Competitors Table */}
         <div className="mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 text-center mb-4">
             {t.compareTitle}
           </h2>
+          <p className="text-center text-gray-700 text-lg mb-8 max-w-4xl mx-auto">
+            {t.compareSubtitle}
+          </p>
 
           <div className="overflow-x-auto">
             <table className="w-full border-collapse bg-white shadow-lg rounded-lg overflow-hidden comparison-table">
