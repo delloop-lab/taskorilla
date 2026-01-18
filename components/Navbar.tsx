@@ -665,6 +665,13 @@ export default function Navbar() {
                 </>
               )}
             </div>
+            {/* Pricing Link */}
+            <Link
+              href="/pricing"
+              className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium"
+            >
+              Pricing
+            </Link>
             {/* Language Switcher */}
             <div className="flex items-center border border-gray-300 rounded-md overflow-hidden">
               <button
@@ -979,6 +986,17 @@ export default function Navbar() {
               >
                 {t('navbar.contactSupport')}
               </a>
+            </div>
+
+            {/* Pricing Link - Mobile */}
+            <div className="px-4 py-2">
+              <Link
+                href="/pricing"
+                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Pricing
+              </Link>
             </div>
 
             {user ? (

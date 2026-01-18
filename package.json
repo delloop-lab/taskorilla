@@ -1,13 +1,14 @@
 {
   "name": "task-marketplace",
-  "version": "0.99.883",
+  "version": "0.99.884",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "generate-icons": "node scripts/generate-icons.js"
+    "generate-icons": "node scripts/generate-icons.js",
+    "generate-blog-images": "ts-node scripts/generate-blog-og-images.ts"
   },
   "dependencies": {
     "@airwallex/components-sdk": "^1.27.2",
@@ -37,10 +38,12 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.4.16",
+    "dotenv": "^16.3.1",
     "eslint": "^8",
     "eslint-config-next": "14.2.33",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.3.5",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }
