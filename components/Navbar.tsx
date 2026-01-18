@@ -653,7 +653,7 @@ export default function Navbar() {
                       {t('navbar.helpCenter')}
                     </Link>
                     <a
-                      href="mailto:tee@taskorilla.com"
+                      href="mailto:support@taskorilla.com?subject=Support%20Request"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
                       {t('navbar.contactSupport')}
@@ -995,7 +995,7 @@ export default function Navbar() {
                 {t('navbar.guides')}
               </Link>
               <a
-                href="mailto:tee@taskorilla.com"
+                href="mailto:support@taskorilla.com?subject=Support%20Request"
                 className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
