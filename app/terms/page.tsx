@@ -141,7 +141,7 @@ export default function TermsPage() {
   
   const lastUpdated = language === 'pt' ? "17 de novembro de 2025" : "November 17, 2025";
   const backText = language === 'pt' ? "← Voltar à Página Inicial" : "← Back to Home";
-  const titleText = language === 'pt' ? "Termos e Condições" : "Terms and Conditions";
+  const titleText = language === 'pt' ? "Termos de Serviço" : "Terms of Service";
   const lastUpdatedText = language === 'pt' ? "Última atualização" : "Last updated";
   const introText = language === 'pt' 
     ? "Bem-vindo ao Taskorilla. Ao usar a plataforma, concorda com estes Termos. Se não concordar, por favor pare de usar a plataforma."
