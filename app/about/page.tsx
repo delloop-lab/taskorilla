@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useLanguage } from "@/lib/i18n";
-import { Heart, Sparkles } from "lucide-react";
+import { Heart, Sparkles, Rocket } from "lucide-react";
 
 export default function AboutPage() {
   const { language } = useLanguage();
@@ -56,7 +56,7 @@ export default function AboutPage() {
           <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 md:p-8 mb-6 md:mb-8">
             <div className="flex items-start gap-3 sm:gap-4">
               <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                <Heart className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-blue-600" />
+                <Rocket className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-blue-600" />
               </div>
               <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed">
                 {content.builtFromScratch}
