@@ -79,8 +79,8 @@ export default function AboutPage() {
           {/* TEE Section */}
           <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 md:p-8">
             <div className="flex items-start gap-3 sm:gap-4 mb-6">
-              <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-amber-50 rounded-lg flex items-center justify-center">
-                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-amber-600" />
+              <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-primary" />
               </div>
               <div className="flex-1">
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
