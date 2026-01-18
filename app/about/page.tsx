@@ -14,7 +14,7 @@ export default function AboutPage() {
     intro: "Somos uma pequena equipa com um objetivo simples: ajudar as pessoas a realizar tarefas do dia a dia enquanto apoiamos ajudantes locais e a comunidade. Gostamos de manter as coisas humanas, simples e úteis.",
     teeTitle: "Conheça o TEE",
     teeText: "Também verá o TEE pelo site. O TEE é a nossa mascote gorila, inspirada na força, fiabilidade e foco calmo pelos quais os gorilas são conhecidos. Ele aparece como um guia amigável para tornar a experiência mais acolhedora e menos stressante. Sem ruído, sem pressão, apenas um ajudante constante que representa como queremos que a plataforma se sinta.",
-    builtFromScratch: "Construímos tudo de raiz para fazer o melhor trabalho possível tanto para Taskers como para Ajudantes. Não é uma cópia de nenhum outro marketplace, cada funcionalidade, cada fluxo de trabalho e cada detalhe foi projetado para tornar a procura, gestão e conclusão de tarefas simples, justa e eficaz.",
+    builtFromScratch: "O Taskorilla é único, pois foi construído de raiz para servir tanto Taskers como Ajudantes melhor do que qualquer outra coisa por aí. Não é uma cópia de nenhum outro marketplace—cada funcionalidade, fluxo de trabalho e detalhe é único, projetado para tornar a procura, gestão e conclusão de tarefas simples, justa e eficaz.",
     belief: "Acreditamos que a tecnologia deve tornar a vida mais fácil, não mais complicada, e tudo o que criamos segue essa ideia."
   } : {
     backText: "← Back to Home",
@@ -22,7 +22,7 @@ export default function AboutPage() {
     intro: "We are a small team with a simple goal: help people get everyday tasks done while supporting local helpers and the community. We like to keep things human, simple and useful.",
     teeTitle: "Meet TEE",
     teeText: "You will also see TEE around the site. TEE is our gorilla mascot, inspired by the strength, reliability and calm focus that gorillas are known for. He shows up as a friendly guide to make the experience warmer and less stressful. No noise, no pressure, just a steady helper who represents how we want the platform to feel.",
-    builtFromScratch: "We built everything from the ground up to do the best job possible for both Taskers and Helpers. It's not a copy of any other marketplace, every feature, every workflow, and every detail was designed to make finding, managing, and completing tasks simple, fair, and effective.",
+    builtFromScratch: "Taskorilla is unique as it was built from the ground up to serve both Taskers and Helpers better than anything else out there. It's not a copy of any other marketplace—every feature, workflow, and detail is unique, designed to make finding, managing, and completing tasks simple, fair, and effective.",
     belief: "We believe technology should make life easier, not more complicated, and everything we create follows that idea."
   };
 
