@@ -690,14 +690,14 @@ export default function Navbar() {
                   console.log('Language switch clicked: EN')
                   setLanguage('en')
                 }}
-                className={`px-3 py-2 text-sm font-medium transition-colors ${
+                className={`px-1.5 py-1.5 text-sm font-medium transition-colors ${
                   language === 'en'
                     ? 'bg-[#FD9212] text-white'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
                 title={t('language.switchToEnglish')}
               >
-                <svg className="w-5 h-4" viewBox="0 0 5 3" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-8 h-6" viewBox="0 0 5 3" xmlns="http://www.w3.org/2000/svg">
                   <rect width="5" height="3" fill="#012169"/>
                   <path d="M0,0 L5,3 M5,0 L0,3" stroke="#fff" strokeWidth="0.6"/>
                   <path d="M0,0 L5,3 M5,0 L0,3" stroke="#C8102E" strokeWidth="0.3" strokeLinecap="round"/>
@@ -713,14 +713,14 @@ export default function Navbar() {
                   console.log('Language switch clicked: PT')
                   setLanguage('pt')
                 }}
-                className={`px-3 py-2 text-sm font-medium transition-colors ${
+                className={`px-1.5 py-1.5 text-sm font-medium transition-colors ${
                   language === 'pt'
                     ? 'bg-[#FD9212] text-white'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
                 title={t('language.switchToPortuguese')}
               >
-                <svg className="w-5 h-4" viewBox="0 0 5 3" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-8 h-6" viewBox="0 0 5 3" xmlns="http://www.w3.org/2000/svg">
                   <rect width="2" height="3" fill="#006600"/>
                   <rect x="2" width="3" height="3" fill="#FF0000"/>
                 </svg>
@@ -852,14 +852,14 @@ export default function Navbar() {
                   e.stopPropagation()
                   setLanguage('en')
                 }}
-                className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                className={`px-1.5 py-1.5 text-xs font-medium transition-colors ${
                   language === 'en'
                     ? 'bg-[#FD9212] text-white'
                     : 'text-gray-700 bg-white hover:bg-gray-50'
                 }`}
                 title={t('language.switchToEnglish')}
               >
-                <svg className="w-5 h-4" viewBox="0 0 5 3" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-7 h-5" viewBox="0 0 5 3" xmlns="http://www.w3.org/2000/svg">
                   <rect width="5" height="3" fill="#012169"/>
                   <path d="M0,0 L5,3 M5,0 L0,3" stroke="#fff" strokeWidth="0.6"/>
                   <path d="M0,0 L5,3 M5,0 L0,3" stroke="#C8102E" strokeWidth="0.3" strokeLinecap="round"/>
@@ -874,14 +874,14 @@ export default function Navbar() {
                   e.stopPropagation()
                   setLanguage('pt')
                 }}
-                className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                className={`px-1.5 py-1.5 text-xs font-medium transition-colors ${
                   language === 'pt'
                     ? 'bg-[#FD9212] text-white'
                     : 'text-gray-700 bg-white hover:bg-gray-50'
                 }`}
                 title={t('language.switchToPortuguese')}
               >
-                <svg className="w-5 h-4" viewBox="0 0 5 3" xmlns="http://www.w3.org/2000/svg">
+                <svg className="w-7 h-5" viewBox="0 0 5 3" xmlns="http://www.w3.org/2000/svg">
                   <rect width="2" height="3" fill="#006600"/>
                   <rect x="2" width="3" height="3" fill="#FF0000"/>
                 </svg>
