@@ -652,18 +652,6 @@ export default function Navbar() {
                     >
                       {t('navbar.helpCenter')}
                     </Link>
-                    <Link
-                      href="/help/faq"
-                      className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
-                    >
-                      {t('navbar.faqs')}
-                    </Link>
-                    <Link
-                      href="/help/guides"
-                      className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
-                    >
-                      {t('navbar.guides')}
-                    </Link>
                     <a
                       href="mailto:tee@taskorilla.com"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
