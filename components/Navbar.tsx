@@ -692,7 +692,7 @@ export default function Navbar() {
                 }}
                 className={`px-1.5 py-1.5 text-sm font-medium transition-colors ${
                   language === 'en'
-                    ? 'bg-orange-100 text-gray-900'
+                    ? 'bg-orange-200 text-gray-900'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
                 title={t('language.switchToEnglish')}
@@ -715,7 +715,7 @@ export default function Navbar() {
                 }}
                 className={`px-1.5 py-1.5 text-sm font-medium transition-colors ${
                   language === 'pt'
-                    ? 'bg-orange-100 text-gray-900'
+                    ? 'bg-orange-200 text-gray-900'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
                 title={t('language.switchToPortuguese')}
@@ -854,7 +854,7 @@ export default function Navbar() {
                 }}
                 className={`px-1.5 py-1.5 text-xs font-medium transition-colors ${
                   language === 'en'
-                    ? 'bg-orange-100 text-gray-900'
+                    ? 'bg-orange-200 text-gray-900'
                     : 'text-gray-700 bg-white hover:bg-gray-50'
                 }`}
                 title={t('language.switchToEnglish')}
@@ -876,7 +876,7 @@ export default function Navbar() {
                 }}
                 className={`px-1.5 py-1.5 text-xs font-medium transition-colors ${
                   language === 'pt'
-                    ? 'bg-orange-100 text-gray-900'
+                    ? 'bg-orange-200 text-gray-900'
                     : 'text-gray-700 bg-white hover:bg-gray-50'
                 }`}
                 title={t('language.switchToPortuguese')}
