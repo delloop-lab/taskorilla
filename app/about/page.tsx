@@ -83,9 +83,6 @@ export default function AboutPage() {
                 <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-primary" />
               </div>
               <div className="flex-1">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
-                  {content.teeTitle}
-                </h2>
                 <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed">
                   {content.teeText}
                 </p>
