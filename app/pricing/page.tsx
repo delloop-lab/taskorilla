@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useLanguage } from '@/lib/LanguageContext'
+import { useLanguage } from '@/lib/i18n'
 
 export default function PricingPage() {
   const { language } = useLanguage()
