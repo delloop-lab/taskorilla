@@ -78,19 +78,19 @@ export default function AboutPage() {
 
           {/* TEE Section */}
           <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 md:p-8">
-            <div className="flex items-start gap-3 sm:gap-4 mb-6">
-              <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-primary" />
+            <div className="flex flex-col md:flex-row gap-4 md:gap-6 lg:gap-8 items-start md:items-center">
+              <div className="flex items-start gap-3 sm:gap-4 flex-1">
+                <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed">
+                    {content.teeText}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed">
-                  {content.teeText}
-                </p>
-              </div>
-            </div>
-            {/* TEE image */}
-            <div className="flex justify-center">
-              <div className="w-40 h-40 sm:w-44 sm:h-44 md:w-48 md:h-48 lg:w-56 lg:h-56 relative">
+              {/* TEE on the right */}
+              <div className="w-40 h-40 sm:w-44 sm:h-44 md:w-48 md:h-48 lg:w-56 lg:h-56 flex-shrink-0 mx-auto md:mx-0 order-first md:order-last relative">
                 {/* Mobile image */}
                 <Image
                   src="/images/gorilla-mascot-newer.png"
