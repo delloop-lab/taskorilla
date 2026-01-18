@@ -60,7 +60,7 @@ export default function HelpCenter() {
               📚 {t('help.viewAllGuides')}
             </Link>
             <a 
-              href="mailto:tee@taskorilla.com"
+              href="mailto:tee@taskorilla.com?subject=Support%20Request"
               className="px-6 py-3 bg-gray-100 hover:bg-primary hover:text-white rounded-lg font-medium transition-colors flex items-center gap-2"
             >
               <MessageCircle className="w-5 h-5" />
@@ -124,7 +124,7 @@ export default function HelpCenter() {
             {t('help.cantFindMessage')}
           </p>
           <a 
-            href="mailto:tee@taskorilla.com"
+            href="mailto:tee@taskorilla.com?subject=Support%20Request"
             className="inline-flex items-center gap-2 px-8 py-4 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition-colors text-lg"
           >
             <MessageCircle className="w-6 h-6" />
