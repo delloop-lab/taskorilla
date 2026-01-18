@@ -160,9 +160,8 @@ export async function POST(request: NextRequest) {
     },
     { status: 410 } // 410 Gone
   )
-
-  // Legacy code below (disabled)
-  /*
+  
+  /* Legacy code below (disabled)
   try {
     const searchParams = request.nextUrl.searchParams
     const slug = searchParams.get('slug')
@@ -273,4 +272,5 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+  */
 }
