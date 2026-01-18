@@ -11,6 +11,7 @@ function RegisterContent() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [fullName, setFullName] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [termsAccepted, setTermsAccepted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -23,6 +24,12 @@ function RegisterContent() {
     setError(null)
 
     // Validation
+    if (!termsAccepted) {
+      setError('You must accept the Terms of Service to create an account')
+      setLoading(false)
+      return
+    }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match')
       setLoading(false)
@@ -63,6 +70,17 @@ function RegisterContent() {
       }
 
       if (data.user) {
+        // Update profile with terms acceptance timestamp
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ terms_accepted_at: new Date().toISOString() })
+          .eq('id', data.user.id)
+
+        if (profileError) {
+          console.error('Error updating terms acceptance:', profileError)
+          // Don't block registration if terms update fails, but log it
+        }
+
         // Check if email confirmation is required
         // If confirmation is disabled, user will be logged in automatically
         if (data.session) {
@@ -186,6 +204,32 @@ function RegisterContent() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
+            </div>
+          </div>
+
+          <div className="flex items-start">
+            <div className="flex items-center h-5">
+              <input
+                id="terms"
+                name="terms"
+                type="checkbox"
+                required
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer"
+              />
+            </div>
+            <div className="ml-3 text-sm">
+              <label htmlFor="terms" className="font-medium text-gray-700">
+                I accept the{' '}
+                <Link 
+                  href="/terms" 
+                  target="_blank"
+                  className="text-primary-600 hover:text-primary-500 underline"
+                >
+                  Terms of Service
+                </Link>
+              </label>
             </div>
           </div>
 
