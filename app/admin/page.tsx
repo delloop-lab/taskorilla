@@ -3987,9 +3987,9 @@ export default function SuperadminDashboard() {
               </div>
               {blogImageGenerationStatus && (
                 <div className={`mt-4 p-4 rounded-lg max-h-96 overflow-y-auto ${
-                  blogImageGenerationStatus.includes('✅') 
+                  blogImageGenerationStatus?.includes('✅') 
                     ? 'bg-green-50 text-green-800 border border-green-200' 
-                    : blogImageGenerationStatus.includes('❌')
+                    : blogImageGenerationStatus?.includes('❌')
                     ? 'bg-red-50 text-red-800 border border-red-200'
                     : 'bg-blue-50 text-blue-800 border border-blue-200'
                 }`}>
