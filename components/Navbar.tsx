@@ -850,7 +850,10 @@ export default function Navbar() {
                 }`}
                 title={t('language.switchToEnglish')}
               >
-                🇬🇧 EN
+                <span className="inline-flex items-center gap-1">
+                  <span className="text-sm">🇬🇧</span>
+                  <span>EN</span>
+                </span>
               </button>
               <div className="w-px h-5 bg-gray-300" />
               <button
@@ -866,7 +869,10 @@ export default function Navbar() {
                 }`}
                 title={t('language.switchToPortuguese')}
               >
-                🇵🇹 PT
+                <span className="inline-flex items-center gap-1">
+                  <span className="text-sm">🇵🇹</span>
+                  <span>PT</span>
+                </span>
               </button>
             </div>
             {user && unreadCount > 0 && (
