@@ -13,7 +13,7 @@ export default function GuideStillNeedHelp() {
           {t('help.supportTeamHere')}
         </p>
         <a 
-          href="mailto:tee@taskorilla.com"
+          href="mailto:tee@taskorilla.com?subject=Support%20Request"
           className="inline-block px-8 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 transition-colors"
         >
           {t('help.contactSupport')}
