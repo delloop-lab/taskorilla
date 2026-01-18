@@ -243,7 +243,7 @@ export default function PricingPage() {
                   alt="Taskorilla mascot posting a task"
                   width={250}
                   height={250}
-                  className="w-auto h-48 object-contain"
+                  className="w-auto h-44 object-contain"
                 />
               </div>
             </div>
@@ -295,7 +295,7 @@ export default function PricingPage() {
                   alt="Taskorilla mascot helping"
                   width={250}
                   height={250}
-                  className="w-auto h-48 object-contain"
+                  className="w-auto h-44 object-contain"
                 />
               </div>
             </div>
