@@ -21,6 +21,8 @@ import { getTrafficStats, getDailyTrafficSummary, getDailyTrafficStats } from '@
 import StandardModal from '@/components/StandardModal'
 import EmailTemplateManager from '@/components/EmailTemplateManager'
 import EmailTemplateEditor from '@/components/EmailTemplateEditor'
+import CreateBlogPost from '@/components/CreateBlogPost'
+import { blogs } from '@/lib/blog-data'
 import { User } from '@/lib/types'
 import { STANDARD_SKILLS, STANDARD_SERVICES } from '@/lib/helper-constants'
 
@@ -81,7 +83,7 @@ export default function SuperadminDashboard() {
   const [traffic, setTraffic] = useState<Traffic[]>([])
   const [dailyTraffic, setDailyTraffic] = useState<DailyTraffic[]>([])
   const [trafficDays, setTrafficDays] = useState<number>(30)
-  const [tab, setTab] = useState<'users' | 'tasks' | 'stats' | 'revenue' | 'email' | 'traffic' | 'email_logs' | 'settings' | 'reports' | 'skills_services'>('users')
+  const [tab, setTab] = useState<'users' | 'tasks' | 'stats' | 'revenue' | 'email' | 'traffic' | 'email_logs' | 'settings' | 'reports' | 'skills_services' | 'blog'>('users')
   const [reports, setReports] = useState<any[]>([])
   const [loadingReports, setLoadingReports] = useState(false)
   const [deletingReportId, setDeletingReportId] = useState<string | null>(null)
@@ -89,6 +91,9 @@ export default function SuperadminDashboard() {
   const [reportToDelete, setReportToDelete] = useState<string | null>(null)
   const [showDeleteErrorModal, setShowDeleteErrorModal] = useState(false)
   const [deleteErrorMessage, setDeleteErrorMessage] = useState<string>('')
+  const [generatingBlogImages, setGeneratingBlogImages] = useState(false)
+  const [blogImageGenerationStatus, setBlogImageGenerationStatus] = useState<string | null>(null)
+  const [editingPostSlug, setEditingPostSlug] = useState<string | null>(null)
   
   // Use a ref to track modal state to avoid closure issues
   const showDeleteConfirmModalRef = useRef(false)
@@ -1382,12 +1387,8 @@ export default function SuperadminDashboard() {
       }
 
       // Replace variables in content
-      const userName = user.full_name || user.email || ''
-      const userFirstName = userName ? userName.split(' ')[0] : ''
-      
       let renderedContent = freeFormContent
-        .replace(/\{\{user_name\}\}/g, userName)
-        .replace(/\{\{user_first_name\}\}/g, userFirstName)
+        .replace(/\{\{user_name\}\}/g, user.full_name || user.email || '')
         .replace(/\{\{user_email\}\}/g, user.email || '')
       
       // Replace tee_image if present
@@ -1579,7 +1580,7 @@ export default function SuperadminDashboard() {
 
         {/* Tabs */}
         <div className="mb-4 sm:mb-6 flex flex-wrap gap-2 items-center">
-          {(['users', 'tasks', 'reports', 'stats', 'revenue', 'email', 'traffic', 'email_logs', 'settings', 'skills_services'] as const).map(t => (
+          {(['users', 'tasks', 'reports', 'stats', 'revenue', 'email', 'traffic', 'email_logs', 'settings', 'skills_services', 'blog'] as const).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -2941,7 +2942,7 @@ export default function SuperadminDashboard() {
                       height={300}
                     />
                     <p className="mt-2 text-xs text-gray-500">
-                      💡 You can use HTML formatting. Available variables: {'{{user_name}}'}, {'{{user_first_name}}'}, {'{{user_email}}'}, {'{{tee_image}}'} (mascot)
+                      💡 You can use HTML formatting. Available variables: {'{{user_name}}'}, {'{{user_email}}'}, {'{{tee_image}}'} (mascot)
                     </p>
                   </div>
 
@@ -3828,6 +3829,243 @@ export default function SuperadminDashboard() {
         )}
 
         {/* Settings Tab */}
+        {/* Blog Tab */}
+        {tab === 'blog' && (
+          <div className="space-y-6">
+            {/* OG Image Upload Info */}
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+              <h2 className="text-2xl font-bold mb-4">OG Images</h2>
+              <p className="text-gray-600 mb-4">
+                Upload OG images manually when creating blog posts. Images are stored at <code className="bg-gray-100 px-1 rounded">/public/images/blog/og/</code>
+                <br />
+                <span className="text-sm text-gray-500">Recommended size: 1200x630px for optimal social sharing.</span>
+              </p>
+              <p className="text-sm text-gray-600">
+                <strong>Note:</strong> AI image generation has been disabled. Please upload images manually using the form below.
+              </p>
+            </div>
+
+            {/* Legacy AI Generation Section - DISABLED */}
+            {false && (
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6 opacity-50">
+              <h2 className="text-2xl font-bold mb-4">Generate OG Images (DISABLED)</h2>
+              <p className="text-gray-600 mb-4">
+                This feature has been disabled. Please use manual image uploads instead.
+              </p>
+              <div className="flex gap-3 mb-4">
+                <button
+                  onClick={async () => {
+                    setGeneratingBlogImages(true)
+                    setBlogImageGenerationStatus('🔄 Starting image generation for missing posts...\nThis may take several minutes. Please wait...')
+                    try {
+                      const controller = new AbortController()
+                      const timeoutId = setTimeout(() => controller.abort(), 600000) // 10 minutes
+                      
+                      const response = await fetch('/api/blog/generate-og-image?all=true', {
+                        method: 'POST',
+                        signal: controller.signal,
+                      })
+                      
+                      clearTimeout(timeoutId)
+                      
+                      if (!response.ok) {
+                        const errorText = await response.text()
+                        throw new Error(`HTTP ${response.status}: ${errorText || 'Unknown error'}`)
+                      }
+                      
+                      const data = await response.json()
+                      
+                      if (data.success) {
+                        const successCount = data.results?.filter((r: any) => r.success).length || 0
+                        const totalCount = data.results?.length || 0
+                        const failedCount = totalCount - successCount
+                        
+                        let statusMessage = `✅ Success! Generated ${successCount} of ${totalCount} images.\n\n`
+                        
+                        if (data.results && data.results.length > 0) {
+                          statusMessage += 'Results:\n'
+                          data.results.forEach((result: any) => {
+                            if (result.success) {
+                              statusMessage += `✅ ${result.title} - ${result.imagePath}\n`
+                            } else {
+                              statusMessage += `❌ ${result.title} - Error: ${result.error}\n`
+                            }
+                          })
+                        }
+                        
+                        if (failedCount > 0) {
+                          statusMessage += `\n⚠️ ${failedCount} image(s) failed to generate. Check errors above.`
+                        }
+                        
+                        setBlogImageGenerationStatus(statusMessage)
+                      } else {
+                        setBlogImageGenerationStatus(`❌ Error: ${data.error || 'Failed to generate images'}`)
+                      }
+                    } catch (error: any) {
+                      if (error.name === 'AbortError') {
+                        setBlogImageGenerationStatus('⏱️ Request timed out. The generation may still be running on the server. Check the server logs and refresh to see if images were created.')
+                      } else {
+                        setBlogImageGenerationStatus(`❌ Error: ${error.message || 'Failed to generate images'}\n\nCheck the browser console (F12) and server logs for more details.`)
+                        console.error('Image generation error:', error)
+                      }
+                    } finally {
+                      setGeneratingBlogImages(false)
+                    }
+                  }}
+                  disabled={generatingBlogImages}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {generatingBlogImages ? 'Generating...' : 'Generate Missing Images'}
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!confirm('This will regenerate ALL blog post images, even existing ones. This may take a long time and use API credits. Continue?')) {
+                      return
+                    }
+                    setGeneratingBlogImages(true)
+                    setBlogImageGenerationStatus('🔄 Force regenerating ALL images...\nThis may take several minutes. Please wait...')
+                    try {
+                      const controller = new AbortController()
+                      const timeoutId = setTimeout(() => controller.abort(), 600000) // 10 minutes
+                      
+                      const response = await fetch('/api/blog/generate-og-image?all=true&force=true', {
+                        method: 'POST',
+                        signal: controller.signal,
+                      })
+                      
+                      clearTimeout(timeoutId)
+                      
+                      if (!response.ok) {
+                        const errorText = await response.text()
+                        throw new Error(`HTTP ${response.status}: ${errorText || 'Unknown error'}`)
+                      }
+                      
+                      const data = await response.json()
+                      
+                      if (data.success) {
+                        const successCount = data.results?.filter((r: any) => r.success).length || 0
+                        const totalCount = data.results?.length || 0
+                        const failedCount = totalCount - successCount
+                        
+                        let statusMessage = `✅ Success! Regenerated ${successCount} of ${totalCount} images.\n\n`
+                        
+                        if (data.results && data.results.length > 0) {
+                          statusMessage += 'Results:\n'
+                          data.results.forEach((result: any) => {
+                            if (result.success) {
+                              statusMessage += `✅ ${result.title} - ${result.imagePath}\n`
+                            } else {
+                              statusMessage += `❌ ${result.title} - Error: ${result.error}\n`
+                            }
+                          })
+                        }
+                        
+                        if (failedCount > 0) {
+                          statusMessage += `\n⚠️ ${failedCount} image(s) failed to generate. Check errors above.`
+                        }
+                        
+                        setBlogImageGenerationStatus(statusMessage)
+                      } else {
+                        setBlogImageGenerationStatus(`❌ Error: ${data.error || 'Failed to generate images'}`)
+                      }
+                    } catch (error: any) {
+                      if (error.name === 'AbortError') {
+                        setBlogImageGenerationStatus('⏱️ Request timed out. The generation may still be running on the server. Check the server logs and refresh to see if images were created.')
+                      } else {
+                        setBlogImageGenerationStatus(`❌ Error: ${error.message || 'Failed to generate images'}\n\nCheck the browser console (F12) and server logs for more details.`)
+                        console.error('Image generation error:', error)
+                      }
+                    } finally {
+                      setGeneratingBlogImages(false)
+                    }
+                  }}
+                  disabled={generatingBlogImages}
+                  className="px-6 py-3 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {generatingBlogImages ? 'Regenerating...' : 'Force Regenerate All'}
+                </button>
+              </div>
+              {blogImageGenerationStatus && (
+                <div className={`mt-4 p-4 rounded-lg max-h-96 overflow-y-auto ${
+                  blogImageGenerationStatus.includes('✅') 
+                    ? 'bg-green-50 text-green-800 border border-green-200' 
+                    : blogImageGenerationStatus.includes('❌')
+                    ? 'bg-red-50 text-red-800 border border-red-200'
+                    : 'bg-blue-50 text-blue-800 border border-blue-200'
+                }`}>
+                  <p className="text-sm whitespace-pre-wrap font-mono">{blogImageGenerationStatus}</p>
+                </div>
+              )}
+              {generatingBlogImages && (
+                <div className="mt-4">
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    <p className="text-sm text-gray-600">Generating images... This may take several minutes. Please don't close this page.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            )}
+
+            {/* Blog Posts List */}
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+              <h2 className="text-2xl font-bold mb-4">All Blog Posts</h2>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {blogs.map((post) => (
+                  <div
+                    key={post.slug}
+                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                  >
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900">{post.title}</h3>
+                      <p className="text-sm text-gray-500">
+                        {post.category} {post.location ? `• ${post.location}` : ''} • {post.date}
+                      </p>
+                      {post.ogImageUpload && (
+                        <p className="text-xs text-green-600 mt-1">✓ Has OG image</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setEditingPostSlug(post.slug)}
+                      className="ml-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Create/Edit Blog Post Section */}
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">
+                  {editingPostSlug ? 'Edit Blog Post' : 'Create Blog Post'}
+                </h2>
+                {editingPostSlug && (
+                  <button
+                    onClick={() => setEditingPostSlug(null)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
+              <CreateBlogPost
+                key={editingPostSlug || 'new-post'} // Force re-render when switching posts
+                initialPost={editingPostSlug ? blogs.find(p => p.slug === editingPostSlug) || null : null}
+                onPostSaved={(post) => {
+                  // Post is automatically saved to lib/blog-data.ts via API
+                  // Reload the page to see updated post list
+                  setTimeout(() => {
+                    window.location.reload()
+                  }, 1500)
+                }}
+              />
+            </div>
+          </div>
+        )}
+
         {tab === 'settings' && (
           <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-2xl">
             <h2 className="text-2xl font-bold mb-6">Platform Fee Settings</h2>

@@ -191,7 +191,7 @@ export default function LandingV2() {
               <p className="text-xl font-bold text-foreground">"Strong Hands. Smart Moves."</p>
             </div>
             <div className="p-6 rounded-lg bg-gradient-to-br from-accent/5 to-primary/5">
-              <p className="text-xl font-bold text-foreground">"Swing Into Action."</p>
+              <p className="text-xl font-bold text-foreground">"Algarve's Local Service Marketplace."</p>
             </div>
             <div className="p-6 rounded-lg bg-gradient-to-br from-primary/10 to-secondary/10">
               <p className="text-xl font-bold text-foreground">"Tasks, Conquered."</p>
