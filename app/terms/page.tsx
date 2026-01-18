@@ -29,6 +29,11 @@ const sectionsEn = [
       "All agreements are strictly between Posters and Taskers. Taskorilla is not part of any agreement and is not responsible for performance, payment, disputes, loss, damage, or safety issues.",
   },
   {
+    title: "Fees and Charges",
+    content:
+      "Posting a task on Taskorilla is free. Placing a bid on a task is free. A €2 platform fee applies to task posters only when a task is marked as completed in accordance with Taskorilla's platform rules. A 10% helper commission applies only when a task is completed and payment has been received by the helper. Taskorilla does not charge any fees for tasks that are not completed. Fees and commissions may be updated from time to time. Any changes will be reflected in the Terms of Service and apply only after users have been notified or have agreed to the updated Terms. E&OE.",
+  },
+  {
     title: "Payments",
     content:
       "Payments may be processed by third parties. Taskorilla does not store card details and is not responsible for payment errors or disputes unless caused by a confirmed platform malfunction.",
@@ -88,6 +93,11 @@ const sectionsPt = [
     title: "Acordos de Tarefas",
     content:
       "Todos os acordos são estritamente entre Requisitantes e Ajudantes. O Taskorilla não faz parte de qualquer acordo e não é responsável pelo desempenho, pagamento, disputas, perdas, danos ou questões de segurança.",
+  },
+  {
+    title: "Taxas e Encargos",
+    content:
+      "Publicar uma tarefa no Taskorilla é gratuito. Fazer uma proposta numa tarefa é gratuito. Uma taxa de plataforma de €2 aplica-se aos requisitantes de tarefas apenas quando uma tarefa é marcada como concluída de acordo com as regras da plataforma Taskorilla. Uma comissão de ajudante de 10% aplica-se apenas quando uma tarefa é concluída e o pagamento foi recebido pelo ajudante. O Taskorilla não cobra quaisquer taxas por tarefas que não sejam concluídas. As taxas e comissões podem ser atualizadas de tempos a tempos. Quaisquer alterações serão refletidas nos Termos de Serviço e aplicam-se apenas após os utilizadores terem sido notificados ou terem concordado com os Termos atualizados. E&OE.",
   },
   {
     title: "Pagamentos",
