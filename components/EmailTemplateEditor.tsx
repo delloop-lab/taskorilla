@@ -107,7 +107,7 @@ export default function EmailTemplateEditor({
     const currentHTML = editor.getHTML()
     // Only update if the content is actually different to avoid loops
     if (value !== undefined && currentHTML !== value && value !== '') {
-      editor.commands.setContent(value || '', false)
+      editor.commands.setContent(value || '', { emitUpdate: false })
     }
   }, [value, editor, isMounted])
 
