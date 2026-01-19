@@ -3367,9 +3367,93 @@ export default function SuperadminDashboard() {
         })()}
 
         {/* Email Logs Tab */}
-        {tab === 'email_logs' && (
+        {tab === 'email_logs' && (() => {
+          // Filter email logs based on filters
+          const filteredEmailLogs = emailLogs.filter((log) => {
+            const recipientMatch = !emailLogFilters.recipient || 
+              log.recipient_email?.toLowerCase().includes(emailLogFilters.recipient.toLowerCase()) ||
+              log.recipient_name?.toLowerCase().includes(emailLogFilters.recipient.toLowerCase())
+            const subjectMatch = !emailLogFilters.subject || 
+              log.subject?.toLowerCase().includes(emailLogFilters.subject.toLowerCase())
+            const typeMatch = !emailLogFilters.emailType || 
+              log.email_type === emailLogFilters.emailType
+            return recipientMatch && subjectMatch && typeMatch
+          })
+
+          return (
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-            <h2 className="text-xl font-semibold mb-4">Email Logs ({emailLogs.length})</h2>
+            <h2 className="text-xl font-semibold mb-4">
+              Email Logs ({filteredEmailLogs.length}{filteredEmailLogs.length !== emailLogs.length ? ` of ${emailLogs.length}` : ''})
+            </h2>
+            
+            {/* Filter Section */}
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Filters</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Recipient Filter */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Recipient
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Filter by recipient email or name..."
+                    value={emailLogFilters.recipient}
+                    onChange={(e) => setEmailLogFilters({ ...emailLogFilters, recipient: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                
+                {/* Subject Filter */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Subject
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Filter by subject..."
+                    value={emailLogFilters.subject}
+                    onChange={(e) => setEmailLogFilters({ ...emailLogFilters, subject: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                
+                {/* Type Filter */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Type
+                  </label>
+                  <select
+                    value={emailLogFilters.emailType}
+                    onChange={(e) => setEmailLogFilters({ ...emailLogFilters, emailType: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">All Types</option>
+                    <option value="new_bid">New Bid</option>
+                    <option value="bid_accepted">Bid Accepted</option>
+                    <option value="bid_rejected">Bid Rejected</option>
+                    <option value="new_message">New Message</option>
+                    <option value="task_completed">Task Completed</option>
+                    <option value="task_cancelled">Task Cancelled</option>
+                    <option value="admin_email">Admin Email</option>
+                    <option value="profile_completion">Profile Completion</option>
+                  </select>
+                </div>
+              </div>
+              
+              {/* Clear Filters Button */}
+              {(emailLogFilters.recipient || emailLogFilters.subject || emailLogFilters.emailType) && (
+                <div className="mt-3">
+                  <button
+                    onClick={() => setEmailLogFilters({ recipient: '', subject: '', emailType: '' })}
+                    className="text-sm text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Clear all filters
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div className="mb-4 flex gap-2 flex-wrap">
               <button
                 onClick={fetchEmailLogs}
@@ -3389,7 +3473,7 @@ export default function SuperadminDashboard() {
                 </button>
               )}
             </div>
-            {emailLogs.length > 0 ? (
+            {filteredEmailLogs.length > 0 ? (
               <div className="overflow-x-auto -mx-4 sm:mx-0">
                 <table className="w-full border border-gray-300" style={{ tableLayout: 'auto' }}>
                   <thead className="bg-gray-100">
@@ -3501,14 +3585,14 @@ export default function SuperadminDashboard() {
                   </tbody>
                 </table>
               </div>
-              ) : (
-                <p className="text-gray-500">
-                  {emailLogs.length === 0 
-                    ? 'No email logs found.' 
-                    : 'No email logs match the current filters.'}
-                </p>
-              )}
-            </div>
+            ) : (
+              <p className="text-gray-500">
+                {emailLogs.length === 0 
+                  ? 'No email logs found.' 
+                  : 'No email logs match the current filters.'}
+              </p>
+            )}
+          </div>
           )
         })()}
 
