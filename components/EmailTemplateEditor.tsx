@@ -1,7 +1,24 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
-import { Bold, Italic, Underline, List, ListOrdered, Link, AlignLeft, AlignCenter, AlignRight, Undo, Redo } from 'lucide-react'
+import { useEditor, EditorContent } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import Link from '@tiptap/extension-link'
+import TextAlign from '@tiptap/extension-text-align'
+import Underline from '@tiptap/extension-underline'
+import { useEffect, useState } from 'react'
+import { 
+  Bold, 
+  Italic, 
+  Underline as UnderlineIcon, 
+  List, 
+  ListOrdered, 
+  Link as LinkIcon, 
+  AlignLeft, 
+  AlignCenter, 
+  AlignRight,
+  Undo,
+  Redo
+} from 'lucide-react'
 
 interface EmailTemplateEditorProps {
   value: string
@@ -14,276 +31,93 @@ export default function EmailTemplateEditor({
   onChange,
   height = 400,
 }: EmailTemplateEditorProps) {
-  const editorRef = useRef<HTMLDivElement>(null)
-  const isUpdatingRef = useRef(false)
+  const [isMounted, setIsMounted] = useState(false)
 
+  // Ensure component only renders on client side
   useEffect(() => {
-    if (editorRef.current && !isUpdatingRef.current) {
-      const currentContent = editorRef.current.innerHTML
-      const newContent = value || ''
-      if (currentContent !== newContent) {
-        editorRef.current.innerHTML = newContent
-      }
-    }
-  }, [value])
-
-  // Inject styles for list elements to ensure bullets are visible
-  useEffect(() => {
-    if (editorRef.current) {
-      // Add styles to the editor element
-      const styleId = 'email-editor-list-styles'
-      if (!document.getElementById(styleId)) {
-        const style = document.createElement('style')
-        style.id = styleId
-        style.textContent = `
-          [contenteditable="true"] ul {
-            list-style-type: disc !important;
-            margin-left: 1.5em !important;
-            padding-left: 0.5em !important;
-            margin-top: 0.5em !important;
-            margin-bottom: 0.5em !important;
-          }
-          [contenteditable="true"] ol {
-            list-style-type: decimal !important;
-            margin-left: 1.5em !important;
-            padding-left: 0.5em !important;
-            margin-top: 0.5em !important;
-            margin-bottom: 0.5em !important;
-          }
-          [contenteditable="true"] li {
-            display: list-item !important;
-            margin-bottom: 0.25em !important;
-          }
-          [contenteditable="true"] ul ul {
-            list-style-type: circle !important;
-            margin-left: 1.5em !important;
-          }
-          [contenteditable="true"] ul ul ul {
-            list-style-type: square !important;
-          }
-        `
-        document.head.appendChild(style)
-      }
-    }
+    setIsMounted(true)
   }, [])
 
-  // Normalize HTML - preserve line breaks and paragraph structure for email rendering
-  const normalizeHTML = (html: string): string => {
-    if (!html || !html.trim()) return ''
-    
-    // Create a temporary div to parse and normalize
-    const temp = document.createElement('div')
-    temp.innerHTML = html
-    
-    // IMPORTANT: Preserve list elements (ul, ol, li) - don't convert them
-    // Only convert divs that are NOT inside list elements
-    const allDivs = Array.from(temp.querySelectorAll('div'))
-    allDivs.forEach(div => {
-      // Skip if div is inside a list element
-      if (div.closest('ul') || div.closest('ol') || div.closest('li')) {
-        return
-      }
-      
-      // If div is empty or only contains whitespace, replace with <br> for blank lines
-      if (!div.innerHTML.trim() && !div.textContent?.trim()) {
-        const br = document.createElement('br')
-        div.parentNode?.replaceChild(br, div)
-      } else {
-        // Convert div to paragraph to preserve structure and line breaks
-        const p = document.createElement('p')
-        p.innerHTML = div.innerHTML
-        // Add inline styles for proper wrapping
-        p.style.wordWrap = 'break-word'
-        p.style.wordBreak = 'break-word'
-        p.style.overflowWrap = 'break-word'
-        p.style.maxWidth = '100%'
-        div.parentNode?.replaceChild(p, div)
-      }
-    })
-    
-    // Process paragraphs - preserve them as they represent line breaks
-    // But skip paragraphs inside list elements
-    const allParagraphs = Array.from(temp.querySelectorAll('p'))
-    allParagraphs.forEach(p => {
-      // Skip if paragraph is inside a list element
-      if (p.closest('ul') || p.closest('ol') || p.closest('li')) {
-        return
-      }
-      
-      // If paragraph is completely empty, replace with <br> for blank line
-      if (!p.innerHTML.trim() && !p.textContent?.trim()) {
-        const br = document.createElement('br')
-        p.parentNode?.replaceChild(br, p)
-      } else {
-        // Add inline styles for proper wrapping to existing paragraphs
-        p.style.wordWrap = 'break-word'
-        p.style.wordBreak = 'break-word'
-        p.style.overflowWrap = 'break-word'
-        p.style.maxWidth = '100%'
-      }
-    })
-    
-    // Get normalized HTML
-    let normalized = temp.innerHTML
-    
-    // Clean up completely empty tags (shouldn't happen after processing, but just in case)
-    // But preserve list structure
-    normalized = normalized.replace(/<p>\s*<\/p>/gi, '<br>')
-    normalized = normalized.replace(/<div>\s*<\/div>/gi, '<br>')
-    
-    // Add inline styles to paragraphs that don't already have style attributes
-    // This ensures text wrapping works even if CSS is stripped by email clients
-    normalized = normalized.replace(/<p(?!\s+style)/gi, '<p style="word-wrap: break-word; word-break: break-word; overflow-wrap: break-word; max-width: 100%;"')
-    
-    // For paragraphs that already have styles, append wrapping styles
-    normalized = normalized.replace(/<p\s+style="([^"]*)"/gi, (match, existingStyles) => {
-      // Don't add if styles already include word-wrap or word-break
-      if (existingStyles.includes('word-wrap') || existingStyles.includes('word-break')) {
-        return match
-      }
-      return `<p style="${existingStyles}; word-wrap: break-word; word-break: break-word; overflow-wrap: break-word; max-width: 100%;"`
-    })
-    
-    // Preserve <br> tags - don't collapse them excessively
-    // Allow up to 3 consecutive <br> tags (for intentional blank lines)
-    // Collapse only if there are more than 3
-    normalized = normalized.replace(/(<br\s*\/?>){4,}/gi, '<br><br><br>')
-    
-    return normalized
-  }
-
-  const handleInput = () => {
-    if (editorRef.current && !isUpdatingRef.current) {
-      isUpdatingRef.current = true
-      const rawHTML = editorRef.current.innerHTML
-      
-      // Normalize the HTML to ensure line breaks are preserved
-      const normalizedHTML = normalizeHTML(rawHTML)
-      
-      onChange(normalizedHTML)
-      setTimeout(() => {
-        isUpdatingRef.current = false
-      }, 0)
-    }
-  }
-
-  // Handle Enter key to insert proper line breaks
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      // Prevent default to control the behavior
-      e.preventDefault()
-      
-      // Insert a paragraph break
-      document.execCommand('insertParagraph', false)
-      
-      // Normalize after insertion
-      setTimeout(() => {
-        handleInput()
-      }, 0)
-    }
-  }
-
-  const execCommand = (command: string, value: string | null = null) => {
-    document.execCommand(command, false, value || undefined)
-    editorRef.current?.focus()
-    handleInput()
-  }
-
-  const insertLink = () => {
-    if (!editorRef.current) return
-    
-    const selection = window.getSelection()
-    const selectedText = selection?.toString().trim() || ''
-    
-    // Get the URL from user
-    let url = prompt('Enter URL:', selectedText || 'https://')
-    if (!url) return
-    
-    // Validate and normalize URL
-    url = url.trim()
-    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('mailto:')) {
-      url = 'https://' + url
-    }
-    
-    // Get link text - use selected text if available, otherwise ask or use URL
-    let linkText = selectedText
-    if (!linkText) {
-      const textInput = prompt('Enter link text (or leave empty to use URL):', url)
-      linkText = textInput?.trim() || url
-    }
-    
-    // Escape HTML in link text to prevent XSS (but not the URL)
-    const escapeHTML = (text: string) => {
-      const div = document.createElement('div')
-      div.textContent = text
-      return div.innerHTML
-    }
-    
-    // Escape URL attributes (but preserve the URL structure)
-    const escapeURL = (url: string) => {
-      return url.replace(/"/g, '&quot;').replace(/'/g, '&#x27;')
-    }
-    
-    // Create the link HTML
-    const linkHTML = `<a href="${escapeURL(url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(linkText)}</a>`
-    
-    try {
-      // If text is selected, replace it with the link
-      if (selection && selection.rangeCount > 0 && selectedText) {
-        const range = selection.getRangeAt(0)
-        range.deleteContents()
-        
-        const tempDiv = document.createElement('div')
-        tempDiv.innerHTML = linkHTML
-        const linkNode = tempDiv.firstChild
-        
-        if (linkNode) {
-          range.insertNode(linkNode)
-          // Move cursor after the link
-          range.setStartAfter(linkNode)
-          range.collapse(true)
-          selection.removeAllRanges()
-          selection.addRange(range)
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        // Configure paragraph to have minimal margins for email
+        paragraph: {
+          HTMLAttributes: {
+            style: 'margin: 0.5em 0; word-wrap: break-word; word-break: break-word; overflow-wrap: break-word; max-width: 100%;',
+          },
+        },
+        // Configure list items to have minimal spacing
+        bulletList: {
+          HTMLAttributes: {
+            style: 'margin: 0.5em 0; padding-left: 1.5em;',
+          },
+        },
+        orderedList: {
+          HTMLAttributes: {
+            style: 'margin: 0.5em 0; padding-left: 1.5em;',
+          },
+        },
+        // Enable hard break for Shift+Enter line breaks
+        hardBreak: {
+          HTMLAttributes: {
+            style: 'line-height: 1.6;',
+          },
+        },
+      }),
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          target: '_blank',
+          rel: 'noopener noreferrer',
+        },
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+      Underline,
+    ],
+    content: value || '',
+    immediatelyRender: false, // Fix SSR hydration issue
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm max-w-none focus:outline-none p-4',
+        style: `min-height: ${height}px;`,
+      },
+      handleKeyDown: (view, event) => {
+        // Allow Shift+Enter or Ctrl+Enter for line breaks
+        if (event.key === 'Enter' && (event.shiftKey || event.ctrlKey)) {
+          editor?.chain().focus().setHardBreak().run()
+          return true
         }
-      } else {
-        // Insert at cursor position or at end
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0)
-          const container = range.commonAncestorContainer
-          
-          // Check if cursor is in editor
-          if (editorRef.current.contains(container) || container === editorRef.current) {
-            range.deleteContents()
-            const tempDiv = document.createElement('div')
-            tempDiv.innerHTML = linkHTML
-            const linkNode = tempDiv.firstChild
-            
-            if (linkNode) {
-              range.insertNode(linkNode)
-              // Move cursor after the link
-              range.setStartAfter(linkNode)
-              range.collapse(true)
-              selection.removeAllRanges()
-              selection.addRange(range)
-            }
-          } else {
-            // Fallback: insert at end
-            editorRef.current.innerHTML += linkHTML
-          }
-        } else {
-          // No selection, insert at end
-          editorRef.current.innerHTML += linkHTML
-        }
-      }
-      
-      editorRef.current.focus()
-      handleInput()
-    } catch (error) {
-      console.error('Error inserting link:', error)
-      // Fallback: just append the link HTML
-      editorRef.current.innerHTML += linkHTML
-      handleInput()
+        return false
+      },
+    },
+    onUpdate: ({ editor }) => {
+      // Get HTML from Tiptap (already clean)
+      const html = editor.getHTML()
+      onChange(html)
+    },
+  }, [isMounted]) // Only create editor after mount
+
+  // Update editor content when value prop changes externally
+  useEffect(() => {
+    if (!editor || !isMounted) return
+    
+    const currentHTML = editor.getHTML()
+    // Only update if the content is actually different to avoid loops
+    if (value !== undefined && currentHTML !== value && value !== '') {
+      editor.commands.setContent(value || '', false)
     }
+  }, [value, editor, isMounted])
+
+  // Show loading state until mounted and editor is ready
+  if (!isMounted || !editor) {
+    return (
+      <div className="border border-gray-300 rounded-lg p-4" style={{ minHeight: `${height}px` }}>
+        <div className="animate-pulse text-gray-400">Loading editor...</div>
+      </div>
+    )
   }
 
   return (
@@ -292,41 +126,53 @@ export default function EmailTemplateEditor({
       <div className="bg-gray-50 border-b border-gray-300 p-2 flex flex-wrap gap-1">
         <button
           type="button"
-          onClick={() => execCommand('bold')}
-          className="p-2 hover:bg-gray-200 rounded transition-colors"
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          disabled={!editor.can().chain().focus().toggleBold().run()}
+          className={`p-2 hover:bg-gray-200 rounded transition-colors ${
+            editor.isActive('bold') ? 'bg-gray-300' : ''
+          }`}
           title="Bold"
         >
           <Bold className="h-4 w-4" />
         </button>
         <button
           type="button"
-          onClick={() => execCommand('italic')}
-          className="p-2 hover:bg-gray-200 rounded transition-colors"
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          disabled={!editor.can().chain().focus().toggleItalic().run()}
+          className={`p-2 hover:bg-gray-200 rounded transition-colors ${
+            editor.isActive('italic') ? 'bg-gray-300' : ''
+          }`}
           title="Italic"
         >
           <Italic className="h-4 w-4" />
         </button>
         <button
           type="button"
-          onClick={() => execCommand('underline')}
-          className="p-2 hover:bg-gray-200 rounded transition-colors"
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          className={`p-2 hover:bg-gray-200 rounded transition-colors ${
+            editor.isActive('underline') ? 'bg-gray-300' : ''
+          }`}
           title="Underline"
         >
-          <Underline className="h-4 w-4" />
+          <UnderlineIcon className="h-4 w-4" />
         </button>
         <div className="w-px h-6 bg-gray-300 mx-1" />
         <button
           type="button"
-          onClick={() => execCommand('insertUnorderedList')}
-          className="p-2 hover:bg-gray-200 rounded transition-colors"
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          className={`p-2 hover:bg-gray-200 rounded transition-colors ${
+            editor.isActive('bulletList') ? 'bg-gray-300' : ''
+          }`}
           title="Bullet List"
         >
           <List className="h-4 w-4" />
         </button>
         <button
           type="button"
-          onClick={() => execCommand('insertOrderedList')}
-          className="p-2 hover:bg-gray-200 rounded transition-colors"
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          className={`p-2 hover:bg-gray-200 rounded transition-colors ${
+            editor.isActive('orderedList') ? 'bg-gray-300' : ''
+          }`}
           title="Numbered List"
         >
           <ListOrdered className="h-4 w-4" />
@@ -334,24 +180,30 @@ export default function EmailTemplateEditor({
         <div className="w-px h-6 bg-gray-300 mx-1" />
         <button
           type="button"
-          onClick={() => execCommand('justifyLeft')}
-          className="p-2 hover:bg-gray-200 rounded transition-colors"
+          onClick={() => editor.chain().focus().setTextAlign('left').run()}
+          className={`p-2 hover:bg-gray-200 rounded transition-colors ${
+            editor.isActive({ textAlign: 'left' }) ? 'bg-gray-300' : ''
+          }`}
           title="Align Left"
         >
           <AlignLeft className="h-4 w-4" />
         </button>
         <button
           type="button"
-          onClick={() => execCommand('justifyCenter')}
-          className="p-2 hover:bg-gray-200 rounded transition-colors"
+          onClick={() => editor.chain().focus().setTextAlign('center').run()}
+          className={`p-2 hover:bg-gray-200 rounded transition-colors ${
+            editor.isActive({ textAlign: 'center' }) ? 'bg-gray-300' : ''
+          }`}
           title="Align Center"
         >
           <AlignCenter className="h-4 w-4" />
         </button>
         <button
           type="button"
-          onClick={() => execCommand('justifyRight')}
-          className="p-2 hover:bg-gray-200 rounded transition-colors"
+          onClick={() => editor.chain().focus().setTextAlign('right').run()}
+          className={`p-2 hover:bg-gray-200 rounded transition-colors ${
+            editor.isActive({ textAlign: 'right' }) ? 'bg-gray-300' : ''
+          }`}
           title="Align Right"
         >
           <AlignRight className="h-4 w-4" />
@@ -359,25 +211,34 @@ export default function EmailTemplateEditor({
         <div className="w-px h-6 bg-gray-300 mx-1" />
         <button
           type="button"
-          onClick={insertLink}
-          className="p-2 hover:bg-gray-200 rounded transition-colors"
+          onClick={() => {
+            const url = window.prompt('Enter URL:')
+            if (url) {
+              editor.chain().focus().setLink({ href: url }).run()
+            }
+          }}
+          className={`p-2 hover:bg-gray-200 rounded transition-colors ${
+            editor.isActive('link') ? 'bg-gray-300' : ''
+          }`}
           title="Insert Link"
         >
-          <Link className="h-4 w-4" />
+          <LinkIcon className="h-4 w-4" />
         </button>
         <div className="w-px h-6 bg-gray-300 mx-1" />
         <button
           type="button"
-          onClick={() => execCommand('undo')}
-          className="p-2 hover:bg-gray-200 rounded transition-colors"
+          onClick={() => editor.chain().focus().undo().run()}
+          disabled={!editor.can().chain().focus().undo().run()}
+          className="p-2 hover:bg-gray-200 rounded transition-colors disabled:opacity-50"
           title="Undo"
         >
           <Undo className="h-4 w-4" />
         </button>
         <button
           type="button"
-          onClick={() => execCommand('redo')}
-          className="p-2 hover:bg-gray-200 rounded transition-colors"
+          onClick={() => editor.chain().focus().redo().run()}
+          disabled={!editor.can().chain().focus().redo().run()}
+          className="p-2 hover:bg-gray-200 rounded transition-colors disabled:opacity-50"
           title="Redo"
         >
           <Redo className="h-4 w-4" />
@@ -385,23 +246,96 @@ export default function EmailTemplateEditor({
       </div>
 
       {/* Editor */}
-      <div
-        ref={editorRef}
-        contentEditable
-        onInput={handleInput}
-        onBlur={handleInput}
-        onKeyDown={handleKeyDown}
-        style={{ 
-          minHeight: `${height}px`,
-          whiteSpace: 'pre-wrap', // Preserve whitespace and line breaks
-        }}
-        className="p-4 focus:outline-none focus:ring-2 focus:ring-blue-500 prose prose-sm max-w-none"
-        suppressContentEditableWarning
-      />
+      <div className="focus-within:ring-2 focus-within:ring-blue-500">
+        <EditorContent 
+          editor={editor}
+        />
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            .ProseMirror {
+              outline: none;
+              padding: 1rem;
+              min-height: ${height}px;
+            }
+            .ProseMirror p {
+              margin: 0.5em 0;
+              word-wrap: break-word;
+              word-break: break-word;
+              overflow-wrap: break-word;
+              max-width: 100%;
+            }
+            .ProseMirror p:first-child {
+              margin-top: 0;
+            }
+            .ProseMirror p:last-child {
+              margin-bottom: 0;
+            }
+            .ProseMirror ul {
+              margin: 0.5em 0;
+              padding-left: 1.5em;
+              list-style-type: disc !important;
+              display: block !important;
+            }
+            .ProseMirror ol {
+              margin: 0.5em 0;
+              padding-left: 1.5em;
+              list-style-type: decimal !important;
+              display: block !important;
+            }
+            .ProseMirror li {
+              margin: 0.1em 0;
+              padding: 0;
+              display: list-item !important;
+              list-style-position: outside !important;
+            }
+            .ProseMirror li p {
+              margin: 0.2em 0;
+              display: inline;
+            }
+            .ProseMirror ul ul {
+              list-style-type: circle !important;
+            }
+            .ProseMirror ul ul ul {
+              list-style-type: square !important;
+            }
+            .ProseMirror a {
+              color: #2563eb;
+              text-decoration: underline;
+            }
+            .ProseMirror strong {
+              font-weight: 600;
+            }
+            .ProseMirror em {
+              font-style: italic;
+            }
+            .ProseMirror u {
+              text-decoration: underline;
+            }
+          `
+        }} />
+      </div>
 
       {/* Footer with variable hints */}
       <div className="px-3 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-600">
-        <strong>Available variables:</strong> {'{{user_name}}'}, {'{{user_first_name}}'}, {'{{user_email}}'}, {'{{registration_date}}'}, {'{{tee_image}}'} (mascot)
+        <strong>Available variables:</strong>{' '}
+        {['{{user_name}}', '{{user_first_name}}', '{{user_email}}', '{{registration_date}}', '{{tee_image}}'].map((variable, index, array) => (
+          <span key={variable}>
+            <button
+              type="button"
+              onClick={() => {
+                if (editor) {
+                  editor.chain().focus().insertContent(variable).run()
+                }
+              }}
+              className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer font-mono mx-0.5"
+              title={`Click to insert ${variable} at cursor position`}
+            >
+              {variable}
+            </button>
+            {index < array.length - 1 && ', '}
+          </span>
+        ))}
+        {' '}({'{{tee_image}}'} is mascot)
       </div>
     </div>
   )

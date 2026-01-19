@@ -393,6 +393,79 @@ function getBaseUrl(): string {
 }
 
 /**
+ * Normalize HTML content by removing extra whitespace and line breaks
+ * This fixes issues where templates stored in the database have extra linefeeds
+ * Preserves intentional spacing while removing unwanted whitespace
+ */
+function normalizeTemplateHTML(html: string): string {
+  if (!html) return ''
+  
+  let normalized = html
+  
+  // First, remove newlines and carriage returns from the HTML string itself
+  // Tiptap outputs clean HTML, but we normalize whitespace for email compatibility
+  normalized = normalized.replace(/\r\n/g, ' ').replace(/\n/g, ' ').replace(/\r/g, ' ')
+  
+  // Remove whitespace between HTML tags (this is what causes extra linefeeds)
+  // But preserve single spaces that might be intentional
+  // Pattern: > followed by whitespace (including tabs) followed by <
+  normalized = normalized.replace(/>[\s\t]+</g, '><')
+  
+  // Remove empty paragraphs and divs that might cause extra spacing
+  // This includes elements with only whitespace or &nbsp;
+  normalized = normalized
+    .replace(/<p[^>]*>\s*<\/p>/gi, '')
+    .replace(/<div[^>]*>\s*<\/div>/gi, '')
+    .replace(/<p[^>]*>\s*&nbsp;\s*<\/p>/gi, '')
+    .replace(/<div[^>]*>\s*&nbsp;\s*<\/div>/gi, '')
+    .replace(/<p[^>]*>\s*<br\s*\/?>\s*<\/p>/gi, '')
+    .replace(/<div[^>]*>\s*<br\s*\/?>\s*<\/div>/gi, '')
+  
+  // Fix list items that might have extra spacing - be more aggressive
+  // Remove ALL whitespace between list elements
+  normalized = normalized.replace(/<\/li>[\s\t]*<li/gi, '</li><li')
+  normalized = normalized.replace(/<\/ul>[\s\t]*<ul/gi, '</ul><ul')
+  normalized = normalized.replace(/<\/ol>[\s\t]*<ol/gi, '</ol><ol')
+  normalized = normalized.replace(/<\/ul>[\s\t]*<li/gi, '</ul><li')
+  normalized = normalized.replace(/<\/ol>[\s\t]*<li/gi, '</ol><li')
+  normalized = normalized.replace(/<li[^>]*>[\s\t]*<\/li>/gi, '') // Remove empty list items
+  
+  // Remove extra spacing inside list items - convert nested divs/paragraphs to inline
+  // This handles cases where list items have nested paragraphs that add extra spacing
+  normalized = normalized.replace(/<li[^>]*>[\s\t]*<p[^>]*>/gi, '<li>')
+  normalized = normalized.replace(/<\/p>[\s\t]*<\/li>/gi, '</li>')
+  normalized = normalized.replace(/<li[^>]*>[\s\t]*<div[^>]*>/gi, '<li>')
+  normalized = normalized.replace(/<\/div>[\s\t]*<\/li>/gi, '</li>')
+  
+  // Remove whitespace between closing tags and opening tags for paragraphs/divs
+  normalized = normalized.replace(/<\/p>[\s\t]*<p/gi, '</p><p')
+  normalized = normalized.replace(/<\/div>[\s\t]*<div/gi, '</div><div')
+  normalized = normalized.replace(/<\/p>[\s\t]*<div/gi, '</p><div')
+  normalized = normalized.replace(/<\/div>[\s\t]*<p/gi, '</div><p')
+  
+  // Remove whitespace between closing tags and list elements
+  normalized = normalized.replace(/<\/p>[\s\t]*<ul/gi, '</p><ul')
+  normalized = normalized.replace(/<\/p>[\s\t]*<ol/gi, '</p><ol')
+  normalized = normalized.replace(/<\/div>[\s\t]*<ul/gi, '</div><ul')
+  normalized = normalized.replace(/<\/div>[\s\t]*<ol/gi, '</div><ol')
+  normalized = normalized.replace(/<\/ul>[\s\t]*<p/gi, '</ul><p')
+  normalized = normalized.replace(/<\/ol>[\s\t]*<p/gi, '</ol><p')
+  
+  // Remove excessive <br> tags (more than 2 consecutive)
+  normalized = normalized.replace(/(<br\s*\/?>){3,}/gi, '<br><br>')
+  
+  // Collapse multiple consecutive spaces within text content to single space
+  // But be careful not to break HTML attributes
+  // This regex only matches spaces that are NOT inside HTML tags
+  normalized = normalized.replace(/(?![^<]*>)\s{2,}/g, ' ')
+  
+  // Clean up any remaining whitespace at the start/end
+  normalized = normalized.trim()
+  
+  return normalized
+}
+
+/**
  * Render email template with variables
  * Replaces {{variable_name}} placeholders with actual values
  * Also handles special shortcodes like {{tee_image}}
@@ -401,9 +474,8 @@ export function renderEmailTemplate(
   htmlContent: string,
   variables: Record<string, string>
 ): string {
-  let rendered = htmlContent
-  
-  // Handle special shortcodes first
+  // Handle special shortcodes FIRST (before normalization)
+  // This ensures placeholders aren't affected by HTML normalization
   const baseUrl = getBaseUrl()
   
   // Construct absolute image URL - ensure no double slashes
@@ -415,17 +487,21 @@ export function renderEmailTemplate(
     console.log('[Email] Base URL:', baseUrl)
   }
   
-  // Replace {{tee_image}} or {{mascot}} with the mascot image
+  // Replace {{tee_image}} or {{mascot}} with the mascot image BEFORE normalization
   // Use absolute URL and add display:block to prevent spacing issues
-  const mascotImageHtml = `<img src="${imageUrl}" alt="Tee - Taskorilla Mascot" style="height: 150px; display: block; margin: 0; padding: 0;" />`
-  rendered = rendered.replace(/\{\{tee_image\}\}/gi, mascotImageHtml)
+  // Maintain aspect ratio - don't constrain width, let it scale naturally
+  const mascotImageHtml = `<img src="${imageUrl}" alt="Tee - Taskorilla Mascot" style="max-width: 100%; height: auto; display: block; margin: 0 auto; padding: 0;" />`
+  let rendered = htmlContent.replace(/\{\{tee_image\}\}/gi, mascotImageHtml)
   rendered = rendered.replace(/\{\{mascot\}\}/gi, mascotImageHtml)
   
-  // Replace regular variables
+  // Replace regular variables BEFORE normalization
   for (const [key, value] of Object.entries(variables)) {
     const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g')
     rendered = rendered.replace(regex, value || '')
   }
+  
+  // Normalize the HTML AFTER variable replacement to clean up whitespace/linefeeds
+  rendered = normalizeTemplateHTML(rendered)
   
   return rendered
 }
@@ -470,20 +546,19 @@ export async function sendTemplateEmail(
     background-color: #ffffff;
   }
   .email-container {
-    max-width: 600px;
+    max-width: 800px;
     margin: 0 auto;
     padding: 20px;
     word-wrap: break-word;
-    word-break: break-word;
+    word-break: normal;
     overflow-wrap: break-word;
   }
   p {
     margin: 0 0 1em 0;
     padding: 0;
     word-wrap: break-word;
-    word-break: break-word;
+    word-break: normal;
     overflow-wrap: break-word;
-    max-width: 100%;
   }
   p:last-child {
     margin-bottom: 0;
@@ -495,41 +570,98 @@ export async function sendTemplateEmail(
     margin: 0.5em 0;
     padding-left: 1.5em;
     word-wrap: break-word;
-    word-break: break-word;
+    word-break: normal;
     overflow-wrap: break-word;
   }
   li {
-    margin-bottom: 0.25em;
+    margin-bottom: 0.1em;
+    margin-top: 0.1em;
+    padding-bottom: 0;
+    padding-top: 0;
     word-wrap: break-word;
-    word-break: break-word;
+    word-break: normal;
     overflow-wrap: break-word;
+  }
+  li:last-child {
+    margin-bottom: 0;
+  }
+  li p {
+    margin: 0.2em 0 !important;
+    padding: 0 !important;
+  }
+  li p:first-child {
+    margin-top: 0 !important;
+  }
+  li p:last-child {
+    margin-bottom: 0 !important;
+  }
+  li div {
+    margin: 0.2em 0 !important;
+    padding: 0 !important;
+  }
+  li div:first-child {
+    margin-top: 0 !important;
+  }
+  li div:last-child {
+    margin-bottom: 0 !important;
   }
   a {
     word-break: break-all;
     overflow-wrap: break-word;
-    max-width: 100%;
   }
-  /* Ensure all text elements wrap properly */
-  * {
+  /* Ensure images maintain aspect ratio and aren't constrained */
+  img {
     max-width: 100%;
+    height: auto;
+    display: block;
+  }
+  /* Ensure proper box sizing */
+  * {
     box-sizing: border-box;
   }
   /* Preserve whitespace and line breaks */
   [style*="white-space"] {
     white-space: pre-wrap;
   }
-  /* Force text wrapping on all text elements */
+  /* Force text wrapping on all text elements - but allow natural word breaks */
   div, span, p, li, td, th {
     word-wrap: break-word;
-    word-break: break-word;
+    word-break: normal;
     overflow-wrap: break-word;
+  }
+  /* Mobile responsive styles */
+  @media only screen and (max-width: 600px) {
+    .email-container {
+      max-width: 100% !important;
+      padding: 15px !important;
+    }
+    table[role="presentation"] {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    td {
+      padding: 15px !important;
+      word-wrap: break-word !important;
+      word-break: break-word !important;
+      overflow-wrap: break-word !important;
+    }
+    p, div, span, li {
+      word-wrap: break-word !important;
+      word-break: break-word !important;
+      overflow-wrap: break-word !important;
+      max-width: 100% !important;
+    }
+    body {
+      width: 100% !important;
+      min-width: 0 !important;
+    }
   }
 </style>
 </head>
-<body style="font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0; line-height: 1.6; background-color: #ffffff; width: 100%;">
-<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="width: 100%; max-width: 600px; margin: 0 auto;">
+<body style="font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0; line-height: 1.6; background-color: #ffffff; width: 100%; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
+<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="width: 100%; max-width: 800px; margin: 0 auto; table-layout: fixed;">
   <tr>
-    <td style="padding: 20px; word-wrap: break-word; word-break: break-word; overflow-wrap: break-word;">
+    <td style="padding: 20px; word-wrap: break-word; word-break: normal; overflow-wrap: break-word; width: 100%;">
       ${renderedHtml}
     </td>
   </tr>

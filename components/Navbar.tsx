@@ -708,9 +708,13 @@ export default function Navbar() {
                 }`}
                 title={t('language.switchToPortuguese')}
               >
-                <svg className="w-8 h-6" viewBox="0 0 5 3" xmlns="http://www.w3.org/2000/svg">
-                  <rect width="2" height="3" fill="#006600"/>
-                  <rect x="2" width="3" height="3" fill="#FF0000"/>
+                <svg className="w-8 h-6" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="24" height="40" fill="#006600"/>
+                  <rect x="24" width="36" height="40" fill="#FF0000"/>
+                  <circle cx="24" cy="20" r="7" fill="none" stroke="#FFCC00" strokeWidth="0.8"/>
+                  <circle cx="24" cy="20" r="5.5" fill="none" stroke="#FFCC00" strokeWidth="0.6"/>
+                  <circle cx="24" cy="20" r="4" fill="#FFCC00"/>
+                  <circle cx="24" cy="20" r="2.5" fill="#FF0000"/>
                 </svg>
               </button>
             </div>
@@ -869,9 +873,13 @@ export default function Navbar() {
                 }`}
                 title={t('language.switchToPortuguese')}
               >
-                <svg className="w-7 h-5" viewBox="0 0 5 3" xmlns="http://www.w3.org/2000/svg">
-                  <rect width="2" height="3" fill="#006600"/>
-                  <rect x="2" width="3" height="3" fill="#FF0000"/>
+                <svg className="w-7 h-5" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="24" height="40" fill="#006600"/>
+                  <rect x="24" width="36" height="40" fill="#FF0000"/>
+                  <circle cx="24" cy="20" r="7" fill="none" stroke="#FFCC00" strokeWidth="0.8"/>
+                  <circle cx="24" cy="20" r="5.5" fill="none" stroke="#FFCC00" strokeWidth="0.6"/>
+                  <circle cx="24" cy="20" r="4" fill="#FFCC00"/>
+                  <circle cx="24" cy="20" r="2.5" fill="#FF0000"/>
                 </svg>
               </button>
             </div>

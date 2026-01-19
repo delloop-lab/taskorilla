@@ -247,37 +247,50 @@ export async function POST(request: NextRequest) {
         break
 
       case 'template_email':
-        // Get template from database
-        const { data: template, error: templateError } = await supabase
-          .from('email_templates')
-          .select('*')
-          .eq('template_type', params.templateType)
-          .single()
+        // Check if this is a test email (has htmlContent provided directly)
+        let emailSubject: string
+        let emailHtmlContent: string
+        
+        if (params.htmlContent && params.subject) {
+          // Test email - use provided content directly
+          emailSubject = params.subject
+          emailHtmlContent = params.htmlContent
+        } else {
+          // Regular template email - get template from database
+          const { data: template, error: templateError } = await supabase
+            .from('email_templates')
+            .select('*')
+            .eq('template_type', params.templateType)
+            .single()
 
-        if (templateError) {
-          console.error('Error fetching template:', templateError)
-          console.error('Template type:', params.templateType)
-          console.error('User:', user?.id)
-          
-          // Check if it's a permission error
-          if (templateError.code === 'PGRST301' || templateError.message?.includes('permission') || templateError.message?.includes('policy')) {
+          if (templateError) {
+            console.error('Error fetching template:', templateError)
+            console.error('Template type:', params.templateType)
+            console.error('User:', user?.id)
+            
+            // Check if it's a permission error
+            if (templateError.code === 'PGRST301' || templateError.message?.includes('permission') || templateError.message?.includes('policy')) {
+              return NextResponse.json(
+                { error: 'Permission denied. Admin access required to fetch templates.' },
+                { status: 403 }
+              )
+            }
+            
             return NextResponse.json(
-              { error: 'Permission denied. Admin access required to fetch templates.' },
-              { status: 403 }
+              { error: `Template not found: ${params.templateType}. Error: ${templateError.message || templateError.code}` },
+              { status: 404 }
             )
           }
-          
-          return NextResponse.json(
-            { error: `Template not found: ${params.templateType}. Error: ${templateError.message || templateError.code}` },
-            { status: 404 }
-          )
-        }
 
-        if (!template) {
-          return NextResponse.json(
-            { error: `Template not found: ${params.templateType}. Please create the template first.` },
-            { status: 404 }
-          )
+          if (!template) {
+            return NextResponse.json(
+              { error: `Template not found: ${params.templateType}. Please create the template first.` },
+              { status: 404 }
+            )
+          }
+
+          emailSubject = template.subject
+          emailHtmlContent = template.html_content
         }
 
         // Get user registration date if available
@@ -298,8 +311,8 @@ export async function POST(request: NextRequest) {
         const fullEmailHtml = await sendTemplateEmail(
           params.recipientEmail,
           params.recipientName,
-          template.subject,
-          template.html_content,
+          emailSubject,
+          emailHtmlContent,
           {
             registration_date: registrationDate,
             ...params.variables,
@@ -309,13 +322,13 @@ export async function POST(request: NextRequest) {
         emailLogData = {
           recipient_email: params.recipientEmail,
           recipient_name: params.recipientName,
-          subject: template.subject,
-          email_type: params.templateType,
+          subject: emailSubject,
+          email_type: params.htmlContent ? 'test_email' : (params.templateType || 'template_email'),
           sent_by: user?.id,
           related_user_id: params.relatedUserId,
           metadata: {
-            template_id: template.id,
-            template_type: template.template_type,
+            is_test_email: !!params.htmlContent,
+            template_type: params.templateType || 'test_email',
             html_content: fullEmailHtml, // Full HTML email with DOCTYPE, html, body tags
             variables: params.variables || {},
           },

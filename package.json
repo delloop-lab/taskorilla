@@ -1,6 +1,6 @@
 {
   "name": "task-marketplace",
-  "version": "0.99.887",
+  "version": "0.99.888",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -14,6 +14,11 @@
     "@airwallex/components-sdk": "^1.27.2",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.38.4",
+    "@tiptap/extension-link": "^3.15.3",
+    "@tiptap/extension-text-align": "^3.15.3",
+    "@tiptap/extension-underline": "^3.15.3",
+    "@tiptap/react": "^3.15.3",
+    "@tiptap/starter-kit": "^3.15.3",
     "@types/leaflet": "^1.9.21",
     "chart.js": "^4.5.1",
     "clsx": "^2.0.0",

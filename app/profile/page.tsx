@@ -488,11 +488,6 @@ function ProfilePageContent() {
       setErrorMessage(null)
       setStatusMessage(null)
 
-      // Validate required fields
-      if (!country.trim()) {
-        setErrorMessage('Country is required')
-        return
-      }
       if (!phoneCountryCode.trim() || !phoneNumber.trim()) {
         setErrorMessage('Phone number with country code is required')
         return
@@ -506,6 +501,42 @@ function ProfilePageContent() {
       // Validate postcode is required
       if (!postcode.trim()) {
         setErrorMessage('Postcode is required')
+        return
+      }
+
+      // Validate Skills and Services Offered are required for helpers
+      if (isHelper && !isProfessional) {
+        if (!skills || skills.length === 0) {
+          setErrorMessage('Skills are required for helpers')
+          return
+        }
+        if (!servicesOffered || servicesOffered.length === 0) {
+          setErrorMessage('Services Offered are required for helpers')
+          return
+        }
+      }
+
+      // Validate Qualifications & Certifications are required for professionals
+      if (isHelper && isProfessional) {
+        if (!qualifications || qualifications.length === 0) {
+          setErrorMessage('Qualifications & Certifications are required for professionals')
+          return
+        }
+        // Validate Professional Category (Professions) is required
+        if (!professions || professions.length === 0) {
+          setErrorMessage('Select Professional Category is required for professionals')
+          return
+        }
+        // Validate Professional Offerings are required
+        if (!professionalOfferings || professionalOfferings.length === 0) {
+          setErrorMessage('Professional Offerings are required for professionals')
+          return
+        }
+      }
+
+      // Validate avatar is required for helpers
+      if (isHelper && !avatarUrl) {
+        setErrorMessage('Profile photo is required for helpers')
         return
       }
 
@@ -876,6 +907,11 @@ function ProfilePageContent() {
         <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
         {profile && profile.profile_slug && (
           <div className="flex items-center gap-2">
+            {(isTasker || isHelper) && (
+              <span className="text-sm font-medium text-gray-700 mr-2">
+                {isHelper ? 'Share your Profile to get more business:' : 'Share your Profile:'}
+              </span>
+            )}
             <button
               onClick={() => {
                 if (!profile) return
@@ -1040,7 +1076,9 @@ function ProfilePageContent() {
                 )}
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Profile Photo</p>
+                <p className="text-sm font-medium text-gray-700 mb-2">
+                  Profile Photo/Logo {isHelper && <span className="text-red-500">*</span>}
+                </p>
                 {!avatarUrl && (
                   <p className="text-sm text-gray-500 mb-3">
                     Upload a square image (recommended 256x256). Supported formats: JPG, PNG.
@@ -1130,7 +1168,7 @@ function ProfilePageContent() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Country <span className="text-red-500">*</span>
+                Country
               </label>
               {editing ? (
                 <select
@@ -1203,7 +1241,7 @@ function ProfilePageContent() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Postcode (for distance calculations)
+                Postcode (for distance calculations) <span className="text-red-500">*</span>
               </label>
               {editing ? (
                 <div>
@@ -1887,11 +1925,9 @@ function ProfilePageContent() {
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                           placeholder="e.g., 25.00"
                         />
-                        {(editing ? isProfessional : (profile.professions?.length || 0) > 0) && (
-                          <p className="mt-1 text-xs text-gray-500">
-                            If no amount is entered, visitors will see "Ask About Fees" on your profile.
-                          </p>
-                        )}
+                        <p className="mt-1 text-xs text-gray-500">
+                          Leave blank to show "Quote" in listing
+                        </p>
                       </>
                     ) : (
                       <p className="text-gray-700">
@@ -1904,7 +1940,7 @@ function ProfilePageContent() {
                   {isHelper && !(editing ? isProfessional : (profile.professions?.length || 0) > 0) && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Skills
+                      Skills {isHelper && <span className="text-red-500">*</span>}
                     </label>
                     {editing ? (
                       <div className="space-y-2">
@@ -2003,7 +2039,7 @@ function ProfilePageContent() {
                   {isHelper && !(editing ? isProfessional : (profile.professions?.length || 0) > 0) && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Services Offered
+                      Services Offered {isHelper && <span className="text-red-500">*</span>}
                     </label>
                     {editing ? (
                       <div className="space-y-2">
@@ -2094,7 +2130,7 @@ function ProfilePageContent() {
               {isHelper && (editing ? isProfessional : (profile.professions?.length || 0) > 0) && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Professional Offerings
+                    Professional Offerings {isProfessional && <span className="text-red-500">*</span>}
                   </label>
                   {editing ? (
                     <div className="space-y-2">
@@ -2164,7 +2200,7 @@ function ProfilePageContent() {
                   {isHelper && (editing ? isProfessional : (profile.professions?.length || 0) > 0) && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Professions *
+                        Select Professional Category {isProfessional && <span className="text-red-500">*</span>}
                       </label>
                       <p className="text-xs text-gray-500 mb-3">
                         Select your professional roles. If you select any profession, Skills and Services will be hidden.
@@ -2192,9 +2228,6 @@ function ProfilePageContent() {
                           <div className="space-y-4">
                             {/* First, select a category */}
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Select Profession Category
-                              </label>
                               <select
                                 value={selectedProfessionCategory}
                                 onChange={(e) => {
@@ -2278,7 +2311,7 @@ function ProfilePageContent() {
                   {isHelper && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Qualifications & Certifications
+                        Qualifications & Certifications {isProfessional && <span className="text-red-500">*</span>}
                       </label>
                       {editing ? (
                         <div>
@@ -2352,8 +2385,8 @@ function ProfilePageContent() {
                   {/* Profile Link */}
                   {profile.profile_slug && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Your Helper Profile Link
+                      <label className="block text-sm font-semibold text-primary-600 mb-2">
+                        This is your exclusive Helper Profile Link which you can share
                       </label>
                       <div className="flex gap-2">
                         <input

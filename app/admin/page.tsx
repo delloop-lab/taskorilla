@@ -147,6 +147,14 @@ export default function SuperadminDashboard() {
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set())
   const [modalConfirmText, setModalConfirmText] = useState<string>('OK')
   const [taskSearchTerm, setTaskSearchTerm] = useState<string>('')
+  // User sorting and filtering
+  const [userSortColumn, setUserSortColumn] = useState<string>('created_at')
+  const [userSortDirection, setUserSortDirection] = useState<'asc' | 'desc'>('desc')
+  const [registrationDateFilter, setRegistrationDateFilter] = useState<{ start?: string; end?: string }>({})
+  const [userNameFilter, setUserNameFilter] = useState<string>('')
+  const [userEmailFilter, setUserEmailFilter] = useState<string>('')
+  const [userRoleFilter, setUserRoleFilter] = useState<string>('')
+  const [userFeaturedFilter, setUserFeaturedFilter] = useState<string>('')
   const [geocodingTasks, setGeocodingTasks] = useState(false)
   const [geocodingResult, setGeocodingResult] = useState<any>(null)
   const [regeocodingPortuguese, setRegeocodingPortuguese] = useState(false)
@@ -1362,8 +1370,11 @@ export default function SuperadminDashboard() {
     }
   }
 
-  async function sendFreeFormEmail() {
-    const user = users.find(u => u.id === freeFormRecipient)
+  async function sendFreeFormEmail(recipientId?: string, subject?: string, content?: string) {
+    const recipient = recipientId || freeFormRecipient
+    const emailSubject = subject || freeFormSubject
+    const emailContent = content || freeFormContent
+    const user = users.find(u => u.id === recipient)
     if (!user) {
       setModalState({
         isOpen: true,
@@ -1374,7 +1385,7 @@ export default function SuperadminDashboard() {
       return
     }
 
-    if (!freeFormSubject.trim() || !freeFormContent.trim()) {
+    if (!emailSubject.trim() || !emailContent.trim()) {
       setModalState({
         isOpen: true,
         type: 'warning',
@@ -1393,7 +1404,7 @@ export default function SuperadminDashboard() {
       }
 
       // Replace variables in content
-      let renderedContent = freeFormContent
+      let renderedContent = emailContent
         .replace(/\{\{user_name\}\}/g, user.full_name || user.email || '')
         .replace(/\{\{user_email\}\}/g, user.email || '')
       
@@ -1414,9 +1425,9 @@ export default function SuperadminDashboard() {
           type: 'admin_email',
           recipientEmail: user.email,
           recipientName: user.full_name || user.email,
-          subject: freeFormSubject.trim(),
+          subject: emailSubject.trim(),
           message: renderedContent,
-          relatedUserId: freeFormRecipient,
+          relatedUserId: recipient,
         }),
       })
 
@@ -1430,10 +1441,12 @@ export default function SuperadminDashboard() {
           message: `Email sent successfully to ${user.email}`,
         })
         fetchEmailLogs() // Refresh email logs
-        // Clear form
-        setFreeFormSubject('')
-        setFreeFormContent('')
-        setFreeFormRecipient('')
+        // Clear form only if called from admin page (no parameters)
+        if (!recipientId) {
+          setFreeFormSubject('')
+          setFreeFormContent('')
+          setFreeFormRecipient('')
+        }
       } else {
         throw new Error(result.error || 'Failed to send email')
       }
@@ -1608,10 +1621,83 @@ export default function SuperadminDashboard() {
         </div>
 
         {/* Users Tab */}
-        {tab === 'users' && (
+        {tab === 'users' && (() => {
+          // Sort and filter users
+          const sortedAndFilteredUsers = [...users]
+            .filter(user => {
+              // Name filter
+              if (userNameFilter && !(user.full_name || '').toLowerCase().includes(userNameFilter.toLowerCase())) {
+                return false
+              }
+              // Email filter
+              if (userEmailFilter && !(user.email || '').toLowerCase().includes(userEmailFilter.toLowerCase())) {
+                return false
+              }
+              // Featured filter
+              if (userFeaturedFilter === 'featured' && !user.is_featured) {
+                return false
+              }
+              if (userFeaturedFilter === 'not_featured' && user.is_featured) {
+                return false
+              }
+              return true
+            })
+            .sort((a, b) => {
+              let aVal: any
+              let bVal: any
+              
+              switch (userSortColumn) {
+                case 'email':
+                  aVal = (a.email || '').toLowerCase()
+                  bVal = (b.email || '').toLowerCase()
+                  break
+                case 'name':
+                  aVal = (a.full_name || '').toLowerCase()
+                  bVal = (b.full_name || '').toLowerCase()
+                  break
+                case 'role':
+                  aVal = a.role || ''
+                  bVal = b.role || ''
+                  break
+                case 'created_at':
+                  aVal = new Date(a.created_at).getTime()
+                  bVal = new Date(b.created_at).getTime()
+                  break
+                case 'is_helper':
+                  aVal = a.is_helper ? 1 : 0
+                  bVal = b.is_helper ? 1 : 0
+                  break
+                case 'is_featured':
+                  aVal = a.is_featured ? 1 : 0
+                  bVal = b.is_featured ? 1 : 0
+                  break
+                default:
+                  return 0
+              }
+              
+              if (aVal < bVal) return userSortDirection === 'asc' ? -1 : 1
+              if (aVal > bVal) return userSortDirection === 'asc' ? 1 : -1
+              return 0
+            })
+
+          const handleSort = (column: string) => {
+            if (userSortColumn === column) {
+              setUserSortDirection(userSortDirection === 'asc' ? 'desc' : 'asc')
+            } else {
+              setUserSortColumn(column)
+              setUserSortDirection('asc')
+            }
+          }
+
+          const SortIcon = ({ column }: { column: string }) => {
+            if (userSortColumn !== column) return <span className="text-gray-400 ml-1">⇅</span>
+            return userSortDirection === 'asc' ? <span className="ml-1">↑</span> : <span className="ml-1">↓</span>
+          }
+
+          return (
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
-              <h2 className="text-lg sm:text-xl font-semibold">Users ({users.length})</h2>
+              <h2 className="text-lg sm:text-xl font-semibold">Users ({sortedAndFilteredUsers.length}{sortedAndFilteredUsers.length !== users.length ? ` of ${users.length}` : ''})</h2>
               <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={selectAllUsers}
@@ -1626,6 +1712,65 @@ export default function SuperadminDashboard() {
                   Clear ({selectedUserIds.size})
                 </button>
               </div>
+            </div>
+
+            {/* Filters */}
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Filters</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full border border-gray-300 p-2 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Search by name..."
+                    value={userNameFilter}
+                    onChange={(e) => setUserNameFilter(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full border border-gray-300 p-2 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Search by email..."
+                    value={userEmailFilter}
+                    onChange={(e) => setUserEmailFilter(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Featured
+                  </label>
+                  <select
+                    className="w-full border border-gray-300 p-2 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    value={userFeaturedFilter}
+                    onChange={(e) => setUserFeaturedFilter(e.target.value)}
+                  >
+                    <option value="">All</option>
+                    <option value="featured">Featured Only</option>
+                    <option value="not_featured">Not Featured</option>
+                  </select>
+                </div>
+              </div>
+              {(userNameFilter || userEmailFilter || userFeaturedFilter) && (
+                <div className="mt-3">
+                  <button
+                    onClick={() => {
+                      setUserNameFilter('')
+                      setUserEmailFilter('')
+                      setUserFeaturedFilter('')
+                    }}
+                    className="text-sm text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Clear all filters
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Actions Toolbar */}
@@ -1743,7 +1888,7 @@ export default function SuperadminDashboard() {
                     <th className="border px-2 sm:px-4 py-2 text-left w-12">
                       <input
                         type="checkbox"
-                        checked={selectedUserIds.size === users.length && users.length > 0}
+                        checked={selectedUserIds.size === sortedAndFilteredUsers.length && sortedAndFilteredUsers.length > 0}
                         onChange={(e) => {
                           if (e.target.checked) {
                             selectAllUsers()
@@ -1754,16 +1899,47 @@ export default function SuperadminDashboard() {
                         className="w-4 h-4"
                       />
                     </th>
-                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Email</th>
-                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden sm:table-cell">Name</th>
-                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Role</th>
+                    <th 
+                      className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm cursor-pointer hover:bg-gray-200 select-none"
+                      onClick={() => handleSort('email')}
+                    >
+                      Email <SortIcon column="email" />
+                    </th>
+                    <th 
+                      className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden sm:table-cell cursor-pointer hover:bg-gray-200 select-none"
+                      onClick={() => handleSort('name')}
+                    >
+                      Name <SortIcon column="name" />
+                    </th>
+                    <th 
+                      className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm cursor-pointer hover:bg-gray-200 select-none"
+                      onClick={() => handleSort('role')}
+                    >
+                      Role <SortIcon column="role" />
+                    </th>
                     <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Email Status</th>
-                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden md:table-cell">Helper Badges</th>
-                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden lg:table-cell">Featured</th>
+                    <th 
+                      className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden md:table-cell cursor-pointer hover:bg-gray-200 select-none"
+                      onClick={() => handleSort('is_helper')}
+                    >
+                      Helper Badges <SortIcon column="is_helper" />
+                    </th>
+                    <th 
+                      className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden lg:table-cell cursor-pointer hover:bg-gray-200 select-none"
+                      onClick={() => handleSort('is_featured')}
+                    >
+                      Featured <SortIcon column="is_featured" />
+                    </th>
+                    <th 
+                      className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm cursor-pointer hover:bg-gray-200 select-none"
+                      onClick={() => handleSort('created_at')}
+                    >
+                      Registered <SortIcon column="created_at" />
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map(u => (
+                  {sortedAndFilteredUsers.map(u => (
                     <tr 
                       key={u.id} 
                       className={`hover:bg-gray-50 ${selectedUserIds.has(u.id) ? 'bg-blue-50' : ''}`}
@@ -1855,13 +2031,17 @@ export default function SuperadminDashboard() {
                           <span className="text-xs text-gray-400">—</span>
                         )}
                       </td>
+                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
+                        {u.created_at ? new Date(u.created_at).toLocaleDateString() : 'N/A'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
-        )}
+          )
+        })()}
 
         {/* Badge Management Modal */}
         {managingBadgesFor && (
@@ -2807,173 +2987,15 @@ export default function SuperadminDashboard() {
               <p className="text-sm text-gray-600">Manage welcome email templates for Helpers and Taskers</p>
             </div>
             
-            <EmailTemplateManager onTemplateSent={fetchEmailLogs} onTemplateChange={fetchEmailTemplates} />
-            
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Send Email</h3>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setFreeFormEmailMode(false)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                      !freeFormEmailMode
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
-                    Template Email
-                  </button>
-                  <button
-                    onClick={() => setFreeFormEmailMode(true)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                      freeFormEmailMode
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
-                    Free Form Email
-                  </button>
-                </div>
-              </div>
-
-              {!freeFormEmailMode ? (
-                // Template-based email section
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Select User
-                    </label>
-                    <select
-                      className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      value={selectedUserForEmail}
-                      onChange={(e) => {
-                        const userId = e.target.value
-                        setSelectedUserForEmail(userId)
-                      }}
-                    >
-                      <option value="">-- Select a user --</option>
-                      {users
-                        .sort((a, b) => {
-                          const nameA = (a.full_name || a.email || '').toLowerCase()
-                          const nameB = (b.full_name || b.email || '').toLowerCase()
-                          return nameA.localeCompare(nameB)
-                        })
-                        .map((user) => (
-                          <option key={user.id} value={user.id}>
-                            {user.full_name || user.email} ({user.email}) {user.is_helper ? '[Helper]' : '[Tasker]'}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                  
-                  {selectedUserForEmail && (
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Select Email Template
-                        </label>
-                        <select
-                          className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          value={selectedEmailTemplate}
-                          onChange={(e) => setSelectedEmailTemplate(e.target.value)}
-                        >
-                          <option value="">-- Select a template --</option>
-                          {emailTemplates.map((template) => (
-                            <option key={template.id} value={template.template_type}>
-                              {template.template_type} - {template.subject}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <button
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                        onClick={() => sendWelcomeEmail(selectedUserForEmail, selectedEmailTemplate)}
-                        disabled={sendingEmail || !selectedEmailTemplate}
-                      >
-                        {sendingEmail ? 'Sending...' : 'Send Email'}
-                      </button>
-                      <p className="text-sm text-gray-600">
-                        💡 <strong>Tip:</strong> Make sure you've created and saved the email templates above before sending emails.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                // Free-form email section
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Select Recipient
-                    </label>
-                    <select
-                      className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      value={freeFormRecipient}
-                      onChange={(e) => setFreeFormRecipient(e.target.value)}
-                    >
-                      <option value="">-- Select a user --</option>
-                      {users
-                        .sort((a, b) => {
-                          const nameA = (a.full_name || a.email || '').toLowerCase()
-                          const nameB = (b.full_name || b.email || '').toLowerCase()
-                          return nameA.localeCompare(nameB)
-                        })
-                        .map((user) => (
-                          <option key={user.id} value={user.id}>
-                            {user.full_name || user.email} ({user.email}) {user.is_helper ? '[Helper]' : '[Tasker]'}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Subject
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Enter email subject"
-                      value={freeFormSubject}
-                      onChange={(e) => setFreeFormSubject(e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email Content
-                    </label>
-                    <EmailTemplateEditor
-                      value={freeFormContent}
-                      onChange={setFreeFormContent}
-                      height={300}
-                    />
-                    <p className="mt-2 text-xs text-gray-500">
-                      💡 You can use HTML formatting. Available variables: {'{{user_name}}'}, {'{{user_email}}'}, {'{{tee_image}}'} (mascot)
-                    </p>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                      onClick={sendFreeFormEmail}
-                      disabled={sendingEmail || !freeFormRecipient || !freeFormSubject.trim() || !freeFormContent.trim()}
-                    >
-                      {sendingEmail ? 'Sending...' : 'Send Email'}
-                    </button>
-                    <button
-                      className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-2 rounded-lg font-medium"
-                      onClick={() => {
-                        setFreeFormSubject('')
-                        setFreeFormContent('')
-                        setFreeFormRecipient('')
-                      }}
-                    >
-                      Clear
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <EmailTemplateManager 
+              onTemplateSent={fetchEmailLogs} 
+              onTemplateChange={fetchEmailTemplates}
+              users={users}
+              emailTemplates={emailTemplates}
+              onSendWelcomeEmail={sendWelcomeEmail}
+              onSendFreeFormEmail={sendFreeFormEmail}
+              sendingEmail={sendingEmail}
+            />
           </div>
         )}
 
