@@ -17,6 +17,7 @@ import { formatPostcodeForCountry } from '@/lib/postcode'
 import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
 import UserRatingsDisplay from '@/components/UserRatingsDisplay'
 import { compressAvatar } from '@/lib/image-utils'
+import { useLanguage } from '@/lib/i18n'
 
 // AppUser interface that extends User and includes all properties used in this component
 interface AppUser extends User {
@@ -28,6 +29,7 @@ function ProfilePageContent() {
   const searchParams = useSearchParams()
   const setupRequired = searchParams.get('setup') === 'required'
   const { users: userRatings } = useUserRatings()
+  const { t } = useLanguage()
   
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<AppUser | null>(null)
@@ -797,7 +799,7 @@ function ProfilePageContent() {
       setStatusMessage('Avatar updated successfully.')
     } catch (error: any) {
       console.error('Error uploading avatar:', error)
-      setErrorMessage(error.message || 'Error uploading avatar')
+      setErrorMessage(error.message || t('profile.errorUploadingAvatar'))
     } finally {
       setAvatarUploading(false)
       if (event.target) {
@@ -823,10 +825,10 @@ function ProfilePageContent() {
 
       setAvatarUrl(null)
       setProfile((prev) => (prev ? { ...prev, avatar_url: null } : prev))
-      setStatusMessage('Avatar removed.')
+      setStatusMessage(t('profile.avatarRemoved'))
     } catch (error: any) {
       console.error('Error removing avatar:', error)
-      setErrorMessage(error.message || 'Error removing avatar')
+      setErrorMessage(error.message || t('profile.errorRemovingAvatar'))
     } finally {
       setAvatarUploading(false)
     }
@@ -835,7 +837,7 @@ function ProfilePageContent() {
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center">Loading profile...</div>
+        <div className="text-center">{t('profile.loading')}</div>
       </div>
     )
   }
@@ -853,7 +855,7 @@ function ProfilePageContent() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 sm:p-6">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6 mx-4">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">Complete Your Profile</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{t('profile.completeProfile')}</h2>
               {!setupRequired && (
                 <button
                   onClick={() => setShowSetupModal(false)}
@@ -869,8 +871,8 @@ function ProfilePageContent() {
             <div className="mb-4">
               <p className="text-gray-700 mb-3">
                 {setupRequired 
-                  ? "To use the system, you must complete your profile with the following required information:"
-                  : "Your profile is missing some required information. Please complete the following fields:"}
+                  ? t('profile.completeProfileRequired')
+                  : t('profile.completeProfileMissing')}
               </p>
               <ul className="list-disc list-inside space-y-1 text-gray-600 mb-4">
                 {missingFields.map((field) => (
@@ -879,7 +881,7 @@ function ProfilePageContent() {
               </ul>
               {setupRequired && (
                 <p className="text-sm text-gray-500 italic">
-                  You cannot access other parts of the system until your profile is complete.
+                  {t('profile.completeProfileCannotAccess')}
                 </p>
               )}
             </div>
@@ -896,7 +898,7 @@ function ProfilePageContent() {
                 }}
                 className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
-                {setupRequired ? 'Complete Profile' : 'OK'}
+                {setupRequired ? t('profile.completeProfileButton') : t('profile.ok')}
               </button>
             </div>
           </div>
@@ -904,12 +906,12 @@ function ProfilePageContent() {
       )}
 
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
+        <h1 className="text-3xl font-bold text-gray-900">{t('profile.title')}</h1>
         {profile && profile.profile_slug && (
           <div className="flex items-center gap-2">
             {(isTasker || isHelper) && (
               <span className="text-sm font-medium text-gray-700 mr-2">
-                {isHelper ? 'Share your Profile to get more business:' : 'Share your Profile:'}
+                {isHelper ? t('profile.shareProfileHelper') : t('profile.shareProfileTasker')}
               </span>
             )}
             <button
@@ -925,7 +927,7 @@ function ProfilePageContent() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
               </svg>
-              {showShareSuccess ? 'Copied!' : 'Share'}
+              {showShareSuccess ? t('profile.copied') : t('profile.share')}
             </button>
             {qrCodeUrl && (
               <button
@@ -935,7 +937,7 @@ function ProfilePageContent() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                 </svg>
-                QR Code
+                {t('profile.qrCode')}
               </button>
             )}
           </div>
@@ -946,11 +948,11 @@ function ProfilePageContent() {
       {showQrCode && qrCodeUrl && profile && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 sm:p-6" onClick={() => setShowQrCode(false)}>
           <div className="bg-white rounded-lg p-4 sm:p-6 max-w-sm w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">Scan QR Code</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('profile.scanQrCode')}</h3>
             <img src={qrCodeUrl} alt="QR Code" className="mx-auto mb-4" />
-            <p className="text-sm text-gray-600 text-center mb-4">Share this profile with others</p>
+            <p className="text-sm text-gray-600 text-center mb-4">{t('profile.shareProfileDescription')}</p>
             <div className="mb-4 p-3 bg-gray-50 rounded-md">
-              <p className="text-xs text-gray-500 mb-1">Profile Link:</p>
+              <p className="text-xs text-gray-500 mb-1">{t('profile.profileLink')}</p>
               <p className="text-sm text-gray-900 break-all">
                 {typeof window !== 'undefined' ? window.location.origin : ''}/user/{profile.profile_slug || profile.id}
               </p>
@@ -959,7 +961,7 @@ function ProfilePageContent() {
               onClick={() => setShowQrCode(false)}
               className="w-full bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700"
             >
-              Close
+              {t('profile.close')}
             </button>
           </div>
         </div>
@@ -976,10 +978,10 @@ function ProfilePageContent() {
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                You have {pendingReviews.length} pending review{pendingReviews.length !== 1 ? 's' : ''}!
+                {t('profile.pendingReviews').replace('{count}', pendingReviews.length.toString()).replace('{plural}', pendingReviews.length !== 1 ? 's' : '')}
               </h3>
               <p className="text-sm text-gray-700 mb-4">
-                Please leave reviews for completed tasks to help build trust in the community.
+                {t('profile.pendingReviewsHelper')}
               </p>
               <div className="space-y-2">
                 {pendingReviews.slice(0, 2).map((review) => (
@@ -1003,7 +1005,7 @@ function ProfilePageContent() {
                         )}
                         <div>
                           <p className="text-sm font-medium text-gray-900">
-                            Review {review.is_tasker ? 'helper' : 'tasker'} for "{review.task_title}"
+                            {review.is_tasker ? t('profile.reviewHelper').replace('{task}', review.task_title) : t('profile.reviewTasker').replace('{task}', review.task_title)}
                           </p>
                           <p className="text-xs text-gray-600">
                             {review.other_user_name || 'User'}
@@ -1021,7 +1023,7 @@ function ProfilePageContent() {
                     href="/tasks?filter=my_tasks&pending_reviews=true"
                     className="block text-center text-sm text-amber-700 hover:text-amber-800 font-medium pt-2"
                   >
-                    View all {pendingReviews.length} pending reviews →
+                    {t('profile.viewAllPendingReviews').replace('{count}', pendingReviews.length.toString())} →
                   </Link>
                 )}
               </div>
@@ -1048,13 +1050,13 @@ function ProfilePageContent() {
 
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Account Information</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t('profile.accountInformation')}</h2>
             {!editing && (
               <button
                 onClick={() => setEditing(true)}
                 className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
               >
-                Edit
+                {t('profile.edit')}
               </button>
             )}
           </div>
@@ -1077,7 +1079,7 @@ function ProfilePageContent() {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-700 mb-2">
-                  Profile Photo/Logo {isHelper && <span className="text-red-500">*</span>}
+                  {t('profile.profilePhotoLabel')} {isHelper && <span className="text-red-500">*</span>}
                 </p>
                 {!avatarUrl && (
                   <p className="text-sm text-gray-500 mb-3">
@@ -1093,7 +1095,7 @@ function ProfilePageContent() {
                       className="hidden"
                       disabled={avatarUploading}
                     />
-                    {avatarUploading ? 'Uploading...' : 'Upload Photo'}
+                    {avatarUploading ? t('profile.uploading') : t('profile.uploadPhoto')}
                   </label>
                   {avatarUrl && (
                     <button
@@ -1102,7 +1104,7 @@ function ProfilePageContent() {
                       className="text-sm text-red-600 hover:text-red-700"
                       disabled={avatarUploading}
                     >
-                      Remove
+                      {t('profile.remove')}
                     </button>
                   )}
                 </div>
@@ -1111,7 +1113,7 @@ function ProfilePageContent() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email
+                {t('profile.email')}
               </label>
               <input
                 type="email"
@@ -1123,7 +1125,7 @@ function ProfilePageContent() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name <span className="text-red-500">*</span>
+                {t('profile.fullName')} <span className="text-red-500">*</span>
               </label>
               {editing ? (
                 <input
@@ -1132,12 +1134,12 @@ function ProfilePageContent() {
                   onChange={(e) => setFullName(e.target.value)}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Enter your full name"
+                  placeholder={t('profile.fullNamePlaceholder')}
                 />
               ) : (
                 <input
                   type="text"
-                  value={profile.full_name || 'Not set'}
+                  value={profile.full_name || t('profile.notSet')}
                   disabled
                   className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
                 />
@@ -1146,7 +1148,7 @@ function ProfilePageContent() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Company Name (Optional)
+                {t('profile.companyName')}
               </label>
               {editing ? (
                 <input
@@ -1154,12 +1156,12 @@ function ProfilePageContent() {
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Enter company name (optional)"
+                  placeholder={t('profile.companyNamePlaceholder')}
                 />
               ) : (
                 <input
                   type="text"
-                  value={profile.company_name || 'Not set'}
+                  value={profile.company_name || t('profile.notSet')}
                   disabled
                   className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
                 />
@@ -1168,7 +1170,7 @@ function ProfilePageContent() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Country
+                {t('profile.country')}
               </label>
               {editing ? (
                 <select
@@ -1177,7 +1179,7 @@ function ProfilePageContent() {
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                 >
-                  <option value="">Select a country</option>
+                  <option value="">{t('profile.selectCountry')}</option>
                   <option value="Portugal">Portugal</option>
                   <option value="Spain">Spain</option>
                   <option value="France">France</option>
@@ -1232,7 +1234,7 @@ function ProfilePageContent() {
               ) : (
                 <input
                   type="text"
-                  value={profile.country || 'Not set'}
+                  value={profile.country || t('profile.notSet')}
                   disabled
                   className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
                 />
@@ -1241,7 +1243,7 @@ function ProfilePageContent() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Postcode (for distance calculations) <span className="text-red-500">*</span>
+                {t('profile.postcode')} <span className="text-red-500">*</span>
               </label>
               {editing ? (
                 <div>
@@ -1256,25 +1258,25 @@ function ProfilePageContent() {
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100"
                     />
                     {geocoding && (
-                      <span className="flex items-center text-sm text-gray-500">Geocoding...</span>
+                      <span className="flex items-center text-sm text-gray-500">{t('profile.geocoding')}</span>
                     )}
                   </div>
                   {!country.trim() && (
-                    <p className="mt-1 text-sm text-amber-600">Please select a country first</p>
+                    <p className="mt-1 text-sm text-amber-600">{t('profile.selectCountryFirst')}</p>
                   )}
                   {geocodeError && (
                     <p className="mt-1 text-sm text-red-600">{geocodeError}</p>
                   )}
                   {!geocodeError && closestAddress && !geocoding && (
                     <p className="mt-1 text-sm text-green-600">
-                      ✓ Postcode recognized — {closestAddress}
+                      {t('profile.postcodeRecognized').replace('{address}', closestAddress)}
                     </p>
                   )}
                 </div>
               ) : (
                 <input
                   type="text"
-                  value={profile.postcode || 'Not set'}
+                  value={profile.postcode || t('profile.notSet')}
                   disabled
                   className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
                 />
@@ -1283,7 +1285,7 @@ function ProfilePageContent() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number <span className="text-red-500">*</span>
+                {t('profile.phoneNumber')} <span className="text-red-500">*</span>
               </label>
               {editing ? (
                 <div className="flex gap-2">
@@ -1293,7 +1295,7 @@ function ProfilePageContent() {
                     required
                     className="w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                   >
-                    <option value="">Code</option>
+                    <option value="">{t('profile.phoneCode')}</option>
                     <option value="+351">+351 (PT)</option>
                     <option value="+34">+34 (ES)</option>
                     <option value="+33">+33 (FR)</option>
@@ -1348,7 +1350,7 @@ function ProfilePageContent() {
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
                     required
-                    placeholder="Phone number"
+                    placeholder={t('profile.phoneNumberPlaceholder')}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                   />
                 </div>
@@ -1357,7 +1359,7 @@ function ProfilePageContent() {
                   type="text"
                   value={profile.phone_country_code && profile.phone_number 
                     ? `${profile.phone_country_code} ${profile.phone_number}` 
-                    : 'Not set'}
+                    : t('profile.notSet')}
                   disabled
                   className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
                 />
@@ -1367,7 +1369,7 @@ function ProfilePageContent() {
             {/* Languages Spoken */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                I speak basic: <span className="text-red-500">*</span>
+                {t('profile.iSpeak')} <span className="text-red-500">*</span>
               </label>
               {editing ? (
                 <div className="flex flex-wrap gap-4">
@@ -1384,7 +1386,7 @@ function ProfilePageContent() {
                       }}
                       className="w-4 h-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                     />
-                    <span className="text-sm text-gray-700">English</span>
+                    <span className="text-sm text-gray-700">{t('profile.languageEnglish')}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -1399,7 +1401,7 @@ function ProfilePageContent() {
                       }}
                       className="w-4 h-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                     />
-                    <span className="text-sm text-gray-700">Portuguese</span>
+                    <span className="text-sm text-gray-700">{t('profile.languagePortuguese')}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -1414,7 +1416,7 @@ function ProfilePageContent() {
                       }}
                       className="w-4 h-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                     />
-                    <span className="text-sm text-gray-700">German</span>
+                    <span className="text-sm text-gray-700">{t('profile.languageGerman')}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -1429,7 +1431,7 @@ function ProfilePageContent() {
                       }}
                       className="w-4 h-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                     />
-                    <span className="text-sm text-gray-700">French</span>
+                    <span className="text-sm text-gray-700">{t('profile.languageFrench')}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -1444,7 +1446,7 @@ function ProfilePageContent() {
                       }}
                       className="w-4 h-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                     />
-                    <span className="text-sm text-gray-700">Italian</span>
+                    <span className="text-sm text-gray-700">{t('profile.languageItalian')}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -1459,7 +1461,7 @@ function ProfilePageContent() {
                       }}
                       className="w-4 h-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                     />
-                    <span className="text-sm text-gray-700">Greek</span>
+                    <span className="text-sm text-gray-700">{t('profile.languageGreek')}</span>
                   </label>
                 </div>
               ) : (
@@ -1475,10 +1477,10 @@ function ProfilePageContent() {
                     ))
                   ) : (
                     <>
-                      <span className="text-gray-500 text-sm">Not set</span>
+                      <span className="text-gray-500 text-sm">{t('profile.notSet')}</span>
                       {!editing && (
                         <span className="text-xs text-gray-400 italic">
-                          (Click "Edit" above to select languages)
+                          {t('profile.selectLanguagesHint')}
                         </span>
                       )}
                     </>
@@ -1490,8 +1492,8 @@ function ProfilePageContent() {
             {/* Bio - Always visible for all users */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Bio / About Me <span className="text-red-500">*</span>
-                <span className="text-xs text-gray-500 ml-2">(minimum 50 characters)</span>
+                {t('profile.bio')} <span className="text-red-500">*</span>
+                <span className="text-xs text-gray-500 ml-2">{t('profile.bioMinimum')}</span>
               </label>
               {editing ? (
                 <div>
@@ -1502,15 +1504,15 @@ function ProfilePageContent() {
                     required
                     minLength={50}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Tell others about yourself, your experience, and what makes you unique..."
+                    placeholder={t('profile.bioPlaceholder')}
                   />
                   <p className={`mt-1 text-xs ${bio.trim().length < 50 ? 'text-red-600' : 'text-gray-500'}`}>
-                    {bio.trim().length}/50 characters {bio.trim().length < 50 && `(${50 - bio.trim().length} more required)`}
+                    {t('profile.bioCharacters').replace('{count}', bio.trim().length.toString())}{bio.trim().length < 50 && ` ${t('profile.bioMoreRequired').replace('{count}', (50 - bio.trim().length).toString())}`}
                   </p>
                 </div>
               ) : (
                 <p className="text-gray-700 whitespace-pre-line">
-                  {profile.bio || 'No bio added yet'}
+                  {profile.bio || t('profile.noBio')}
                 </p>
               )}
             </div>
@@ -1519,7 +1521,7 @@ function ProfilePageContent() {
             {isHelper && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  IBAN (for receiving payouts)
+                  {t('profile.iban')}
                 </label>
                 {editing ? (
                   <div>
@@ -1531,17 +1533,17 @@ function ProfilePageContent() {
                         const cleaned = e.target.value.replace(/\s/g, '').toUpperCase()
                         setIban(cleaned)
                       }}
-                      placeholder="e.g., PT50001234567890123456789"
+                      placeholder={t('profile.ibanPlaceholder')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     />
                     <p className="mt-1 text-xs text-gray-500">
-                      Your IBAN is required to receive payouts when tasks are completed. Format: 2 letters + 2 digits + up to 30 alphanumeric characters.
+                      {t('profile.ibanHelper')}
                     </p>
                   </div>
                 ) : (
                   <input
                     type="text"
-                    value={profile.iban || 'Not set'}
+                    value={profile.iban || t('profile.notSet')}
                     disabled
                     className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
                   />
@@ -1557,7 +1559,7 @@ function ProfilePageContent() {
                   onClick={() => setPaymentsExpanded(!paymentsExpanded)}
                   className="w-full flex items-center justify-between text-left mb-4"
                 >
-                  <h3 className="text-lg font-semibold text-gray-900">Payments</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">{t('profile.payments')}</h3>
                   <div className="flex items-center gap-3">
                     <span className="text-lg font-bold text-blue-700">€{payments.totalPaid.toFixed(2)}</span>
                     <span className="text-sm text-gray-500">({payments.totalTasks} tasks)</span>
@@ -1578,11 +1580,11 @@ function ProfilePageContent() {
                     {/* Summary Cards */}
                     <div className="grid grid-cols-2 gap-4 mb-6">
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                        <p className="text-sm text-blue-700 font-medium">Total Paid</p>
+                        <p className="text-sm text-blue-700 font-medium">{t('profile.totalPaid')}</p>
                         <p className="text-2xl font-bold text-blue-800">€{payments.totalPaid.toFixed(2)}</p>
                       </div>
                       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
-                        <p className="text-sm text-gray-700 font-medium">Tasks Paid</p>
+                        <p className="text-sm text-gray-700 font-medium">{t('profile.tasksPaid')}</p>
                         <p className="text-2xl font-bold text-gray-800">{payments.totalTasks}</p>
                       </div>
                     </div>
@@ -1592,11 +1594,11 @@ function ProfilePageContent() {
                       <table className="w-full">
                         <thead className="bg-gray-50">
                           <tr>
-                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Task</th>
-                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Helper</th>
-                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Amount</th>
-                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Fee</th>
-                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Total</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">{t('profile.task')}</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">{t('profile.helper')}</th>
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">{t('profile.amount')}</th>
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">{t('profile.fee')}</th>
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">{t('profile.total')}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
@@ -1630,7 +1632,7 @@ function ProfilePageContent() {
                         </tbody>
                         <tfoot className="bg-gray-50 border-t-2 border-gray-300">
                           <tr>
-                            <td className="px-4 py-3 text-sm font-semibold text-gray-900" colSpan={2}>Total</td>
+                            <td className="px-4 py-3 text-sm font-semibold text-gray-900" colSpan={2}>{t('profile.total')}</td>
                             <td className="px-4 py-3 text-right text-sm text-gray-600">
                               €{payments.tasks.reduce((sum: number, t: any) => sum + (t.budget || 0), 0).toFixed(2)}
                             </td>
@@ -1657,7 +1659,7 @@ function ProfilePageContent() {
                   onClick={() => setEarningsExpanded(!earningsExpanded)}
                   className="w-full flex items-center justify-between text-left mb-4"
                 >
-                  <h3 className="text-lg font-semibold text-gray-900">Earnings</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">{t('profile.earnings')}</h3>
                   <div className="flex items-center gap-3">
                     <span className="text-lg font-bold text-green-700">€{earnings.paidEarnings.toFixed(2)}</span>
                     {earnings.pendingEarnings > 0 && (
@@ -1680,15 +1682,15 @@ function ProfilePageContent() {
                     {/* Summary Cards */}
                     <div className="grid grid-cols-3 gap-4 mb-6">
                       <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                        <p className="text-sm text-green-700 font-medium">Paid</p>
+                        <p className="text-sm text-green-700 font-medium">{t('profile.paid')}</p>
                         <p className="text-2xl font-bold text-green-800">€{earnings.paidEarnings.toFixed(2)}</p>
                       </div>
                       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
-                        <p className="text-sm text-amber-700 font-medium">Pending</p>
+                        <p className="text-sm text-amber-700 font-medium">{t('profile.pending')}</p>
                         <p className="text-2xl font-bold text-amber-800">€{earnings.pendingEarnings.toFixed(2)}</p>
                       </div>
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-                        <p className="text-sm text-blue-700 font-medium">Tasks</p>
+                        <p className="text-sm text-blue-700 font-medium">{t('profile.tasks')}</p>
                         <p className="text-2xl font-bold text-blue-800">{earnings.totalTasks}</p>
                       </div>
                     </div>
@@ -1698,10 +1700,10 @@ function ProfilePageContent() {
                       <table className="w-full">
                         <thead className="bg-gray-50">
                           <tr>
-                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Task</th>
-                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Budget</th>
-                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Earned</th>
-                            <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Status</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">{t('profile.task')}</th>
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">{t('profile.budget')}</th>
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">{t('profile.earned')}</th>
+                            <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">{t('profile.status')}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
@@ -1735,12 +1737,12 @@ function ProfilePageContent() {
                                     : 'bg-gray-100 text-gray-800'
                                 }`}>
                                   {task.payout_status === 'completed' || task.payout_status === 'simulated' 
-                                    ? 'Paid' 
+                                    ? t('profile.statusPaid')
                                     : task.payout_status === 'processing'
-                                    ? 'Processing'
+                                    ? t('profile.statusProcessing')
                                     : task.payout_status === 'failed'
-                                    ? 'Failed'
-                                    : 'Pending'}
+                                    ? t('profile.statusFailed')
+                                    : t('profile.statusPending')}
                                 </span>
                               </td>
                             </tr>
@@ -1748,7 +1750,7 @@ function ProfilePageContent() {
                         </tbody>
                         <tfoot className="bg-gray-50 border-t-2 border-gray-300">
                           <tr>
-                            <td className="px-4 py-3 text-sm font-semibold text-gray-900">Total</td>
+                            <td className="px-4 py-3 text-sm font-semibold text-gray-900">{t('profile.total')}</td>
                             <td className="px-4 py-3 text-right text-sm text-gray-600">
                               €{earnings.tasks.reduce((sum: number, t: any) => sum + (t.budget || 0), 0).toFixed(2)}
                             </td>
@@ -1759,7 +1761,7 @@ function ProfilePageContent() {
                               )}
                             </td>
                             <td className="px-4 py-3 text-center text-xs text-gray-500">
-                              (10% fee)
+                              {t('profile.fee10Percent')}
                             </td>
                           </tr>
                         </tfoot>
@@ -1775,13 +1777,13 @@ function ProfilePageContent() {
               <div className="border-t pt-6 mt-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">💰 Earnings</h3>
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
-                  <p className="text-gray-600 mb-2">No earnings yet</p>
-                  <p className="text-sm text-gray-500">Complete tasks to start earning!</p>
+                  <p className="text-gray-600 mb-2">{t('profile.noEarningsYet')}</p>
+                  <p className="text-sm text-gray-500">{t('profile.completeTasksToEarn')}</p>
                   <a 
                     href="/tasks" 
                     className="inline-block mt-4 px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700"
                   >
-                    Browse Tasks
+                    {t('profile.browseTasks')}
                   </a>
                 </div>
               </div>
@@ -1789,9 +1791,9 @@ function ProfilePageContent() {
 
             {/* Role Settings */}
             <div className="border-t pt-6 mt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Roles</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('profile.accountRoles')}</h3>
               <p className="text-sm text-gray-600 mb-4">
-                Choose how you want to use Taskorilla. You can enable both roles to post tasks and bid on tasks.
+                {t('profile.accountRolesDescription')}
               </p>
               
               <div className="space-y-4">
@@ -1799,15 +1801,15 @@ function ProfilePageContent() {
                 <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3">
-                      <h4 className="text-base font-medium text-gray-900">Tasker</h4>
+                      <h4 className="text-base font-medium text-gray-900">{t('profile.tasker')}</h4>
                       {isTasker && (
                         <span className="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded">
-                          Active
+                          {t('profile.active')}
                         </span>
                       )}
                     </div>
                     <p className="text-sm text-gray-600 mt-1">
-                      Post tasks and hire helpers to complete them
+                      {t('profile.taskerDescription')}
                     </p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -1829,15 +1831,15 @@ function ProfilePageContent() {
                 <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3">
-                      <h4 className="text-base font-medium text-gray-900">Helper</h4>
+                      <h4 className="text-base font-medium text-gray-900">{t('profile.helperRole')}</h4>
                       {isHelper && (
                         <span className="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded">
-                          Active
+                          {t('profile.active')}
                         </span>
                       )}
                     </div>
                     <p className="text-sm text-gray-600 mt-1">
-                      Browse tasks and submit bids to earn money
+                      {t('profile.helperDescription')}
                     </p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -1858,7 +1860,7 @@ function ProfilePageContent() {
                 {!isTasker && !isHelper && (
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                     <p className="text-sm text-amber-800">
-                      ⚠️ You must enable at least one role. Enable Tasker to post tasks or Helper to bid on tasks.
+                      {t('profile.mustEnableRole')}
                     </p>
                   </div>
                 )}
@@ -1868,9 +1870,9 @@ function ProfilePageContent() {
             {/* Helper Profile Settings */}
             {isHelper && (
               <div className="border-t pt-6 mt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Helper Profile</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('profile.helperProfile')}</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  Customize your helper profile to showcase your skills and attract taskers.
+                  {t('profile.helperProfileDescription')}
                 </p>
 
                 {/* Professional Toggle */}
@@ -1898,9 +1900,9 @@ function ProfilePageContent() {
                         className="h-5 w-5 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                       />
                       <div>
-                        <span className="text-base font-semibold text-gray-900">I am a Professional</span>
+                        <span className="text-base font-semibold text-gray-900">{t('profile.iAmProfessional')}</span>
                         <p className="text-sm text-gray-600 mt-1">
-                          Check this if you provide professional services. You'll manage Professions and Professional Offerings instead of Skills and Services.
+                          {t('profile.professionalToggleDescription')}
                         </p>
                       </div>
                     </label>
@@ -1912,7 +1914,7 @@ function ProfilePageContent() {
                   {/* Hourly Rate */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Hourly Rate (€)
+                      {t('profile.hourlyRate')}
                     </label>
                     {editing ? (
                       <>
@@ -1926,12 +1928,12 @@ function ProfilePageContent() {
                           placeholder="e.g., 25.00"
                         />
                         <p className="mt-1 text-xs text-gray-500">
-                          Leave blank to show "Quote" in listing
+                          {t('profile.hourlyRateHelper')}
                         </p>
                       </>
                     ) : (
                       <p className="text-gray-700">
-                        {profile.hourly_rate ? `€${profile.hourly_rate}/hr` : 'Not set'}
+                        {profile.hourly_rate ? `€${profile.hourly_rate}/hr` : t('profile.notSet')}
                       </p>
                     )}
                   </div>
@@ -1940,7 +1942,7 @@ function ProfilePageContent() {
                   {isHelper && !(editing ? isProfessional : (profile.professions?.length || 0) > 0) && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Skills {isHelper && <span className="text-red-500">*</span>}
+                      {t('profile.skills')} {isHelper && <span className="text-red-500">*</span>}
                     </label>
                     {editing ? (
                       <div className="space-y-2">
@@ -1974,7 +1976,7 @@ function ProfilePageContent() {
                             }}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 bg-white"
                           >
-                            <option value="">Select a standard skill...</option>
+                            <option value="">{t('profile.selectStandardSkill')}</option>
                             {STANDARD_SKILLS
                               .filter(skill => !skills.includes(skill))
                               .map((skill) => (
@@ -1998,7 +2000,7 @@ function ProfilePageContent() {
                                   }
                                 }
                               }}
-                              placeholder="Or add a custom skill and press Enter"
+                              placeholder={t('profile.addCustomSkillPlaceholder')}
                               className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                             />
                             <button
@@ -2011,7 +2013,7 @@ function ProfilePageContent() {
                               }}
                               className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
                             >
-                              Add
+                              {t('profile.add')}
                             </button>
                           </div>
                         </div>
@@ -2028,7 +2030,7 @@ function ProfilePageContent() {
                             </span>
                           ))
                         ) : (
-                          <span className="text-gray-500">No skills added</span>
+                          <span className="text-gray-500">{t('profile.noSkillsAdded')}</span>
                         )}
                       </div>
                     )}
@@ -2039,7 +2041,7 @@ function ProfilePageContent() {
                   {isHelper && !(editing ? isProfessional : (profile.professions?.length || 0) > 0) && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Services Offered {isHelper && <span className="text-red-500">*</span>}
+                      {t('profile.servicesOffered')} {isHelper && <span className="text-red-500">*</span>}
                     </label>
                     {editing ? (
                       <div className="space-y-2">
@@ -2070,7 +2072,7 @@ function ProfilePageContent() {
                             }}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 bg-white"
                           >
-                            <option value="">Select a standard service...</option>
+                            <option value="">{t('profile.selectStandardService')}</option>
                             {STANDARD_SERVICES
                               .filter(service => !servicesOffered.includes(service))
                               .map((service) => (
@@ -2094,7 +2096,7 @@ function ProfilePageContent() {
                                   }
                                 }
                               }}
-                              placeholder="Or add a custom service and press Enter"
+                              placeholder={t('profile.addCustomServicePlaceholder')}
                               className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                             />
                             <button
@@ -2107,7 +2109,7 @@ function ProfilePageContent() {
                               }}
                               className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
                             >
-                              Add
+                              {t('profile.add')}
                             </button>
                           </div>
                         </div>
@@ -2119,7 +2121,7 @@ function ProfilePageContent() {
                             <li key={index}>{service}</li>
                           ))
                         ) : (
-                          <li className="text-gray-500">No services listed</li>
+                          <li className="text-gray-500">{t('profile.noServicesListed')}</li>
                         )}
                       </ul>
                 )}
@@ -2129,13 +2131,13 @@ function ProfilePageContent() {
               {/* Professional Offerings (Professionals only) */}
               {isHelper && (editing ? isProfessional : (profile.professions?.length || 0) > 0) && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Professional Offerings {isProfessional && <span className="text-red-500">*</span>}
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('profile.professionalOfferings')} {isProfessional && <span className="text-red-500">*</span>}
                   </label>
                   {editing ? (
                     <div className="space-y-2">
                       <p className="text-xs text-gray-500">
-                        List the professional services you provide (e.g., Therapy Sessions, Podcast Production, CFO Advisory).
+                        {t('profile.professionalOfferingsHelper')}
                       </p>
                       <ul className="list-disc list-inside space-y-1 mb-2">
                         {professionalOfferings.map((offering, index) => (
@@ -2165,7 +2167,7 @@ function ProfilePageContent() {
                               }
                             }
                           }}
-                          placeholder="e.g., Therapy Sessions"
+                          placeholder={t('profile.addProfessionalOfferingPlaceholder')}
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                         />
                         <button
@@ -2178,7 +2180,7 @@ function ProfilePageContent() {
                           }}
                           className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
                         >
-                          Add
+                          {t('profile.add')}
                         </button>
                       </div>
                     </div>
@@ -2189,7 +2191,7 @@ function ProfilePageContent() {
                           <li key={index}>{offering}</li>
                         ))
                       ) : (
-                        <li className="text-gray-500">No professional offerings listed</li>
+                        <li className="text-gray-500">{t('profile.noProfessionalOfferingsListed')}</li>
                       )}
                     </ul>
                   )}
@@ -2200,10 +2202,10 @@ function ProfilePageContent() {
                   {isHelper && (editing ? isProfessional : (profile.professions?.length || 0) > 0) && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Select Professional Category {isProfessional && <span className="text-red-500">*</span>}
+                        {t('profile.selectProfessionalCategory')} {isProfessional && <span className="text-red-500">*</span>}
                       </label>
                       <p className="text-xs text-gray-500 mb-3">
-                        Select your professional roles. If you select any profession, Skills and Services will be hidden.
+                        {t('profile.selectProfessionalCategoryHelper')}
                       </p>
                       {editing ? (
                         <div>
@@ -2311,7 +2313,7 @@ function ProfilePageContent() {
                   {isHelper && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Qualifications & Certifications {isProfessional && <span className="text-red-500">*</span>}
+                        {t('profile.qualificationsCertifications')} {isProfessional && <span className="text-red-500">*</span>}
                       </label>
                       {editing ? (
                         <div>
@@ -2346,7 +2348,7 @@ function ProfilePageContent() {
                                   }
                                 }
                               }}
-                              placeholder="e.g., Carpentry Certification, Plumbing License"
+                              placeholder={t('profile.addQualificationPlaceholder')}
                               className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                             />
                             <button
@@ -2359,7 +2361,7 @@ function ProfilePageContent() {
                               }}
                               className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
                             >
-                              Add
+                              {t('profile.add')}
                             </button>
                           </div>
                         </div>
@@ -2375,7 +2377,7 @@ function ProfilePageContent() {
                               </div>
                             ))
                           ) : (
-                            <p className="text-gray-500 text-sm">No qualifications listed</p>
+                            <p className="text-gray-500 text-sm">{t('profile.noQualificationsListed')}</p>
                           )}
                         </div>
                       )}
@@ -2386,7 +2388,7 @@ function ProfilePageContent() {
                   {profile.profile_slug && (
                     <div>
                       <label className="block text-sm font-semibold text-primary-600 mb-2">
-                        This is your exclusive Helper Profile Link which you can share
+                        {isHelper ? t('profile.shareProfileLinkHelper') : t('profile.shareProfileLinkTasker')}
                       </label>
                       <div className="flex gap-2">
                         <input
@@ -2400,11 +2402,11 @@ function ProfilePageContent() {
                           onClick={() => {
                             const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/user/${profile.profile_slug}`
                             navigator.clipboard.writeText(url)
-                            setStatusMessage('Profile link copied to clipboard!')
+                            setStatusMessage(t('profile.profileLinkCopied'))
                           }}
                           className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
                         >
-                          Copy
+                          {t('profile.copy')}
                         </button>
                       </div>
                     </div>
@@ -2420,7 +2422,7 @@ function ProfilePageContent() {
                   disabled={!isTasker && !isHelper}
                   className="bg-primary-600 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Save Changes
+                  {t('profile.saveChanges')}
                 </button>
                 <button
                   onClick={() => {
@@ -2453,7 +2455,7 @@ function ProfilePageContent() {
                   }}
                   className="bg-gray-200 text-gray-700 px-6 py-2 rounded-md text-sm font-medium hover:bg-gray-300"
                 >
-                  Cancel
+                  {t('profile.cancel')}
                 </button>
               </div>
             )}
@@ -2461,7 +2463,7 @@ function ProfilePageContent() {
         </div>
 
         <div className="border-t pt-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Account Created</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('profile.accountCreated')}</h2>
           <p className="text-gray-600">
             {new Date(profile.created_at).toLocaleDateString('en-US', {
               year: 'numeric',
@@ -2472,7 +2474,7 @@ function ProfilePageContent() {
         </div>
 
         <div className="border-t pt-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Ratings</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('profile.ratings')}</h2>
           {userRatingsSummary ? (
             <UserRatingsDisplay 
               ratings={userRatingsSummary} 
@@ -2480,13 +2482,13 @@ function ProfilePageContent() {
               showLabels={false}
             />
           ) : (
-            <div className="text-sm text-gray-500">Loading ratings...</div>
+            <div className="text-sm text-gray-500">{t('profile.loadingRatings')}</div>
           )}
         </div>
 
         {reviews.length > 0 && (
           <div className="border-t pt-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Reviews</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('profile.recentReviews')}</h2>
             <div className="space-y-4">
               {reviews.map((review) => (
                 <div key={review.id} className="border border-gray-200 rounded-lg p-4">
@@ -2552,12 +2554,12 @@ function ProfilePageContent() {
 
             {/* Title */}
             <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
-              Profile Updated Successfully!
+              {t('profile.profileUpdatedSuccessfully')}
             </h3>
 
             {/* Description */}
             <p className="text-sm text-gray-600 text-center mb-6">
-              Your profile has been saved and updated. Your changes are now live.
+              {t('profile.profileUpdatedDescription')}
             </p>
 
             {/* Button */}
@@ -2566,7 +2568,7 @@ function ProfilePageContent() {
                 onClick={() => setShowSuccessModal(false)}
                 className="px-6 py-2 bg-primary-600 text-white rounded-md font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors"
               >
-                OK
+                {t('profile.ok')}
               </button>
             </div>
           </div>
