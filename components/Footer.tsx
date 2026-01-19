@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Facebook } from 'lucide-react'
-import versionData from '@/version.json'
+import { useEffect, useState } from 'react'
 import { useLanguage } from '@/lib/i18n'
 
 interface FooterProps {
@@ -11,7 +11,20 @@ interface FooterProps {
 
 export default function Footer({ variant = 'default' }: FooterProps) {
   const { t } = useLanguage()
-  const version = `Beta V${versionData.version}`
+  const [version, setVersion] = useState<string>('Beta V0.0.0')
+
+  useEffect(() => {
+    // Fetch version dynamically from API to avoid caching issues
+    fetch('/api/version', { cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => setVersion(`Beta V${data.version}`))
+      .catch(() => {
+        // Fallback to static import if fetch fails
+        import('@/version.json').then(versionData => {
+          setVersion(`Beta V${versionData.default.version}`)
+        })
+      })
+  }, [])
 
   if (variant === 'centered') {
     return (
