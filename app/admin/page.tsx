@@ -132,6 +132,12 @@ export default function SuperadminDashboard() {
   const [selectedEmailTemplate, setSelectedEmailTemplate] = useState<string>('')
   const [sendingProfileEmail, setSendingProfileEmail] = useState<string | null>(null)
   const [confirmingEmail, setConfirmingEmail] = useState<string | null>(null)
+  // Email log filters
+  const [emailLogFilters, setEmailLogFilters] = useState({
+    recipient: '',
+    subject: '',
+    emailType: '',
+  })
   const [managingBadgesFor, setManagingBadgesFor] = useState<User | null>(null)
   const [selectedBadges, setSelectedBadges] = useState<string[]>([])
   const [savingBadges, setSavingBadges] = useState(false)
@@ -3391,16 +3397,16 @@ export default function SuperadminDashboard() {
                       <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm whitespace-nowrap w-12">
                         <input
                           type="checkbox"
-                          checked={selectedEmailLogIds.length === emailLogs.length && emailLogs.length > 0}
+                          checked={selectedEmailLogIds.length === filteredEmailLogs.length && filteredEmailLogs.length > 0}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setSelectedEmailLogIds(emailLogs.map(log => log.id))
+                              setSelectedEmailLogIds(filteredEmailLogs.map(log => log.id))
                             } else {
                               setSelectedEmailLogIds([])
                             }
                           }}
                           className="cursor-pointer"
-                          title="Select all"
+                          title="Select all visible"
                         />
                       </th>
                       <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm whitespace-nowrap">Date</th>
@@ -3414,7 +3420,7 @@ export default function SuperadminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {emailLogs.map((log) => (
+                    {filteredEmailLogs.map((log) => (
                       <tr key={log.id} className={`hover:bg-gray-50 ${selectedEmailLogIds.includes(log.id) ? 'bg-blue-50' : ''}`}>
                         <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
                           <input
@@ -3495,11 +3501,16 @@ export default function SuperadminDashboard() {
                   </tbody>
                 </table>
               </div>
-            ) : (
-              <p className="text-gray-500">No email logs found.</p>
-            )}
-          </div>
-        )}
+              ) : (
+                <p className="text-gray-500">
+                  {emailLogs.length === 0 
+                    ? 'No email logs found.' 
+                    : 'No email logs match the current filters.'}
+                </p>
+              )}
+            </div>
+          )
+        })()}
 
         {/* Reports Tab */}
         {tab === 'reports' && (
