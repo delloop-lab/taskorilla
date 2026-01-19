@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Facebook } from 'lucide-react'
+import { Facebook, Instagram } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLanguage } from '@/lib/i18n'
 
@@ -42,6 +42,15 @@ export default function Footer({ variant = 'default' }: FooterProps) {
             >
               <Facebook className="w-6 h-6" />
             </a>
+            <a 
+              href="https://www.instagram.com/taskorilla" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-pink-600 hover:text-pink-700 transition-colors inline-flex items-center"
+              aria-label="Follow us on Instagram"
+            >
+              <Instagram className="w-6 h-6" />
+            </a>
           </div>
         </div>
       </footer>
@@ -70,6 +79,15 @@ export default function Footer({ variant = 'default' }: FooterProps) {
             aria-label="Follow us on Facebook"
           >
             <Facebook className="w-6 h-6" />
+          </a>
+          <a 
+            href="https://www.instagram.com/taskorilla" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-pink-600 hover:text-pink-700 transition-colors inline-flex items-center"
+            aria-label="Follow us on Instagram"
+          >
+            <Instagram className="w-6 h-6" />
           </a>
         </div>
         <div className="flex justify-center items-center gap-2 mt-2 text-xs text-muted-foreground/70">
