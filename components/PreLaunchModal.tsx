@@ -77,13 +77,10 @@ export default function PreLaunchModal() {
           {/* Body copy */}
           <div className="text-gray-700 mb-6 space-y-3 leading-relaxed">
             <p>
-              We're officially launching on <strong className="text-gray-900">1 February</strong>.
+              If you've got jobs that need doing, now's the perfect time to register and post your tasks and be ready from day one.
             </p>
             <p>
-              If you've got jobs that need doing, now's the perfect time to register and be ready from day one.
-            </p>
-            <p>
-              Early sign ups get first access when we go live.
+              Sign up early to be first in line and grab an exclusive bonus at launch!
             </p>
           </div>
 
