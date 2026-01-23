@@ -164,10 +164,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       creator: '@taskorilla',
       site: '@taskorilla',
     },
-    // Add other metadata for better SEO
-    other: {
-      'og:image:secure_url': ogImageUrl, // Ensure HTTPS image URL
-    },
+    // Note: og:image:secure_url is not needed when using HTTPS URLs
+    // Next.js automatically handles secure URLs for og:image when using https://
+    // The 'other' field uses 'name' attribute, which is wrong for Open Graph tags
   }
 }
 
