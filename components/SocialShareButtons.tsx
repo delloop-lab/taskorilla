@@ -27,7 +27,7 @@ export default function SocialShareButtons({ url, title, description }: SocialSh
   }
 
   const handleNativeShare = async () => {
-    if (navigator.share) {
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
       try {
         await navigator.share({
           title,
@@ -41,13 +41,29 @@ export default function SocialShareButtons({ url, title, description }: SocialSh
     } else {
       // Fallback: copy to clipboard
       try {
-        await navigator.clipboard.writeText(url)
-        alert('Link copied to clipboard!')
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+          await navigator.clipboard.writeText(url)
+          alert('Link copied to clipboard!')
+        } else {
+          // Fallback for older browsers
+          const textArea = document.createElement('textarea')
+          textArea.value = url
+          document.body.appendChild(textArea)
+          textArea.select()
+          document.execCommand('copy')
+          document.body.removeChild(textArea)
+          alert('Link copied to clipboard!')
+        }
       } catch (err) {
         console.error('Failed to copy link')
       }
     }
   }
+
+  // Check if Web Share API is available (client-side only)
+  const isWebShareAvailable = typeof window !== 'undefined' && 
+                              typeof navigator !== 'undefined' && 
+                              typeof navigator.share === 'function'
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -77,7 +93,7 @@ export default function SocialShareButtons({ url, title, description }: SocialSh
           <Twitter className="w-4 h-4" />
           Twitter
         </button>
-        {navigator.share && (
+        {isWebShareAvailable && (
           <button
             onClick={handleNativeShare}
             className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
