@@ -1,6 +1,6 @@
 {
   "name": "task-marketplace",
-  "version": "0.99.899",
+  "version": "0.99.900",
   "private": true,
   "scripts": {
     "dev": "next dev",
