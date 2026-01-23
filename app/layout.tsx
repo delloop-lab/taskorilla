@@ -8,6 +8,7 @@ import PreLaunchModal from '@/components/PreLaunchModal'
 import LanguageProviderWrapper from '@/components/LanguageProviderWrapper'
 import SupabasePrewarm from '@/components/SupabasePrewarm'
 import FacebookAppIdMeta from '@/components/FacebookAppIdMeta'
+import GoogleAnalytics from '@/components/GoogleAnalytics'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -270,6 +271,8 @@ export default function RootLayout({
             `,
           }}
         />
+        {/* Google Analytics - only loads in production */}
+        <GoogleAnalytics measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
       </body>
     </html>
   )
