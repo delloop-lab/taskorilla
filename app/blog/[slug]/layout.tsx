@@ -3,6 +3,7 @@ import { getBlogBySlug } from '@/lib/blog-data'
 import { getOgImageUrl } from '@/lib/blog-image-utils'
 import { existsSync } from 'fs'
 import path from 'path'
+import FacebookAppIdMeta from '@/components/FacebookAppIdMeta'
 
 // Base URL for all URLs (hardcoded as per requirements)
 // Note: Using www version to match actual domain redirect
@@ -167,10 +168,6 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     // Add other metadata for better SEO
     other: {
       'og:image:secure_url': ogImageUrl, // Ensure HTTPS image URL
-      // Add Facebook App ID if configured (optional but recommended)
-      ...(process.env.NEXT_PUBLIC_FACEBOOK_APP_ID && {
-        'fb:app_id': process.env.NEXT_PUBLIC_FACEBOOK_APP_ID,
-      }),
     },
   }
 }
@@ -180,5 +177,10 @@ export default function BlogPostLayout({
 }: {
   children: React.ReactNode
 }) {
-  return children
+  return (
+    <>
+      <FacebookAppIdMeta />
+      {children}
+    </>
+  )
 }
