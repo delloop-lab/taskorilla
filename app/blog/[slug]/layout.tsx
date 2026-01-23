@@ -77,9 +77,6 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   // Generate canonical URL (absolute)
   const canonicalUrl = `${BASE_URL}/blog/${post.slug}`
   
-  // Get OG image URL (priority: ogImageUpload > ogImage > featuredImageUrl > default)
-  let ogImageUrl = getOgImageUrl(post)
-  
   // Normalize any absolute URLs to use www version
   const normalizeUrl = (url: string): string => {
     if (url.startsWith('https://taskorilla.com')) {
@@ -91,26 +88,32 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     return url
   }
   
-  // If using ogImageUpload, verify the file exists
-  if (post.ogImageUpload) {
-    const imagePath = path.join(process.cwd(), 'public', post.ogImageUpload)
-    if (!existsSync(imagePath)) {
-      // Uploaded image doesn't exist, fall back to default
-      ogImageUrl = `${BASE_URL}/images/blog/og/default.png`
+  // Get OG image URL with priority: ogImageUpload > ogImage > featuredImageUrl > default
+  let ogImageUrl: string
+  
+  // First priority: Check ogImageUpload and verify file exists
+  if (post.ogImageUpload && post.ogImageUpload.trim()) {
+    const imagePath = path.join(process.cwd(), 'public', post.ogImageUpload.trim())
+    if (existsSync(imagePath)) {
+      // File exists, use it
+      ogImageUrl = post.ogImageUpload.trim().startsWith('/') 
+        ? `${BASE_URL}${post.ogImageUpload.trim()}`
+        : normalizeUrl(post.ogImageUpload.trim())
     } else {
-      // Use the uploaded image
-      ogImageUrl = post.ogImageUpload.startsWith('/') 
-        ? `${BASE_URL}${post.ogImageUpload}`
-        : normalizeUrl(post.ogImageUpload)
+      // File doesn't exist, try getOgImageUrl which will check other options
+      ogImageUrl = getOgImageUrl(post)
     }
+  } else {
+    // No ogImageUpload, use getOgImageUrl which checks other options
+    ogImageUrl = getOgImageUrl(post)
   }
   
   // Normalize the ogImageUrl to ensure www version
   ogImageUrl = normalizeUrl(ogImageUrl)
   
-  // Fallback: If ogImageUrl is still invalid, use default image
-  if (!ogImageUrl || ogImageUrl.includes('undefined')) {
-    ogImageUrl = `${BASE_URL}/images/blog/og/default.png`
+  // Final fallback: If ogImageUrl is still invalid or points to non-existent default.png, use Taskorilla logo
+  if (!ogImageUrl || ogImageUrl.includes('undefined') || ogImageUrl.includes('/default.png')) {
+    ogImageUrl = `${BASE_URL}/images/taskorilla_header_logo.png`
   }
   
   // OG and Twitter titles match the SEO title (no duplicates)
