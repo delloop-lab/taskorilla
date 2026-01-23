@@ -62,7 +62,7 @@ export default function BlogPostPage() {
     if (!post) return null
 
     // Use hardcoded base URL as per requirements
-    const baseUrl = 'https://taskorilla.com'
+    const baseUrl = 'https://www.taskorilla.com'
     const postUrl = `${baseUrl}/blog/${post.slug}`
     
     // Clean title (same logic as layout)
@@ -318,7 +318,7 @@ export default function BlogPostPage() {
             {/* Social Share Buttons */}
             <div className="mt-8 pt-8 border-t border-gray-200">
               <SocialShareButtons
-                url={`https://taskorilla.com/blog/${post.slug}`}
+                url={`https://www.taskorilla.com/blog/${post.slug}`}
                 title={post.title}
                 description={post.metaDescription || post.snippet}
               />

@@ -2,7 +2,7 @@
 
 import type { BlogPost } from './blog-data'
 
-const BASE_URL = 'https://taskorilla.com'
+const BASE_URL = 'https://www.taskorilla.com'
 const OG_IMAGE_BASE_PATH = '/images/blog/og'
 
 /**

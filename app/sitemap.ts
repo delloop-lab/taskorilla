@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 import { blogs } from '@/lib/blog-data'
 
-const BASE_URL = 'https://taskorilla.com'
+const BASE_URL = 'https://www.taskorilla.com'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   // Static pages

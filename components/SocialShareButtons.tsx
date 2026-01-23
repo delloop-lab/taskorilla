@@ -15,6 +15,7 @@ export default function SocialShareButtons({ url, title, description }: SocialSh
 
   const shareLinks = {
     linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+    // Use Facebook's share dialog - it will scrape OG tags from the URL
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
     twitter: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}${encodedDescription ? `&via=taskorilla` : ''}`,
   }

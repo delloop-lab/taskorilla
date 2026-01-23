@@ -5,7 +5,8 @@ import { existsSync } from 'fs'
 import path from 'path'
 
 // Base URL for all URLs (hardcoded as per requirements)
-const BASE_URL = 'https://taskorilla.com'
+// Note: Using www version to match actual domain redirect
+const BASE_URL = 'https://www.taskorilla.com'
 
 /**
  * Generate SEO-optimized metadata for each blog post
@@ -124,15 +125,19 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       modifiedTime: post.date,
       authors: ['Taskorilla'],
       tags: allTags,
+      // Explicitly set OG image to satisfy Facebook's requirements
       images: [
         {
           url: ogImageUrl,
           width: 1200,
           height: 630,
           alt: post.title,
+          type: 'image/jpeg', // or 'image/png' depending on your image format
         },
       ],
       siteName: 'Taskorilla',
+      // Explicitly set locale if needed
+      locale: 'en_US',
     },
     twitter: {
       card: 'summary_large_image',
@@ -141,6 +146,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       images: [ogImageUrl],
       creator: '@taskorilla',
       site: '@taskorilla',
+    },
+    // Add other metadata for better SEO
+    other: {
+      'og:image:secure_url': ogImageUrl, // Ensure HTTPS image URL
     },
   }
 }
