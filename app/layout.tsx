@@ -8,6 +8,7 @@ import PreLaunchModal from '@/components/PreLaunchModal'
 import LanguageProviderWrapper from '@/components/LanguageProviderWrapper'
 import SupabasePrewarm from '@/components/SupabasePrewarm'
 import FacebookAppIdMeta from '@/components/FacebookAppIdMeta'
+import FacebookAppIdHead from '@/components/FacebookAppIdHead'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -57,13 +58,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Facebook App ID - must be static HTML for crawler to see it */}
-        {process.env.NEXT_PUBLIC_FACEBOOK_APP_ID && (
-          <meta
-            property="fb:app_id"
-            content={process.env.NEXT_PUBLIC_FACEBOOK_APP_ID}
-          />
-        )}
+        <FacebookAppIdHead />
       </head>
       <body className={inter.className}>
         {/* Global script to catch beforeinstallprompt immediately - prevents browser prompt */}
