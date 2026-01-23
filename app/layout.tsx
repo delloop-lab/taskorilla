@@ -7,6 +7,7 @@ import InstallPromptModal from '@/components/InstallPromptModal'
 import PreLaunchModal from '@/components/PreLaunchModal'
 import LanguageProviderWrapper from '@/components/LanguageProviderWrapper'
 import SupabasePrewarm from '@/components/SupabasePrewarm'
+import FacebookAppIdMeta from '@/components/FacebookAppIdMeta'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -53,18 +54,34 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const facebookAppId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID
-  
   return (
     <html lang="en">
-      <head>
-        {/* Add fb:app_id meta tag with property attribute (required by Facebook) */}
-        {/* This is injected server-side so Facebook's scraper can read it */}
-        {facebookAppId && (
-          <meta property="fb:app_id" content={facebookAppId} />
-        )}
-      </head>
       <body className={inter.className}>
+        {/* Script to ensure fb:app_id meta tag uses property attribute (runs before React hydrates) */}
+        {process.env.NEXT_PUBLIC_FACEBOOK_APP_ID && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                (function() {
+                  const appId = '${process.env.NEXT_PUBLIC_FACEBOOK_APP_ID}';
+                  // Remove any incorrect meta tags with name attribute
+                  const incorrectMeta = document.querySelector('meta[name="fb:app_id"]');
+                  if (incorrectMeta) {
+                    incorrectMeta.remove();
+                  }
+                  // Ensure correct meta tag with property attribute exists
+                  let meta = document.querySelector('meta[property="fb:app_id"]');
+                  if (!meta) {
+                    meta = document.createElement('meta');
+                    meta.setAttribute('property', 'fb:app_id');
+                    document.head.appendChild(meta);
+                  }
+                  meta.setAttribute('content', appId);
+                })();
+              `,
+            }}
+          />
+        )}
         {/* Global script to catch beforeinstallprompt immediately - prevents browser prompt */}
         {/* This must run before React hydrates, so it's placed at the top of body */}
         {/* Only run in production - PWA is disabled in development */}
@@ -121,6 +138,7 @@ export default function RootLayout({
             }}
           />
         )}
+        <FacebookAppIdMeta />
         <LanguageProviderWrapper>
           <PWAHead />
           <SupabasePrewarm />

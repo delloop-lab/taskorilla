@@ -167,8 +167,6 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     // Add other metadata for better SEO
     other: {
       'og:image:secure_url': ogImageUrl, // Ensure HTTPS image URL
-      // Note: fb:app_id cannot be added via 'other' field as it uses 'name' not 'property'
-      // It will be added via a custom head injection in the layout component
     },
   }
 }
