@@ -155,6 +155,7 @@ export default function SuperadminDashboard() {
   const [userEmailFilter, setUserEmailFilter] = useState<string>('')
   const [userRoleFilter, setUserRoleFilter] = useState<string>('')
   const [userFeaturedFilter, setUserFeaturedFilter] = useState<string>('')
+  const [userHelperTaskerFilter, setUserHelperTaskerFilter] = useState<string>('')
   const [geocodingTasks, setGeocodingTasks] = useState(false)
   const [geocodingResult, setGeocodingResult] = useState<any>(null)
   const [regeocodingPortuguese, setRegeocodingPortuguese] = useState(false)
@@ -403,7 +404,7 @@ export default function SuperadminDashboard() {
   async function fetchUsers() {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, email, full_name, role, created_at, is_helper, badges, is_featured, languages')
+      .select('id, email, full_name, role, created_at, is_helper, is_tasker, badges, is_featured, languages')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -1640,6 +1641,22 @@ export default function SuperadminDashboard() {
               if (userFeaturedFilter === 'not_featured' && user.is_featured) {
                 return false
               }
+              // Helper/Tasker filter
+              if (userHelperTaskerFilter === 'helper' && !user.is_helper) {
+                return false
+              }
+              if (userHelperTaskerFilter === 'tasker' && !user.is_tasker) {
+                return false
+              }
+              if (userHelperTaskerFilter === 'both' && (!user.is_helper || !user.is_tasker)) {
+                return false
+              }
+              if (userHelperTaskerFilter === 'helper_only' && (user.is_tasker || !user.is_helper)) {
+                return false
+              }
+              if (userHelperTaskerFilter === 'tasker_only' && (user.is_helper || !user.is_tasker)) {
+                return false
+              }
               return true
             })
             .sort((a, b) => {
@@ -1756,14 +1773,32 @@ export default function SuperadminDashboard() {
                     <option value="not_featured">Not Featured</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Helper / Tasker
+                  </label>
+                  <select
+                    className="w-full border border-gray-300 p-2 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    value={userHelperTaskerFilter}
+                    onChange={(e) => setUserHelperTaskerFilter(e.target.value)}
+                  >
+                    <option value="">All</option>
+                    <option value="helper">Helpers Only</option>
+                    <option value="tasker">Taskers Only</option>
+                    <option value="both">Both Helper & Tasker</option>
+                    <option value="helper_only">Helper Only (not Tasker)</option>
+                    <option value="tasker_only">Tasker Only (not Helper)</option>
+                  </select>
+                </div>
               </div>
-              {(userNameFilter || userEmailFilter || userFeaturedFilter) && (
+              {(userNameFilter || userEmailFilter || userFeaturedFilter || userHelperTaskerFilter) && (
                 <div className="mt-3">
                   <button
                     onClick={() => {
                       setUserNameFilter('')
                       setUserEmailFilter('')
                       setUserFeaturedFilter('')
+                      setUserHelperTaskerFilter('')
                     }}
                     className="text-sm text-blue-600 hover:text-blue-800 underline"
                   >

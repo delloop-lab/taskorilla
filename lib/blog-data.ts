@@ -352,3 +352,36 @@ export function getAllLocations(): string[] {
 export function getBlogBySlug(slug: string): BlogPost | undefined {
   return blogs.find(blog => blog.slug === slug)
 }
+
+// Helper function to get related blog posts (by category or location, excluding current post)
+export function getRelatedPosts(currentSlug: string, limit: number = 3): BlogPost[] {
+  const currentPost = getBlogBySlug(currentSlug)
+  if (!currentPost) return []
+
+  // Find posts with same category or location, excluding current post
+  const related = blogs
+    .filter(blog => 
+      blog.slug !== currentSlug && 
+      (blog.category === currentPost.category || blog.location === currentPost.location)
+    )
+    .sort((a, b) => {
+      // Prioritize posts with both category and location match
+      const aMatches = (a.category === currentPost.category ? 1 : 0) + (a.location === currentPost.location ? 1 : 0)
+      const bMatches = (b.category === currentPost.category ? 1 : 0) + (b.location === currentPost.location ? 1 : 0)
+      if (bMatches !== aMatches) return bMatches - aMatches
+      // Then sort by date (newest first)
+      return new Date(b.date).getTime() - new Date(a.date).getTime()
+    })
+    .slice(0, limit)
+
+  // If not enough related posts, fill with other recent posts
+  if (related.length < limit) {
+    const additional = blogs
+      .filter(blog => blog.slug !== currentSlug && !related.find(r => r.slug === blog.slug))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, limit - related.length)
+    related.push(...additional)
+  }
+
+  return related
+}

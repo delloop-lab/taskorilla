@@ -1,0 +1,29 @@
+# robots.txt for Taskorilla
+# https://taskorilla.com
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /_next/
+Disallow: /checkout/
+Disallow: /messages/
+Disallow: /profile/
+Disallow: /tasks/new
+Disallow: /tasks/*/edit
+Disallow: /user/*/edit
+
+# Allow blog posts
+Allow: /blog
+Allow: /blog/*
+
+# Allow public pages
+Allow: /tasks
+Allow: /helpers
+Allow: /professionals
+Allow: /about
+Allow: /pricing
+Allow: /help
+
+# Sitemap location
+Sitemap: https://taskorilla.com/sitemap.xml

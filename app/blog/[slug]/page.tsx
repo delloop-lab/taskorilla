@@ -6,14 +6,16 @@ import Script from 'next/script'
 import { useEffect } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { useParams } from 'next/navigation'
-import { getBlogBySlug, type BlogPost, type ContentBlock } from '@/lib/blog-data'
+import { getBlogBySlug, getRelatedPosts, type BlogPost, type ContentBlock } from '@/lib/blog-data'
 import { getOgImageUrl } from '@/lib/blog-image-utils'
 import { format } from 'date-fns'
+import SocialShareButtons from '@/components/SocialShareButtons'
 
 export default function BlogPostPage() {
   const params = useParams()
   const slug = params.slug as string
   const post = getBlogBySlug(slug)
+  const relatedPosts = post ? getRelatedPosts(slug, 3) : []
 
   if (!post) {
     return (
@@ -313,8 +315,69 @@ export default function BlogPostPage() {
               )}
             </div>
 
-              {/* Back to Blog Link */}
+            {/* Social Share Buttons */}
+            <div className="mt-8 pt-8 border-t border-gray-200">
+              <SocialShareButtons
+                url={`https://taskorilla.com/blog/${post.slug}`}
+                title={post.title}
+                description={post.metaDescription || post.snippet}
+              />
+            </div>
+
+            {/* Related Posts */}
+            {relatedPosts.length > 0 && (
               <div className="mt-12 pt-8 border-t border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Related Posts</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {relatedPosts.map((relatedPost) => {
+                    const relatedImageUrl = getOgImageUrl(relatedPost)
+                    const relatedImageSrc = relatedImageUrl.startsWith('http')
+                      ? relatedImageUrl.replace('https://taskorilla.com', '').replace('http://localhost:3000', '')
+                      : relatedImageUrl
+
+                    return (
+                      <Link
+                        key={relatedPost.slug}
+                        href={`/blog/${relatedPost.slug}`}
+                        className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                      >
+                        <div className="w-full h-48 bg-gray-200 relative overflow-hidden">
+                          <Image
+                            src={relatedImageSrc || '/images/blog/og/default.png'}
+                            alt={relatedPost.title}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 300px"
+                          />
+                        </div>
+                        <div className="p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded">
+                              {relatedPost.category}
+                            </span>
+                            {relatedPost.location && (
+                              <span className="text-xs text-gray-500">📍 {relatedPost.location}</span>
+                            )}
+                          </div>
+                          <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                            {relatedPost.title}
+                          </h3>
+                          <p className="text-sm text-gray-600 line-clamp-2 mb-2">
+                            {relatedPost.snippet}
+                          </p>
+                          <span className="text-xs text-gray-500">
+                            {format(new Date(relatedPost.date), 'MMM d, yyyy')}
+                          </span>
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+              {/* Back to Blog Link */}
+              <div className="mt-8 pt-8 border-t border-gray-200">
                 <Link
                   href="/blog"
                   className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors font-medium"
