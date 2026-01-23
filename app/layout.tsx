@@ -34,6 +34,8 @@ export const metadata: Metadata = {
     'apple-mobile-web-app-capable': 'yes',
     'apple-mobile-web-app-status-bar-style': 'default',
     'apple-mobile-web-app-title': 'Taskorilla',
+    // Note: fb:app_id requires 'property' attribute, not 'name', so it cannot be added via 'other' field
+    // It must be added via a custom HTML injection (see root layout component)
   },
 }
 
@@ -51,8 +53,17 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const facebookAppId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID
+  
   return (
     <html lang="en">
+      <head>
+        {/* Add fb:app_id meta tag with property attribute (required by Facebook) */}
+        {/* This is injected server-side so Facebook's scraper can read it */}
+        {facebookAppId && (
+          <meta property="fb:app_id" content={facebookAppId} />
+        )}
+      </head>
       <body className={inter.className}>
         {/* Global script to catch beforeinstallprompt immediately - prevents browser prompt */}
         {/* This must run before React hydrates, so it's placed at the top of body */}
