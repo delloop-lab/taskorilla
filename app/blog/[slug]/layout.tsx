@@ -111,9 +111,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   // Normalize the ogImageUrl to ensure www version
   ogImageUrl = normalizeUrl(ogImageUrl)
   
-  // Final fallback: If ogImageUrl is still invalid or points to non-existent default.png, use Taskorilla logo
-  if (!ogImageUrl || ogImageUrl.includes('undefined') || ogImageUrl.includes('/default.png')) {
-    ogImageUrl = `${BASE_URL}/images/taskorilla_header_logo.png`
+  // Final fallback: If ogImageUrl is still invalid, use default image
+  if (!ogImageUrl || ogImageUrl.includes('undefined')) {
+    ogImageUrl = `${BASE_URL}/images/blog/og/default.png`
   }
   
   // OG and Twitter titles match the SEO title (no duplicates)
@@ -167,6 +167,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     // Add other metadata for better SEO
     other: {
       'og:image:secure_url': ogImageUrl, // Ensure HTTPS image URL
+      // Add Facebook App ID if configured (optional but recommended)
+      ...(process.env.NEXT_PUBLIC_FACEBOOK_APP_ID && {
+        'fb:app_id': process.env.NEXT_PUBLIC_FACEBOOK_APP_ID,
+      }),
     },
   }
 }
