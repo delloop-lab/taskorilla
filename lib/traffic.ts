@@ -9,6 +9,21 @@ export async function trackPageVisit(pageName: string) {
     // Only track on client side
     if (typeof window === 'undefined') return
 
+    // Check if user is admin - don't count admin traffic
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+      
+      // Skip tracking if user is admin or superadmin
+      if (profile?.role === 'admin' || profile?.role === 'superadmin') {
+        return
+      }
+    }
+
     // Track total visits (existing functionality)
     const { data: existing, error: trafficSelectError } = await supabase
       .from('traffic')
