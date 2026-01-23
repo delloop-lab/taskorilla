@@ -4,9 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run sync-version && next build",
     "start": "next start",
     "lint": "next lint",
+    "sync-version": "node scripts/sync-version.js",
+    "bump-version": "node scripts/bump-version.js",
+    "bump-version:patch": "node scripts/bump-version.js patch",
+    "bump-version:minor": "node scripts/bump-version.js minor",
+    "bump-version:major": "node scripts/bump-version.js major",
     "generate-icons": "node scripts/generate-icons.js",
     "generate-blog-images": "ts-node scripts/generate-blog-og-images.ts"
   },
