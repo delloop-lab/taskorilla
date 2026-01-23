@@ -80,6 +80,17 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   // Get OG image URL (priority: ogImageUpload > ogImage > featuredImageUrl > default)
   let ogImageUrl = getOgImageUrl(post)
   
+  // Normalize any absolute URLs to use www version
+  const normalizeUrl = (url: string): string => {
+    if (url.startsWith('https://taskorilla.com')) {
+      return url.replace('https://taskorilla.com', BASE_URL)
+    }
+    if (url.startsWith('http://taskorilla.com')) {
+      return url.replace('http://taskorilla.com', BASE_URL)
+    }
+    return url
+  }
+  
   // If using ogImageUpload, verify the file exists
   if (post.ogImageUpload) {
     const imagePath = path.join(process.cwd(), 'public', post.ogImageUpload)
@@ -90,9 +101,12 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       // Use the uploaded image
       ogImageUrl = post.ogImageUpload.startsWith('/') 
         ? `${BASE_URL}${post.ogImageUpload}`
-        : post.ogImageUpload
+        : normalizeUrl(post.ogImageUpload)
     }
   }
+  
+  // Normalize the ogImageUrl to ensure www version
+  ogImageUrl = normalizeUrl(ogImageUrl)
   
   // Fallback: If ogImageUrl is still invalid, use default image
   if (!ogImageUrl || ogImageUrl.includes('undefined')) {

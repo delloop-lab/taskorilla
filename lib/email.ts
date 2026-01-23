@@ -389,7 +389,7 @@ function getBaseUrl(): string {
   if (process.env.NODE_ENV === 'development') {
     return 'http://localhost:3000'
   }
-  return 'https://taskorilla.com'
+  return 'https://www.taskorilla.com'
 }
 
 /**

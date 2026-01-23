@@ -119,7 +119,7 @@ export default function BlogPage() {
               // Convert absolute URLs to relative paths for Next.js Image component
               // This works for both localhost and production
               const imageSrc = imageUrl.startsWith('http') 
-                ? imageUrl.replace('https://taskorilla.com', '').replace('http://localhost:3000', '')
+                ? imageUrl.replace('https://www.taskorilla.com', '').replace('https://taskorilla.com', '').replace('http://localhost:3000', '')
                 : imageUrl
               
               return (

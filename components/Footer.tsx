@@ -32,7 +32,7 @@ export default function Footer({ variant = 'default' }: FooterProps) {
         <div className="container mx-auto max-w-6xl text-center text-muted-foreground text-sm">
           <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-1">
             <span>{t('footer.rights')}</span>
-            <span className="text-xs opacity-75">{version}</span>
+            <span className="text-xs opacity-75 font-medium">{version}</span>
             <a 
               href="https://www.facebook.com/profile.php?id=61584791914940" 
               target="_blank" 
@@ -93,7 +93,7 @@ export default function Footer({ variant = 'default' }: FooterProps) {
         <div className="flex justify-center items-center gap-2 mt-2 text-xs text-muted-foreground/70">
           <span>{t('footer.rights')}</span>
           <span>•</span>
-          <span>{version}</span>
+          <span className="font-medium">{version}</span>
         </div>
       </div>
     </footer>

@@ -104,7 +104,7 @@ export default function CreateBlogPost({ initialPost = null, onPostSaved }: Crea
   const [ogImageUploadPreview, setOgImageUploadPreview] = useState<string>('')
   const [ogImageUploadPath, setOgImageUploadPath] = useState<string>(initialPost?.ogImageUpload || '')
   const [uploadingImage, setUploadingImage] = useState<boolean>(false)
-  const [existingImageUrl, setExistingImageUrl] = useState<string>(initialPost?.ogImageUpload ? (initialPost.ogImageUpload.startsWith('http') ? initialPost.ogImageUpload : `https://taskorilla.com${initialPost.ogImageUpload}`) : '')
+  const [existingImageUrl, setExistingImageUrl] = useState<string>(initialPost?.ogImageUpload ? (initialPost.ogImageUpload.startsWith('http') ? initialPost.ogImageUpload : `https://www.taskorilla.com${initialPost.ogImageUpload}`) : '')
   
   // Dynamic content blocks - load from initialPost if editing
   const [contentBlocks, setContentBlocks] = useState<ContentBlockForm[]>(
@@ -239,8 +239,8 @@ export default function CreateBlogPost({ initialPost = null, onPostSaved }: Crea
         const imagePath = initialPost.ogImageUpload.startsWith('http') 
           ? initialPost.ogImageUpload 
           : initialPost.ogImageUpload.startsWith('/')
-          ? (typeof window !== 'undefined' ? window.location.origin : 'https://taskorilla.com') + initialPost.ogImageUpload
-          : (typeof window !== 'undefined' ? window.location.origin : 'https://taskorilla.com') + '/' + initialPost.ogImageUpload
+          ? (typeof window !== 'undefined' ? window.location.origin : 'https://www.taskorilla.com') + initialPost.ogImageUpload
+          : (typeof window !== 'undefined' ? window.location.origin : 'https://www.taskorilla.com') + '/' + initialPost.ogImageUpload
         setExistingImageUrl(imagePath)
         console.log('Setting existing image URL:', imagePath, 'from ogImageUpload:', initialPost.ogImageUpload)
       } else {
@@ -643,7 +643,7 @@ export default function CreateBlogPost({ initialPost = null, onPostSaved }: Crea
       .trim()
     
     if (cleanImageUrl && !cleanImageUrl.startsWith('http://') && !cleanImageUrl.startsWith('https://') && cleanImageUrl.startsWith('/')) {
-      cleanImageUrl = `https://taskorilla.com${cleanImageUrl}`
+      cleanImageUrl = `https://www.taskorilla.com${cleanImageUrl}`
     }
 
     const blogPost: BlogPost = {
@@ -991,7 +991,7 @@ export default function CreateBlogPost({ initialPost = null, onPostSaved }: Crea
                         const img = e.target as HTMLImageElement
                         if (existingImageUrl && existingImageUrl.includes('taskorilla.com')) {
                           // Try converting to relative path for localhost
-                          const relativePath = existingImageUrl.replace('https://taskorilla.com', '')
+                          const relativePath = existingImageUrl.replace('https://www.taskorilla.com', '').replace('https://taskorilla.com', '')
                           if (relativePath !== img.src) {
                             img.src = relativePath
                           } else {

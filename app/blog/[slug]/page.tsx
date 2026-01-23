@@ -256,7 +256,7 @@ export default function BlogPostPage() {
             {(() => {
               const imageUrl = getOgImageUrl(post)
               const imageSrc = imageUrl.startsWith('http') 
-                ? imageUrl.replace('https://taskorilla.com', '').replace('http://localhost:3000', '')
+                ? imageUrl.replace('https://www.taskorilla.com', '').replace('https://taskorilla.com', '').replace('http://localhost:3000', '')
                 : imageUrl
               
               return (
@@ -332,7 +332,7 @@ export default function BlogPostPage() {
                   {relatedPosts.map((relatedPost) => {
                     const relatedImageUrl = getOgImageUrl(relatedPost)
                     const relatedImageSrc = relatedImageUrl.startsWith('http')
-                      ? relatedImageUrl.replace('https://taskorilla.com', '').replace('http://localhost:3000', '')
+                      ? relatedImageUrl.replace('https://www.taskorilla.com', '').replace('https://taskorilla.com', '').replace('http://localhost:3000', '')
                       : relatedImageUrl
 
                     return (

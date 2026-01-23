@@ -1410,7 +1410,7 @@ export default function SuperadminDashboard() {
         .replace(/\{\{user_email\}\}/g, user.email || '')
       
       // Replace tee_image if present
-      const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://taskorilla.com'
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://www.taskorilla.com'
       const imageUrl = `${baseUrl}/images/gorilla-mascot-new-email.png`.replace(/([^:]\/)\/+/g, '$1')
       const mascotImageHtml = `<img src="${imageUrl}" alt="Tee - Taskorilla Mascot" style="height: 150px; display: block; margin: 0; padding: 0;" />`
       renderedContent = renderedContent.replace(/\{\{tee_image\}\}/gi, mascotImageHtml)

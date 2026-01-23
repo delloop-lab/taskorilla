@@ -255,7 +255,7 @@ export async function POST(request: NextRequest) {
       
       return NextResponse.json({
         success: true,
-        imageUrl: `https://taskorilla.com${imagePath}`,
+        imageUrl: `https://www.taskorilla.com${imagePath}`,
         localPath: imagePath,
         message: 'OG image generated successfully',
       })
