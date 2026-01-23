@@ -47,8 +47,8 @@ export function getOgImageUrl(post: BlogPost): string {
     }
   }
 
-  // Fourth priority: default image - use Taskorilla logo if default.png doesn't exist
-  return `${BASE_URL}/images/taskorilla_header_logo.png`
+  // Fourth priority: default image
+  return `${BASE_URL}/images/blog/og/default.png`
 }
 
 /**
