@@ -59,7 +59,10 @@ export default function RootLayout({
       <head>
         {/* Facebook App ID - must be static HTML for crawler to see it */}
         {process.env.NEXT_PUBLIC_FACEBOOK_APP_ID && (
-          <meta property="fb:app_id" content={process.env.NEXT_PUBLIC_FACEBOOK_APP_ID} />
+          <meta
+            property="fb:app_id"
+            content={process.env.NEXT_PUBLIC_FACEBOOK_APP_ID}
+          />
         )}
       </head>
       <body className={inter.className}>
