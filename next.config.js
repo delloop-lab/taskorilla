@@ -204,72 +204,9 @@ const nextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
-  // Inject fb:app_id meta tag with property attribute into HTML head
-  // This is needed because Next.js Metadata API's 'other' field uses 'name' not 'property'
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      const originalEntry = config.entry
-      config.entry = async () => {
-        const entries = await originalEntry()
-        // Inject meta tag into HTML head for blog pages
-        if (process.env.NEXT_PUBLIC_FACEBOOK_APP_ID) {
-          // This will be handled by a custom HTML injection
-        }
-        return entries
-      }
-    }
-    return config
-  },
-  // Use experimental features to inject meta tag
-  experimental: {
-    // This allows us to modify the HTML output
-  },
 }
 
-// Custom webpack plugin to inject fb:app_id meta tag
-class FacebookAppIdPlugin {
-  apply(compiler) {
-    compiler.hooks.compilation.tap('FacebookAppIdPlugin', (compilation) => {
-      compilation.hooks.processAssets.tap(
-        {
-          name: 'FacebookAppIdPlugin',
-          stage: compilation.PROCESS_ASSETS_STAGE_OPTIMIZE_INLINE,
-        },
-        (assets) => {
-          const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID
-          if (!appId) return
-
-          // Process HTML files
-          Object.keys(assets).forEach((filename) => {
-            if (filename.endsWith('.html')) {
-              let html = assets[filename].source()
-              // Inject meta tag after <head> tag
-              const metaTag = `<meta property="fb:app_id" content="${appId}" />`
-              html = html.replace(/<head>/i, `<head>${metaTag}`)
-              assets[filename] = {
-                source: () => html,
-                size: () => html.length,
-              }
-            }
-          })
-        }
-      )
-    })
-  }
-}
-
-// Add the plugin to webpack config
-const configWithPlugin = {
-  ...nextConfig,
-  webpack: (config, { isServer, webpack }) => {
-    if (isServer && process.env.NEXT_PUBLIC_FACEBOOK_APP_ID) {
-      config.plugins.push(new FacebookAppIdPlugin())
-    }
-    return nextConfig.webpack ? nextConfig.webpack(config, { isServer, webpack }) : config
-  },
-}
-
-module.exports = withPWA(configWithPlugin)
+module.exports = withPWA(nextConfig)
 
 
 

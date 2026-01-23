@@ -56,64 +56,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        {/* Inject fb:app_id meta tag immediately (before React hydrates) */}
-        {/* Note: This script runs immediately to inject the meta tag with property attribute */}
-        {/* Facebook's scraper should be able to read it if it executes minimal JS */}
+      <head>
+        {/* Facebook App ID - must be static HTML for crawler to see it */}
         {process.env.NEXT_PUBLIC_FACEBOOK_APP_ID && (
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `
-                (function() {
-                  var appId = '${process.env.NEXT_PUBLIC_FACEBOOK_APP_ID}';
-                  // Remove any incorrect meta tags with name attribute
-                  var incorrectMeta = document.querySelector('meta[name="fb:app_id"]');
-                  if (incorrectMeta) {
-                    incorrectMeta.remove();
-                  }
-                  // Ensure correct meta tag with property attribute exists
-                  var meta = document.querySelector('meta[property="fb:app_id"]');
-                  if (!meta) {
-                    meta = document.createElement('meta');
-                    meta.setAttribute('property', 'fb:app_id');
-                    var head = document.head || document.getElementsByTagName('head')[0];
-                    if (head) {
-                      head.insertBefore(meta, head.firstChild);
-                    }
-                  }
-                  meta.setAttribute('content', appId);
-                })();
-              `,
-            }}
-          />
+          <meta property="fb:app_id" content={process.env.NEXT_PUBLIC_FACEBOOK_APP_ID} />
         )}
-        {/* Global script to catch beforeinstallprompt immediately - prevents browser prompt */}
-        {/* This must run before React hydrates, so it's placed at the top of body */}
-        {/* Only run in production - PWA is disabled in development */}
-        {process.env.NODE_ENV === 'production' && (
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `
-                (function() {
-                  const appId = '${process.env.NEXT_PUBLIC_FACEBOOK_APP_ID}';
-                  // Remove any incorrect meta tags with name attribute
-                  const incorrectMeta = document.querySelector('meta[name="fb:app_id"]');
-                  if (incorrectMeta) {
-                    incorrectMeta.remove();
-                  }
-                  // Ensure correct meta tag with property attribute exists
-                  let meta = document.querySelector('meta[property="fb:app_id"]');
-                  if (!meta) {
-                    meta = document.createElement('meta');
-                    meta.setAttribute('property', 'fb:app_id');
-                    document.head.appendChild(meta);
-                  }
-                  meta.setAttribute('content', appId);
-                })();
-              `,
-            }}
-          />
-        )}
+      </head>
+      <body className={inter.className}>
         {/* Global script to catch beforeinstallprompt immediately - prevents browser prompt */}
         {/* This must run before React hydrates, so it's placed at the top of body */}
         {/* Only run in production - PWA is disabled in development */}
