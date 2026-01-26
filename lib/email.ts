@@ -82,28 +82,32 @@ export async function sendNewBidNotification(
   bidderName: string,
   bidAmount: number,
   taskId: string
-) {
+): Promise<{ result: any; htmlContent: string }> {
   try {
     const mailTransporter = ensureTransporter()
-    await mailTransporter.sendMail({
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2563eb;">New Bid Received!</h2>
+        <p>Hi ${taskOwnerName},</p>
+        <p><strong>${bidderName}</strong> has placed a bid of <strong>$${bidAmount}</strong> on your task:</p>
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">${taskTitle}</h3>
+        </div>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks/${taskId}" 
+           style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
+          View Task & Bids
+        </a>
+      </div>
+    `
+    
+    const result = await mailTransporter.sendMail({
       from: getFromAddress(),
       to: taskOwnerEmail,
       subject: `New bid on "${taskTitle}"`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">New Bid Received!</h2>
-          <p>Hi ${taskOwnerName},</p>
-          <p><strong>${bidderName}</strong> has placed a bid of <strong>$${bidAmount}</strong> on your task:</p>
-          <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin-top: 0;">${taskTitle}</h3>
-          </div>
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks/${taskId}" 
-             style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
-            View Task & Bids
-          </a>
-        </div>
-      `,
+      html: htmlContent,
     })
+    
+    return { result, htmlContent }
   } catch (error: any) {
     console.error('Error sending new bid notification:', error)
     throw new Error(`Failed to send new bid notification: ${error.message || 'Unknown error'}`)
@@ -117,29 +121,33 @@ export async function sendBidAcceptedNotification(
   taskOwnerName: string,
   bidAmount: number,
   taskId: string
-) {
+): Promise<{ result: any; htmlContent: string }> {
   try {
     const mailTransporter = ensureTransporter()
-    await mailTransporter.sendMail({
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #10b981;">Congratulations!</h2>
+        <p>Hi ${bidderName},</p>
+        <p><strong>${taskOwnerName}</strong> has accepted your bid of <strong>$${bidAmount}</strong> for:</p>
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">${taskTitle}</h3>
+        </div>
+        <p>The task is now assigned to you. You can start working on it!</p>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks/${taskId}" 
+           style="display: inline-block; background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
+          View Task
+        </a>
+      </div>
+    `
+    
+    const result = await mailTransporter.sendMail({
       from: getFromAddress(),
       to: bidderEmail,
       subject: `Your bid was accepted for "${taskTitle}"`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #10b981;">Congratulations!</h2>
-          <p>Hi ${bidderName},</p>
-          <p><strong>${taskOwnerName}</strong> has accepted your bid of <strong>$${bidAmount}</strong> for:</p>
-          <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin-top: 0;">${taskTitle}</h3>
-          </div>
-          <p>The task is now assigned to you. You can start working on it!</p>
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks/${taskId}" 
-             style="display: inline-block; background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
-            View Task
-          </a>
-        </div>
-      `,
+      html: htmlContent,
     })
+    
+    return { result, htmlContent }
   } catch (error: any) {
     console.error('Error sending bid accepted notification:', error)
     throw new Error(`Failed to send bid accepted notification: ${error.message || 'Unknown error'}`)
@@ -151,26 +159,30 @@ export async function sendBidRejectedNotification(
   bidderName: string,
   taskTitle: string,
   taskId: string
-) {
+): Promise<{ result: any; htmlContent: string }> {
   try {
     const mailTransporter = ensureTransporter()
-    await mailTransporter.sendMail({
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #6b7280;">Bid Update</h2>
+        <p>Hi ${bidderName},</p>
+        <p>Unfortunately, your bid for <strong>"${taskTitle}"</strong> was not selected.</p>
+        <p>Don't worry - there are plenty of other tasks available!</p>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks" 
+           style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
+          Browse More Tasks
+        </a>
+      </div>
+    `
+    
+    const result = await mailTransporter.sendMail({
       from: getFromAddress(),
       to: bidderEmail,
       subject: `Update on your bid for "${taskTitle}"`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #6b7280;">Bid Update</h2>
-          <p>Hi ${bidderName},</p>
-          <p>Unfortunately, your bid for <strong>"${taskTitle}"</strong> was not selected.</p>
-          <p>Don't worry - there are plenty of other tasks available!</p>
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks" 
-             style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
-            Browse More Tasks
-          </a>
-        </div>
-      `,
+      html: htmlContent,
     })
+    
+    return { result, htmlContent }
   } catch (error: any) {
     console.error('Error sending bid rejected notification:', error)
     throw new Error(`Failed to send bid rejected notification: ${error.message || 'Unknown error'}`)
@@ -183,30 +195,32 @@ export async function sendNewMessageNotification(
   senderName: string,
   messagePreview: string,
   conversationId: string
-) {
+): Promise<{ result: any; htmlContent: string }> {
   try {
     const mailTransporter = ensureTransporter()
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2563eb;">New Message</h2>
+        <p>Hi ${recipientName},</p>
+        <p>You have a new message from <strong>${senderName}</strong>:</p>
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 0; font-style: italic;">"${messagePreview}"</p>
+        </div>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/messages/${conversationId}" 
+           style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
+          View Message
+        </a>
+      </div>
+    `
+    
     const result = await mailTransporter.sendMail({
       from: getFromAddress(),
       to: recipientEmail,
       subject: `New message from ${senderName}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">New Message</h2>
-          <p>Hi ${recipientName},</p>
-          <p>You have a new message from <strong>${senderName}</strong>:</p>
-          <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0; font-style: italic;">"${messagePreview}"</p>
-          </div>
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/messages/${conversationId}" 
-             style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
-            View Message
-          </a>
-        </div>
-      `,
+      html: htmlContent,
     })
 
-    return result
+    return { result, htmlContent }
   } catch (error) {
     console.error('❌ Error sending new message notification:', error)
     throw error
@@ -219,31 +233,36 @@ export async function sendTaskCompletedNotification(
   taskerName: string,
   taskTitle: string,
   taskId: string
-) {
+): Promise<{ result: any; htmlContent: string }> {
   try {
     const mailTransporter = ensureTransporter()
-    await mailTransporter.sendMail({
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #10b981;">Task Completed!</h2>
+        <p>Hi ${taskOwnerName},</p>
+        <p><strong>${taskerName}</strong> has marked the following task as completed:</p>
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">${taskTitle}</h3>
+        </div>
+        <p>Please review the work and leave a review if you're satisfied!</p>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks/${taskId}" 
+           style="display: inline-block; background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
+          View Task
+        </a>
+      </div>
+    `
+    
+    const result = await mailTransporter.sendMail({
       from: getFromAddress(),
       to: taskOwnerEmail,
       subject: `Task "${taskTitle}" has been completed`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #10b981;">Task Completed!</h2>
-          <p>Hi ${taskOwnerName},</p>
-          <p><strong>${taskerName}</strong> has marked the following task as completed:</p>
-          <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin-top: 0;">${taskTitle}</h3>
-          </div>
-          <p>Please review the work and leave a review if you're satisfied!</p>
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks/${taskId}" 
-             style="display: inline-block; background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
-            View Task
-          </a>
-        </div>
-      `,
+      html: htmlContent,
     })
+    
+    return { result, htmlContent }
   } catch (error) {
     console.error('Error sending task completed notification:', error)
+    throw error
   }
 }
 
@@ -254,43 +273,48 @@ export async function sendPayoutInitiatedNotification(
   payoutAmount: string,
   platformFee: string,
   taskId: string
-) {
+): Promise<{ result: any; htmlContent: string }> {
   try {
     const mailTransporter = ensureTransporter()
-    await mailTransporter.sendMail({
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #10b981;">💰 Payout Initiated!</h2>
+        <p>Hi ${recipientName},</p>
+        <p>Great news! The task owner has confirmed completion of your work, and your payout has been initiated.</p>
+        <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #86efac;">
+          <h3 style="margin-top: 0; color: #166534;">${taskTitle}</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <tr>
+              <td style="padding: 8px 0; color: #666;">Payout Amount:</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #166534; font-size: 18px;">€${payoutAmount}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; color: #666; border-top: 1px solid #d1fae5;">Platform Fee:</td>
+              <td style="padding: 8px 0; text-align: right; color: #666; border-top: 1px solid #d1fae5;">€${platformFee}</td>
+            </tr>
+          </table>
+        </div>
+        <p style="color: #666; font-size: 14px;">The payout will be transferred to your registered bank account within 1-3 business days.</p>
+        <p>Don't forget to leave a review for the task owner!</p>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks/${taskId}" 
+           style="display: inline-block; background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
+          View Task & Leave Review
+        </a>
+      </div>
+    `
+    
+    const result = await mailTransporter.sendMail({
       from: getFromAddress(),
       to: recipientEmail,
       subject: `💰 Payout initiated for "${taskTitle}"`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #10b981;">💰 Payout Initiated!</h2>
-          <p>Hi ${recipientName},</p>
-          <p>Great news! The task owner has confirmed completion of your work, and your payout has been initiated.</p>
-          <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #86efac;">
-            <h3 style="margin-top: 0; color: #166534;">${taskTitle}</h3>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-              <tr>
-                <td style="padding: 8px 0; color: #666;">Payout Amount:</td>
-                <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #166534; font-size: 18px;">€${payoutAmount}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0; color: #666; border-top: 1px solid #d1fae5;">Platform Fee:</td>
-                <td style="padding: 8px 0; text-align: right; color: #666; border-top: 1px solid #d1fae5;">€${platformFee}</td>
-              </tr>
-            </table>
-          </div>
-          <p style="color: #666; font-size: 14px;">The payout will be transferred to your registered bank account within 1-3 business days.</p>
-          <p>Don't forget to leave a review for the task owner!</p>
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks/${taskId}" 
-             style="display: inline-block; background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
-            View Task & Leave Review
-          </a>
-        </div>
-      `,
+      html: htmlContent,
     })
+    
     console.log('✅ Payout notification email sent to:', recipientEmail)
+    return { result, htmlContent }
   } catch (error) {
     console.error('Error sending payout notification:', error)
+    throw error
   }
 }
 
@@ -300,31 +324,36 @@ export async function sendTaskCancelledNotification(
   taskerName: string,
   taskTitle: string,
   taskId: string
-) {
+): Promise<{ result: any; htmlContent: string }> {
   try {
     const mailTransporter = ensureTransporter()
-    await mailTransporter.sendMail({
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #f59e0b;">Task Cancelled</h2>
+        <p>Hi ${taskOwnerName},</p>
+        <p><strong>${taskerName}</strong> has cancelled the following task:</p>
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">${taskTitle}</h3>
+        </div>
+        <p>The task is now open for new bids.</p>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks/${taskId}" 
+           style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
+          View Task
+        </a>
+      </div>
+    `
+    
+    const result = await mailTransporter.sendMail({
       from: getFromAddress(),
       to: taskOwnerEmail,
       subject: `Task "${taskTitle}" has been cancelled`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #f59e0b;">Task Cancelled</h2>
-          <p>Hi ${taskOwnerName},</p>
-          <p><strong>${taskerName}</strong> has cancelled the following task:</p>
-          <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin-top: 0;">${taskTitle}</h3>
-          </div>
-          <p>The task is now open for new bids.</p>
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks/${taskId}" 
-             style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
-            View Task
-          </a>
-        </div>
-      `,
+      html: htmlContent,
     })
+    
+    return { result, htmlContent }
   } catch (error) {
     console.error('Error sending task cancelled notification:', error)
+    throw error
   }
 }
 
@@ -334,7 +363,7 @@ export async function sendAdminEmail(
   subject: string,
   message: string,
   attachment?: File
-) {
+): Promise<{ result: any; htmlContent: string }> {
   try {
     const mailTransporter = ensureTransporter()
     
@@ -352,17 +381,21 @@ export async function sendAdminEmail(
       })
     }
 
-    await mailTransporter.sendMail({
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        ${message}
+      </div>
+    `
+    
+    const result = await mailTransporter.sendMail({
       from: getFromAddress(),
       to: recipientEmail,
       subject: subject,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          ${message}
-        </div>
-      `,
+      html: htmlContent,
       attachments: attachments.length > 0 ? attachments : undefined,
     })
+    
+    return { result, htmlContent }
   } catch (error: any) {
     console.error('Error sending admin email:', error)
     throw new Error(`Failed to send admin email: ${error.message || 'Unknown error'}`)
@@ -713,47 +746,51 @@ export async function sendTemplateEmail(
 export async function sendProfileCompletionEmail(
   recipientEmail: string,
   recipientName: string
-) {
+): Promise<{ result: any; htmlContent: string }> {
   try {
     const mailTransporter = ensureTransporter()
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
     // Use login redirect to preserve setup=required through login flow
     const profileLink = `${appUrl}/login?redirect=${encodeURIComponent('/profile?setup=required')}`
     
-    await mailTransporter.sendMail({
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2563eb;">Complete Your Profile</h2>
+        <p>Hi ${recipientName || 'there'},</p>
+        <p>Your Taskorilla profile is incomplete. To use all features of the platform, please complete your profile with the following required information:</p>
+        <ul style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <li style="margin-bottom: 8px;"><strong>Full Name</strong></li>
+          <li style="margin-bottom: 8px;"><strong>Country</strong></li>
+          <li style="margin-bottom: 8px;"><strong>Phone Number</strong> (with country code)</li>
+        </ul>
+        <p>Once you complete your profile, you'll be able to:</p>
+        <ul style="margin: 20px 0; padding-left: 20px;">
+          <li>Browse and post tasks</li>
+          <li>Submit bids on tasks</li>
+          <li>Message other users</li>
+          <li>Access all platform features</li>
+        </ul>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${profileLink}" 
+             style="display: inline-block; background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            Complete Your Profile
+          </a>
+        </div>
+        <p style="color: #6b7280; font-size: 12px; margin-top: 30px;">
+          Or copy and paste this link into your browser:<br>
+          <a href="${profileLink}" style="color: #2563eb; word-break: break-all;">${profileLink}</a>
+        </p>
+      </div>
+    `
+    
+    const result = await mailTransporter.sendMail({
       from: getFromAddress(),
       to: recipientEmail,
       subject: 'Complete Your Taskorilla Profile',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">Complete Your Profile</h2>
-          <p>Hi ${recipientName || 'there'},</p>
-          <p>Your Taskorilla profile is incomplete. To use all features of the platform, please complete your profile with the following required information:</p>
-          <ul style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <li style="margin-bottom: 8px;"><strong>Full Name</strong></li>
-            <li style="margin-bottom: 8px;"><strong>Country</strong></li>
-            <li style="margin-bottom: 8px;"><strong>Phone Number</strong> (with country code)</li>
-          </ul>
-          <p>Once you complete your profile, you'll be able to:</p>
-          <ul style="margin: 20px 0; padding-left: 20px;">
-            <li>Browse and post tasks</li>
-            <li>Submit bids on tasks</li>
-            <li>Message other users</li>
-            <li>Access all platform features</li>
-          </ul>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${profileLink}" 
-               style="display: inline-block; background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-              Complete Your Profile
-            </a>
-          </div>
-          <p style="color: #6b7280; font-size: 12px; margin-top: 30px;">
-            Or copy and paste this link into your browser:<br>
-            <a href="${profileLink}" style="color: #2563eb; word-break: break-all;">${profileLink}</a>
-          </p>
-        </div>
-      `,
+      html: htmlContent,
     })
+    
+    return { result, htmlContent }
   } catch (error: any) {
     console.error('Error sending profile completion email:', error)
     throw new Error(`Failed to send profile completion email: ${error.message || 'Unknown error'}`)

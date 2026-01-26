@@ -50,6 +50,14 @@ export async function POST(request: NextRequest) {
 
     switch (type) {
       case 'new_bid':
+        const newBidResult = await sendNewBidNotification(
+          params.taskOwnerEmail,
+          params.taskOwnerName,
+          params.taskTitle,
+          params.bidderName,
+          params.bidAmount,
+          params.taskId
+        )
         emailLogData = {
           recipient_email: params.taskOwnerEmail,
           recipient_name: params.taskOwnerName,
@@ -60,19 +68,20 @@ export async function POST(request: NextRequest) {
             taskTitle: params.taskTitle,
             bidderName: params.bidderName,
             bidAmount: params.bidAmount,
+            html_content: newBidResult.htmlContent,
           },
         }
-        await sendNewBidNotification(
-          params.taskOwnerEmail,
-          params.taskOwnerName,
-          params.taskTitle,
-          params.bidderName,
-          params.bidAmount,
-          params.taskId
-        )
         break
 
       case 'bid_accepted':
+        const bidAcceptedResult = await sendBidAcceptedNotification(
+          params.bidderEmail,
+          params.bidderName,
+          params.taskTitle,
+          params.taskOwnerName,
+          params.bidAmount,
+          params.taskId
+        )
         emailLogData = {
           recipient_email: params.bidderEmail,
           recipient_name: params.bidderName,
@@ -83,19 +92,18 @@ export async function POST(request: NextRequest) {
             taskTitle: params.taskTitle,
             taskOwnerName: params.taskOwnerName,
             bidAmount: params.bidAmount,
+            html_content: bidAcceptedResult.htmlContent,
           },
         }
-        await sendBidAcceptedNotification(
-          params.bidderEmail,
-          params.bidderName,
-          params.taskTitle,
-          params.taskOwnerName,
-          params.bidAmount,
-          params.taskId
-        )
         break
 
       case 'bid_rejected':
+        const bidRejectedResult = await sendBidRejectedNotification(
+          params.bidderEmail,
+          params.bidderName,
+          params.taskTitle,
+          params.taskId
+        )
         emailLogData = {
           recipient_email: params.bidderEmail,
           recipient_name: params.bidderName,
@@ -104,17 +112,19 @@ export async function POST(request: NextRequest) {
           related_task_id: params.taskId,
           metadata: {
             taskTitle: params.taskTitle,
+            html_content: bidRejectedResult.htmlContent,
           },
         }
-        await sendBidRejectedNotification(
-          params.bidderEmail,
-          params.bidderName,
-          params.taskTitle,
-          params.taskId
-        )
         break
 
       case 'new_message':
+        const newMessageResult = await sendNewMessageNotification(
+          params.recipientEmail,
+          params.recipientName,
+          params.senderName,
+          params.messagePreview,
+          params.conversationId
+        )
         emailLogData = {
           recipient_email: params.recipientEmail,
           recipient_name: params.recipientName,
@@ -124,18 +134,19 @@ export async function POST(request: NextRequest) {
             senderName: params.senderName,
             messagePreview: params.messagePreview,
             conversationId: params.conversationId,
+            html_content: newMessageResult.htmlContent,
           },
         }
-        await sendNewMessageNotification(
-          params.recipientEmail,
-          params.recipientName,
-          params.senderName,
-          params.messagePreview,
-          params.conversationId
-        )
         break
 
       case 'task_completed':
+        const taskCompletedResult = await sendTaskCompletedNotification(
+          params.taskOwnerEmail,
+          params.taskOwnerName,
+          params.taskerName,
+          params.taskTitle,
+          params.taskId
+        )
         emailLogData = {
           recipient_email: params.taskOwnerEmail,
           recipient_name: params.taskOwnerName,
@@ -145,18 +156,20 @@ export async function POST(request: NextRequest) {
           metadata: {
             taskTitle: params.taskTitle,
             taskerName: params.taskerName,
+            html_content: taskCompletedResult.htmlContent,
           },
         }
-        await sendTaskCompletedNotification(
-          params.taskOwnerEmail,
-          params.taskOwnerName,
-          params.taskerName,
-          params.taskTitle,
-          params.taskId
-        )
         break
 
       case 'payout_initiated':
+        const payoutInitiatedResult = await sendPayoutInitiatedNotification(
+          params.recipientEmail,
+          params.recipientName,
+          params.taskTitle,
+          params.payoutAmount,
+          params.platformFee,
+          params.taskId
+        )
         emailLogData = {
           recipient_email: params.recipientEmail,
           recipient_name: params.recipientName,
@@ -167,19 +180,19 @@ export async function POST(request: NextRequest) {
             taskTitle: params.taskTitle,
             payoutAmount: params.payoutAmount,
             platformFee: params.platformFee,
+            html_content: payoutInitiatedResult.htmlContent,
           },
         }
-        await sendPayoutInitiatedNotification(
-          params.recipientEmail,
-          params.recipientName,
-          params.taskTitle,
-          params.payoutAmount,
-          params.platformFee,
-          params.taskId
-        )
         break
 
       case 'task_cancelled':
+        const taskCancelledResult = await sendTaskCancelledNotification(
+          params.taskOwnerEmail,
+          params.taskOwnerName,
+          params.taskerName,
+          params.taskTitle,
+          params.taskId
+        )
         emailLogData = {
           recipient_email: params.taskOwnerEmail,
           recipient_name: params.taskOwnerName,
@@ -189,25 +202,19 @@ export async function POST(request: NextRequest) {
           metadata: {
             taskTitle: params.taskTitle,
             taskerName: params.taskerName,
+            html_content: taskCancelledResult.htmlContent,
           },
         }
-        await sendTaskCancelledNotification(
-          params.taskOwnerEmail,
-          params.taskOwnerName,
-          params.taskerName,
-          params.taskTitle,
-          params.taskId
-        )
         break
 
       case 'admin_email':
-        // Generate HTML for admin email
-        const adminEmailHtml = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            ${params.message}
-          </div>
-        `
-        
+        const adminEmailResult = await sendAdminEmail(
+          params.recipientEmail,
+          params.recipientName,
+          params.subject,
+          params.message,
+          attachmentFile || undefined
+        )
         emailLogData = {
           recipient_email: params.recipientEmail,
           recipient_name: params.recipientName,
@@ -217,21 +224,18 @@ export async function POST(request: NextRequest) {
           related_user_id: params.relatedUserId,
           metadata: {
             message: params.message,
-            html_content: adminEmailHtml,
+            html_content: adminEmailResult.htmlContent,
             hasAttachment: !!attachmentFile,
             attachmentName: attachmentFile?.name || null,
           },
         }
-        await sendAdminEmail(
-          params.recipientEmail,
-          params.recipientName,
-          params.subject,
-          params.message,
-          attachmentFile || undefined
-        )
         break
 
       case 'profile_completion':
+        const profileCompletionResult = await sendProfileCompletionEmail(
+          params.recipientEmail,
+          params.recipientName
+        )
         emailLogData = {
           recipient_email: params.recipientEmail,
           recipient_name: params.recipientName,
@@ -239,11 +243,10 @@ export async function POST(request: NextRequest) {
           email_type: 'profile_completion',
           sent_by: user?.id,
           related_user_id: params.relatedUserId,
+          metadata: {
+            html_content: profileCompletionResult.htmlContent,
+          },
         }
-        await sendProfileCompletionEmail(
-          params.recipientEmail,
-          params.recipientName
-        )
         break
 
       case 'template_email':
