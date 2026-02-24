@@ -2861,7 +2861,7 @@ export default function TaskDetailPage() {
                 </div>
               ) : (
                 <button
-                  onClick={handleHelperMarkComplete}
+                  onClick={() => handleHelperMarkComplete()}
                   disabled={markingWorkComplete}
                   className="bg-green-600 text-white px-6 py-2 rounded-md text-sm font-semibold hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
