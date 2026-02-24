@@ -13,9 +13,11 @@ import { User as UserIcon } from 'lucide-react'
 import { compressTaskImage } from '@/lib/image-utils'
 
 export default function NewTaskClient() {
+  const TASK_DRAFT_STORAGE_KEY = 'newTaskDraft'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
+  const [authChecked, setAuthChecked] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
   const [subCategories, setSubCategories] = useState<Category[]>([])
   const [availableTags, setAvailableTags] = useState<Tag[]>([])
@@ -34,6 +36,9 @@ export default function NewTaskClient() {
     type: 'success' | 'error' | 'warning' | 'info' | 'confirm'
     title: string
     message: string
+    onConfirm?: (() => void) | undefined
+    confirmText?: string
+    cancelText?: string
   }>({
     isOpen: false,
     type: 'info',
@@ -51,6 +56,7 @@ export default function NewTaskClient() {
   const [selectedHelperOffering, setSelectedHelperOffering] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
+  const draftRestoredRef = useRef(false)
   const isHelperRequest = Boolean(requestedHelper)
 
   const helperIdParam = searchParams?.get('helperId')
@@ -75,6 +81,62 @@ export default function NewTaskClient() {
     loadTags()
     loadUserCountry()
   }, [])
+
+  useEffect(() => {
+    if (draftRestoredRef.current || typeof window === 'undefined') return
+
+    try {
+      const rawDraft = localStorage.getItem(TASK_DRAFT_STORAGE_KEY)
+      if (!rawDraft) {
+        draftRestoredRef.current = true
+        return
+      }
+
+      const draft = JSON.parse(rawDraft) as {
+        formData?: typeof formData
+        imageUrls?: string[]
+        selectedTags?: Tag[]
+        requiredSkills?: string[]
+        postcode?: string
+        country?: string
+        selectedProfessions?: string[]
+        taskType?: 'helper' | 'professional'
+        selectedHelperOffering?: string
+      }
+
+      if (draft.formData) setFormData(draft.formData)
+      if (Array.isArray(draft.imageUrls)) setImageUrls(draft.imageUrls)
+      if (Array.isArray(draft.selectedTags)) setSelectedTags(draft.selectedTags)
+      if (Array.isArray(draft.requiredSkills)) setRequiredSkills(draft.requiredSkills)
+      if (typeof draft.postcode === 'string') setPostcode(draft.postcode)
+      if (typeof draft.country === 'string') setCountry(draft.country)
+      if (Array.isArray(draft.selectedProfessions)) setSelectedProfessions(draft.selectedProfessions)
+      if (draft.taskType === 'helper' || draft.taskType === 'professional') setTaskType(draft.taskType)
+      if (typeof draft.selectedHelperOffering === 'string') setSelectedHelperOffering(draft.selectedHelperOffering)
+    } catch (restoreError) {
+      console.error('Error restoring task draft:', restoreError)
+    } finally {
+      draftRestoredRef.current = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !draftRestoredRef.current) return
+
+    const draft = {
+      formData,
+      imageUrls,
+      selectedTags,
+      requiredSkills,
+      postcode,
+      country,
+      selectedProfessions,
+      taskType,
+      selectedHelperOffering,
+    }
+
+    localStorage.setItem(TASK_DRAFT_STORAGE_KEY, JSON.stringify(draft))
+  }, [formData, imageUrls, selectedTags, requiredSkills, postcode, country, selectedProfessions, taskType, selectedHelperOffering])
 
   const loadUserCountry = async () => {
     try {
@@ -205,11 +267,8 @@ export default function NewTaskClient() {
 
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      router.push('/login')
-    } else {
-      setUser(user)
-    }
+    setUser(user ?? null)
+    setAuthChecked(true)
   }
 
   const loadCategories = async () => {
@@ -516,7 +575,25 @@ export default function NewTaskClient() {
 
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (!authUser) throw new Error('You must be logged in to create a task')
+      if (!authUser) {
+        const currentPath = typeof window !== 'undefined'
+          ? `${window.location.pathname}${window.location.search}`
+          : '/tasks/new'
+        setModalState({
+          isOpen: true,
+          type: 'confirm',
+          title: 'Login required',
+          message: 'To complete your task post, please log in or register. Your task details have been saved.',
+          confirmText: 'Continue to login',
+          cancelText: 'Stay here',
+          onConfirm: () => {
+            setModalState(prev => ({ ...prev, isOpen: false }))
+            router.push(`/login?redirect=${encodeURIComponent(currentPath)}`)
+          },
+        })
+        setLoading(false)
+        return
+      }
 
       // Create task first
       // Build task data object with only core fields
@@ -644,6 +721,9 @@ export default function NewTaskClient() {
         )
       }
 
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(TASK_DRAFT_STORAGE_KEY)
+      }
       router.push(`/tasks/${finalTaskData.id}`)
     } catch (error: any) {
       setError(error.message || 'An error occurred while creating the task')
@@ -743,7 +823,7 @@ export default function NewTaskClient() {
     }
   }
 
-  if (!user) {
+  if (!authChecked) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center">Loading...</div>
@@ -1386,10 +1466,13 @@ export default function NewTaskClient() {
       {/* Standard Modal */}
       <StandardModal
         isOpen={modalState.isOpen}
-        onClose={() => setModalState({ ...modalState, isOpen: false })}
+        onClose={() => setModalState({ ...modalState, isOpen: false, onConfirm: undefined, confirmText: undefined, cancelText: undefined })}
+        onConfirm={modalState.onConfirm}
         type={modalState.type}
         title={modalState.title}
         message={modalState.message}
+        confirmText={modalState.confirmText}
+        cancelText={modalState.cancelText}
       />
     </>
   )

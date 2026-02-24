@@ -8,17 +8,7 @@
   "theme_color": "#FD9212",
   "orientation": "portrait-primary",
   "icons": [
-    {
-      "src": "/images/taskorilla_header_logo.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/images/taskorilla_header_logo.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
+    {"src": "/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "/icons/icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
   ]
 }

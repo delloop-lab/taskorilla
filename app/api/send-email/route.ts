@@ -5,8 +5,12 @@ import {
   sendBidRejectedNotification,
   sendNewMessageNotification,
   sendTaskCompletedNotification,
+  sendHelperFinishedNotification,
   sendPayoutInitiatedNotification,
   sendTaskCancelledNotification,
+  sendTaskProgressUpdateNotification,
+  sendRevisionRequestedNotification,
+  sendRevisionCompletedNotification,
   sendAdminEmail,
   sendProfileCompletionEmail,
   sendTemplateEmail,
@@ -203,6 +207,100 @@ export async function POST(request: NextRequest) {
             taskTitle: params.taskTitle,
             taskerName: params.taskerName,
             html_content: taskCancelledResult.htmlContent,
+          },
+        }
+        break
+
+      case 'task_progress_update':
+        const taskProgressUpdateResult = await sendTaskProgressUpdateNotification(
+          params.taskOwnerEmail,
+          params.taskOwnerName,
+          params.helperName,
+          params.taskTitle,
+          params.progressPreview,
+          params.taskId
+        )
+        emailLogData = {
+          recipient_email: params.taskOwnerEmail,
+          recipient_name: params.taskOwnerName,
+          subject: `New update on "${params.taskTitle}"`,
+          email_type: 'task_progress_update',
+          related_task_id: params.taskId,
+          metadata: {
+            taskTitle: params.taskTitle,
+            helperName: params.helperName,
+            progressPreview: params.progressPreview,
+            html_content: taskProgressUpdateResult.htmlContent,
+          },
+        }
+        break
+
+      case 'helper_finished':
+        const helperFinishedResult = await sendHelperFinishedNotification(
+          params.recipientEmail,
+          params.recipientName,
+          params.helperName,
+          params.taskTitle,
+          params.taskId
+        )
+        emailLogData = {
+          recipient_email: params.recipientEmail,
+          recipient_name: params.recipientName,
+          subject: `Task Completed: "${params.taskTitle}"`,
+          email_type: 'helper_finished',
+          related_task_id: params.taskId,
+          metadata: {
+            taskTitle: params.taskTitle,
+            helperName: params.helperName,
+            html_content: helperFinishedResult.htmlContent,
+          },
+        }
+        break
+
+      case 'revision_requested':
+        const revisionRequestedResult = await sendRevisionRequestedNotification(
+          params.recipientEmail,
+          params.recipientName,
+          params.taskOwnerName,
+          params.taskTitle,
+          params.requestPreview,
+          params.taskId
+        )
+        emailLogData = {
+          recipient_email: params.recipientEmail,
+          recipient_name: params.recipientName,
+          subject: `Revision Requested: "${params.taskTitle}"`,
+          email_type: 'revision_requested',
+          related_task_id: params.taskId,
+          metadata: {
+            taskTitle: params.taskTitle,
+            taskOwnerName: params.taskOwnerName,
+            requestPreview: params.requestPreview,
+            html_content: revisionRequestedResult.htmlContent,
+          },
+        }
+        break
+
+      case 'revision_completed':
+        const revisionCompletedResult = await sendRevisionCompletedNotification(
+          params.recipientEmail,
+          params.recipientName,
+          params.helperName,
+          params.taskTitle,
+          params.completionSummary || '',
+          params.taskId
+        )
+        emailLogData = {
+          recipient_email: params.recipientEmail,
+          recipient_name: params.recipientName,
+          subject: `Revision Completed: "${params.taskTitle}"`,
+          email_type: 'revision_completed',
+          related_task_id: params.taskId,
+          metadata: {
+            taskTitle: params.taskTitle,
+            helperName: params.helperName,
+            completionSummary: params.completionSummary || '',
+            html_content: revisionCompletedResult.htmlContent,
           },
         }
         break

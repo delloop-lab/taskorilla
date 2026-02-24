@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { validateIBAN } from '@/lib/airwallex'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { createClient } from '@supabase/supabase-js'
+import { requireAirwallexEnabled } from '@/services/payments/airwallex-gate'
 
 const AIRWALLEX_BASE_URL = process.env.AIRWALLEX_ENVIRONMENT === 'production'
   ? 'https://api.airwallex.com/api/v1'
@@ -18,11 +19,12 @@ const supabaseAdmin = createClient(
  * POST /api/airwallex/create-payout
  */
 export async function POST(request: NextRequest) {
-  // Wrap entire route in try-catch to ensure JSON responses even on crashes
+  const gate = requireAirwallexEnabled()
+  if (gate) return gate
+
   try {
     // Debug logging at the top
     console.log('[API Route] ENV:', {
-      API_URL: process.env.AIRWALLEX_API_URL,
       CLIENT_ID: process.env.AIRWALLEX_CLIENT_ID,
       API_KEY: process.env.AIRWALLEX_API_KEY ? 'Loaded' : 'Missing',
       ENVIRONMENT: process.env.AIRWALLEX_ENVIRONMENT,

@@ -50,9 +50,23 @@ export default function GuidePage() {
   const relatedFAQs = getFAQsByCategory(translatedGuide.category, lang).slice(0, 5)
 
   // Format content for better display
+  const renderInlineMarkdown = (text: string) => {
+    const parts = text.split(/(\[.*?\]\(.*?\))/)
+    return parts.map((part, i) => {
+      const linkMatch = part.match(/\[(.*?)\]\((.*?)\)/)
+      if (linkMatch) {
+        return (
+          <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">
+            {linkMatch[1]}
+          </a>
+        )
+      }
+      return <span key={i}>{part}</span>
+    })
+  }
+
   const formatContent = (content: string) => {
     return content.split('\n\n').map((section, index) => {
-      // Check if it's a heading (starts with **)
       if (section.startsWith('**') && section.includes('**')) {
         const headingText = section.match(/\*\*(.*?)\*\*/)?.[1] || section
         const remainingText = section.replace(/\*\*(.*?)\*\*/, '').trim()
@@ -60,14 +74,14 @@ export default function GuidePage() {
         return (
           <div key={index} className="mb-6">
             <h3 className="text-xl font-bold text-gray-900 mb-3">{headingText}</h3>
-            {remainingText && <p className="text-gray-700 leading-relaxed">{remainingText}</p>}
+            {remainingText && <p className="text-gray-700 leading-relaxed">{renderInlineMarkdown(remainingText)}</p>}
           </div>
         )
       }
       
       return (
         <p key={index} className="text-gray-700 leading-relaxed mb-4">
-          {section}
+          {renderInlineMarkdown(section)}
         </p>
       )
     })

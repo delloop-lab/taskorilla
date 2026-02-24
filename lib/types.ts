@@ -37,6 +37,7 @@ export interface User {
   professions?: string[] | null
   is_featured?: boolean | null
   iban?: string | null
+  paypal_email?: string | null
   languages?: string[] | null // Languages the user speaks (e.g., ["English", "Portuguese"])
   completedTasks?: number
   userRatings?: {

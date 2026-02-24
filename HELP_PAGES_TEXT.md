@@ -203,7 +203,7 @@ This document contains all the text from the Help Center pages for easy editing.
 - **Content:** Yes. Go to their profile and click 'Block User.' They won't see or message you.
 
 **FAQ 4: What if something gets damaged during a task?**
-- **Content:** Document it with photos, contact the other party, and involve support if needed.
+- **Content:** Always document it with photos and contact the other party.
 
 ### Platform & Technical Category
 
@@ -303,7 +303,7 @@ Ask for reviews after every task. A high rating and positive feedback mean more 
 **Guide: Understanding Payments on Taskorilla**
 
 **Step 1: Add Your Payout Method**
-Go to 'Settings' > 'Payment Information.' Add your IBAN number. This is required to receive payments as a Helper or Professional.
+Head to Profile > Add your PayPal email. This lets you receive payments easily as a Helper or Professional. Don't have a PayPal account yet? Create one [here](https://www.paypal.com/signup) and get set up in minutes.
 
 **Step 2: Understand Fees**
 Taskorilla takes a small service fee from each transaction. As of December 2025, fees are €2 per task from the tasker and 10% fee from the Helper/Professional.

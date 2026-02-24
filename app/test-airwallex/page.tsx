@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { formatEuro } from '@/lib/currency'
 
-export default function TestAirwallexPage() {
+export default function TestPaymentsPage() {
   const [testType, setTestType] = useState<'payment' | 'payout' | 'customer'>('payment')
   const [amount, setAmount] = useState('50.00')
   const [taskId, setTaskId] = useState('')
@@ -23,7 +23,7 @@ export default function TestAirwallexPage() {
     try {
       // Step 1: Create customer first
       console.log('Step 1: Creating customer...')
-      const customerRes = await fetch('/api/airwallex/create-customer', {
+      const customerRes = await fetch('/api/payments/create-customer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -47,7 +47,7 @@ export default function TestAirwallexPage() {
       const amountNumber = parseFloat(amount) || 1.00
       const amountInCents = Math.round(amountNumber * 100)
 
-      const paymentRes = await fetch('/api/airwallex/create-payment', {
+      const paymentRes = await fetch('/api/payments/create-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -81,7 +81,7 @@ export default function TestAirwallexPage() {
     setResult(null)
 
     try {
-      const response = await fetch('/api/airwallex/create-payout', {
+      const response = await fetch('/api/payments/create-payout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +112,8 @@ export default function TestAirwallexPage() {
   }
 
   const handleCheckPaymentStatus = async () => {
-    if (!result?.paymentIntentId) {
+    const intentId = result?.paymentIntentId || result?.id
+    if (!intentId) {
       setError('No payment intent ID available')
       return
     }
@@ -121,7 +122,7 @@ export default function TestAirwallexPage() {
     setError(null)
 
     try {
-      const response = await fetch(`/api/airwallex/payment-status?paymentIntentId=${result.paymentIntentId}`)
+      const response = await fetch(`/api/payments/payment-status?paymentIntentId=${intentId}`)
       const data = await response.json()
 
       if (!response.ok) {
@@ -137,7 +138,8 @@ export default function TestAirwallexPage() {
   }
 
   const handleCheckPayoutStatus = async () => {
-    if (!result?.payoutId) {
+    const payoutId = result?.payoutId || result?.id
+    if (!payoutId) {
       setError('No payout ID available')
       return
     }
@@ -146,7 +148,7 @@ export default function TestAirwallexPage() {
     setError(null)
 
     try {
-      const response = await fetch(`/api/airwallex/payout-status?payoutId=${result.payoutId}`)
+      const response = await fetch(`/api/payments/payout-status?payoutId=${payoutId}`)
       const data = await response.json()
 
       if (!response.ok) {
@@ -167,7 +169,7 @@ export default function TestAirwallexPage() {
     setResult(null)
 
     try {
-      const response = await fetch('/api/airwallex/create-customer', {
+      const response = await fetch('/api/payments/create-customer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -196,12 +198,12 @@ export default function TestAirwallexPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Test Airwallex Integration</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-6">Test Payment Integration</h1>
 
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
         <h3 className="text-lg font-semibold text-yellow-900 mb-2">⚠️ Test Environment</h3>
         <p className="text-sm text-yellow-800">
-          This page is for testing Airwallex integration. Make sure you have configured your Airwallex credentials in <code className="bg-yellow-100 px-1 rounded">.env.local</code>.
+          This page is for testing payment integration. Configure <code className="bg-yellow-100 px-1 rounded">PAYMENT_PROVIDER</code> and credentials in <code className="bg-yellow-100 px-1 rounded">.env.local</code>.
         </p>
       </div>
 
@@ -378,7 +380,7 @@ export default function TestAirwallexPage() {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h3 className="text-lg font-semibold text-blue-900 mb-2">Create Sandbox Customer</h3>
               <p className="text-sm text-blue-800 mb-4">
-                Create a customer in Airwallex sandbox. The customer ID will be automatically used for payment tests.
+                Create a sandbox customer. The customer ID will be used for payment tests when supported by the active provider.
               </p>
               <button
                 onClick={handleCreateCustomer}
@@ -416,7 +418,7 @@ export default function TestAirwallexPage() {
               </pre>
             </div>
 
-            {testType === 'payment' && result.paymentIntentId && (
+            {testType === 'payment' && (result.paymentIntentId || result.id) && (
               <div>
                 <button
                   onClick={handleCheckPaymentStatus}
@@ -428,7 +430,7 @@ export default function TestAirwallexPage() {
               </div>
             )}
 
-            {testType === 'payout' && result.payoutId && (
+            {testType === 'payout' && (result.payoutId || result.id) && (
               <div>
                 <button
                   onClick={handleCheckPayoutStatus}
@@ -443,40 +445,14 @@ export default function TestAirwallexPage() {
         </div>
       )}
 
-      {/* Documentation Links */}
+      {/* Documentation */}
       <div className="mt-6 bg-gray-50 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Documentation</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">API Routes</h3>
         <ul className="space-y-2 text-sm text-gray-700">
-          <li>
-            <a
-              href="https://www.airwallex.com/docs/developer-tools__api"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary-600 hover:text-primary-700"
-            >
-              Airwallex API Documentation
-            </a>
-          </li>
-          <li>
-            <a
-              href="https://www.airwallex.com/docs/payments__native-api"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary-600 hover:text-primary-700"
-            >
-              Payment Integration Guide
-            </a>
-          </li>
-          <li>
-            <a
-              href="https://www.airwallex.com/docs/payouts__integration-checklist"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary-600 hover:text-primary-700"
-            >
-              Payout Integration Checklist
-            </a>
-          </li>
+          <li><code className="bg-gray-200 px-1 rounded">POST /api/payments/create-checkout</code> - Task-based checkout</li>
+          <li><code className="bg-gray-200 px-1 rounded">POST /api/payments/create-payment</code> - Standalone payment</li>
+          <li><code className="bg-gray-200 px-1 rounded">POST /api/payments/create-payout</code> - Payout to helper</li>
+          <li><code className="bg-gray-200 px-1 rounded">GET /api/payments/provider</code> - Active provider status</li>
         </ul>
       </div>
     </div>

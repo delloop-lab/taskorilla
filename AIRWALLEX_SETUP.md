@@ -28,6 +28,12 @@ This document explains how to set up Airwallex for payments and payouts in the a
 
 2. Update `.env.local` with your Airwallex credentials:
    ```env
+   # Payment Provider Switch (kill switch)
+   # Valid values: 'airwallex', 'stripe', or 'paypal'
+   # Default: 'airwallex' if not set
+   PAYMENT_PROVIDER=airwallex
+   
+   # Airwallex Configuration
    AIRWALLEX_CLIENT_ID=SoG_nJaTQOy7_7KQ5CsBTw
    AIRWALLEX_API_KEY=your_actual_api_key_here
    AIRWALLEX_ENVIRONMENT=sandbox
@@ -35,6 +41,7 @@ This document explains how to set up Airwallex for payments and payouts in the a
    ```
    
    **Note:** 
+   - The `PAYMENT_PROVIDER` variable acts as a kill switch. Set to `stripe` to disable all Airwallex endpoints.
    - For demo/sandbox environment, the API base URL is `https://api-demo.airwallex.com`
    - For production, the API base URL is `https://api.airwallex.com`
    - Authentication uses `x-client-id` and `x-api-key` headers (not Bearer token)
@@ -140,6 +147,22 @@ Helpers need to:
 3. Update `AIRWALLEX_CLIENT_ID` and `AIRWALLEX_API_KEY` with production values
 4. Update webhook URL to production domain
 5. Test thoroughly in sandbox first!
+
+## Payment Provider Testing (Task 9)
+
+### PayPal Flow
+
+1. Set `PAYMENT_PROVIDER=paypal` and configure `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_ENV`
+2. Run migrations: `add_paypal_payout_id.sql`, `add_paypal_email.sql`
+3. Test **checkout**: Pay for a task → redirect to PayPal → approve → webhook marks `payment_status=paid`
+4. Test **payout**: Complete task → helper with `profiles.paypal_email` → payout created; webhook marks payout completed
+5. Ensure frontend uses `redirectUrl || checkoutUrl || next_action?.url` (unchanged, provider-agnostic)
+
+### Verify Other Providers Remain Intact
+
+- With `PAYMENT_PROVIDER=airwallex`: Airwallex checkout and payout work
+- With `PAYMENT_PROVIDER=stripe`: Stripe checkout works; payouts are automatic
+- Frontend only calls `/api/payments/*`; no provider-specific code in UI
 
 ## Documentation Links
 

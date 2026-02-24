@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simple Airwallex Test</title>
+  <title>Simple Payment API Test</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -44,7 +44,7 @@
   </style>
 </head>
 <body>
-  <h1>Simple Airwallex API Test</h1>
+  <h1>Simple Payment API Test</h1>
   
   <div>
     <button onclick="testCreateCustomer()">Test Create Customer (POST)</button>
@@ -59,11 +59,11 @@
   <script>
     async function testCreateCustomer() {
       const resultDiv = document.getElementById('result');
-      resultDiv.textContent = 'Testing POST /api/airwallex/create-customer...\n';
+      resultDiv.textContent = 'Testing POST /api/payments/create-customer...\n';
       resultDiv.className = 'result';
 
       try {
-        const response = await fetch('/api/airwallex/create-customer', {
+        const response = await fetch('/api/payments/create-customer', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -99,7 +99,7 @@
       try {
         // Step 1: Create payment customer (cus_)
         resultDiv.textContent += '\nStep 1: Creating payment customer...';
-        const customerResponse = await fetch('/api/airwallex/create-customer', {
+        const customerResponse = await fetch('/api/payments/create-customer', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -121,13 +121,13 @@
 
         // Step 2: Create payment with customer_id
         resultDiv.textContent += '\nStep 2: Creating payment intent...';
-        const paymentResponse = await fetch('/api/airwallex/create-payment', {
+        const paymentResponse = await fetch('/api/payments/create-payment', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            amount: 50.00,
+            amount: 5000,
             currency: 'EUR',
             merchant_order_id: `order_${Date.now()}`,
             return_url: 'http://localhost:3000/success',
@@ -160,7 +160,7 @@
 
     async function testCreatePayout() {
       const resultDiv = document.getElementById('result');
-      resultDiv.textContent = 'Testing POST /api/airwallex/create-payout...\n';
+      resultDiv.textContent = 'Testing POST /api/payments/create-payout...\n';
       resultDiv.className = 'result';
 
       // Prompt for required values (taskId and helperId are optional for testing)
@@ -239,7 +239,7 @@
         if (taskId) payload.taskId = taskId;
         if (helperId) payload.helperId = helperId;
 
-        const response = await fetch('/api/airwallex/create-payout', {
+        const response = await fetch('/api/payments/create-payout', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -305,7 +305,7 @@
 
     async function testGetPayoutStatus() {
       const resultDiv = document.getElementById('result');
-      resultDiv.textContent = 'Testing GET /api/airwallex/payout-status...\n';
+      resultDiv.textContent = 'Testing GET /api/payments/payout-status...\n';
       resultDiv.className = 'result';
 
       const payoutId = prompt('Enter Payout ID:', '');
@@ -319,7 +319,7 @@
       resultDiv.textContent += `\n\nFetching status...`;
 
       try {
-        const response = await fetch(`/api/airwallex/payout-status?payoutId=${encodeURIComponent(payoutId)}`, {
+        const response = await fetch(`/api/payments/payout-status?payoutId=${encodeURIComponent(payoutId)}`, {
           method: 'GET',
         });
 
@@ -345,11 +345,11 @@
 
     async function testGetMethod() {
       const resultDiv = document.getElementById('result');
-      resultDiv.textContent = 'Testing GET /api/airwallex/create-customer (should return 405)...\n';
+      resultDiv.textContent = 'Testing GET /api/payments/create-customer (should return 405)...\n';
       resultDiv.className = 'result';
 
       try {
-        const response = await fetch('/api/airwallex/create-customer', {
+        const response = await fetch('/api/payments/create-customer', {
           method: 'GET'
         });
 

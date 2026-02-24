@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { requireAirwallexEnabled } from '@/services/payments/airwallex-gate'
 
 // This route reads request.nextUrl.searchParams and must run dynamically
 export const dynamic = 'force-dynamic'
@@ -13,6 +14,9 @@ const AIRWALLEX_BASE_URL = process.env.AIRWALLEX_ENVIRONMENT === 'production'
  * GET /api/airwallex/payout-status?payoutId=xxx
  */
 export async function GET(request: NextRequest) {
+  const gate = requireAirwallexEnabled()
+  if (gate) return gate
+
   if (request.method !== 'GET') {
     return NextResponse.json({ error: 'Method not allowed' }, { status: 405 })
   }

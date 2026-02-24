@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPaymentIntent } from '@/lib/airwallex'
+import { requireAirwallexEnabled } from '@/services/payments/airwallex-gate'
 
 // This route depends on request.nextUrl.searchParams; mark it as dynamic
 export const dynamic = 'force-dynamic'
@@ -9,6 +10,9 @@ export const dynamic = 'force-dynamic'
  * GET /api/airwallex/payment-status?paymentIntentId=xxx
  */
 export async function GET(request: NextRequest) {
+  const gate = requireAirwallexEnabled()
+  if (gate) return gate
+
   try {
     const searchParams = request.nextUrl.searchParams
     const paymentIntentId = searchParams.get('paymentIntentId')

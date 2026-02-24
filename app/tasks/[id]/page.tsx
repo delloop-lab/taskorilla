@@ -32,6 +32,9 @@ export default function TaskDetailPage() {
   const [bidAmount, setBidAmount] = useState('')
   const [bidMessage, setBidMessage] = useState('')
   const [submittingBid, setSubmittingBid] = useState(false)
+  const [bidSubmitStatus, setBidSubmitStatus] = useState<string | null>(null)
+  const [acceptingBidId, setAcceptingBidId] = useState<string | null>(null)
+  const [acceptBidStatus, setAcceptBidStatus] = useState<string | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
   const [reviewRating, setReviewRating] = useState('5')
   const [reviewComment, setReviewComment] = useState('')
@@ -47,6 +50,15 @@ export default function TaskDetailPage() {
   const [uploadingProgressPhoto, setUploadingProgressPhoto] = useState(false)
   const [progressPhoto, setProgressPhoto] = useState<string | null>(null)
   const [addingProgressUpdate, setAddingProgressUpdate] = useState(false)
+  const [revisionRequestMessage, setRevisionRequestMessage] = useState('')
+  const [revisionRequestPhoto, setRevisionRequestPhoto] = useState<string | null>(null)
+  const [uploadingRevisionRequestPhoto, setUploadingRevisionRequestPhoto] = useState(false)
+  const [revisionCompletePhoto, setRevisionCompletePhoto] = useState<string | null>(null)
+  const [uploadingRevisionCompletePhoto, setUploadingRevisionCompletePhoto] = useState(false)
+  const [revisionCompleteMessage, setRevisionCompleteMessage] = useState('')
+  const [submittingRevisionRequest, setSubmittingRevisionRequest] = useState(false)
+  const [submittingRevisionComplete, setSubmittingRevisionComplete] = useState(false)
+  const [markingWorkComplete, setMarkingWorkComplete] = useState(false)
   const [processingPayment, setProcessingPayment] = useState(false)
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null)
   
@@ -77,22 +89,48 @@ export default function TaskDetailPage() {
     checkUser()
   }, [taskId])
 
-  // Handle return from payment - refresh task data and show success
+  // Handle return from payment - poll until DB reflects paid status
   useEffect(() => {
     const paymentParam = searchParams?.get('payment')
-    if (paymentParam === 'success') {
-      console.log('[TaskPage] Returned from payment with success, refreshing task data...')
-      // Delay slightly to allow database to update
-      const timer = setTimeout(() => {
+    if (paymentParam !== 'success') return
+
+    console.log('[TaskPage] Returned from payment with success, polling for paid status...')
+    setPaymentStatus('processing')
+    let cancelled = false
+    const pollIntervals = [2000, 3000, 5000, 5000, 5000]
+
+    const poll = async (attempt: number) => {
+      if (cancelled || attempt >= pollIntervals.length) {
+        if (!cancelled) {
+          loadTask()
+          setPaymentStatus('processing')
+        }
+        return
+      }
+      const { data } = await supabase
+        .from('tasks')
+        .select('payment_status')
+        .eq('id', taskId)
+        .single()
+
+      if (data?.payment_status === 'paid') {
         loadTask()
         setPaymentStatus('paid')
-        // Remove the query param from URL without refresh
         const url = new URL(window.location.href)
         url.searchParams.delete('payment')
+        url.searchParams.delete('token')
+        url.searchParams.delete('PayerID')
         window.history.replaceState({}, '', url.toString())
-      }, 500)
-      return () => clearTimeout(timer)
+        return
+      }
+      if (data?.payment_status === 'pending') {
+        setPaymentStatus('processing')
+      }
+      setTimeout(() => poll(attempt + 1), pollIntervals[attempt])
     }
+
+    poll(0)
+    return () => { cancelled = true }
   }, [searchParams])
 
   // Update task userRatings when userRatings finish loading
@@ -477,6 +515,7 @@ export default function TaskDetailPage() {
     }
 
     setSubmittingBid(true)
+    setBidSubmitStatus('Submitting your bid...')
     try {
       const { error } = await supabase.from('bids').insert({
         task_id: taskId,
@@ -491,6 +530,7 @@ export default function TaskDetailPage() {
       // Send email notification to task owner
       if (task && task.user) {
         try {
+          setBidSubmitStatus('Bid submitted. Sending notification...')
           console.log('📧 Preparing to send new bid email notification...')
           
           // Get bidder's full name
@@ -539,8 +579,11 @@ export default function TaskDetailPage() {
 
       setBidAmount('')
       setBidMessage('')
+      setBidSubmitStatus('Bid submitted successfully.')
       loadBids()
+      setTimeout(() => setBidSubmitStatus(null), 4000)
     } catch (error: any) {
+      setBidSubmitStatus(null)
       setModalState({
         isOpen: true,
         type: 'error',
@@ -553,8 +596,10 @@ export default function TaskDetailPage() {
   }
 
   const handleAcceptBid = async (bidId: string) => {
-    if (!user || !task || task.created_by !== user.id) return
+    if (!user || !task || task.created_by !== user.id || acceptingBidId) return
 
+    setAcceptingBidId(bidId)
+    setAcceptBidStatus('Accepting bid and updating task...')
     try {
       // Update bid status
       await supabase
@@ -613,6 +658,7 @@ export default function TaskDetailPage() {
 
         // Send email notifications
         try {
+          setAcceptBidStatus('Bid accepted. Notifying helpers...')
           // Email to accepted bidder
           await fetch('/api/send-email', {
             method: 'POST',
@@ -647,12 +693,67 @@ export default function TaskDetailPage() {
           console.error('Error sending email notifications:', emailError)
           // Don't fail the bid acceptance if email fails
         }
+
+        // Restore previous behavior: immediately prompt task owner to pay after accepting a bid.
+        // This keeps the "accept -> pay" flow instead of waiting until completion time.
+        try {
+          setAcceptBidStatus('Bid accepted. Redirecting to payment...')
+          const { data: { session } } = await supabase.auth.getSession()
+          const checkoutResponse = await fetch('/api/payments/create-checkout', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+            },
+            body: JSON.stringify({
+              taskId,
+              returnUrl: `${window.location.origin}/tasks/${taskId}?payment=success`,
+              cancelUrl: `${window.location.origin}/tasks/${taskId}?payment=cancelled`,
+            }),
+          })
+
+          const checkoutData = await checkoutResponse.json()
+          if (checkoutResponse.ok) {
+            const redirectUrl = checkoutData.redirectUrl || checkoutData.checkoutUrl || checkoutData.next_action?.url
+            const intentId = checkoutData.id || checkoutData.paymentIntentId || checkoutData.sessionId
+            if (redirectUrl) {
+              window.location.href = redirectUrl
+              return
+            }
+            if (intentId) {
+              const params = new URLSearchParams()
+              params.set('taskId', taskId)
+              params.set('amount', String(checkoutData.amount ?? ''))
+              if (checkoutData.clientSecret) {
+                params.set('clientSecret', checkoutData.clientSecret)
+              }
+              window.location.href = `/checkout/${intentId}?${params.toString()}`
+              return
+            }
+          } else {
+            console.error('Auto checkout failed after bid acceptance:', checkoutData)
+          }
+        } catch (checkoutError) {
+          console.error('Error starting checkout after bid acceptance:', checkoutError)
+          // Keep bid acceptance successful; user can still click Pay button manually.
+        }
       }
 
       loadTask()
       loadBids()
+      setAcceptBidStatus('Bid accepted successfully.')
+      setTimeout(() => setAcceptBidStatus(null), 4000)
     } catch (error) {
       console.error('Error accepting bid:', error)
+      setAcceptBidStatus(null)
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to accept bid. Please try again.',
+      })
+    } finally {
+      setAcceptingBidId(null)
     }
   }
 
@@ -765,9 +866,12 @@ export default function TaskDetailPage() {
       setShowCompleteModal(false)
       setModalState({
         isOpen: true,
-        type: 'warning',
-        title: 'Payment Required',
-        message: 'Please complete payment before marking the task as completed.',
+        type: task.payment_status === 'pending' || paymentStatus === 'processing' ? 'info' : 'warning',
+        title: task.payment_status === 'pending' || paymentStatus === 'processing' ? 'Payment In Progress' : 'Payment Required',
+        message:
+          task.payment_status === 'pending' || paymentStatus === 'processing'
+            ? 'Your payment is being processed. Please wait for payment to complete, then mark the task as completed.'
+            : 'Please complete payment before marking the task as completed.',
       })
       return
     }
@@ -784,14 +888,15 @@ export default function TaskDetailPage() {
       // Trigger payout to helper if payment was made and helper is assigned
       if (task.assigned_to && task.budget && task.payment_status === 'paid') {
         try {
-          // Get helper's IBAN and email from profile
+          // Get helper's payout details from profile (IBAN for Airwallex, paypal_email/email for PayPal)
           const { data: helperProfile } = await supabase
             .from('profiles')
-            .select('iban, full_name, email')
+            .select('iban, paypal_email, full_name, email')
             .eq('id', task.assigned_to)
             .single()
 
-          if (helperProfile?.iban) {
+          const hasPayoutMethod = helperProfile?.iban ?? helperProfile?.paypal_email ?? helperProfile?.email
+          if (hasPayoutMethod && helperProfile) {
             // Fetch platform fee percentage from settings
             let platformFeePercent = 10 // Default 10%
             const { data: feeSettings } = await supabase
@@ -812,10 +917,12 @@ export default function TaskDetailPage() {
             console.log(`Task budget: €${task.budget}, Platform fee (${platformFeePercent}%): €${platformFee.toFixed(2)}, Payout: €${payoutAmount.toFixed(2)}`)
             
             // Always pass simulatePayout: true - the API will only simulate if NOT in production
-            const payoutResponse = await fetch('/api/airwallex/create-payout', {
+            const { data: { session: payoutSession } } = await supabase.auth.getSession()
+            const payoutResponse = await fetch('/api/payments/create-payout', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
+                ...(payoutSession?.access_token ? { 'Authorization': `Bearer ${payoutSession.access_token}` } : {}),
               },
               body: JSON.stringify({
                 taskId: task.id,
@@ -823,6 +930,7 @@ export default function TaskDetailPage() {
                 amount: payoutAmount, // Payout after platform fee deduction
                 currency: 'EUR',
                 iban: helperProfile.iban,
+                paypalEmail: helperProfile.paypal_email ?? helperProfile.email,
                 accountHolderName: helperProfile.full_name || 'Helper',
                 idempotencyKey: `payout-${task.id}-${Date.now()}`,
                 simulatePayout: true, // API will only simulate in sandbox/demo mode
@@ -840,7 +948,7 @@ export default function TaskDetailPage() {
                 message: `⚠️ Task completed but payout could not be processed. Please contact support.`,
               })
             } else {
-              console.log('Payout created successfully:', payoutData.payoutId, `Amount: €${payoutAmount.toFixed(2)}`)
+              console.log('Payout created successfully:', payoutData.payoutId ?? payoutData.id, `Amount: €${payoutAmount.toFixed(2)}`)
               
               // Add progress update about successful payout
               await supabase.from('task_progress_updates').insert({
@@ -869,12 +977,11 @@ export default function TaskDetailPage() {
               }
             }
           } else {
-            console.warn('Helper does not have IBAN configured')
-            // Add progress update about missing IBAN
+            console.warn('Helper does not have payout method configured')
             await supabase.from('task_progress_updates').insert({
               task_id: taskId,
               user_id: user.id,
-              message: `✅ Task completed! However, payout could not be processed - helper needs to add their bank details (IBAN) in their profile settings.`,
+              message: `✅ Task completed! However, payout could not be processed - helper needs to add their payout details (bank or PayPal) in their profile settings.`,
             })
           }
         } catch (payoutError: any) {
@@ -1125,6 +1232,32 @@ export default function TaskDetailPage() {
       }
     }
 
+    const progressMessage = newProgressMessage.trim()
+    let shouldSendProgressEmail = true
+    const emailThrottleMinutes = 5
+
+    // Throttle email notifications to avoid spamming the task owner.
+    try {
+      const { data: latestUpdate } = await supabase
+        .from('task_progress_updates')
+        .select('created_at')
+        .eq('task_id', taskId)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (latestUpdate?.created_at) {
+        const lastUpdateTs = new Date(latestUpdate.created_at).getTime()
+        const timeSinceLastUpdateMs = Date.now() - lastUpdateTs
+        if (timeSinceLastUpdateMs < emailThrottleMinutes * 60 * 1000) {
+          shouldSendProgressEmail = false
+        }
+      }
+    } catch (throttleError) {
+      console.warn('Could not evaluate progress email throttle, proceeding without throttle:', throttleError)
+    }
+
     setAddingProgressUpdate(true)
     try {
       const { error } = await supabase
@@ -1132,7 +1265,7 @@ export default function TaskDetailPage() {
         .insert({
           task_id: taskId,
           user_id: user.id,
-          message: newProgressMessage.trim() || null,
+          message: progressMessage || null,
           image_url: progressPhoto || null,
         })
 
@@ -1154,6 +1287,36 @@ export default function TaskDetailPage() {
       setProgressPhoto(null)
       await loadProgressUpdates()
       await loadTask()
+
+      if (task.user?.email && shouldSendProgressEmail) {
+        try {
+          const { data: helperProfile } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', user.id)
+            .single()
+
+          const helperName = helperProfile?.full_name || helperProfile?.email || user.email || 'Helper'
+          const rawPreview = progressMessage || (progressPhoto ? 'Added a new photo update.' : 'Added a task update.')
+          const progressPreview = rawPreview.length > 140 ? `${rawPreview.slice(0, 137)}...` : rawPreview
+
+          await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'task_progress_update',
+              taskOwnerEmail: task.user.email,
+              taskOwnerName: task.user.full_name || task.user.email,
+              helperName,
+              taskTitle: task.title,
+              progressPreview,
+              taskId,
+            }),
+          })
+        } catch (emailError) {
+          console.error('Error sending task progress update email:', emailError)
+        }
+      }
     } catch (error: any) {
       console.error('Error adding progress update:', error)
       setModalState({
@@ -1164,6 +1327,217 @@ export default function TaskDetailPage() {
       })
     } finally {
       setAddingProgressUpdate(false)
+    }
+  }
+
+  const handleRevisionRequestPhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !user || !task || task.created_by !== user.id || task.status !== 'in_progress') {
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: 'Permission Denied',
+        message: 'Only the task owner can add revision requests while a task is in progress.',
+      })
+      return
+    }
+
+    setUploadingRevisionRequestPhoto(true)
+    try {
+      const compressedImage = await compressTaskImage(file)
+      const isCompressed = compressedImage.type === 'image/jpeg'
+      const ext = isCompressed ? 'jpg' : (file.name.split('.').pop() || 'jpg')
+      const fileName = `revision-${taskId}-${Date.now()}.${ext}`
+      const filePath = `${user.id}/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, compressedImage, {
+          upsert: true,
+          contentType: compressedImage.type || 'image/jpeg',
+        })
+
+      if (uploadError) throw uploadError
+
+      const { data } = supabase.storage.from('images').getPublicUrl(filePath)
+      setRevisionRequestPhoto(data.publicUrl)
+    } catch (error: any) {
+      console.error('Error uploading revision request photo:', error)
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: error.message || 'Error uploading revision photo',
+      })
+    } finally {
+      setUploadingRevisionRequestPhoto(false)
+      if (event.target) event.target.value = ''
+    }
+  }
+
+  const handleRequestRevision = async () => {
+    if (!user || !task || task.created_by !== user.id || task.status !== 'in_progress') {
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: 'Permission Denied',
+        message: 'Only the task owner can request revisions while a task is in progress.',
+      })
+      return
+    }
+
+    const trimmedMessage = revisionRequestMessage.trim()
+    if (!trimmedMessage && !revisionRequestPhoto) {
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: 'Missing Information',
+        message: 'Please add a revision message or attach a photo.',
+      })
+      return
+    }
+
+    if (trimmedMessage) {
+      const contentCheck = checkForContactInfo(trimmedMessage)
+      if (!contentCheck.isClean) {
+        setModalState({
+          isOpen: true,
+          type: 'warning',
+          title: 'Contact Information Detected',
+          message: contentCheck.message,
+        })
+        return
+      }
+    }
+
+    setSubmittingRevisionRequest(true)
+    try {
+      const revisionMessage = trimmedMessage
+        ? `🔁 Revision requested by task owner: ${trimmedMessage}`
+        : '🔁 Revision requested by task owner. Please review the attached photo and update the task.'
+
+      const { error: err1 } = await supabase
+        .from('task_progress_updates')
+        .insert({
+          task_id: task.id,
+          user_id: user.id,
+          message: revisionMessage,
+          image_url: revisionRequestPhoto || null,
+          update_type: 'revision_requested',
+        })
+
+      if (err1) {
+        if (err1.message?.includes('update_type') || err1.code === '42703') {
+          const { error: err2 } = await supabase
+            .from('task_progress_updates')
+            .insert({
+              task_id: task.id,
+              user_id: user.id,
+              message: revisionMessage,
+              image_url: revisionRequestPhoto || null,
+            })
+          if (err2) throw err2
+        } else {
+          throw err1
+        }
+      }
+
+      if (task.assigned_to) {
+        try {
+          const { data: helperProfile } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', task.assigned_to)
+            .single()
+
+          if (helperProfile?.email) {
+            const requestPreviewBase = trimmedMessage || (revisionRequestPhoto ? 'Please review the attached photo and update the task.' : 'Please review and update the task.')
+            const requestPreview = requestPreviewBase.length > 140 ? `${requestPreviewBase.slice(0, 137)}...` : requestPreviewBase
+            const taskOwnerName = task.user?.full_name || task.user?.email || user.email || 'Task Owner'
+
+            await fetch('/api/send-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'revision_requested',
+                recipientEmail: helperProfile.email,
+                recipientName: helperProfile.full_name || helperProfile.email,
+                taskOwnerName,
+                taskTitle: task.title,
+                requestPreview,
+                taskId: task.id,
+              }),
+            })
+          }
+        } catch (emailError) {
+          console.error('Error sending revision request email:', emailError)
+        }
+      }
+
+      setRevisionRequestMessage('')
+      setRevisionRequestPhoto(null)
+      await loadProgressUpdates()
+      setModalState({
+        isOpen: true,
+        type: 'success',
+        title: 'Revision Requested',
+        message: 'Your revision request was added and the helper has been notified by email.',
+      })
+    } catch (error: any) {
+      console.error('Error requesting revision:', error)
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: error.message || 'Failed to submit revision request.',
+      })
+    } finally {
+      setSubmittingRevisionRequest(false)
+    }
+  }
+
+  const handleRevisionCompletePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !user || !task || task.assigned_to !== user.id || task.status !== 'in_progress') {
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: 'Permission Denied',
+        message: 'Only the assigned helper can add a revision completion photo.',
+      })
+      return
+    }
+
+    setUploadingRevisionCompletePhoto(true)
+    try {
+      const compressedImage = await compressTaskImage(file)
+      const isCompressed = compressedImage.type === 'image/jpeg'
+      const ext = isCompressed ? 'jpg' : (file.name.split('.').pop() || 'jpg')
+      const fileName = `revision-complete-${taskId}-${Date.now()}.${ext}`
+      const filePath = `${user.id}/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, compressedImage, {
+          upsert: true,
+          contentType: compressedImage.type || 'image/jpeg',
+        })
+
+      if (uploadError) throw uploadError
+
+      const { data } = supabase.storage.from('images').getPublicUrl(filePath)
+      setRevisionCompletePhoto(data.publicUrl)
+    } catch (error: any) {
+      console.error('Error uploading revision completion photo:', error)
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: error.message || 'Error uploading revision completion photo',
+      })
+    } finally {
+      setUploadingRevisionCompletePhoto(false)
+      if (event.target) event.target.value = ''
     }
   }
 
@@ -1196,44 +1570,20 @@ export default function TaskDetailPage() {
     setPaymentStatus(null)
 
     try {
-      // Fetch service fee from platform settings
-      let serviceFee = 2 // Default €2
-      const { data: settings } = await supabase
-        .from('platform_settings')
-        .select('key, value')
-        .eq('key', 'tasker_service_fee')
-        .single()
-      
-      if (settings?.value) {
-        serviceFee = parseFloat(settings.value) || 2
-      }
-
       const taskId = task.id
-      const baseAmount = paymentAmount
-      const totalAmount = baseAmount + serviceFee // Add service fee to payment
 
-      const payload = {
-        amount: Math.round(totalAmount * 100), // Total = budget + service fee (in cents)
-        currency: 'EUR',
-        payment_method_types: ['card', 'multibanco'],
-        return_url: `${window.location.origin}/tasks/${taskId}?payment=success`,
-        merchant_order_id: `payment-${taskId}-${Date.now()}`,
-        request_id: `req_${Date.now()}`, // REQUIRED: unique per request
-        metadata: {
-          task_id: taskId,
-          user_id: user.id,
-          customer_email: user.email,
-          base_amount: baseAmount,
-          service_fee: serviceFee,
-        },
-      }
-
-      const response = await fetch('/api/airwallex/create-payment', {
+      const { data: { session } } = await supabase.auth.getSession()
+      const response = await fetch('/api/payments/create-checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          taskId,
+          returnUrl: `${window.location.origin}/tasks/${taskId}?payment=success`,
+          cancelUrl: `${window.location.origin}/tasks/${taskId}?payment=cancelled`,
+        }),
       })
 
       const data = await response.json()
@@ -1244,39 +1594,38 @@ export default function TaskDetailPage() {
         throw new Error(errorMessage)
       }
 
-      console.log('Payment Intent:', data)
-      console.log('Full payment response:', JSON.stringify(data, null, 2))
+      console.log('Checkout created:', data)
 
-      // Update task with payment intent ID
-      try {
-        await supabase
-          .from('tasks')
-          .update({ 
-            payment_status: 'pending',
-            payment_intent_id: data.id 
-          })
-          .eq('id', task.id)
-      } catch (dbError) {
-        console.error('Error updating task payment status:', dbError)
+      // Update task with payment intent/session ID
+      const intentId = data.id || data.paymentIntentId || data.sessionId
+      if (intentId) {
+        try {
+          await supabase
+            .from('tasks')
+            .update({
+              payment_status: 'pending',
+              payment_intent_id: intentId,
+            })
+            .eq('id', task.id)
+        } catch (dbError) {
+          console.error('Error updating task payment status:', dbError)
+        }
       }
 
-      // Check if Airwallex returned a redirect URL (HPP or 3DS)
-      if (data.next_action?.url) {
-        // Redirect directly to Airwallex HPP
-        console.log('Redirecting to Airwallex HPP:', data.next_action.url)
-        window.location.href = data.next_action.url
-      } else {
-        // Fallback to our checkout page (for sandbox testing with simulate button)
-        // Use URLSearchParams to ensure proper encoding
+      // Redirect: use redirectUrl, next_action.url, or build our checkout page URL
+      const redirectUrl = data.redirectUrl || data.checkoutUrl || data.next_action?.url
+      if (redirectUrl) {
+        window.location.href = redirectUrl
+      } else if (intentId) {
         const params = new URLSearchParams()
         params.set('taskId', task.id)
-        params.set('amount', String(data.amount))
-        if (data.client_secret) {
-          params.set('clientSecret', data.client_secret)
+        params.set('amount', String(data.amount ?? ''))
+        if (data.clientSecret) {
+          params.set('clientSecret', data.clientSecret)
         }
-        const checkoutUrl = `/checkout/${data.id}?${params.toString()}`
-        console.log('Redirecting to checkout:', checkoutUrl)
-        window.location.href = checkoutUrl
+        window.location.href = `/checkout/${intentId}?${params.toString()}`
+      } else {
+        throw new Error('No redirect URL or checkout ID received')
       }
     } catch (error: any) {
       console.error('Payment error:', error)
@@ -1291,7 +1640,110 @@ export default function TaskDetailPage() {
     }
   }
 
-  const handleHelperMarkComplete = async () => {
+  const handleMarkRevisionComplete = async () => {
+    if (!user || !task || task.assigned_to !== user.id || task.status !== 'in_progress') {
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: 'Permission Denied',
+        message: 'Only the assigned helper can mark a revision as complete.',
+      })
+      return
+    }
+
+    if (submittingRevisionComplete) return
+
+    setSubmittingRevisionComplete(true)
+    try {
+      const trimmedMessage = revisionCompleteMessage.trim()
+      if (trimmedMessage) {
+        const contentCheck = checkForContactInfo(trimmedMessage)
+        if (!contentCheck.isClean) {
+          setModalState({
+            isOpen: true,
+            type: 'warning',
+            title: 'Contact Information Detected',
+            message: contentCheck.message,
+          })
+          return
+        }
+      }
+      const revisionCompleteUpdateMessage = trimmedMessage
+        ? `✅ Helper has completed the requested revision and marked the task ready for final review: ${trimmedMessage}`
+        : '✅ Helper has completed the requested revision and marked the task ready for final review.'
+
+      const { error: err1 } = await supabase
+        .from('task_progress_updates')
+        .insert({
+          task_id: task.id,
+          user_id: user.id,
+          message: revisionCompleteUpdateMessage,
+          image_url: revisionCompletePhoto || null,
+          update_type: 'revision_completed',
+        })
+
+      if (err1) {
+        if (err1.message?.includes('update_type') || err1.code === '42703') {
+          const { error: err2 } = await supabase
+            .from('task_progress_updates')
+            .insert({
+              task_id: task.id,
+              user_id: user.id,
+              message: revisionCompleteUpdateMessage,
+              image_url: revisionCompletePhoto || null,
+            })
+          if (err2) throw err2
+        } else {
+          throw err1
+        }
+      }
+
+      if (task.user?.email) {
+        try {
+          await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'revision_completed',
+              recipientEmail: task.user.email,
+              recipientName: task.user.full_name || task.user.email,
+              helperName: user.full_name || user.email || 'Helper',
+              taskTitle: task.title,
+              completionSummary: trimmedMessage
+                ? (trimmedMessage.length > 240 ? `${trimmedMessage.slice(0, 237)}...` : trimmedMessage)
+                : '',
+              taskId: task.id,
+            }),
+          })
+        } catch (emailError) {
+          console.error('Error sending revision completed email:', emailError)
+        }
+      }
+
+      await loadProgressUpdates()
+      await loadTask()
+      setRevisionCompletePhoto(null)
+      setRevisionCompleteMessage('')
+      setModalState({
+        isOpen: true,
+        type: 'success',
+        title: 'Revision Marked Complete',
+        message: 'The task owner has been notified by email and this action has been added to the task timeline.',
+      })
+    } catch (error: any) {
+      console.error('Error marking revision complete:', error)
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: error.message || 'Failed to mark revision as complete.',
+      })
+    } finally {
+      setSubmittingRevisionComplete(false)
+    }
+  }
+
+  const handleHelperMarkComplete = async (skipCompletionPhotoPrompt = false) => {
     if (!user || !task || task.assigned_to !== user.id) {
       setModalState({
         isOpen: true,
@@ -1302,6 +1754,24 @@ export default function TaskDetailPage() {
       return
     }
 
+    if (markingWorkComplete) return
+
+    const hasCompletionPhoto = Boolean(task.completion_photos && task.completion_photos.length > 0)
+    if (!skipCompletionPhotoPrompt && !hasCompletionPhoto) {
+      setModalState({
+        isOpen: true,
+        type: 'confirm',
+        title: 'Add Completion Photo?',
+        message: 'Before marking work complete, we recommend uploading at least one completion photo so the task owner can quickly review your work.\n\nYou can still continue without a photo.',
+        onConfirm: () => {
+          setModalState({ ...modalState, isOpen: false })
+          handleHelperMarkComplete(true)
+        },
+      })
+      return
+    }
+
+    setMarkingWorkComplete(true)
     try {
       // Add a progress update to notify the task owner
       // Try with update_type first, fall back without it if column doesn't exist
@@ -1372,6 +1842,8 @@ export default function TaskDetailPage() {
         title: 'Error',
         message: error.message || 'Failed to mark work as complete.',
       })
+    } finally {
+      setMarkingWorkComplete(false)
     }
   }
 
@@ -1707,6 +2179,31 @@ export default function TaskDetailPage() {
   const hasBid = user && bids.some(bid => bid.user_id === user.id)
   const userHasHelperRole = userProfile?.is_helper === true
   const canBid = user && userHasHelperRole && !isTaskOwner && task.status === 'open' && !hasBid
+  const helperHasMarkedComplete =
+    Boolean(user && task.assigned_to === user.id) &&
+    progressUpdates.some((update: any) =>
+      update.user_id === user?.id &&
+      typeof update.message === 'string' &&
+      update.message.includes('Helper has marked the work as COMPLETE')
+    )
+  const latestRevisionRequestTime = progressUpdates.reduce((latest: number, update: any) => {
+    const isRevisionRequested =
+      update?.update_type === 'revision_requested' ||
+      (typeof update?.message === 'string' && update.message.startsWith('🔁 Revision requested by task owner'))
+    if (!isRevisionRequested || !update?.created_at) return latest
+    const ts = new Date(update.created_at).getTime()
+    return Number.isFinite(ts) ? Math.max(latest, ts) : latest
+  }, 0)
+  const latestRevisionCompletedTime = progressUpdates.reduce((latest: number, update: any) => {
+    const isRevisionCompleted =
+      update?.update_type === 'revision_completed' ||
+      (typeof update?.message === 'string' && update.message.includes('completed the requested revision'))
+    if (!isRevisionCompleted || !update?.created_at) return latest
+    const ts = new Date(update.created_at).getTime()
+    return Number.isFinite(ts) ? Math.max(latest, ts) : latest
+  }, 0)
+  const hasOutstandingRevisionRequest =
+    latestRevisionRequestTime > 0 && latestRevisionCompletedTime < latestRevisionRequestTime
   
   // Helper function to check if user can see bid details
   const canSeeBidDetails = (bid: Bid) => {
@@ -1907,7 +2404,7 @@ export default function TaskDetailPage() {
         </div>
 
         {user && task.user && task.created_by !== user.id && (
-          <div className="mb-6">
+          <div className="mt-2 mb-6">
             <button
               onClick={() => handleStartConversation(task.created_by)}
               className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
@@ -2023,7 +2520,7 @@ export default function TaskDetailPage() {
                   <span className={`inline-flex px-2 py-1 text-xs font-medium rounded ${
                     task.payout_status === 'completed' || task.payout_status === 'simulated'
                       ? 'bg-green-100 text-green-800'
-                      : task.payout_status === 'processing'
+                      : task.payout_status === 'processing' || task.payout_status === 'pending'
                       ? 'bg-yellow-100 text-yellow-800'
                       : task.payout_status === 'failed'
                       ? 'bg-red-100 text-red-800'
@@ -2031,7 +2528,7 @@ export default function TaskDetailPage() {
                   }`}>
                     {task.payout_status === 'completed' || task.payout_status === 'simulated' 
                       ? 'Payout Sent' 
-                      : task.payout_status === 'processing'
+                      : task.payout_status === 'processing' || task.payout_status === 'pending'
                       ? 'Processing'
                       : task.payout_status === 'failed'
                       ? 'Payout Failed'
@@ -2085,39 +2582,52 @@ export default function TaskDetailPage() {
           </div>
         )}
 
-        {/* Helper actions - Mark as finished, Cancel task and upload completion photos */}
-        {user && task.assigned_to === user.id && task.status === 'in_progress' && (
-          <div className="mb-6">
-            {/* Mark Work Complete Section */}
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-              <h3 className="text-lg font-semibold text-green-900 mb-2">Ready to Submit Your Work?</h3>
-              <p className="text-sm text-green-700 mb-3">
-                Once you mark this task as completed, the task owner needs to confirm the completion. Then both of you can leave reviews for each other, and your payment will be processed.
-              </p>
-              <button
-                onClick={handleHelperMarkComplete}
-                className="bg-green-600 text-white px-6 py-2 rounded-md text-sm font-semibold hover:bg-green-700"
-              >
-                ✓ Mark Work as Complete
-              </button>
-            </div>
-            
-            <div className="flex flex-wrap gap-2 sm:gap-3">
-              <button
-                onClick={handleCancelTask}
-                className="bg-orange-600 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium hover:bg-orange-700 flex-1 sm:flex-none min-w-[120px]"
-              >
-                Cancel Task
-              </button>
-              <label className="cursor-pointer bg-primary-600 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium hover:bg-primary-700 flex-1 sm:flex-none min-w-[120px] text-center">
+        {isTaskOwner && task.status === 'in_progress' && task.assigned_to && (
+          <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-amber-900 mb-2">Request Revision</h3>
+            <p className="text-sm text-amber-800 mb-3">
+              If any part needs to be corrected, send clear feedback to the helper. They will be notified by email.
+            </p>
+            <textarea
+              value={revisionRequestMessage}
+              onChange={(e) => setRevisionRequestMessage(e.target.value)}
+              placeholder="Describe what still needs to be fixed..."
+              rows={3}
+              className="w-full px-3 py-2 border border-amber-300 rounded-md focus:outline-none focus:ring-amber-500 focus:border-amber-500 mb-3"
+            />
+            {revisionRequestPhoto && (
+              <div className="mb-3 relative inline-block">
+                <img
+                  src={revisionRequestPhoto}
+                  alt="Revision request preview"
+                  className="max-w-xs max-h-32 rounded-lg object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => setRevisionRequestPhoto(null)}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
+              <label className="cursor-pointer bg-amber-600 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium hover:bg-amber-700 min-w-[140px] text-center">
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={handleUploadCompletionPhoto}
+                  onChange={handleRevisionRequestPhotoUpload}
                   className="hidden"
                 />
-                Upload Completion Photo
+                {uploadingRevisionRequestPhoto ? 'Uploading...' : 'Attach Photo'}
               </label>
+              <button
+                onClick={handleRequestRevision}
+                disabled={submittingRevisionRequest || uploadingRevisionRequestPhoto || (!revisionRequestMessage.trim() && !revisionRequestPhoto)}
+                className="bg-amber-700 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submittingRevisionRequest ? 'Sending...' : 'Send Revision Request'}
+              </button>
             </div>
           </div>
         )}
@@ -2125,7 +2635,8 @@ export default function TaskDetailPage() {
         {/* Progress Updates - Only show for in_progress tasks */}
         {task.status === 'in_progress' && (
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Progress Updates</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Progress Updates</h3>
+            <p className="text-sm text-gray-600 mb-4">The Tasker will be automatically advised of any new update.</p>
             
             {/* Add Progress Update Form - Only for assigned helper */}
             {user && task.assigned_to === user.id && (
@@ -2182,43 +2693,183 @@ export default function TaskDetailPage() {
             {/* Display Progress Updates */}
             {progressUpdates.length > 0 ? (
               <div className="space-y-4">
-                {progressUpdates.map((update: any) => (
-                  <div key={update.id} className="bg-white border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3 mb-2">
-                      {update.user?.avatar_url && (
-                        <img
-                          src={update.user.avatar_url}
-                          alt={update.user.full_name || 'User'}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                      )}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-gray-900">
-                            {update.user?.full_name || 'Helper'}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {format(new Date(update.created_at), 'MMM d, yyyy h:mm a')}
-                          </span>
-                        </div>
-                        {update.message && (
-                          <p className="text-gray-700 mb-2">{update.message}</p>
-                        )}
-                        {update.image_url && (
+                {progressUpdates.map((update: any) => {
+                  const isRevisionRequested =
+                    update?.update_type === 'revision_requested' ||
+                    (typeof update?.message === 'string' && update.message.startsWith('🔁 Revision requested by task owner'))
+                  const isRevisionCompleted =
+                    update?.update_type === 'revision_completed' ||
+                    (typeof update?.message === 'string' && update.message.includes('completed the requested revision'))
+                  const isWorkCompleteUpdate =
+                    update?.update_type === 'work_complete' ||
+                    (typeof update?.message === 'string' && update.message.includes('Helper has marked the work as COMPLETE'))
+                  const completionPhotoForTasker =
+                    isTaskOwner && isWorkCompleteUpdate && task.completion_photos && task.completion_photos.length > 0
+                      ? task.completion_photos[0]
+                      : null
+                  const updateTimestamp = update?.created_at ? new Date(update.created_at).getTime() : 0
+                  const showRevisionPendingActionCard =
+                    Boolean(isHelper) &&
+                    hasOutstandingRevisionRequest &&
+                    isRevisionRequested &&
+                    updateTimestamp === latestRevisionRequestTime
+                  return (
+                  <div key={update.id} className="space-y-3">
+                    <div className={`bg-white border rounded-lg p-4 ${isRevisionRequested ? 'border-amber-300 bg-amber-50/40' : 'border-gray-200'}`}>
+                      <div className="flex items-start gap-3 mb-2">
+                        {update.user?.avatar_url && (
                           <img
-                            src={update.image_url}
-                            alt="Progress update"
-                            className="max-w-full max-h-64 rounded-lg object-cover border border-gray-200"
+                            src={update.user.avatar_url}
+                            alt={update.user.full_name || 'User'}
+                            className="w-8 h-8 rounded-full object-cover"
                           />
                         )}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-gray-900">
+                              {update.user?.full_name || 'Helper'}
+                            </span>
+                            {isRevisionRequested && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                                Revision Requested
+                              </span>
+                            )}
+                            {isRevisionCompleted && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-green-100 text-green-800 border border-green-200">
+                                Revision Completed
+                              </span>
+                            )}
+                            <span className="text-xs text-gray-500">
+                              {format(new Date(update.created_at), 'MMM d, yyyy h:mm a')}
+                            </span>
+                          </div>
+                          {update.message && (
+                            <p className="text-gray-700 mb-2">{update.message}</p>
+                          )}
+                          {update.image_url && (
+                            <img
+                              src={update.image_url}
+                              alt="Progress update"
+                              className="max-w-full max-h-64 rounded-lg object-cover border border-gray-200"
+                            />
+                          )}
+                          {completionPhotoForTasker && (
+                            <div className="mt-2">
+                              <p className="text-xs font-medium text-gray-600 mb-1">Completion photo</p>
+                              <img
+                                src={completionPhotoForTasker.image_url}
+                                alt="Completion photo"
+                                className="max-w-full max-h-64 rounded-lg object-cover border border-gray-200"
+                              />
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
+                    {showRevisionPendingActionCard && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                        <h4 className="text-sm font-semibold text-amber-900 mb-2">Revision Request Pending</h4>
+                        <p className="text-xs text-amber-800 mb-3">
+                          Use this after addressing the latest revision request so the task owner receives a dedicated notification.
+                        </p>
+                        <textarea
+                          value={revisionCompleteMessage}
+                          onChange={(e) => setRevisionCompleteMessage(e.target.value)}
+                          placeholder="Explain what you fixed for this revision..."
+                          rows={3}
+                          className="w-full px-3 py-2 border border-amber-300 rounded-md focus:outline-none focus:ring-amber-500 focus:border-amber-500 mb-3"
+                        />
+                        {revisionCompletePhoto && (
+                          <div className="mb-3 relative inline-block">
+                            <img
+                              src={revisionCompletePhoto}
+                              alt="Revision completion preview"
+                              className="max-w-xs max-h-32 rounded-lg object-cover border border-amber-200"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setRevisionCompletePhoto(null)}
+                              className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        )}
+                        <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
+                          <label className="cursor-pointer bg-amber-600 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium hover:bg-amber-700 min-w-[140px] text-center">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleRevisionCompletePhotoUpload}
+                              disabled={uploadingRevisionCompletePhoto}
+                              className="hidden"
+                            />
+                            {uploadingRevisionCompletePhoto ? 'Uploading...' : 'Add Photo'}
+                          </label>
+                          <button
+                            onClick={handleMarkRevisionComplete}
+                            disabled={submittingRevisionComplete || uploadingRevisionCompletePhoto}
+                            className="bg-amber-700 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-amber-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                          >
+                            {submittingRevisionComplete ? 'Sending...' : 'Mark Revision Complete'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ))}
+                )})}
               </div>
             ) : (
               <p className="text-gray-500 text-center py-4">No progress updates yet.</p>
             )}
+          </div>
+        )}
+
+        {/* Helper actions - shown after Progress Updates */}
+        {user && task.assigned_to === user.id && task.status === 'in_progress' && (
+          <div className="mb-6">
+            <div className="flex flex-wrap gap-2 sm:gap-3 mb-4">
+              <button
+                onClick={handleCancelTask}
+                className="bg-orange-600 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium hover:bg-orange-700 flex-1 sm:flex-none min-w-[120px]"
+              >
+                Cancel Task
+              </button>
+              <label className="cursor-pointer bg-primary-600 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium hover:bg-primary-700 flex-1 sm:flex-none min-w-[120px] text-center">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleUploadCompletionPhoto}
+                  className="hidden"
+                />
+                Upload Completion Photo
+              </label>
+            </div>
+
+            {/* Completion action shown below progress updates as requested */}
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-green-900 mb-2">Ready to Submit Your Work?</h3>
+              <p className="text-sm text-green-700 mb-3">
+                Once you mark this task as completed, the task owner needs to confirm the completion. Then both of you can leave reviews for each other, and your payment will be processed.
+              </p>
+              <p className="text-xs text-green-800 mb-3">
+                Tip: Upload at least one completion photo before marking work as complete.
+              </p>
+              {helperHasMarkedComplete ? (
+                <div className="inline-flex items-center rounded-md bg-green-100 text-green-800 px-4 py-2 text-sm font-semibold">
+                  ✅ Work marked complete. Tasker notified.
+                </div>
+              ) : (
+                <button
+                  onClick={handleHelperMarkComplete}
+                  disabled={markingWorkComplete}
+                  className="bg-green-600 text-white px-6 py-2 rounded-md text-sm font-semibold hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {markingWorkComplete ? 'Marking as Complete...' : 'Mark Work as Complete'}
+                </button>
+              )}
+            </div>
+
           </div>
         )}
 
@@ -2242,6 +2893,7 @@ export default function TaskDetailPage() {
             </div>
           </div>
         )}
+
       </div>
 
       {user && !isTaskOwner && task.status === 'open' && !hasBid && !userHasHelperRole && (
@@ -2307,8 +2959,13 @@ export default function TaskDetailPage() {
               disabled={submittingBid}
               className="w-full bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700 disabled:opacity-50"
             >
-              {submittingBid ? 'Submitting...' : 'Submit Bid'}
+              {submittingBid ? 'Submitting bid...' : 'Submit Bid'}
             </button>
+            {(submittingBid || bidSubmitStatus) && (
+              <p className="text-xs text-blue-700 text-center" aria-live="polite">
+                {bidSubmitStatus || 'Submitting your bid...'}
+              </p>
+            )}
             <p className="text-xs text-gray-500 text-center">
               Tasker sets price at their own risk — final price is fixed once accepted.
             </p>
@@ -2320,6 +2977,11 @@ export default function TaskDetailPage() {
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
           Bids ({bids.length})
         </h2>
+        {acceptBidStatus && (
+          <div className="mb-4 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800" aria-live="polite">
+            {acceptBidStatus}
+          </div>
+        )}
         {bids.length === 0 ? (
           <p className="text-gray-500 text-center py-8">No bids yet. Be the first to bid!</p>
         ) : (
@@ -2630,9 +3292,10 @@ export default function TaskDetailPage() {
                     {isTaskOwner && task.status === 'open' && bid.status === 'pending' && (
                       <button
                         onClick={() => handleAcceptBid(bid.id)}
-                        className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700"
+                        disabled={Boolean(acceptingBidId)}
+                        className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
                       >
-                        Accept Bid
+                        {acceptingBidId === bid.id ? 'Accepting...' : acceptingBidId ? 'Please wait...' : 'Accept Bid'}
                       </button>
                     )}
                     {canSeeBidDetails(bid) && user && bid.user_id && (
@@ -2842,16 +3505,16 @@ export default function TaskDetailPage() {
 
             {/* Description */}
             <p className="text-sm text-gray-600 text-center mb-6">
-              Once you mark this task as completed, the helper will be notified. Then both of you can leave reviews for each other. 
-              Reviews help build trust and make it easier for everyone to find great helpers and taskers.
+              Once you mark this task as completed, the helper will be notified and payout processing will start. 
+              Reviews are optional and can be left afterward by both of you.
             </p>
 
             {/* How Reviews Work */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
               <h4 className="text-sm font-semibold text-blue-900 mb-2">How Reviews Work</h4>
               <p className="text-xs text-blue-800 leading-relaxed">
-                You, as the task owner, leave your review first. After that, your helper will be able to share their review of you. 
-                Simple, fair, and helps the whole community!
+                You, as the task owner, leave your review first. After that, your helper can share their review of you.
+                Reviews are optional, but they help build trust and help others choose reliable people.
               </p>
             </div>
 
@@ -2860,6 +3523,35 @@ export default function TaskDetailPage() {
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
                 <p className="text-sm font-medium text-gray-900 mb-1">Task:</p>
                 <p className="text-sm text-gray-700">{task.title}</p>
+              </div>
+            )}
+
+            {/* Payment Status */}
+            {task && (
+              <div
+                className={`rounded-lg p-3 mb-6 border ${
+                  task.payment_status === 'paid' || paymentStatus === 'paid'
+                    ? 'bg-green-50 border-green-200'
+                    : task.payment_status === 'pending' || paymentStatus === 'processing'
+                    ? 'bg-yellow-50 border-yellow-200'
+                    : 'bg-red-50 border-red-200'
+                }`}
+              >
+                <p
+                  className={`text-sm font-semibold ${
+                    task.payment_status === 'paid' || paymentStatus === 'paid'
+                      ? 'text-green-800'
+                      : task.payment_status === 'pending' || paymentStatus === 'processing'
+                      ? 'text-yellow-800'
+                      : 'text-red-800'
+                  }`}
+                >
+                  {task.payment_status === 'paid' || paymentStatus === 'paid'
+                    ? 'Payment status: Paid'
+                    : task.payment_status === 'pending' || paymentStatus === 'processing'
+                    ? 'Payment status: In progress'
+                    : 'Payment status: To be paid'}
+                </p>
               </div>
             )}
 

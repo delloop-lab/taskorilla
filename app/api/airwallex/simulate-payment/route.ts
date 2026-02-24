@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireAirwallexEnabled } from '@/services/payments/airwallex-gate'
 
 // Use service role key to bypass RLS for server-side updates
 // IMPORTANT: SUPABASE_SERVICE_ROLE_KEY must be set in .env.local for this to work!
@@ -27,6 +28,9 @@ if (!serviceRoleKey) {
  * For sandbox testing, we skip that and directly update our database.
  */
 export async function POST(req: Request) {
+  const gate = requireAirwallexEnabled()
+  if (gate) return gate
+
   console.log('[Simulate Payment] === Starting simulation ===')
   
   try {

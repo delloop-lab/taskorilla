@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Airwallex API Test</title>
+  <title>Payment API Test</title>
 </head>
 <body>
-  <h1>Test Airwallex API</h1>
+  <h1>Test Payment API</h1>
   <div>
     <label>Email: <input type="text" id="email" value="test@example.com"></label><br>
     <label>First Name: <input type="text" id="firstName" value="Lou"></label><br>
@@ -24,7 +24,7 @@
         last_name: document.getElementById('lastName').value
       };
       try {
-        const response = await fetch('http://localhost:3000/api/airwallex/create-customer', {
+        const response = await fetch('/api/payments/create-customer', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)

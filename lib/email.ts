@@ -74,6 +74,13 @@ const ensureTransporter = () => {
   return transporter
 }
 
+const looksLikeEmail = (value?: string) => Boolean(value && /@/.test(value))
+const safeName = (value: string | undefined | null, fallback: string) => {
+  const trimmed = (value || '').trim()
+  if (!trimmed || looksLikeEmail(trimmed)) return fallback
+  return trimmed
+}
+
 // Email templates
 export async function sendNewBidNotification(
   taskOwnerEmail: string,
@@ -85,11 +92,13 @@ export async function sendNewBidNotification(
 ): Promise<{ result: any; htmlContent: string }> {
   try {
     const mailTransporter = ensureTransporter()
+    const safeTaskOwnerName = safeName(taskOwnerName, 'Task Owner')
+    const safeBidderName = safeName(bidderName, 'Helper')
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2563eb;">New Bid Received!</h2>
-        <p>Hi ${taskOwnerName},</p>
-        <p><strong>${bidderName}</strong> has placed a bid of <strong>$${bidAmount}</strong> on your task:</p>
+        <p>Hi ${safeTaskOwnerName},</p>
+        <p><strong>${safeBidderName}</strong> has placed a bid of <strong>$${bidAmount}</strong> on your task:</p>
         <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">${taskTitle}</h3>
         </div>
@@ -124,11 +133,13 @@ export async function sendBidAcceptedNotification(
 ): Promise<{ result: any; htmlContent: string }> {
   try {
     const mailTransporter = ensureTransporter()
+    const safeBidderName = safeName(bidderName, 'Helper')
+    const safeTaskOwnerName = safeName(taskOwnerName, 'Task Owner')
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #10b981;">Congratulations!</h2>
-        <p>Hi ${bidderName},</p>
-        <p><strong>${taskOwnerName}</strong> has accepted your bid of <strong>$${bidAmount}</strong> for:</p>
+        <p>Hi ${safeBidderName},</p>
+        <p><strong>${safeTaskOwnerName}</strong> has accepted your bid of <strong>$${bidAmount}</strong> for:</p>
         <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">${taskTitle}</h3>
         </div>
@@ -162,10 +173,11 @@ export async function sendBidRejectedNotification(
 ): Promise<{ result: any; htmlContent: string }> {
   try {
     const mailTransporter = ensureTransporter()
+    const safeBidderName = safeName(bidderName, 'Helper')
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #6b7280;">Bid Update</h2>
-        <p>Hi ${bidderName},</p>
+        <p>Hi ${safeBidderName},</p>
         <p>Unfortunately, your bid for <strong>"${taskTitle}"</strong> was not selected.</p>
         <p>Don't worry - there are plenty of other tasks available!</p>
         <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks" 
@@ -198,11 +210,13 @@ export async function sendNewMessageNotification(
 ): Promise<{ result: any; htmlContent: string }> {
   try {
     const mailTransporter = ensureTransporter()
+    const safeRecipientName = safeName(recipientName, 'there')
+    const safeSenderName = safeName(senderName, 'User')
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2563eb;">New Message</h2>
-        <p>Hi ${recipientName},</p>
-        <p>You have a new message from <strong>${senderName}</strong>:</p>
+        <p>Hi ${safeRecipientName},</p>
+        <p>You have a new message from <strong>${safeSenderName}</strong>:</p>
         <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <p style="margin: 0; font-style: italic;">"${messagePreview}"</p>
         </div>
@@ -216,7 +230,7 @@ export async function sendNewMessageNotification(
     const result = await mailTransporter.sendMail({
       from: getFromAddress(),
       to: recipientEmail,
-      subject: `New message from ${senderName}`,
+      subject: `New message from ${safeSenderName}`,
       html: htmlContent,
     })
 
@@ -236,11 +250,13 @@ export async function sendTaskCompletedNotification(
 ): Promise<{ result: any; htmlContent: string }> {
   try {
     const mailTransporter = ensureTransporter()
+    const safeTaskOwnerName = safeName(taskOwnerName, 'Task Owner')
+    const safeTaskerName = safeName(taskerName, 'Helper')
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #10b981;">Task Completed!</h2>
-        <p>Hi ${taskOwnerName},</p>
-        <p><strong>${taskerName}</strong> has marked the following task as completed:</p>
+        <p>Hi ${safeTaskOwnerName},</p>
+        <p><strong>${safeTaskerName}</strong> has marked the following task as completed:</p>
         <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">${taskTitle}</h3>
         </div>
@@ -266,6 +282,47 @@ export async function sendTaskCompletedNotification(
   }
 }
 
+export async function sendHelperFinishedNotification(
+  recipientEmail: string,
+  recipientName: string,
+  helperName: string,
+  taskTitle: string,
+  taskId: string
+): Promise<{ result: any; htmlContent: string }> {
+  try {
+    const mailTransporter = ensureTransporter()
+    const safeRecipientName = safeName(recipientName, 'Task Owner')
+    const safeHelperName = safeName(helperName, 'Helper')
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #10b981;">Work Ready for Review</h2>
+        <p>Hi ${safeRecipientName},</p>
+        <p><strong>${safeHelperName}</strong> has marked this task as complete and ready for your review:</p>
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">${taskTitle}</h3>
+        </div>
+        <p>Please review the work and confirm completion to release payment.</p>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks/${taskId}" 
+           style="display: inline-block; background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
+          Review Task
+        </a>
+      </div>
+    `
+
+    const result = await mailTransporter.sendMail({
+      from: getFromAddress(),
+      to: recipientEmail,
+      subject: `Task Completed: "${taskTitle}"`,
+      html: htmlContent,
+    })
+
+    return { result, htmlContent }
+  } catch (error: any) {
+    console.error('Error sending helper finished notification:', error)
+    throw new Error(`Failed to send helper finished notification: ${error.message || 'Unknown error'}`)
+  }
+}
+
 export async function sendPayoutInitiatedNotification(
   recipientEmail: string,
   recipientName: string,
@@ -276,13 +333,13 @@ export async function sendPayoutInitiatedNotification(
 ): Promise<{ result: any; htmlContent: string }> {
   try {
     const mailTransporter = ensureTransporter()
+    const safeRecipientName = safeName(recipientName, 'Helper')
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #10b981;">💰 Payout Initiated!</h2>
-        <p>Hi ${recipientName},</p>
-        <p>Great news! The task owner has confirmed completion of your work, and your payout has been initiated.</p>
+        <p>Hi ${safeRecipientName},</p>
+        <p>Great news! The task owner has confirmed completion of your work, and your payout has been initiated for the task: <strong>${taskTitle}</strong></p>
         <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #86efac;">
-          <h3 style="margin-top: 0; color: #166534;">${taskTitle}</h3>
           <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
             <tr>
               <td style="padding: 8px 0; color: #666;">Payout Amount:</td>
@@ -294,7 +351,7 @@ export async function sendPayoutInitiatedNotification(
             </tr>
           </table>
         </div>
-        <p style="color: #666; font-size: 14px;">The payout will be transferred to your registered bank account within 1-3 business days.</p>
+        <p style="color: #666; font-size: 14px;">The payout will be made to your PayPal email address within 1-3 business days, usually sooner.</p>
         <p>Don't forget to leave a review for the task owner!</p>
         <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks/${taskId}" 
            style="display: inline-block; background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
@@ -327,11 +384,13 @@ export async function sendTaskCancelledNotification(
 ): Promise<{ result: any; htmlContent: string }> {
   try {
     const mailTransporter = ensureTransporter()
+    const safeTaskOwnerName = safeName(taskOwnerName, 'Task Owner')
+    const safeTaskerName = safeName(taskerName, 'Helper')
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #f59e0b;">Task Cancelled</h2>
-        <p>Hi ${taskOwnerName},</p>
-        <p><strong>${taskerName}</strong> has cancelled the following task:</p>
+        <p>Hi ${safeTaskOwnerName},</p>
+        <p><strong>${safeTaskerName}</strong> has cancelled the following task:</p>
         <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">${taskTitle}</h3>
         </div>
@@ -354,6 +413,134 @@ export async function sendTaskCancelledNotification(
   } catch (error) {
     console.error('Error sending task cancelled notification:', error)
     throw error
+  }
+}
+
+export async function sendTaskProgressUpdateNotification(
+  taskOwnerEmail: string,
+  taskOwnerName: string,
+  helperName: string,
+  taskTitle: string,
+  progressPreview: string,
+  taskId: string
+): Promise<{ result: any; htmlContent: string }> {
+  try {
+    const mailTransporter = ensureTransporter()
+    const safeTaskOwnerName = safeName(taskOwnerName, 'Task Owner')
+    const safeHelperName = safeName(helperName, 'Helper')
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2563eb;">New Task Progress Update</h2>
+        <p>Hi ${safeTaskOwnerName},</p>
+        <p><strong>${safeHelperName}</strong> has posted a new update on your task:</p>
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">${taskTitle}</h3>
+          <p style="margin: 12px 0 0 0; color: #374151;">${progressPreview}</p>
+        </div>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks/${taskId}" 
+           style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
+          View Task Update
+        </a>
+      </div>
+    `
+
+    const result = await mailTransporter.sendMail({
+      from: getFromAddress(),
+      to: taskOwnerEmail,
+      subject: `New update on "${taskTitle}"`,
+      html: htmlContent,
+    })
+
+    return { result, htmlContent }
+  } catch (error: any) {
+    console.error('Error sending task progress update notification:', error)
+    throw new Error(`Failed to send task progress update notification: ${error.message || 'Unknown error'}`)
+  }
+}
+
+export async function sendRevisionRequestedNotification(
+  recipientEmail: string,
+  recipientName: string,
+  taskOwnerName: string,
+  taskTitle: string,
+  requestPreview: string,
+  taskId: string
+): Promise<{ result: any; htmlContent: string }> {
+  try {
+    const mailTransporter = ensureTransporter()
+    const safeRecipientName = safeName(recipientName, 'Helper')
+    const safeTaskOwnerName = safeName(taskOwnerName, 'Task Owner')
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #b45309;">Revision Requested</h2>
+        <p>Hi ${safeRecipientName},</p>
+        <p><strong>${safeTaskOwnerName}</strong> has requested a revision on this task:</p>
+        <div style="background-color: #fffbeb; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #fcd34d;">
+          <h3 style="margin-top: 0;">${taskTitle}</h3>
+          <p style="margin: 12px 0 0 0; color: #374151;">${requestPreview}</p>
+        </div>
+        <p>Please review the request and post an updated progress update when complete.</p>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks/${taskId}" 
+           style="display: inline-block; background-color: #b45309; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
+          View Revision Request
+        </a>
+      </div>
+    `
+
+    const result = await mailTransporter.sendMail({
+      from: getFromAddress(),
+      to: recipientEmail,
+      subject: `Revision Requested: "${taskTitle}"`,
+      html: htmlContent,
+    })
+
+    return { result, htmlContent }
+  } catch (error: any) {
+    console.error('Error sending revision request notification:', error)
+    throw new Error(`Failed to send revision request notification: ${error.message || 'Unknown error'}`)
+  }
+}
+
+export async function sendRevisionCompletedNotification(
+  recipientEmail: string,
+  recipientName: string,
+  helperName: string,
+  taskTitle: string,
+  completionSummary: string,
+  taskId: string
+): Promise<{ result: any; htmlContent: string }> {
+  try {
+    const mailTransporter = ensureTransporter()
+    const safeRecipientName = safeName(recipientName, 'Task Owner')
+    const safeHelperName = safeName(helperName, 'Helper')
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #047857;">Revision Completed</h2>
+        <p>Hi ${safeRecipientName},</p>
+        <p><strong>${safeHelperName}</strong> has completed the requested revision and marked the task ready for your final review:</p>
+        <div style="background-color: #ecfdf5; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #86efac;">
+          <h3 style="margin-top: 0;">${taskTitle}</h3>
+          ${completionSummary ? `<p style="margin: 12px 0 0 0; color: #374151;">${completionSummary}</p>` : ''}
+        </div>
+        <p>Please review the latest update and confirm completion when satisfied.</p>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks/${taskId}" 
+           style="display: inline-block; background-color: #047857; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
+          Review Task
+        </a>
+      </div>
+    `
+
+    const result = await mailTransporter.sendMail({
+      from: getFromAddress(),
+      to: recipientEmail,
+      subject: `Revision Completed: "${taskTitle}"`,
+      html: htmlContent,
+    })
+
+    return { result, htmlContent }
+  } catch (error: any) {
+    console.error('Error sending revision completed notification:', error)
+    throw new Error(`Failed to send revision completed notification: ${error.message || 'Unknown error'}`)
   }
 }
 

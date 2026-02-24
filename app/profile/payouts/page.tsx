@@ -28,10 +28,10 @@ export default function PayoutsPage() {
 
       setUser(authUser)
 
-      // Load profile to check IBAN
+      // Load profile to check IBAN / PayPal email
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('iban, full_name')
+        .select('iban, paypal_email, full_name')
         .eq('id', authUser.id)
         .single()
 
@@ -97,28 +97,55 @@ export default function PayoutsPage() {
         </div>
       )}
 
-      {/* IBAN Warning */}
-      {!profile?.iban && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-          <div className="flex items-start gap-3">
-            <svg className="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">IBAN Required</h3>
-              <p className="text-sm text-gray-700 mb-3">
-                You need to add your IBAN to receive payouts. Without an IBAN, we cannot transfer funds to your account.
-              </p>
-              <a
-                href="/profile"
-                className="inline-block px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700"
-              >
-                Add IBAN to Profile
-              </a>
+      {/* Payout method warning */}
+      {(() => {
+        const provider = process.env.NEXT_PUBLIC_PAYMENT_PROVIDER || 'airwallex'
+        const needsPaypal = provider === 'paypal' && !profile?.paypal_email
+        const needsIban = provider === 'airwallex' && !profile?.iban
+        const needsAny = provider !== 'paypal' && provider !== 'airwallex' && !profile?.iban && !profile?.paypal_email
+
+        if (!needsPaypal && !needsIban && !needsAny) return null
+
+        const message = needsPaypal
+          ? 'Add your PayPal email address to your profile to receive payouts.'
+          : needsIban
+          ? 'Add your IBAN to your profile to receive bank transfer payouts.'
+          : 'Add your payment details to your profile to receive payouts.'
+
+        return (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <svg className="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Payout Details Required</h3>
+                <p className="text-sm text-gray-700 mb-3">
+                  {message}
+                </p>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <a
+                    href="/profile"
+                    className="inline-block px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700"
+                  >
+                    Update Profile
+                  </a>
+                  {needsPaypal && (
+                    <a
+                      href="https://www.paypal.com/signup"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:text-blue-800 underline"
+                    >
+                      Don&apos;t have PayPal? Sign up free
+                    </a>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Payouts List */}
       {payouts.length === 0 ? (

@@ -124,7 +124,7 @@
     "category": "Guia de Pagamento",
     "type": "faq",
     "title": "Como recebo o pagamento?",
-    "content": "Adicione a sua conta bancária nas definições. Após a confirmação da tarefa, transferimos os fundos automaticamente.",
+    "content": "Adicione o seu email PayPal. Após a confirmação da tarefa, transferimos os fundos automaticamente. Ainda não tem conta PayPal? Crie uma [aqui](https://www.paypal.com/signup) e fique operacional em minutos.",
     "tags": ["receber pagamento", "receber dinheiro", "levantamento", "pagamento"]
   },
   {
@@ -134,14 +134,6 @@
     "title": "Como me mantenho seguro ao encontrar Ajudantes ou Requisitantes?",
     "content": "Encontre-se em espaços públicos quando possível, verifique os perfis e nunca partilhe informações pessoais desnecessárias.",
     "tags": ["segurança", "encontro", "proteção", "práticas seguras"]
-  },
-  {
-    "id": "safety-guide-2",
-    "category": "Guia de Segurança",
-    "type": "faq",
-    "title": "E se tiver um problema com um Ajudante ou Requisitante?",
-    "content": "Reporte o problema através da plataforma. Levamos a segurança a sério e ajudaremos a resolver.",
-    "tags": ["reportar", "problema", "questão", "queixa", "disputa"]
   },
   {
     "id": "safety-guide-3",
@@ -228,7 +220,7 @@
     "category": "Guia de Pagamento",
     "type": "guide",
     "title": "Compreender os Pagamentos no Taskorilla",
-    "content": "**Passo 1: Adicionar o Seu Método de Pagamento**\n\nVá a 'Definições' > 'Informações de Pagamento'. Adicione o seu número IBAN. Isto é obrigatório para receber pagamentos como Ajudante ou Profissional.\n\n**Passo 2: Compreender as Taxas**\n\nO Taskorilla cobra uma pequena taxa de serviço em cada transação. Desde dezembro de 2025, as taxas são €2 por tarefa do requisitante e 10% do Ajudante/Profissional.\n\n**Passo 3: Fazer ou Receber Pagamento**\n\n**Para Requisitantes:** Quando aceita uma proposta, será solicitado a pagar de forma segura através da nossa plataforma. Os fundos são retidos até a tarefa ser confirmada como concluída.\n\n**Para Ajudantes:** Quando uma tarefa é marcada como concluída e confirmada pelo requisitante, o pagamento é libertado automaticamente para a sua conta.\n\n**Passo 4: Acompanhar os Seus Pagamentos**\n\nConsulte o seu painel para histórico de pagamentos, pagamentos pendentes e transações concluídas. Receberá confirmações por email para cada pagamento.\n\n**Passo 5: Levantamentos (para Ajudantes e Profissionais)**\n\nOs pagamentos são transferidos automaticamente para a sua conta associada após a confirmação da tarefa.",
+    "content": "**Passo 1: Adicionar o Seu Método de Pagamento**\n\nVá ao Perfil > Adicione o seu email PayPal. Isto permite-lhe receber pagamentos facilmente como Ajudante ou Profissional. Ainda não tem conta PayPal? Crie uma [aqui](https://www.paypal.com/signup) e fique operacional em minutos.\n\n**Passo 2: Compreender as Taxas**\n\nO Taskorilla cobra uma pequena taxa de serviço em cada transação. Desde dezembro de 2025, as taxas são €2 por tarefa do requisitante e 10% do Ajudante/Profissional.\n\n**Passo 3: Fazer ou Receber Pagamento**\n\n**Para Requisitantes:** Quando aceita uma proposta, será solicitado a pagar de forma segura através da nossa plataforma. Os fundos são retidos até a tarefa ser confirmada como concluída.\n\n**Para Ajudantes:** Quando uma tarefa é marcada como concluída e confirmada pelo requisitante, o pagamento é libertado automaticamente para a sua conta.\n\n**Passo 4: Acompanhar os Seus Pagamentos**\n\nConsulte o seu painel para histórico de pagamentos, pagamentos pendentes e transações concluídas. Receberá confirmações por email para cada pagamento.\n\n**Passo 5: Levantamentos (para Ajudantes e Profissionais)**\n\nOs pagamentos são transferidos automaticamente para a sua conta associada após a confirmação da tarefa.",
     "tags": ["guia de pagamento", "como pagar", "receber pagamento", "processo de pagamento", "taxas", "levantamento"]
   },
   {

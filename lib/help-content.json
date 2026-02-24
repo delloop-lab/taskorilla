@@ -124,7 +124,7 @@
     "category": "Payment Guide",
     "type": "faq",
     "title": "How do I get paid?",
-    "content": "Add your bank account in settings. Once a task is confirmed, we transfer funds automatically.",
+    "content": "Add your PayPal email. Once a task is confirmed, we transfer funds automatically. Don't have a PayPal account yet? Create one [here](https://www.paypal.com/signup) and get set up in minutes.",
     "tags": ["get paid", "receive payment", "withdrawal", "payout"]
   },
   {
@@ -134,14 +134,6 @@
     "title": "How do I stay safe when meeting Helpers or Taskers?",
     "content": "Meet in public spaces when possible, verify profiles, and never share unnecessary personal info.",
     "tags": ["safety", "meeting", "security", "safe practices"]
-  },
-  {
-    "id": "safety-guide-2",
-    "category": "Safety Guide",
-    "type": "faq",
-    "title": "What if I have a problem with a Helper or Tasker?",
-    "content": "Report the issue through the platform. We take safety seriously and will help resolve it.",
-    "tags": ["report", "problem", "issue", "complaint", "dispute"]
   },
   {
     "id": "safety-guide-3",
@@ -156,7 +148,7 @@
     "category": "Safety Guide",
     "type": "faq",
     "title": "What if something gets damaged during a task?",
-    "content": "Document it with photos, contact the other party, and involve support if needed.",
+    "content": "Always document it with photos and contact the other party.",
     "tags": ["damage", "property damage", "broken", "insurance", "claim"]
   },
   {
@@ -228,7 +220,7 @@
     "category": "Payment Guide",
     "type": "guide",
     "title": "Understanding Payments on Taskorilla",
-    "content": "**Step 1: Add Your Payout Method**\n\nGo to 'Settings' > 'Payment Information.' Add your IBAN number. This is required to receive payments as a Helper or Professional.\n\n**Step 2: Understand Fees**\n\nTaskorilla takes a small service fee from each transaction. As of December 2025, fees are €2 per task from the tasker and 10% fee from the Helper/Professional.\n\n**Step 3: Make or Receive Payment**\n\n**For Taskers:** When you accept a bid, you'll be prompted to pay securely through our platform. Funds are held until the task is confirmed as complete.\n\n**For Helpers:** Once a task is marked complete and confirmed by the tasker, payment is released to your account automatically.\n\n**Step 4: Track Your Payments and Payouts**\n\nCheck your dashboard for payment history, pending payments or payouts, and completed transactions. You'll receive email confirmations for every payment or payout.\n\n**Step 5: Payouts (for Helpers and Professionals)**\n\nPayments are transferred to your linked account automatically after task confirmation.",
+    "content": "**Step 1: Add Your Payout Method**\n\nHead to Profile > Add your PayPal email. This lets you receive payments easily as a Helper or Professional. Don't have a PayPal account yet? Create one [here](https://www.paypal.com/signup) and get set up in minutes.\n\n**Step 2: Understand Fees**\n\nTaskorilla takes a small service fee from each transaction. As of December 2025, fees are €2 per task from the tasker and 10% fee from the Helper/Professional.\n\n**Step 3: Make or Receive Payment**\n\n**For Taskers:** When you accept a bid, you'll be prompted to pay securely through our platform. Funds are held until the task is confirmed as complete.\n\n**For Helpers:** Once a task is marked complete and confirmed by the tasker, payment is released to your account automatically.\n\n**Step 4: Track Your Payments and Payouts**\n\nCheck your dashboard for payment history, pending payments or payouts, and completed transactions. You'll receive email confirmations for every payment or payout.\n\n**Step 5: Payouts (for Helpers and Professionals)**\n\nPayments are transferred to your linked account automatically after task confirmation.",
     "tags": ["payment guide", "how to pay", "get paid", "payment process", "fees", "payout"]
   },
   {

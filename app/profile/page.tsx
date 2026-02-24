@@ -65,6 +65,7 @@ function ProfilePageContent() {
   const [hourlyRate, setHourlyRate] = useState('')
   const [languages, setLanguages] = useState<string[]>([])
   const [iban, setIban] = useState('')
+  const [paypalEmail, setPaypalEmail] = useState('')
   const [newSkill, setNewSkill] = useState('')
   const [newService, setNewService] = useState('')
   const [newProfessionalOffering, setNewProfessionalOffering] = useState('')
@@ -180,6 +181,7 @@ function ProfilePageContent() {
       setHourlyRate(data?.hourly_rate?.toString() || '')
       setLanguages(data?.languages ?? [])
       setIban(data?.iban || '')
+      setPaypalEmail(data?.paypal_email || '')
 
       // Load reviews for this user
       const { data: reviewsData } = await supabase
@@ -649,6 +651,7 @@ function ProfilePageContent() {
         profile_slug: profileSlug || null,
         languages: languages.length > 0 ? languages : [],
         iban: iban.trim() || null,
+        paypal_email: paypalEmail.trim() || null,
       }
 
       // Only include qualifications and professions if they exist in the schema
@@ -721,6 +724,7 @@ function ProfilePageContent() {
         setBadges(updatedData.badges || [])
         setHourlyRate(updatedData.hourly_rate?.toString() || '')
         setIban(updatedData.iban || '')
+        setPaypalEmail(updatedData.paypal_email || '')
 
           setEditing(false)
           setStatusMessage('Profile updated successfully.')
@@ -1517,9 +1521,77 @@ function ProfilePageContent() {
               )}
             </div>
 
-            {/* IBAN for Payouts */}
+            {/* PayPal Email for Payouts */}
             {isHelper && (
               <div>
+                {/* Banner when PayPal is active but email not set */}
+                {process.env.NEXT_PUBLIC_PAYMENT_PROVIDER === 'paypal' && !profile.paypal_email && !editing && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-start gap-3">
+                      <svg className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">PayPal email required to receive payouts</p>
+                        <p className="text-xs text-gray-600 mt-1">
+                          Click Edit above, then add the email address linked to your PayPal account.
+                          {' '}
+                          <a
+                            href="https://www.paypal.com/signup"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 underline"
+                          >
+                            Don&apos;t have PayPal? Sign up free
+                          </a>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  PayPal Email {process.env.NEXT_PUBLIC_PAYMENT_PROVIDER === 'paypal' && <span className="text-red-500">*</span>}
+                </label>
+                {editing ? (
+                  <div>
+                    <input
+                      type="email"
+                      value={paypalEmail}
+                      onChange={(e) => setPaypalEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      {process.env.NEXT_PUBLIC_PAYMENT_PROVIDER === 'paypal'
+                        ? 'Required. Enter the email linked to your PayPal account to receive payouts.'
+                        : 'Optional. Enter your PayPal email if you want to receive payouts via PayPal.'}
+                    </p>
+                    {process.env.NEXT_PUBLIC_PAYMENT_PROVIDER === 'paypal' && (
+                      <a
+                        href="https://www.paypal.com/signup"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block mt-2 text-xs text-blue-600 hover:text-blue-800 underline"
+                      >
+                        Don&apos;t have a PayPal account? Sign up here
+                      </a>
+                    )}
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={profile.paypal_email || t('profile.notSet')}
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
+                  />
+                )}
+              </div>
+            )}
+
+            {/* IBAN for Payouts (Airwallex/bank transfer) */}
+            {isHelper && process.env.NEXT_PUBLIC_PAYMENT_PROVIDER !== 'paypal' && (
+              <div className="mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t('profile.iban')}
                 </label>
@@ -1529,7 +1601,6 @@ function ProfilePageContent() {
                       type="text"
                       value={iban}
                       onChange={(e) => {
-                        // Remove spaces and convert to uppercase as user types
                         const cleaned = e.target.value.replace(/\s/g, '').toUpperCase()
                         setIban(cleaned)
                       }}
@@ -1730,7 +1801,7 @@ function ProfilePageContent() {
                                 <span className={`inline-flex px-2 py-1 text-xs font-medium rounded ${
                                   task.payout_status === 'completed' || task.payout_status === 'simulated'
                                     ? 'bg-green-100 text-green-800'
-                                    : task.payout_status === 'processing'
+                                    : task.payout_status === 'processing' || task.payout_status === 'pending'
                                     ? 'bg-yellow-100 text-yellow-800'
                                     : task.payout_status === 'failed'
                                     ? 'bg-red-100 text-red-800'
@@ -1738,7 +1809,7 @@ function ProfilePageContent() {
                                 }`}>
                                   {task.payout_status === 'completed' || task.payout_status === 'simulated' 
                                     ? t('profile.statusPaid')
-                                    : task.payout_status === 'processing'
+                                    : task.payout_status === 'processing' || task.payout_status === 'pending'
                                     ? t('profile.statusProcessing')
                                     : task.payout_status === 'failed'
                                     ? t('profile.statusFailed')
@@ -2446,6 +2517,7 @@ function ProfilePageContent() {
                     setHourlyRate(profile.hourly_rate?.toString() || '')
                     setLanguages(profile.languages ?? [])
                     setIban(profile.iban || '')
+                    setPaypalEmail(profile.paypal_email || '')
                     setNewSkill('')
                     setNewService('')
                     setNewProfessionalOffering('')

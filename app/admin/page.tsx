@@ -72,6 +72,8 @@ type DailyTraffic = {
   visits: number
 }
 
+type RevenueRange = 'day' | 'week' | 'month' | 'year' | 'all'
+
 export default function SuperadminDashboard() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -191,6 +193,7 @@ export default function SuperadminDashboard() {
     totalTasks: number
     dailyRevenue: Array<{ date: string; revenue: number; tasks: number }>
   }>({ tasks: [], totalRevenue: 0, totalServiceFees: 0, totalPlatformFees: 0, totalTasks: 0, dailyRevenue: [] })
+  const [revenueRange, setRevenueRange] = useState<RevenueRange>('month')
   
   // Standard modal states
   const [modalState, setModalState] = useState<{
@@ -1585,6 +1588,137 @@ export default function SuperadminDashboard() {
       .reduce((sum, t) => sum + (t.budget || 0), 0)
   }))
 
+  const getRevenueRangeStart = (range: RevenueRange, now: Date): Date | null => {
+    const start = new Date(now)
+    switch (range) {
+      case 'day':
+        start.setHours(0, 0, 0, 0)
+        return start
+      case 'week':
+        start.setDate(start.getDate() - 6)
+        start.setHours(0, 0, 0, 0)
+        return start
+      case 'month':
+        start.setDate(start.getDate() - 29)
+        start.setHours(0, 0, 0, 0)
+        return start
+      case 'year':
+        start.setMonth(start.getMonth() - 11, 1)
+        start.setHours(0, 0, 0, 0)
+        return start
+      case 'all':
+      default:
+        return null
+    }
+  }
+
+  const now = new Date()
+  const revenueRangeStart = getRevenueRangeStart(revenueRange, now)
+  const rangeFilteredTasks = revenue.tasks.filter(task => {
+    if (!revenueRangeStart) return true
+    return new Date(task.completed_at) >= revenueRangeStart
+  })
+  const revenueSummary = {
+    totalRevenue: rangeFilteredTasks.reduce((sum, t) => sum + t.total_revenue, 0),
+    totalServiceFees: rangeFilteredTasks.reduce((sum, t) => sum + t.service_fee, 0),
+    totalPlatformFees: rangeFilteredTasks.reduce((sum, t) => sum + t.platform_fee, 0),
+    totalTasks: rangeFilteredTasks.length,
+  }
+
+  const revenueLabelByRange: Record<RevenueRange, string> = {
+    day: 'Today',
+    week: 'Last 7 Days',
+    month: 'Last 30 Days',
+    year: 'Last 12 Months',
+    all: 'All Time',
+  }
+
+  const revenueChartData = (() => {
+    type RevenueBucket = { key: string; label: string; revenue: number; tasks: number }
+    const buckets = new Map<string, RevenueBucket>()
+
+    if (revenueRange === 'day') {
+      for (let hour = 0; hour < 24; hour++) {
+        const hourDate = new Date(now)
+        hourDate.setHours(hour, 0, 0, 0)
+        const key = `${hourDate.getFullYear()}-${String(hourDate.getMonth() + 1).padStart(2, '0')}-${String(hourDate.getDate()).padStart(2, '0')} ${String(hour).padStart(2, '0')}`
+        buckets.set(key, { key, label: `${String(hour).padStart(2, '0')}:00`, revenue: 0, tasks: 0 })
+      }
+      rangeFilteredTasks.forEach(task => {
+        const completed = new Date(task.completed_at)
+        const key = `${completed.getFullYear()}-${String(completed.getMonth() + 1).padStart(2, '0')}-${String(completed.getDate()).padStart(2, '0')} ${String(completed.getHours()).padStart(2, '0')}`
+        const bucket = buckets.get(key)
+        if (bucket) {
+          bucket.revenue += task.total_revenue
+          bucket.tasks += 1
+        }
+      })
+      return Array.from(buckets.values())
+    }
+
+    const useMonthlyBuckets = revenueRange === 'year' || revenueRange === 'all'
+    if (useMonthlyBuckets) {
+      let startMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+      if (revenueRange === 'year') {
+        startMonth = new Date(now.getFullYear(), now.getMonth() - 11, 1)
+      } else if (rangeFilteredTasks.length > 0) {
+        const earliest = rangeFilteredTasks.reduce((min, task) => {
+          const d = new Date(task.completed_at)
+          return d < min ? d : min
+        }, new Date(rangeFilteredTasks[0].completed_at))
+        startMonth = new Date(earliest.getFullYear(), earliest.getMonth(), 1)
+      }
+
+      const endMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+      const cursor = new Date(startMonth)
+      while (cursor <= endMonth) {
+        const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`
+        buckets.set(key, {
+          key,
+          label: cursor.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+          revenue: 0,
+          tasks: 0,
+        })
+        cursor.setMonth(cursor.getMonth() + 1)
+      }
+
+      rangeFilteredTasks.forEach(task => {
+        const completed = new Date(task.completed_at)
+        const key = `${completed.getFullYear()}-${String(completed.getMonth() + 1).padStart(2, '0')}`
+        const bucket = buckets.get(key)
+        if (bucket) {
+          bucket.revenue += task.total_revenue
+          bucket.tasks += 1
+        }
+      })
+      return Array.from(buckets.values())
+    }
+
+    // week/month => daily buckets
+    const days = revenueRange === 'week' ? 7 : 30
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date(now)
+      date.setDate(date.getDate() - i)
+      date.setHours(0, 0, 0, 0)
+      const key = date.toISOString().split('T')[0]
+      buckets.set(key, {
+        key,
+        label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        revenue: 0,
+        tasks: 0,
+      })
+    }
+    rangeFilteredTasks.forEach(task => {
+      const key = task.completed_at.split('T')[0]
+      const bucket = buckets.get(key)
+      if (bucket) {
+        bucket.revenue += task.total_revenue
+        bucket.tasks += 1
+      }
+    })
+    return Array.from(buckets.values())
+  })()
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -2827,42 +2961,62 @@ export default function SuperadminDashboard() {
         {/* Revenue Tab */}
         {tab === 'revenue' && (
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-            <h2 className="text-2xl font-bold mb-6">Revenue Dashboard</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+              <h2 className="text-2xl font-bold">Revenue Dashboard</h2>
+              <div className="flex flex-wrap gap-2">
+                {([
+                  { id: 'day', label: 'Day' },
+                  { id: 'week', label: 'Week' },
+                  { id: 'month', label: 'Month' },
+                  { id: 'year', label: 'Year' },
+                  { id: 'all', label: 'All Time' },
+                ] as Array<{ id: RevenueRange; label: string }>).map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => setRevenueRange(option.id)}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${
+                      revenueRange === option.id
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* Revenue Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-sm text-green-700 font-medium">Total Revenue</p>
-                <p className="text-3xl font-bold text-green-800">€{revenue.totalRevenue.toFixed(2)}</p>
+                <p className="text-sm text-green-700 font-medium">Total Revenue ({revenueLabelByRange[revenueRange]})</p>
+                <p className="text-3xl font-bold text-green-800">€{revenueSummary.totalRevenue.toFixed(2)}</p>
               </div>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-blue-700 font-medium">Service Fees (€2/task)</p>
-                <p className="text-3xl font-bold text-blue-800">€{revenue.totalServiceFees.toFixed(2)}</p>
+                <p className="text-3xl font-bold text-blue-800">€{revenueSummary.totalServiceFees.toFixed(2)}</p>
               </div>
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                 <p className="text-sm text-purple-700 font-medium">Platform Fees (10%)</p>
-                <p className="text-3xl font-bold text-purple-800">€{revenue.totalPlatformFees.toFixed(2)}</p>
+                <p className="text-3xl font-bold text-purple-800">€{revenueSummary.totalPlatformFees.toFixed(2)}</p>
               </div>
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <p className="text-sm text-gray-700 font-medium">Paid Tasks</p>
-                <p className="text-3xl font-bold text-gray-800">{revenue.totalTasks}</p>
+                <p className="text-3xl font-bold text-gray-800">{revenueSummary.totalTasks}</p>
               </div>
             </div>
 
             {/* Revenue Chart */}
             <div className="mb-8">
-              <h3 className="text-lg font-semibold mb-4">Revenue Over Last 30 Days</h3>
+              <h3 className="text-lg font-semibold mb-4">Revenue Over {revenueLabelByRange[revenueRange]}</h3>
               <div className="h-80">
                 <Bar
                   data={{
-                    labels: revenue.dailyRevenue.map(d => {
-                      const date = new Date(d.date)
-                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                    }),
+                    labels: revenueChartData.map(d => d.label),
                     datasets: [
                       {
                         label: 'Revenue (€)',
-                        data: revenue.dailyRevenue.map(d => d.revenue),
+                        data: revenueChartData.map(d => d.revenue),
                         backgroundColor: 'rgba(34, 197, 94, 0.7)',
                         borderColor: 'rgb(34, 197, 94)',
                         borderWidth: 1,
@@ -2895,18 +3049,15 @@ export default function SuperadminDashboard() {
 
             {/* Tasks per Day Chart */}
             <div className="mb-8">
-              <h3 className="text-lg font-semibold mb-4">Paid Tasks Per Day</h3>
+              <h3 className="text-lg font-semibold mb-4">Paid Tasks Over {revenueLabelByRange[revenueRange]}</h3>
               <div className="h-64">
                 <Line
                   data={{
-                    labels: revenue.dailyRevenue.map(d => {
-                      const date = new Date(d.date)
-                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                    }),
+                    labels: revenueChartData.map(d => d.label),
                     datasets: [
                       {
                         label: 'Tasks',
-                        data: revenue.dailyRevenue.map(d => d.tasks),
+                        data: revenueChartData.map(d => d.tasks),
                         borderColor: 'rgb(59, 130, 246)',
                         backgroundColor: 'rgba(59, 130, 246, 0.1)',
                         fill: true,
@@ -2935,8 +3086,8 @@ export default function SuperadminDashboard() {
 
             {/* Revenue Table */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Recent Paid Tasks</h3>
-              {revenue.tasks.length === 0 ? (
+              <h3 className="text-lg font-semibold mb-4">Paid Tasks ({revenueLabelByRange[revenueRange]})</h3>
+              {rangeFilteredTasks.length === 0 ? (
                 <p className="text-gray-500 text-center py-8">No paid tasks yet</p>
               ) : (
                 <div className="overflow-x-auto">
@@ -2954,7 +3105,7 @@ export default function SuperadminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {revenue.tasks.map((task) => (
+                      {rangeFilteredTasks.map((task) => (
                         <tr key={task.id} className="hover:bg-gray-50">
                           <td className="px-4 py-3">
                             <a 
@@ -2993,16 +3144,16 @@ export default function SuperadminDashboard() {
                       <tr>
                         <td className="px-4 py-3 text-sm font-bold text-gray-900" colSpan={3}>Total</td>
                         <td className="px-4 py-3 text-right text-sm font-semibold text-gray-600">
-                          €{revenue.tasks.reduce((sum, t) => sum + t.budget, 0).toFixed(2)}
+                          €{rangeFilteredTasks.reduce((sum, t) => sum + t.budget, 0).toFixed(2)}
                         </td>
                         <td className="px-4 py-3 text-right text-sm font-semibold text-blue-700">
-                          €{revenue.totalServiceFees.toFixed(2)}
+                          €{revenueSummary.totalServiceFees.toFixed(2)}
                         </td>
                         <td className="px-4 py-3 text-right text-sm font-semibold text-purple-700">
-                          €{revenue.totalPlatformFees.toFixed(2)}
+                          €{revenueSummary.totalPlatformFees.toFixed(2)}
                         </td>
                         <td className="px-4 py-3 text-right text-sm font-bold text-green-800">
-                          €{revenue.totalRevenue.toFixed(2)}
+                          €{revenueSummary.totalRevenue.toFixed(2)}
                         </td>
                         <td className="px-4 py-3"></td>
                       </tr>

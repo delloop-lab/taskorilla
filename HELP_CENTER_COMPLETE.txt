@@ -213,16 +213,18 @@ A: Yes, Taskorilla takes a small service fee from the tasker, as of December
    2025 that is €2 and 10% from the Helper/Professional.
 
 Q: How do I get paid?
-A: Add your bank account in settings. Once a task is confirmed, we transfer 
-   funds automatically.
+A: Add your PayPal email. Once a task is confirmed, we transfer funds 
+   automatically. Don't have a PayPal account yet? Create one here 
+   (https://www.paypal.com/signup) and get set up in minutes.
 
 --- Understanding Payments Guide ---
 
 UNDERSTANDING PAYMENTS ON TASKORILLA
 
 Step 1: Add Your Payout Method
-Go to 'Settings' > 'Payment Information.' Add your IBAN number. This is 
-required to receive payments as a Helper or Professional.
+Head to Profile > Add your PayPal email. This lets you receive payments 
+easily as a Helper or Professional. Don't have a PayPal account yet? 
+Create one here (https://www.paypal.com/signup) and get set up in minutes.
 
 Step 2: Understand Fees
 Taskorilla takes a small service fee from each transaction. As of December 2025, 
@@ -269,17 +271,12 @@ Q: How do I stay safe when meeting Helpers or Taskers?
 A: Meet in public spaces when possible, verify profiles, and never share 
    unnecessary personal info.
 
-Q: What if I have a problem with a Helper or Tasker?
-A: Report the issue through the platform. We take safety seriously and will 
-   help resolve it.
-
 Q: Can I block a Helper or Tasker?
 A: Yes. Go to their profile and click 'Block User.' They won't see or message 
    you.
 
 Q: What if something gets damaged during a task?
-A: Document it with photos, contact the other party, and involve support if 
-   needed.
+A: Always document it with photos and contact the other party.
 
 --- Staying Safe on Taskorilla Guide ---
 

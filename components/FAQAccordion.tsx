@@ -60,7 +60,17 @@ export default function FAQAccordion({ items, defaultOpen = null }: FAQAccordion
           {openId === item.id && (
             <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
               <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                {item.content}
+                {item.content.split(/(\[.*?\]\(.*?\))/).map((part, i) => {
+                  const linkMatch = part.match(/\[(.*?)\]\((.*?)\)/)
+                  if (linkMatch) {
+                    return (
+                      <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">
+                        {linkMatch[1]}
+                      </a>
+                    )
+                  }
+                  return <span key={i}>{part}</span>
+                })}
               </p>
             </div>
           )}

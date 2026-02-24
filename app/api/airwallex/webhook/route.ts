@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import crypto from 'crypto'
+import { requireAirwallexEnabled } from '@/services/payments/airwallex-gate'
 
 /**
  * Airwallex Webhook Handler
- * Handles payment and payout status updates
  * POST /api/airwallex/webhook
+ * Provider gate is in services/payments/airwallex-gate.ts
  */
 export async function POST(request: NextRequest) {
+  const gate = requireAirwallexEnabled()
+  if (gate) return gate
+
   try {
     const webhookSecret = process.env.AIRWALLEX_WEBHOOK_SECRET
     

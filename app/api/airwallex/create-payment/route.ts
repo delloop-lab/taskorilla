@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server'
+import { requireAirwallexEnabled } from '@/services/payments/airwallex-gate'
 
 /**
  * Create Airwallex payment
  * POST /api/airwallex/create-payment
- * 
- * Server-side only - API key is never exposed to frontend
+ * Provider gate is in services/payments/airwallex-gate.ts
  */
 export async function POST(req: Request) {
+  const gate = requireAirwallexEnabled()
+  if (gate) return gate
+
   try {
     // Validate API key is configured
     if (!process.env.AIRWALLEX_API_KEY) {

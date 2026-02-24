@@ -33,7 +33,7 @@ export default function CheckoutPage() {
     setDebugInfo(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`])
   }
 
-  // Check return status from Airwallex - only once
+  // Check return status from payment - only once
   useEffect(() => {
     if (hasCheckedStatus.current) return
     hasCheckedStatus.current = true
@@ -95,9 +95,8 @@ export default function CheckoutPage() {
   }
 
   /**
-   * Simulate payment via Airwallex sandbox API
-   * Calls POST /api/airwallex/simulate-payment which in turn calls:
-   * POST https://api-demo.airwallex.com/api/v1/pa/payment_intents/{intentId}/simulate_shopper_action
+   * Simulate payment (sandbox/testing only)
+   * Calls POST /api/payments/simulate-payment
    */
   const simulatePayment = async (paymentIntentId: string) => {
     addDebug('=== Starting Payment Simulation ===')
@@ -110,9 +109,9 @@ export default function CheckoutPage() {
       throw new Error(errMsg)
     }
 
-    addDebug('Calling /api/airwallex/simulate-payment...')
+    addDebug('Calling /api/payments/simulate-payment...')
     
-    const response = await fetch('/api/airwallex/simulate-payment', {
+    const response = await fetch('/api/payments/simulate-payment', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -306,7 +305,7 @@ export default function CheckoutPage() {
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <h3 className="text-sm font-semibold text-blue-900 mb-2">ℹ️ Sandbox Mode</h3>
           <p className="text-xs text-blue-800">
-            Click the button below to simulate a successful payment using Airwallex's sandbox API.
+            Click the button below to simulate a successful payment in sandbox mode.
           </p>
         </div>
 
