@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { executePaymentStatus } from '@/services/payments/payment-status'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * Provider-agnostic Payment Status API
  * GET /api/payments/payment-status?paymentIntentId=xxx
