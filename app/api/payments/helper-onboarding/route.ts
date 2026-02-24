@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { executeHelperOnboardingPost, executeHelperOnboardingGet } from '@/services/payments/helper-onboarding'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * Helper Onboarding API
  * POST /api/payments/helper-onboarding - Start onboarding

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { executeHelperDashboard } from '@/services/payments/helper-dashboard'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * Helper Dashboard Access API
  * GET /api/payments/helper-dashboard
