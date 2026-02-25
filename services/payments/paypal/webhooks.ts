@@ -13,6 +13,35 @@ import { captureOrder } from './checkout'
 const PAYPAL_BASE =
   process.env.PAYPAL_ENV === 'production' ? 'https://api.paypal.com' : 'https://api.sandbox.paypal.com'
 
+async function getAccessToken(): Promise<string> {
+  const clientId = process.env.PAYPAL_CLIENT_ID
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET
+  if (!clientId || !clientSecret) {
+    throw new Error('PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET must be set')
+  }
+
+  const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
+  const response = await fetch(`${PAYPAL_BASE}/v1/oauth2/token`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: `Basic ${auth}`,
+    },
+    body: 'grant_type=client_credentials',
+  })
+
+  if (!response.ok) {
+    const err = await response.text()
+    throw new Error(`PayPal OAuth failed: ${response.status} ${err}`)
+  }
+
+  const data = (await response.json()) as { access_token?: string }
+  if (!data.access_token) {
+    throw new Error('PayPal OAuth succeeded but no access_token returned')
+  }
+  return data.access_token
+}
+
 export async function processPayPalWebhook(request: NextRequest): Promise<NextResponse> {
   if (!isPayPalEnabled()) {
     console.log('[PayPal Webhook] Received webhook but PayPal is not enabled')
@@ -142,18 +171,12 @@ async function verifyWebhookSignature(params: {
   webhookId: string
   webhookEvent: object
 }): Promise<boolean> {
-  const clientId = process.env.PAYPAL_CLIENT_ID
-  const clientSecret = process.env.PAYPAL_CLIENT_SECRET
-  if (!clientId || !clientSecret) {
-    throw new Error('PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET must be set')
-  }
-
-  const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
+  const accessToken = await getAccessToken()
   const response = await fetch(`${PAYPAL_BASE}/v1/notifications/verify-webhook-signature`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Basic ${auth}`,
+      Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify({
       auth_algo: params.authAlgo,
@@ -166,8 +189,20 @@ async function verifyWebhookSignature(params: {
     }),
   })
 
-  const data = (await response.json()) as { verification_status?: string }
-  return data.verification_status === 'SUCCESS'
+  const raw = await response.text()
+  let data: { verification_status?: string } | null = null
+  try {
+    data = JSON.parse(raw) as { verification_status?: string }
+  } catch {
+    data = null
+  }
+
+  if (!response.ok) {
+    console.error('[PayPal Webhook] Signature verification API error:', response.status, raw.substring(0, 300))
+    return false
+  }
+
+  return data?.verification_status === 'SUCCESS'
 }
 
 async function markTaskPaid(
@@ -251,6 +286,7 @@ async function markPayoutSuccessful(
     const { error } = await supabase.from('payouts').update(updatePayload).eq('paypal_payout_id', payoutBatchId)
     if (!error) {
       console.log('[PayPal Webhook] Marked payout successful, batch:', payoutBatchId)
+      await supabase.from('tasks').update({ payout_status: 'completed' }).eq('payout_id', payoutBatchId)
       return
     }
   }
@@ -262,6 +298,7 @@ async function markPayoutSuccessful(
       .update(updatePayload)
       .eq('task_id', taskId)
     if (!error) console.log('[PayPal Webhook] Marked payout successful by task:', taskId)
+    await supabase.from('tasks').update({ payout_status: 'completed' }).eq('id', taskId)
   }
 }
 
@@ -294,6 +331,7 @@ async function markPayoutBatchSuccessful(
     console.error('[PayPal Webhook] Failed to mark payout batch successful:', error)
   } else {
     console.log('[PayPal Webhook] Marked payout batch successful:', payoutBatchId)
+    await supabase.from('tasks').update({ payout_status: 'completed' }).eq('payout_id', payoutBatchId)
   }
 }
 
@@ -314,6 +352,7 @@ async function markPayoutFailed(
     const { error } = await supabase.from('payouts').update(updatePayload).eq('paypal_payout_id', payoutBatchId)
     if (!error) {
       console.log('[PayPal Webhook] Marked payout failed, batch:', payoutBatchId)
+      await supabase.from('tasks').update({ payout_status: 'failed' }).eq('payout_id', payoutBatchId)
       return
     }
   }
@@ -321,5 +360,6 @@ async function markPayoutFailed(
   if (senderItemId?.startsWith('task_')) {
     const taskId = senderItemId.replace('task_', '')
     await supabase.from('payouts').update(updatePayload).eq('task_id', taskId)
+    await supabase.from('tasks').update({ payout_status: 'failed' }).eq('id', taskId)
   }
 }

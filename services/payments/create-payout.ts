@@ -72,8 +72,6 @@ export async function executeCreatePayout(
     const { createPayout } = await import('./paypal/payout')
     const result = await createPayout(paypalEmail, params.amount, { taskId: params.taskId })
     if (result.status === 'SUCCESS' && supabase && params.taskId && params.helperId) {
-      const paypalEnv = process.env.PAYPAL_ENV || 'sandbox'
-      const payoutStatusForTask = paypalEnv === 'production' ? 'processing' : 'simulated'
       const currency = params.currency || 'EUR'
       await supabase.from('payouts').insert({
         task_id: params.taskId,
@@ -89,7 +87,7 @@ export async function executeCreatePayout(
         .from('tasks')
         .update({
           payout_id: result.payoutId || null,
-          payout_status: payoutStatusForTask,
+          payout_status: 'processing',
         })
         .eq('id', params.taskId)
     }
