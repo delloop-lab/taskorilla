@@ -80,7 +80,7 @@ export default function PreLaunchModal() {
               If you've got jobs that need doing, now's the perfect time to register and post your tasks and be ready from day one.
             </p>
             <p>
-              Sign up early to be first in line and grab an exclusive bonus at launch!
+              Sign up early to be first in line or to join our team of beta testers and grab an exclusive bonus at launch!
             </p>
           </div>
 
