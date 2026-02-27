@@ -229,14 +229,18 @@ export default function BrowseHelpersPage() {
       helper.professions?.includes(selectedProfession) ||
       helper.professions?.some((profession: string) => profession.toLowerCase() === selectedProfession.toLowerCase()) ||
       // Also check if selected profession matches any standard profession that helper has
-      (STANDARD_PROFESSIONS.includes(selectedProfession) && helper.professions?.some((profession: string) => {
-        // Check if helper's profession matches the selected standard profession (fuzzy match)
-        const lowerHelperProfession = profession.toLowerCase()
-        const lowerSelectedProfession = selectedProfession.toLowerCase()
-        return lowerHelperProfession === lowerSelectedProfession ||
-               lowerHelperProfession.includes(lowerSelectedProfession) ||
-               lowerSelectedProfession.includes(lowerHelperProfession)
-      }))
+      (
+        selectedProfession != null &&
+        STANDARD_PROFESSIONS.includes(selectedProfession as (typeof STANDARD_PROFESSIONS)[number]) &&
+        helper.professions?.some((profession: string) => {
+          // Check if helper's profession matches the selected standard profession (fuzzy match)
+          const lowerHelperProfession = profession.toLowerCase()
+          const lowerSelectedProfession = selectedProfession.toLowerCase()
+          return lowerHelperProfession === lowerSelectedProfession ||
+                 lowerHelperProfession.includes(lowerSelectedProfession) ||
+                 lowerSelectedProfession.includes(lowerHelperProfession)
+        })
+      )
     
     return matchesSearch && matchesSkill && matchesService && matchesProfession
   })
