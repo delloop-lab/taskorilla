@@ -64,7 +64,10 @@ If you manually update `package.json`:
 
 ## GitHub Actions
 
-There's a GitHub workflow (`.github/workflows/increment-version.yml`) that auto-increments `version.json` on pushes to main, but it's recommended to use the bump scripts instead for better control.
+There's a GitHub workflow (`.github/workflows/increment-version.yml`) that auto-increments the **patch** version on pushes to `main`/`master` when `version.json` was not manually changed in that commit.
+
+- It uses the same `scripts/bump-version.js` helper, so **both** `package.json` and `version.json` stay in sync.
+- Each qualifying push bumps the version by one patch step (e.g. `0.99.975` → `0.99.976`).
 
 ## Notes
 

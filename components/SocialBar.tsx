@@ -18,7 +18,7 @@ export function SocialBar({ className }: SocialBarProps) {
       )}
     >
       <span className="text-sm font-medium hidden sm:inline-block">
-        Follow us
+        Follow me!
       </span>
       <div className="flex items-center gap-2">
         <a
