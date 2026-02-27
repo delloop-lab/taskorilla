@@ -8,6 +8,7 @@ import { Category, Tag } from '@/lib/types'
 import { geocodePostcode } from '@/lib/geocoding'
 import { formatPostcodeForCountry, isPortuguesePostcode } from '@/lib/postcode'
 import { checkForContactInfo } from '@/lib/content-filter'
+import { sortCategoriesByDisplayOrder } from '@/lib/category-order'
 import { User as UserIcon } from 'lucide-react'
 import { compressTaskImage } from '@/lib/image-utils'
 import { useUserRatings } from '@/lib/useUserRatings'
@@ -875,7 +876,7 @@ export default function EditTaskPage() {
               onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
             />
             <p className="mt-1 text-xs text-gray-500">
-              If no budget is entered, visitors will see "Quote" on your task.
+              Enter your budget. If you leave it blank, visitors will see "Quote" instead.
             </p>
           </div>
 
@@ -892,12 +893,15 @@ export default function EditTaskPage() {
                 onChange={(e) => handleCategoryChange(e.target.value)}
               >
                 <option value="">Select a category</option>
-                {categories.map((cat) => (
+                {sortCategoriesByDisplayOrder(categories).map((cat) => (
                   <option key={cat.id} value={cat.id}>
                     {cat.name}
                   </option>
                 ))}
               </select>
+              <p className="mt-1 text-xs text-gray-500">
+                Choose the category that best fits your task.
+              </p>
             </div>
           )}
         </div>
@@ -1176,14 +1180,17 @@ export default function EditTaskPage() {
             )}
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            Type a tag name and press Enter to add. Tags help others find your task.
+            Add keywords that describe your task. Press Enter after each tag. Tags help helpers find your task faster.
           </p>
         </div>
 
         <div className="border-t border-gray-200 pt-6">
-          <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-3">
-            Task Images (Optional) - You can upload multiple images
+          <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-2">
+            Task Images (Optional)
           </label>
+          <p className="text-sm text-gray-500 mb-3">
+            Upload images to make your task stand out. Multiple images are allowed.
+          </p>
           <div className="space-y-3">
             {imageUrls.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -1225,11 +1232,6 @@ export default function EditTaskPage() {
                   className="sr-only"
                 />
               </label>
-              {imageUrls.length === 0 && (
-                <p className="text-xs text-gray-500">
-                  Add photos to help others understand your task. You can select multiple files.
-                </p>
-              )}
             </div>
           </div>
         </div>

@@ -2409,7 +2409,7 @@ export default function TaskDetailPage() {
               onClick={() => handleStartConversation(task.created_by)}
               className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
             >
-              Message Task Poster
+              Message Tasker
             </button>
           </div>
         )}
@@ -2967,7 +2967,7 @@ export default function TaskDetailPage() {
               </p>
             )}
             <p className="text-xs text-gray-500 text-center">
-              Tasker sets price at their own risk — final price is fixed once accepted.
+              Helper bids and sets the price at their own risk, final price is fixed once accepted.
             </p>
           </form>
         </div>
@@ -3310,7 +3310,7 @@ export default function TaskDetailPage() {
                 </div>
                 {isTaskOwner && canSeeBidDetails(bid) && (
                   <p className="text-xs text-gray-500 mt-2">
-                    Tasker sets price at their own risk — final price is fixed once accepted.
+                    Helper bids and sets the price at their own risk, final price is fixed once accepted.
                   </p>
                 )}
               </div>

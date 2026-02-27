@@ -18,6 +18,7 @@ export default function TasksMapPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [placeMarkers, setPlaceMarkers] = useState<any[]>([])
   const loadStartedRef = useRef(false)
 
   useEffect(() => {
@@ -25,6 +26,7 @@ export default function TasksMapPage() {
     if (loadStartedRef.current) return
     loadStartedRef.current = true
     loadTasks()
+    loadPlaceMarkers()
   }, [])
 
   const loadTasks = async () => {
@@ -294,6 +296,80 @@ export default function TasksMapPage() {
     }
   }
 
+  const loadPlaceMarkers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('map_markers')
+        .select('id, title, address, tooltip, logo_url, business_url, latitude, longitude, visible')
+        .eq('visible', true)
+
+      if (error) {
+        console.error('❌ Error fetching map markers:', error)
+        return
+      }
+
+      if (!data || data.length === 0) {
+        setPlaceMarkers([])
+        return
+      }
+
+      const markersWithCoords = await Promise.all(
+        data.map(async (marker) => {
+          let lat = typeof marker.latitude === 'string' ? parseFloat(marker.latitude) : marker.latitude
+          let lon = typeof marker.longitude === 'string' ? parseFloat(marker.longitude) : marker.longitude
+
+          const hasValid =
+            lat != null &&
+            lon != null &&
+            !isNaN(lat) &&
+            !isNaN(lon) &&
+            lat !== 0 &&
+            lon !== 0
+
+          if (!hasValid && marker.address) {
+            try {
+              const result = await geocodeAddress(marker.address)
+              if (result && result.latitude && result.longitude) {
+                lat = result.latitude
+                lon = result.longitude
+              }
+            } catch (err) {
+              console.error('Error geocoding map marker address:', err)
+            }
+          }
+
+          if (
+            lat == null ||
+            lon == null ||
+            isNaN(lat) ||
+            isNaN(lon) ||
+            lat < -90 ||
+            lat > 90 ||
+            lon < -180 ||
+            lon > 180
+          ) {
+            return null
+          }
+
+          return {
+            id: marker.id,
+            title: marker.title,
+            address: marker.address,
+            tooltip: marker.tooltip,
+            logo_url: marker.logo_url,
+            business_url: marker.business_url,
+            latitude: lat,
+            longitude: lon,
+          }
+        })
+      )
+
+      setPlaceMarkers(markersWithCoords.filter((m) => m !== null))
+    } catch (err) {
+      console.error('Error loading map markers:', err)
+    }
+  }
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -307,7 +383,9 @@ export default function TasksMapPage() {
       <div className="bg-white border-b px-4 py-3 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Tasks Map</h1>
-          <p className="text-sm text-gray-500">{tasks.length} tasks on map</p>
+          <p className="text-sm text-gray-500">
+            {tasks.length} tasks on map{placeMarkers.length ? ` • ${placeMarkers.length} places` : ''}
+          </p>
           <p className="text-xs text-gray-400">Check browser console for debugging info</p>
         </div>
         <Link
@@ -319,7 +397,7 @@ export default function TasksMapPage() {
       </div>
 
       <div className="flex-1 relative" style={{ minHeight: 0 }}>
-        <Map tasks={tasks} onTaskClick={setSelectedTask} />
+        <Map tasks={tasks} markers={placeMarkers} onTaskClick={setSelectedTask} />
       </div>
 
       {selectedTask && (

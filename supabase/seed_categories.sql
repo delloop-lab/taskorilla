@@ -1,19 +1,19 @@
 -- Seed common categories and sub-categories
 -- This is idempotent - safe to run multiple times
 
--- Main Categories
+-- Main Categories (new list)
 INSERT INTO categories (id, name, slug, parent_id) VALUES
+  ('550e8400-e29b-41d4-a716-446655440002', 'Cleaning & Home Services', 'cleaning-home-services', NULL),
+  ('550e8400-e29b-41d4-a716-446655440008', 'Health & Beauty', 'health-beauty-wellbeing', NULL),
   ('550e8400-e29b-41d4-a716-446655440001', 'Home & Garden', 'home-garden', NULL),
-  ('550e8400-e29b-41d4-a716-446655440002', 'Cleaning', 'cleaning', NULL),
+  ('550e8400-e29b-41d4-a716-446655440004', 'Handyman & Maintenance', 'handyman-maintenance', NULL),
+  ('550e8400-e29b-41d4-a716-446655440006', 'Events, Photography & Media', 'events-photography-media', NULL),
   ('550e8400-e29b-41d4-a716-446655440003', 'Moving & Delivery', 'moving-delivery', NULL),
-  ('550e8400-e29b-41d4-a716-446655440004', 'Handyman', 'handyman', NULL),
-  ('550e8400-e29b-41d4-a716-446655440005', 'Tech & IT', 'tech-it', NULL),
-  ('550e8400-e29b-41d4-a716-446655440006', 'Events & Photography', 'events-photography', NULL),
-  ('550e8400-e29b-41d4-a716-446655440007', 'Business & Admin', 'business-admin', NULL),
-  ('550e8400-e29b-41d4-a716-446655440008', 'Health & Beauty', 'health-beauty', NULL),
   ('550e8400-e29b-41d4-a716-446655440009', 'Tutoring & Lessons', 'tutoring-lessons', NULL),
+  ('550e8400-e29b-41d4-a716-446655440005', 'Tech & IT', 'tech-it', NULL),
+  ('550e8400-e29b-41d4-a716-446655440007', 'Business & Professional Services', 'personal-lifestyle-services', NULL),
   ('550e8400-e29b-41d4-a716-446655440010', 'Other', 'other', NULL)
-ON CONFLICT (slug) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, slug = EXCLUDED.slug;
 
 -- Home & Garden Sub-categories
 INSERT INTO categories (id, name, slug, parent_id) VALUES
@@ -77,7 +77,7 @@ INSERT INTO categories (id, name, slug, parent_id) VALUES
   ('550e8400-e29b-41d4-a716-446655440036', 'Videography', 'videography', '550e8400-e29b-41d4-a716-446655440006')
 ON CONFLICT (slug) DO NOTHING;
 
--- Business & Admin Sub-categories
+-- Business & Professional Services Sub-categories
 INSERT INTO categories (id, name, slug, parent_id) VALUES
   ('550e8400-e29b-41d4-a716-446655440037', 'Data Entry', 'data-entry', '550e8400-e29b-41d4-a716-446655440007'),
   ('550e8400-e29b-41d4-a716-446655440038', 'Virtual Assistant', 'virtual-assistant', '550e8400-e29b-41d4-a716-446655440007'),
@@ -97,12 +97,5 @@ INSERT INTO categories (id, name, slug, parent_id) VALUES
   ('550e8400-e29b-41d4-a716-446655440044', 'Music Lessons', 'music-lessons', '550e8400-e29b-41d4-a716-446655440009'),
   ('550e8400-e29b-41d4-a716-446655440045', 'Language Lessons', 'language-lessons', '550e8400-e29b-41d4-a716-446655440009')
 ON CONFLICT (slug) DO NOTHING;
-
--- Personal Assistance (New Main Category)
-INSERT INTO categories (id, name, slug, parent_id) VALUES
-  ('550e8400-e29b-41d4-a716-446655440059', 'Personal Assistance', 'personal-assistance', NULL)
-ON CONFLICT (slug) DO NOTHING;
-
-
 
 

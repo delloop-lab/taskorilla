@@ -69,6 +69,10 @@ export default function Footer({ variant = 'default' }: FooterProps) {
           <span className="text-muted-foreground/30">|</span>
           <Link href="/terms" className="hover:text-foreground transition-colors">{t('footer.termsOfService')}</Link>
           <span className="text-muted-foreground/30">|</span>
+          <Link href="/advertising-opportunities" className="hover:text-foreground transition-colors">
+            Advertising Opportunities
+          </Link>
+          <span className="text-muted-foreground/30">|</span>
           <a href="mailto:tee@taskorilla.com" className="hover:text-foreground transition-colors">{t('footer.contact')}</a>
           <span className="text-muted-foreground/30">|</span>
           <a 

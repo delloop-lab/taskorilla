@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import { Bar, Line } from 'react-chartjs-2'
 import {
@@ -25,8 +26,11 @@ import CreateBlogPost from '@/components/CreateBlogPost'
 import { blogs } from '@/lib/blog-data'
 import { User } from '@/lib/types'
 import { STANDARD_SKILLS, STANDARD_SERVICES } from '@/lib/helper-constants'
+import { geocodeAddress } from '@/lib/geocoding'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend, Filler)
+
+const AdminMap = dynamic(() => import('@/components/Map'), { ssr: false })
 
 // AppUser extends User and includes languages and other custom fields
 interface AppUser extends User {
@@ -85,7 +89,7 @@ export default function SuperadminDashboard() {
   const [traffic, setTraffic] = useState<Traffic[]>([])
   const [dailyTraffic, setDailyTraffic] = useState<DailyTraffic[]>([])
   const [trafficDays, setTrafficDays] = useState<number>(30)
-  const [tab, setTab] = useState<'users' | 'tasks' | 'stats' | 'revenue' | 'email' | 'traffic' | 'email_logs' | 'settings' | 'reports' | 'skills_services' | 'blog'>('users')
+  const [tab, setTab] = useState<'users' | 'tasks' | 'stats' | 'revenue' | 'email' | 'traffic' | 'settings' | 'reports' | 'maps' | 'blog'>('users')
   const [reports, setReports] = useState<any[]>([])
   const [loadingReports, setLoadingReports] = useState(false)
   const [deletingReportId, setDeletingReportId] = useState<string | null>(null)
@@ -140,6 +144,7 @@ export default function SuperadminDashboard() {
     subject: '',
     emailType: '',
   })
+  const [showEmailLogsSection, setShowEmailLogsSection] = useState(false)
   const [managingBadgesFor, setManagingBadgesFor] = useState<User | null>(null)
   const [selectedBadges, setSelectedBadges] = useState<string[]>([])
   const [savingBadges, setSavingBadges] = useState(false)
@@ -163,6 +168,30 @@ export default function SuperadminDashboard() {
   const [regeocodingPortuguese, setRegeocodingPortuguese] = useState(false)
   const [regeocodingResult, setRegeocodingResult] = useState<any>(null)
   
+  // Admin map markers (custom places)
+  const [mapMarkers, setMapMarkers] = useState<any[]>([])
+  const [loadingMapMarkers, setLoadingMapMarkers] = useState(false)
+  const [savingMapMarker, setSavingMapMarker] = useState(false)
+  const [mapMarkerError, setMapMarkerError] = useState<string | null>(null)
+  const [newMarkerTitle, setNewMarkerTitle] = useState('')
+  const [newMarkerAddress, setNewMarkerAddress] = useState('')
+  const [newMarkerTooltip, setNewMarkerTooltip] = useState('')
+  const [newMarkerLogoUrl, setNewMarkerLogoUrl] = useState('')
+  const [newMarkerBusinessUrl, setNewMarkerBusinessUrl] = useState('')
+  const [newMarkerVisible, setNewMarkerVisible] = useState(true)
+  const [newMarkerPreview, setNewMarkerPreview] = useState<{ latitude: number; longitude: number } | null>(null)
+  const [newMarkerLogoFile, setNewMarkerLogoFile] = useState<File | null>(null)
+  const [uploadingNewMarkerLogo, setUploadingNewMarkerLogo] = useState(false)
+
+  // Editing existing map markers (title, tooltip, logo)
+  const [editingMarkerId, setEditingMarkerId] = useState<string | null>(null)
+  const [editingMarkerTitle, setEditingMarkerTitle] = useState('')
+  const [editingMarkerTooltip, setEditingMarkerTooltip] = useState('')
+  const [editingMarkerLogoUrl, setEditingMarkerLogoUrl] = useState('')
+  const [editingMarkerBusinessUrl, setEditingMarkerBusinessUrl] = useState('')
+  const [updatingMarker, setUpdatingMarker] = useState(false)
+  const [editingMarkerLogoFile, setEditingMarkerLogoFile] = useState<File | null>(null)
+
   // Skills & Services state
   const [allSkills, setAllSkills] = useState<string[]>([])
   const [allServices, setAllServices] = useState<string[]>([])
@@ -270,24 +299,22 @@ export default function SuperadminDashboard() {
       fetchEmailLogs()
       fetchPlatformSettings()
       fetchReports()
-      loadSkillsAndServices()
+      // Map markers are loaded lazily when Maps tab is opened
     }
     
     checkRole()
   }, [])
 
-  // Load skills and services when tab is switched to skills_services
-  useEffect(() => {
-    if (tab === 'skills_services' && allSkills.length === 0 && !loadingSkillsServices) {
-      loadSkillsAndServices()
-    }
-  }, [tab, allSkills.length, loadingSkillsServices])
+  // (Skills & Services tab removed)
 
   useEffect(() => {
     if (tab === 'email') {
       fetchEmailTemplates()
     }
-  }, [tab])
+    if (tab === 'maps' && !loadingMapMarkers && mapMarkers.length === 0) {
+      fetchMapMarkers()
+    }
+  }, [tab, loadingMapMarkers, mapMarkers.length])
 
   // Debug logging for modal state
   useEffect(() => {
@@ -345,6 +372,32 @@ export default function SuperadminDashboard() {
       // Categories are loaded but not stored in state in admin page
     } catch (error) {
       console.error('Error loading categories:', error)
+    }
+  }
+
+  // Load admin-defined map markers (places)
+  const fetchMapMarkers = async () => {
+    try {
+      setLoadingMapMarkers(true)
+      setMapMarkerError(null)
+
+      const { data, error } = await supabase
+        .from('map_markers')
+        .select('id, title, address, tooltip, logo_url, business_url, latitude, longitude, visible, created_at')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error loading map markers:', error)
+        setMapMarkerError(error.message || 'Failed to load map markers')
+        return
+      }
+
+      setMapMarkers(data || [])
+    } catch (err: any) {
+      console.error('Error loading map markers:', err)
+      setMapMarkerError(err.message || 'Failed to load map markers')
+    } finally {
+      setLoadingMapMarkers(false)
     }
   }
 
@@ -1734,7 +1787,7 @@ export default function SuperadminDashboard() {
 
         {/* Tabs */}
         <div className="mb-4 sm:mb-6 flex flex-wrap gap-2 items-center">
-          {(['users', 'tasks', 'reports', 'stats', 'revenue', 'email', 'traffic', 'email_logs', 'settings', 'skills_services', 'blog'] as const).map(t => (
+          {(['users', 'tasks', 'reports', 'stats', 'revenue', 'email', 'traffic', 'settings', 'maps', 'blog'] as const).map((t: typeof tab) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -1744,7 +1797,7 @@ export default function SuperadminDashboard() {
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
               }`}
             >
-              {t === 'skills_services' ? 'Skills & Services' : t.charAt(0).toUpperCase() + t.slice(1)}
+              {t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
           ))}
           <Link
@@ -3167,21 +3220,183 @@ export default function SuperadminDashboard() {
 
         {/* Email Tab */}
         {tab === 'email' && (
-          <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-4xl">
-            <div className="mb-6 border-b border-gray-200 pb-4">
-              <h2 className="text-xl font-semibold mb-2">Email Templates</h2>
-              <p className="text-sm text-gray-600">Manage welcome email templates for Helpers and Taskers</p>
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-4xl">
+              <div className="mb-6 border-b border-gray-200 pb-4">
+                <h2 className="text-xl font-semibold mb-2">Email Templates</h2>
+                <p className="text-sm text-gray-600">Manage welcome email templates for Helpers and Taskers</p>
+              </div>
+              
+              <EmailTemplateManager 
+                onTemplateSent={fetchEmailLogs} 
+                onTemplateChange={fetchEmailTemplates}
+                users={users}
+                emailTemplates={emailTemplates}
+                onSendWelcomeEmail={sendWelcomeEmail}
+                onSendFreeFormEmail={sendFreeFormEmail}
+                sendingEmail={sendingEmail}
+              />
+
+              <div className="mt-6 pt-4 border-t border-gray-200 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">Email Logs</h3>
+                  <p className="text-xs text-gray-500">View recently sent emails and filter by recipient, subject, or type.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEmailLogsSection(prev => !prev)
+                    if (!showEmailLogsSection && emailLogs.length === 0) {
+                      fetchEmailLogs()
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-xs sm:text-sm rounded-md font-medium text-gray-800"
+                >
+                  {showEmailLogsSection ? 'Hide Email Logs' : 'Show Email Logs'}
+                </button>
+              </div>
             </div>
-            
-            <EmailTemplateManager 
-              onTemplateSent={fetchEmailLogs} 
-              onTemplateChange={fetchEmailTemplates}
-              users={users}
-              emailTemplates={emailTemplates}
-              onSendWelcomeEmail={sendWelcomeEmail}
-              onSendFreeFormEmail={sendFreeFormEmail}
-              sendingEmail={sendingEmail}
-            />
+
+            {showEmailLogsSection && (() => {
+              // Filter email logs based on filters
+              const filteredEmailLogs = emailLogs.filter((log) => {
+                const recipientMatch = !emailLogFilters.recipient || 
+                  log.recipient_email?.toLowerCase().includes(emailLogFilters.recipient.toLowerCase()) ||
+                  log.recipient_name?.toLowerCase().includes(emailLogFilters.recipient.toLowerCase())
+                const subjectMatch = !emailLogFilters.subject || 
+                  log.subject?.toLowerCase().includes(emailLogFilters.subject.toLowerCase())
+                const typeMatch = !emailLogFilters.emailType || 
+                  log.email_type === emailLogFilters.emailType
+                return recipientMatch && subjectMatch && typeMatch
+              })
+
+              return (
+                <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+                  <h2 className="text-xl font-semibold mb-4">
+                    Email Logs ({filteredEmailLogs.length}{filteredEmailLogs.length !== emailLogs.length ? ` of ${emailLogs.length}` : ''})
+                  </h2>
+                  
+                  {/* Filter Section */}
+                  <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Filters</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Recipient Filter */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Recipient
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Filter by recipient email or name..."
+                          value={emailLogFilters.recipient}
+                          onChange={(e) => setEmailLogFilters({ ...emailLogFilters, recipient: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      
+                      {/* Subject Filter */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Subject
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Filter by subject..."
+                          value={emailLogFilters.subject}
+                          onChange={(e) => setEmailLogFilters({ ...emailLogFilters, subject: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      
+                      {/* Type Filter */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Type
+                        </label>
+                        <select
+                          value={emailLogFilters.emailType}
+                          onChange={(e) => setEmailLogFilters({ ...emailLogFilters, emailType: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">All Types</option>
+                          <option value="new_bid">New Bid</option>
+                          <option value="bid_accepted">Bid Accepted</option>
+                          <option value="bid_rejected">Bid Rejected</option>
+                          <option value="new_message">New Message</option>
+                          <option value="task_completed">Task Completed</option>
+                          <option value="task_cancelled">Task Cancelled</option>
+                          <option value="admin_email">Admin Email</option>
+                          <option value="profile_completion">Profile Completion</option>
+                          <option value="password_reset">Password Reset</option>
+                          <option value="welcome_email">Welcome Email</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Logs Table */}
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Sent At
+                          </th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Recipient
+                          </th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Subject
+                          </th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Type
+                          </th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredEmailLogs.map((log) => (
+                          <tr key={log.id}>
+                            <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-500">
+                              {log.created_at ? new Date(log.created_at).toLocaleString() : '-'}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-700">
+                              <div className="flex flex-col">
+                                <span>{log.recipient_name || '-'}</span>
+                                <span className="text-gray-500">{log.recipient_email || '-'}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-2 text-xs text-gray-700">
+                              {log.subject || '-'}
+                            </td>
+                            <td className="px-4 py-2 text-xs text-gray-700">
+                              {log.email_type || '-'}
+                            </td>
+                            <td className="px-4 py-2 text-xs text-gray-700">
+                              {log.status || '-'}
+                            </td>
+                            <td className="px-4 py-2 text-right text-xs text-gray-700">
+                              <button
+                                type="button"
+                                onClick={() => setViewingEmailLog(log)}
+                                className="text-blue-600 hover:text-blue-800"
+                              >
+                                View
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         )}
 
@@ -3574,8 +3789,8 @@ export default function SuperadminDashboard() {
           )
         })()}
 
-        {/* Email Logs Tab */}
-        {tab === 'email_logs' && (() => {
+        {/* Email Logs Tab (legacy, no longer used) */}
+        {false && (() => {
           // Filter email logs based on filters
           const filteredEmailLogs = emailLogs.filter((log) => {
             const recipientMatch = !emailLogFilters.recipient || 
@@ -4008,8 +4223,544 @@ export default function SuperadminDashboard() {
           message={deleteErrorMessage || 'Failed to delete report. Please try again.'}
         />
 
-        {/* Skills & Services Tab */}
-        {tab === 'skills_services' && (
+        {/* Maps Tab - manage custom map markers (e.g. supermarkets) */}
+        {tab === 'maps' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Marker form + list */}
+            <div className="space-y-6">
+              <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Add Map Marker</h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                    <input
+                      type="text"
+                      value={newMarkerTitle}
+                      onChange={e => setNewMarkerTitle(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Meu Super Estoi"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                    <input
+                      type="text"
+                      value={newMarkerAddress}
+                      onChange={e => setNewMarkerAddress(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Rua de Faro, 81, 8005-411 Estoi, Portugal"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tooltip</label>
+                    <input
+                      type="text"
+                      value={newMarkerTooltip}
+                      onChange={e => setNewMarkerTooltip(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Meu Super your local supermarket"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Logo</label>
+                    <input
+                      type="text"
+                      value={newMarkerLogoUrl}
+                      onChange={e => setNewMarkerLogoUrl(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="/meusuper-logo.png or leave blank"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      You can paste an existing URL or upload a new image file below.
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/jpg,image/webp"
+                        onChange={e => {
+                          const file = e.target.files?.[0] || null
+                          setNewMarkerLogoFile(file)
+                        }}
+                        className="text-xs"
+                      />
+                    </div>
+                    {newMarkerLogoFile && (
+                      <p className="mt-1 text-[11px] text-gray-500">
+                        Selected file: {newMarkerLogoFile.name}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Business URL (optional)</label>
+                    <input
+                      type="url"
+                      value={newMarkerBusinessUrl}
+                      onChange={e => setNewMarkerBusinessUrl(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="https://example.com"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      If provided, clicking the marker popup can take users to this website.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="newMarkerVisible"
+                      type="checkbox"
+                      checked={newMarkerVisible}
+                      onChange={e => setNewMarkerVisible(e.target.checked)}
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                    />
+                    <label htmlFor="newMarkerVisible" className="text-sm text-gray-700">
+                      Visible on tasks map
+                    </label>
+                  </div>
+
+                  {mapMarkerError && (
+                    <div className="text-sm text-red-600">{mapMarkerError}</div>
+                  )}
+
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          setMapMarkerError(null)
+                          setNewMarkerPreview(null)
+                          const rawAddress = newMarkerAddress.trim()
+                          if (!rawAddress) {
+                            setMapMarkerError('Please enter an address to geocode.')
+                            return
+                          }
+
+                          // Use the same simple geocoding approach that already works for tasks
+                          const result = await geocodeAddress(rawAddress)
+                          if (!result) {
+                            setMapMarkerError('Unable to geocode address. Please check it and try again.')
+                            return
+                          }
+                          setNewMarkerPreview({
+                            latitude: result.latitude,
+                            longitude: result.longitude,
+                          })
+                        } catch (err: any) {
+                          setMapMarkerError(err.message || 'Failed to geocode address.')
+                        }
+                      }}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md text-sm font-medium"
+                    >
+                      Geocode & Preview
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          setMapMarkerError(null)
+                          if (!newMarkerTitle.trim() || !newMarkerAddress.trim()) {
+                            setMapMarkerError('Title and address are required.')
+                            return
+                          }
+
+                          let latitude = newMarkerPreview?.latitude ?? null
+                          let longitude = newMarkerPreview?.longitude ?? null
+
+                          if (!latitude || !longitude) {
+                            const rawAddress = newMarkerAddress.trim()
+                            const result = await geocodeAddress(rawAddress)
+                            if (!result) {
+                              setMapMarkerError('Unable to geocode address. Please geocode first.')
+                              return
+                            }
+                            latitude = result.latitude
+                            longitude = result.longitude
+                            setNewMarkerPreview({ latitude, longitude })
+                          }
+
+                          setSavingMapMarker(true)
+
+                          // If a new logo file is selected, upload it and use its URL
+                          let logoUrl = newMarkerLogoUrl.trim() || null
+                          if (newMarkerLogoFile) {
+                            setUploadingNewMarkerLogo(true)
+                            const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+                            if (authError || !authUser) {
+                              throw new Error('You must be logged in to upload a logo image')
+                            }
+
+                            const ext = (newMarkerLogoFile.name.split('.').pop() || 'jpg').toLowerCase()
+                            const fileName = `marker-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+                            const filePath = `${authUser.id}/${fileName}`
+
+                            const { error: uploadError } = await supabase.storage
+                              .from('images')
+                              .upload(filePath, newMarkerLogoFile, {
+                                upsert: true,
+                                contentType: newMarkerLogoFile.type || 'image/jpeg',
+                              })
+
+                            if (uploadError) {
+                              console.error('Error uploading marker logo:', uploadError)
+                              throw new Error(uploadError.message || 'Failed to upload marker logo')
+                            }
+
+                            const { data } = supabase.storage.from('images').getPublicUrl(filePath)
+                            logoUrl = data.publicUrl || null
+                          }
+
+                          const { error } = await supabase.from('map_markers').insert({
+                            title: newMarkerTitle.trim(),
+                            address: newMarkerAddress.trim(),
+                            tooltip: newMarkerTooltip.trim() || null,
+                            logo_url: logoUrl,
+                            business_url: newMarkerBusinessUrl.trim() || null,
+                            latitude,
+                            longitude,
+                            visible: newMarkerVisible,
+                          })
+
+                          if (error) {
+                            console.error('Error saving map marker:', error)
+                            setMapMarkerError(error.message || 'Failed to save marker.')
+                            return
+                          }
+
+                          // Refresh list and clear form
+                          await fetchMapMarkers()
+                          setNewMarkerTitle('')
+                          setNewMarkerAddress('')
+                          setNewMarkerTooltip('')
+                          setNewMarkerLogoUrl('')
+                          setNewMarkerBusinessUrl('')
+                          setNewMarkerVisible(true)
+                          setNewMarkerPreview(null)
+                          setNewMarkerLogoFile(null)
+                        } catch (err: any) {
+                          console.error('Error saving map marker:', err)
+                          setMapMarkerError(err.message || 'Failed to save marker.')
+                        } finally {
+                          setSavingMapMarker(false)
+                          setUploadingNewMarkerLogo(false)
+                        }
+                      }}
+                      disabled={savingMapMarker}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-md text-sm font-medium"
+                    >
+                      {savingMapMarker ? 'Saving...' : 'Save Marker'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Existing Markers</h2>
+                  <button
+                    type="button"
+                    onClick={fetchMapMarkers}
+                    disabled={loadingMapMarkers}
+                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-xs sm:text-sm font-medium"
+                  >
+                    {loadingMapMarkers ? 'Refreshing...' : 'Refresh'}
+                  </button>
+                </div>
+                {loadingMapMarkers ? (
+                  <div className="text-sm text-gray-500">Loading markers...</div>
+                ) : mapMarkers.length === 0 ? (
+                  <div className="text-sm text-gray-500">No markers yet.</div>
+                ) : (
+                  <div className="space-y-2 max-h-80 overflow-y-auto">
+                    {mapMarkers.map(marker => {
+                      const isEditing = editingMarkerId === marker.id
+                      return (
+                        <div
+                          key={marker.id}
+                          className="flex items-start justify-between gap-3 border border-gray-100 rounded-md px-3 py-2"
+                        >
+                          <div className="min-w-0 flex-1">
+                            {isEditing ? (
+                              <div className="space-y-1">
+                                <div>
+                                  <label className="block text-[11px] font-medium text-gray-600 mb-0.5">
+                                    Title
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={editingMarkerTitle}
+                                    onChange={e => setEditingMarkerTitle(e.target.value)}
+                                    className="w-full px-2 py-1 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                  />
+                                </div>
+                                <p className="text-[11px] text-gray-500 truncate">
+                                  {marker.address}
+                                </p>
+                                <div>
+                                  <label className="block text-[11px] font-medium text-gray-600 mb-0.5">
+                                    Tooltip
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={editingMarkerTooltip}
+                                    onChange={e => setEditingMarkerTooltip(e.target.value)}
+                                    className="w-full px-2 py-1 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[11px] font-medium text-gray-600 mb-0.5">
+                                    Logo
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={editingMarkerLogoUrl}
+                                    onChange={e => setEditingMarkerLogoUrl(e.target.value)}
+                                    className="w-full px-2 py-1 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    placeholder="Existing URL or leave blank"
+                                  />
+                                  <input
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                                    onChange={e => {
+                                      const file = e.target.files?.[0] || null
+                                      setEditingMarkerLogoFile(file)
+                                    }}
+                                    className="mt-1 text-[11px]"
+                                  />
+                                  {editingMarkerLogoFile && (
+                                    <p className="mt-0.5 text-[10px] text-gray-500">
+                                      Selected file: {editingMarkerLogoFile.name}
+                                    </p>
+                                  )}
+                                </div>
+                                <div>
+                                  <label className="block text-[11px] font-medium text-gray-600 mb-0.5">
+                                    Business URL
+                                  </label>
+                                  <input
+                                    type="url"
+                                    value={editingMarkerBusinessUrl}
+                                    onChange={e => setEditingMarkerBusinessUrl(e.target.value)}
+                                    className="w-full px-2 py-1 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    placeholder="https://example.com"
+                                  />
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <p className="text-sm font-medium text-gray-900 truncate">
+                                  {marker.title}
+                                </p>
+                                <p className="text-xs text-gray-500 truncate">
+                                  {marker.address}
+                                </p>
+                                {marker.tooltip && (
+                                  <p className="text-xs text-gray-400 truncate">
+                                    Tooltip: {marker.tooltip}
+                                  </p>
+                                )}
+                                {marker.logo_url && (
+                                  <p className="text-[11px] text-gray-400 truncate">
+                                    Logo: {marker.logo_url}
+                                  </p>
+                                )}
+                                {marker.business_url && (
+                                  <p className="text-[11px] text-blue-600 truncate">
+                                    Link: {marker.business_url}
+                                  </p>
+                                )}
+                              </>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <label className="inline-flex items-center gap-1 text-xs text-gray-600">
+                              <input
+                                type="checkbox"
+                                checked={!!marker.visible}
+                                onChange={async e => {
+                                  const visible = e.target.checked
+                                  try {
+                                    const { error } = await supabase
+                                      .from('map_markers')
+                                      .update({ visible })
+                                      .eq('id', marker.id)
+                                    if (error) {
+                                      console.error('Error updating marker visibility:', error)
+                                      return
+                                    }
+                                    setMapMarkers(prev =>
+                                      prev.map(m => (m.id === marker.id ? { ...m, visible } : m))
+                                    )
+                                  } catch (err) {
+                                    console.error('Error updating marker visibility:', err)
+                                  }
+                                }}
+                                className="h-3 w-3 text-blue-600 border-gray-300 rounded"
+                              />
+                              <span>Visible</span>
+                            </label>
+
+                            {isEditing ? (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  disabled={updatingMarker}
+                                  onClick={async () => {
+                                    try {
+                                      setUpdatingMarker(true)
+                                      let logoUrl = editingMarkerLogoUrl.trim() || null
+
+                                      if (editingMarkerLogoFile) {
+                                        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+                                        if (authError || !authUser) {
+                                          throw new Error('You must be logged in to upload a logo image')
+                                        }
+
+                                        const ext = (editingMarkerLogoFile.name.split('.').pop() || 'jpg').toLowerCase()
+                                        const fileName = `marker-${marker.id}-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+                                        const filePath = `${authUser.id}/${fileName}`
+
+                                        const { error: uploadError } = await supabase.storage
+                                          .from('images')
+                                          .upload(filePath, editingMarkerLogoFile, {
+                                            upsert: true,
+                                            contentType: editingMarkerLogoFile.type || 'image/jpeg',
+                                          })
+
+                                        if (uploadError) {
+                                          console.error('Error uploading marker logo:', uploadError)
+                                          throw new Error(uploadError.message || 'Failed to upload marker logo')
+                                        }
+
+                                        const { data } = supabase.storage.from('images').getPublicUrl(filePath)
+                                        logoUrl = data.publicUrl || null
+                                      }
+
+                                      const payload: any = {
+                                        title: editingMarkerTitle.trim() || marker.title,
+                                        tooltip: editingMarkerTooltip.trim() || null,
+                                        logo_url: logoUrl,
+                                        business_url: editingMarkerBusinessUrl.trim() || null,
+                                      }
+                                      const { error } = await supabase
+                                        .from('map_markers')
+                                        .update(payload)
+                                        .eq('id', marker.id)
+                                      if (error) {
+                                        console.error('Error updating marker:', error)
+                                        setMapMarkerError(error.message || 'Failed to update marker.')
+                                        return
+                                      }
+                                      setMapMarkers(prev =>
+                                        prev.map(m =>
+                                          m.id === marker.id ? { ...m, ...payload } : m
+                                        )
+                                      )
+                                      setEditingMarkerId(null)
+                                      setEditingMarkerBusinessUrl('')
+                                      setEditingMarkerLogoFile(null)
+                                    } catch (err: any) {
+                                      console.error('Error updating marker:', err)
+                                      setMapMarkerError(err.message || 'Failed to update marker.')
+                                    } finally {
+                                      setUpdatingMarker(false)
+                                    }
+                                  }}
+                                  className="text-xs text-blue-600 hover:text-blue-700"
+                                >
+                                  {updatingMarker ? 'Saving...' : 'Save'}
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={updatingMarker}
+                                  onClick={() => {
+                                    setEditingMarkerId(null)
+                                  }}
+                                  className="text-xs text-gray-500 hover:text-gray-700"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setMapMarkerError(null)
+                                  setEditingMarkerId(marker.id)
+                                  setEditingMarkerTitle(marker.title || '')
+                                  setEditingMarkerTooltip(marker.tooltip || '')
+                                  setEditingMarkerLogoUrl(marker.logo_url || '')
+                                }}
+                                className="text-xs text-blue-600 hover:text-blue-700"
+                              >
+                                Edit
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (!confirm('Delete this marker?')) return
+                                try {
+                                  const { error } = await supabase
+                                    .from('map_markers')
+                                    .delete()
+                                    .eq('id', marker.id)
+                                  if (error) {
+                                    console.error('Error deleting marker:', error)
+                                    return
+                                  }
+                                  setMapMarkers(prev => prev.filter(m => m.id !== marker.id))
+                                  if (editingMarkerId === marker.id) {
+                                    setEditingMarkerId(null)
+                                  }
+                                } catch (err) {
+                                  console.error('Error deleting marker:', err)
+                                }
+                              }}
+                              className="text-xs text-red-600 hover:text-red-700"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Map preview */}
+            <div className="bg-white rounded-lg shadow overflow-hidden flex flex-col">
+              <div className="px-4 py-3 border-b flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">Map Preview</h2>
+                <p className="text-xs text-gray-500">
+                  Showing {mapMarkers.filter(m => m.visible).length} visible markers
+                </p>
+              </div>
+              <div className="flex-1 min-h-[300px]">
+                <AdminMap
+                  tasks={[]}
+                  markers={[
+                    ...mapMarkers.filter(m => m.visible),
+                    ...(newMarkerPreview && newMarkerAddress && newMarkerTitle
+                      ? [{
+                          id: 'preview',
+                          title: newMarkerTitle,
+                          address: newMarkerAddress,
+                          tooltip: newMarkerTooltip || newMarkerTitle,
+                          logo_url: newMarkerLogoUrl || null,
+                          latitude: newMarkerPreview.latitude,
+                          longitude: newMarkerPreview.longitude,
+                        }]
+                      : []),
+                  ]}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Skills & Services Tab (removed from UI, kept for reference) */}
+        {false && (
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
               <h2 className="text-2xl font-bold text-gray-900">Skills & Services</h2>

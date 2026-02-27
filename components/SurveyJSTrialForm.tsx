@@ -53,7 +53,7 @@ export default function SurveyJSTrialForm() {
   const [submittedData, setSubmittedData] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [currentTheme, setCurrentTheme] = useState<SurveyJSTheme>('default')
-  const [userCountry, setUserCountry] = useState<string>('')
+  const [userCountry, setUserCountry] = useState<string>('Portugal')
   const [geocoding, setGeocoding] = useState(false)
   const geocodingRef = useRef(false) // Ref to track geocoding state for validation callbacks
   const lastGeocodedValueRef = useRef<string>('') // Track last geocoded value to prevent duplicates
@@ -98,6 +98,7 @@ export default function SurveyJSTrialForm() {
               localStorage.removeItem('pendingTaskData')
               localStorage.removeItem('pendingImageDataUrl')
               localStorage.removeItem('taskCreatedFromPending')
+              localStorage.removeItem('newTaskFormType')
               return
             }
             
@@ -117,6 +118,7 @@ export default function SurveyJSTrialForm() {
             localStorage.removeItem('pendingTaskData')
             localStorage.removeItem('pendingImageDataUrl')
             localStorage.removeItem('taskCreatedFromPending')
+            localStorage.removeItem('newTaskFormType')
             setPendingTaskData(null)
           }
         } catch (error) {
@@ -242,6 +244,7 @@ export default function SurveyJSTrialForm() {
           localStorage.removeItem('pendingTaskData')
           localStorage.removeItem('pendingImageDataUrl')
           localStorage.removeItem('taskCreatedFromPending')
+          localStorage.removeItem('newTaskFormType')
         }
       }
     })
@@ -262,9 +265,8 @@ export default function SurveyJSTrialForm() {
           .eq('id', user.id)
           .single()
         
-        if (profile?.country) {
-          setUserCountry(profile.country)
-        }
+        const profileCountry = profile?.country || 'Portugal'
+          setUserCountry(profileCountry === 'Ireland' ? 'Portugal' : profileCountry)
       }
     } catch (error) {
       // Error loading user country - will use default
@@ -289,6 +291,8 @@ export default function SurveyJSTrialForm() {
         const newModel = createTrialFormModel(categories, professions, theme, t)
         // Set the locale based on current language
         newModel.locale = language === 'pt' ? 'pt' : 'en'
+
+        // Grouped dropdown choices are rendered by SurveyJS; no custom CSS needed.
         
         newModel.onComplete.add((sender) => {
           const data = sender.data
@@ -357,6 +361,9 @@ export default function SurveyJSTrialForm() {
         if (process.env.NODE_ENV === 'development') {
           console.log(`[SurveyJS] Setting locale to: ${model.locale}, language: ${language}`)
         }
+
+        // Style profession group headers to match Full form optgroups (bold, not grey)
+        // Grouped dropdown choices are rendered by SurveyJS; no custom CSS needed.
         
         // Handle form completion
         model.onComplete.add((sender) => {
@@ -1600,7 +1607,7 @@ export default function SurveyJSTrialForm() {
             .single()
           
           if (profile?.country) {
-            country = profile.country
+            country = profile.country === 'Ireland' ? 'Portugal' : profile.country
             setUserCountry(country)
           }
         }
@@ -2221,9 +2228,10 @@ export default function SurveyJSTrialForm() {
 
       // Add required professions if task type is professional
       if (data.taskType === 'professional' && data.requiredProfession) {
-        const professionArray = Array.isArray(data.requiredProfession) 
+        const raw = Array.isArray(data.requiredProfession) 
           ? data.requiredProfession 
           : [data.requiredProfession]
+        const professionArray = raw.filter((p: string) => !String(p).startsWith('__header_'))
         if (professionArray.length > 0) {
           taskDataToInsert.required_professions = professionArray
         }
@@ -2312,6 +2320,7 @@ export default function SurveyJSTrialForm() {
       // Store in both state and localStorage so it persists across page navigation
       setPendingTaskData(data)
       try {
+        localStorage.setItem('newTaskFormType', 'quick')
         localStorage.setItem('pendingTaskData', JSON.stringify(data))
         if (pendingImageFile) {
           // Store image file as data URL for persistence

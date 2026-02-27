@@ -7,6 +7,8 @@ interface CompactUserRatingsDisplayProps {
   ratings: UserRatingsSummary | null
   size?: 'sm' | 'md' | 'lg'
   className?: string
+  showTasker?: boolean
+  showHelper?: boolean
 }
 
 /**
@@ -16,7 +18,9 @@ interface CompactUserRatingsDisplayProps {
 export default function CompactUserRatingsDisplay({
   ratings,
   size = 'sm',
-  className = ''
+  className = '',
+  showTasker = true,
+  showHelper = true,
 }: CompactUserRatingsDisplayProps) {
   if (!ratings) {
     return (
@@ -26,10 +30,16 @@ export default function CompactUserRatingsDisplay({
     )
   }
 
+  const hasTaskerRating = ratings.tasker_avg_rating !== null && ratings.tasker_review_count > 0
+  const hasHelperRating = ratings.helper_avg_rating !== null && ratings.helper_review_count > 0
+
+  const showTaskerBlock = showTasker && hasTaskerRating
+  const showHelperBlock = showHelper && hasHelperRating
+
   return (
     <div className={`flex flex-col gap-1.5 sm:gap-2 items-start ${className}`}>
       {/* Tasker Rating */}
-      {ratings.tasker_avg_rating !== null && ratings.tasker_review_count > 0 && (
+      {showTaskerBlock && (
         <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
           <span className="text-xs sm:text-sm text-gray-600 font-medium whitespace-nowrap">Tasker:</span>
           <Rating
@@ -42,7 +52,7 @@ export default function CompactUserRatingsDisplay({
       )}
       
       {/* Helper Rating */}
-      {ratings.helper_avg_rating !== null && ratings.helper_review_count > 0 && (
+      {showHelperBlock && (
         <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
           <span className="text-xs sm:text-sm text-gray-600 font-medium whitespace-nowrap">Helper:</span>
           <Rating
@@ -55,8 +65,7 @@ export default function CompactUserRatingsDisplay({
       )}
 
       {/* Show message if no ratings at all */}
-      {(!ratings.tasker_avg_rating || ratings.tasker_review_count === 0) && 
-       (!ratings.helper_avg_rating || ratings.helper_review_count === 0) && (
+      {(!showTaskerBlock && !showHelperBlock) && (
         <div className="text-xs sm:text-sm text-gray-400">
           No ratings
         </div>

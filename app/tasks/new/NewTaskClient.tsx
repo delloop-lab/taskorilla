@@ -7,13 +7,17 @@ import StandardModal from '@/components/StandardModal'
 import { Category, Tag, User } from '@/lib/types'
 import { geocodePostcode } from '@/lib/geocoding'
 import { formatPostcodeForCountry, isPortuguesePostcode } from '@/lib/postcode'
-import { STANDARD_PROFESSIONS } from '@/lib/profession-constants'
+import { PROFESSION_GROUPS } from '@/lib/profession-constants'
+import { sortCategoriesByDisplayOrder } from '@/lib/category-order'
 import { checkForContactInfo } from '@/lib/content-filter'
 import { User as UserIcon } from 'lucide-react'
 import { compressTaskImage } from '@/lib/image-utils'
 
 export default function NewTaskClient() {
   const TASK_DRAFT_STORAGE_KEY = 'newTaskDraft'
+  const todayDateString = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 10)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
@@ -45,7 +49,7 @@ export default function NewTaskClient() {
     title: '',
     message: '',
   })
-  const [country, setCountry] = useState('')
+  const [country, setCountry] = useState('Portugal')
   const [geocoding, setGeocoding] = useState(false)
   const [geocodeError, setGeocodeError] = useState<string | null>(null)
   const [selectedProfessions, setSelectedProfessions] = useState<string[]>([])
@@ -69,7 +73,7 @@ export default function NewTaskClient() {
     category_id: '',
     sub_category_id: '',
     location: '',
-    due_date: '',
+    due_date: todayDateString,
     latitude: null as number | null,
     longitude: null as number | null,
     willing_to_help: false,
@@ -104,12 +108,21 @@ export default function NewTaskClient() {
         selectedHelperOffering?: string
       }
 
-      if (draft.formData) setFormData(draft.formData)
+      if (draft.formData) {
+        setFormData((prev) => ({
+          ...prev,
+          ...draft.formData,
+          due_date: draft.formData.due_date || prev.due_date,
+        }))
+      }
       if (Array.isArray(draft.imageUrls)) setImageUrls(draft.imageUrls)
       if (Array.isArray(draft.selectedTags)) setSelectedTags(draft.selectedTags)
       if (Array.isArray(draft.requiredSkills)) setRequiredSkills(draft.requiredSkills)
       if (typeof draft.postcode === 'string') setPostcode(draft.postcode)
-      if (typeof draft.country === 'string') setCountry(draft.country)
+      if (typeof draft.country === 'string') {
+        const c = draft.country || 'Portugal'
+        setCountry(c === 'Ireland' ? 'Portugal' : c)
+      }
       if (Array.isArray(draft.selectedProfessions)) setSelectedProfessions(draft.selectedProfessions)
       if (draft.taskType === 'helper' || draft.taskType === 'professional') setTaskType(draft.taskType)
       if (typeof draft.selectedHelperOffering === 'string') setSelectedHelperOffering(draft.selectedHelperOffering)
@@ -149,9 +162,8 @@ export default function NewTaskClient() {
         .eq('id', user.id)
         .single()
 
-      if (profile?.country) {
-        setCountry(profile.country)
-      }
+      const profileCountry = profile?.country || 'Portugal'
+      setCountry(profileCountry === 'Ireland' ? 'Portugal' : profileCountry)
     } catch (error) {
       console.error('Error loading user country:', error)
     }
@@ -576,6 +588,9 @@ export default function NewTaskClient() {
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser()
       if (!authUser) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('newTaskFormType', 'full')
+        }
         const currentPath = typeof window !== 'undefined'
           ? `${window.location.pathname}${window.location.search}`
           : '/tasks/new'
@@ -723,6 +738,7 @@ export default function NewTaskClient() {
 
       if (typeof window !== 'undefined') {
         localStorage.removeItem(TASK_DRAFT_STORAGE_KEY)
+        localStorage.removeItem('newTaskFormType')
       }
       router.push(`/tasks/${finalTaskData.id}`)
     } catch (error: any) {
@@ -1013,9 +1029,12 @@ export default function NewTaskClient() {
 
         {!isHelperRequest && (
           <div className="border-t border-gray-200 pt-6">
-            <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-3">
-              Task Images (Optional) - You can upload multiple images
+            <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-2">
+              Task Images (Optional)
             </label>
+            <p className="text-sm text-gray-500 mb-3">
+              Upload images to make your task stand out. Multiple images are allowed.
+            </p>
             <div className="space-y-3">
               {imageUrls.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
@@ -1056,11 +1075,6 @@ export default function NewTaskClient() {
                     className="sr-only"
                   />
                 </label>
-                {imageUrls.length === 0 && (
-                  <p className="text-xs text-gray-500">
-                    Add photos to help others understand your task. You can select multiple files.
-                  </p>
-                )}
               </div>
             </div>
           </div>
@@ -1084,7 +1098,7 @@ export default function NewTaskClient() {
                   onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  If no budget is entered, visitors will see "Quote" on your task.
+                  Enter your budget. If you leave it blank, visitors will see "Quote" instead.
                   <br />
                   <span className="text-xs text-gray-500">
                   </span>
@@ -1104,12 +1118,15 @@ export default function NewTaskClient() {
                     onChange={(e) => handleCategoryChange(e.target.value)}
                   >
                     <option value="">Select a category</option>
-                    {categories.map((cat) => (
+                    {sortCategoriesByDisplayOrder(categories).map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.name}
                       </option>
                     ))}
                   </select>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Choose the category that best fits your task.
+                  </p>
                 </div>
               )}
             </div>
@@ -1197,7 +1214,7 @@ export default function NewTaskClient() {
                 )}
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Type a tag name and press Enter to add. Tags help others find your task.
+                Add keywords that describe your task. Press Enter after each tag. Tags help helpers find your task faster.
               </p>
             </div>
 
@@ -1219,11 +1236,19 @@ export default function NewTaskClient() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                 >
                   <option value="">Select a professional role...</option>
-                  {STANDARD_PROFESSIONS.filter(prof => !selectedProfessions.includes(prof)).map((prof) => (
-                    <option key={prof} value={prof}>
-                      {prof}
-                    </option>
-                  ))}
+                  {PROFESSION_GROUPS.map((group) => {
+                    const available = group.options.filter((prof) => !selectedProfessions.includes(prof))
+                    if (available.length === 0) return null
+                    return (
+                      <optgroup key={group.heading} label={group.heading}>
+                        {available.map((prof) => (
+                          <option key={prof} value={prof}>
+                            {prof}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )
+                  })}
                 </select>
                 {selectedProfessions.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
@@ -1250,7 +1275,7 @@ export default function NewTaskClient() {
 
             <div>
               <label htmlFor="required_skills" className="block text-sm font-medium text-gray-700 mb-2">
-                Required Skills (Optional) - Press Enter to add
+                Required Skills (Optional)
               </label>
               <div className="flex flex-wrap gap-2 mb-2 p-2 border border-gray-300 rounded-md min-h-[42px]">
                 {requiredSkills.map((skill, index) => (
@@ -1272,7 +1297,7 @@ export default function NewTaskClient() {
                   type="text"
                   id="required_skills"
                   className="flex-1 min-w-[120px] border-0 focus:outline-none focus:ring-0"
-                  placeholder={requiredSkills.length === 0 ? 'e.g., Plumbing, Carpentry...' : ''}
+                  placeholder={requiredSkills.length === 0 ? (taskType === 'professional' ? 'Marketing, Accounting...' : 'e.g., Plumbing, Carpentry...') : ''}
                   value={skillInput}
                   onChange={(e) => setSkillInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -1288,7 +1313,9 @@ export default function NewTaskClient() {
                 />
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Specify skills needed for this task. Helpers with matching skills will see this task prioritized.
+                {taskType === 'professional'
+                  ? 'List any skills you want the professional to have. Press Enter after each one. Tasks will be prioritised for professionals with matching skills.'
+                  : 'List any skills you want the helper to have. Press Enter after each one. Tasks will be prioritised for helpers with matching skills.'}
               </p>
             </div>
           </>
@@ -1404,7 +1431,7 @@ export default function NewTaskClient() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           <div>
             <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
-              Location (Address)
+              Location (Neighbourhood)
             </label>
             <input
               type="text"

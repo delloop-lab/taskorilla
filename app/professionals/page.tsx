@@ -11,6 +11,8 @@ import { STANDARD_PROFESSIONS, helperMatchesProfession } from '@/lib/profession-
 import { PROFESSION_CATEGORIES } from '@/lib/profession-categories'
 import { User as UserIcon } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n'
+import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
+import CompactUserRatingsDisplay from '@/components/CompactUserRatingsDisplay'
 
 export default function ProfessionalsPage() {
   const { t } = useLanguage()
@@ -21,10 +23,11 @@ export default function ProfessionalsPage() {
   const [selectedProfession, setSelectedProfession] = useState<string | null>(null)
   const [availableProfessions, setAvailableProfessions] = useState<string[]>([])
   const [showFilters, setShowFilters] = useState(false)
+  const { users: userRatings } = useUserRatings()
 
   useEffect(() => {
     loadProfessionals()
-  }, [])
+  }, [userRatings])
 
   // Auto-show filters if search term or profession is selected
   useEffect(() => {
@@ -54,8 +57,18 @@ export default function ProfessionalsPage() {
         const professionals = helpersData.filter(helper => 
           helper.professions && Array.isArray(helper.professions) && helper.professions.length > 0
         )
-        
-        setHelpers(professionals)
+
+        // Attach ratings from SQL function so we can show stars
+        const ratingsMap = new Map(userRatings.map((r: any) => [r.reviewee_id, r]))
+        const professionalsWithRatings = professionals.map((helper: any) => {
+          const userRating = getUserRatingsById(helper.id, ratingsMap)
+          return {
+            ...helper,
+            userRatings: userRating || null,
+          }
+        })
+
+        setHelpers(professionalsWithRatings as User[])
         
         // Collect available professions for dropdown
         const allProfessions = new Set<string>()
@@ -159,6 +172,12 @@ export default function ProfessionalsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Link
+          href="/helpers"
+          className="inline-block text-primary-600 hover:text-primary-700 font-medium mb-6"
+        >
+          {t('professionals.backToBrowseHelpers')}
+        </Link>
         {/* Featured Helpers Section - shown when searching with text input */}
         {searchTerm && !selectedProfession && (
           <FeaturedHelpers searchTerm={searchTerm} selectedSkill={null} maxResults={6} />
@@ -293,6 +312,15 @@ export default function ProfessionalsPage() {
                         <h3 className="font-semibold text-gray-900 text-center text-sm">
                           {helper.full_name || 'Professional'}
                         </h3>
+                        {/* Ratings: Tasker + Helper stars from reviews */}
+                        {helper.userRatings && (
+                          <div className="mt-1">
+                            <CompactUserRatingsDisplay 
+                              ratings={helper.userRatings} 
+                              size="sm"
+                            />
+                          </div>
+                        )}
                       </Link>
                     ))}
                   </div>

@@ -7,7 +7,7 @@ const sectionsEn = [
   {
     title: "About Taskorilla",
     content:
-      "Taskorilla lets people post tasks and connect with Taskers who may want to complete them. We do not employ Taskers, supervise any work, or guarantee outcomes.",
+      "Taskorilla lets people post tasks and connect with Helpers who may want to complete them. We do not employ Helpers, supervise any work, or guarantee outcomes.",
   },
   {
     title: "Eligibility",
@@ -31,7 +31,7 @@ const sectionsEn = [
   {
     title: "Fees and Charges",
     content:
-      "Posting a task on Taskorilla is free. Placing a bid on a task is free. A €2 platform fee applies to task posters only when a task is marked as completed in accordance with Taskorilla's platform rules. A 10% helper commission applies only when a task is completed and payment has been received by the helper. Taskorilla does not charge any fees for tasks that are not completed. Fees and commissions may be updated from time to time. Any changes will be reflected in the Terms of Service and apply only after users have been notified or have agreed to the updated Terms. E&OE.",
+      "Posting a task on Taskorilla is free. Placing a bid on a task is free. A €2 platform fee applies to Taskers only when a task is marked as completed in accordance with Taskorilla's platform rules. A 10% helper commission applies only when a task is completed and payment has been received by the Helper. Taskorilla does not charge any fees for tasks that are not completed. Fees and commissions may be updated from time to time. Any changes will be reflected in the Terms of Service and apply only after users have been notified or have agreed to the updated Terms. E&OE.",
   },
   {
     title: "Payments",
@@ -46,7 +46,7 @@ const sectionsEn = [
   {
     title: "Content",
     content:
-      "You are responsible for anything you post. By posting, you give Taskorilla permission to display that content on the platform.",
+      "Taskers are responsible for anything they post. By posting, Taskers give Taskorilla permission to display that content on the platform.",
   },
   {
     title: "Platform Changes",

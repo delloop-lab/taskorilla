@@ -1,25 +1,36 @@
 import { Model, StylesManager } from 'survey-core'
+import { PROFESSION_GROUPS } from '@/lib/profession-constants'
+import { sortCategoriesByDisplayOrder } from '@/lib/category-order'
 
 /**
  * SurveyJS Trial Form Schema
  * Simple form for testing/preview with helper/professional selection
+ * Category and profession dropdowns match Full form (same contents and order)
  */
 export function getTrialFormSchema(
-  categories: Array<{ id: string; name: string }> = [],
-  professions: string[] = [],
+  categories: Array<{ id: string; name: string; slug?: string }> = [],
+  _professions: string[] = [], // Unused - we use PROFESSION_GROUPS to match Full form
   theme: 'default' | 'defaultV2' | 'modern' | 'custom' = 'modern',
   translate?: (key: string) => string
 ) {
   const t = translate || ((key: string) => key) // Fallback to key if no translate function
-  const categoryChoices = categories.map(cat => ({
+  const categoriesWithSlug = categories.map(c => ({
+    ...c,
+    slug: (c as { slug?: string }).slug || 'unknown'
+  }))
+  const sortedCategories = sortCategoriesByDisplayOrder(categoriesWithSlug)
+  const categoryChoices = sortedCategories.map(cat => ({
     value: cat.id,
     text: cat.name
   }))
 
-  const professionChoices = professions.map(prof => ({
-    value: prof,
-    text: prof
-  }))
+  // Same order and contents as Full form (with visible group headings).
+  // SurveyJS dropdown doesn't render native <optgroup>, so we insert disabled "header" items
+  // and style them via the per-choice `css` field.
+  const professionChoices = PROFESSION_GROUPS.flatMap((g) => [
+    { value: `__header_${g.heading}__`, text: g.heading, css: 'profession-group-header', enableIf: 'false' },
+    ...g.options.map((prof) => ({ value: prof, text: prof, css: 'profession-group-option' })),
+  ])
 
   return {
     title: t('surveyForm.title'),
@@ -51,6 +62,7 @@ export function getTrialFormSchema(
             choices: categoryChoices.length > 0 
               ? categoryChoices 
               : [{ value: '', text: t('surveyForm.noCategoriesAvailable') }],
+            choicesOrder: 'none',
             placeHolder: t('surveyForm.selectCategoryPlaceholder'),
             showNoneItem: false,
             visibleIf: '{taskType} = "helper"'
@@ -67,6 +79,7 @@ export function getTrialFormSchema(
             choices: professionChoices.length > 0 
               ? professionChoices 
               : [{ value: '', text: t('surveyForm.noProfessionsAvailable') }],
+            choicesOrder: 'none',
             placeHolder: t('surveyForm.selectProfessionPlaceholder'),
             showNoneItem: false,
             visibleIf: '{taskType} = "professional"'

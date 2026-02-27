@@ -1,59 +1,28 @@
 /**
- * Currency formatting utilities
- * All prices are displayed in EUR (Euros)
+ * Round to 2 decimal places to avoid float drift (e.g. 80 stored/returned as 79.999999 → 80).
+ * Use for any currency or rate display.
  */
-
-const euroFormatter = new Intl.NumberFormat('en-IE', {
-  style: 'currency',
-  currency: 'EUR',
-  minimumFractionDigits: 2,
-})
-
-const euroFormatterNoDecimals = new Intl.NumberFormat('en-IE', {
-  style: 'currency',
-  currency: 'EUR',
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0,
-})
-
-/**
- * Format a number as Euro currency
- * @param value - The amount to format
- * @param showDecimals - Whether to show decimal places (default: true)
- * @returns Formatted string like "€50.00" or empty string if value is invalid
- */
-export function formatEuro(value?: number | null, showDecimals: boolean = true): string {
-  if (value === null || value === undefined || Number.isNaN(value)) {
-    return ''
-  }
-  
-  const formatter = showDecimals ? euroFormatter : euroFormatterNoDecimals
-  return formatter.format(value)
+export function roundCurrency(value: number): number {
+  return Math.round(value * 100) / 100
 }
 
 /**
- * Format a number as Euro currency with simple € symbol (no decimals)
- * Useful for display where you want "€50" instead of "€50.00"
- * @param value - The amount to format
- * @returns Formatted string like "€50" or empty string if value is invalid
+ * Format a rate/amount for display: round first, then show whole numbers without .00.
+ * e.g. 80 → "80", 79.99 → "79.99", 25.5 → "25.5"
  */
-export function formatEuroSimple(value?: number | null): string {
-  if (value === null || value === undefined || Number.isNaN(value)) {
-    return ''
-  }
-  return `€${Math.round(value)}`
+export function formatRate(value: number): string {
+  const r = roundCurrency(value)
+  return r % 1 === 0 ? String(r) : r.toFixed(2)
 }
 
 /**
- * Format a number as Euro currency with decimals
- * @param value - The amount to format
- * @returns Formatted string like "€50.00" or empty string if value is invalid
+ * Format a euro amount for display. Rounds with roundCurrency first so small amounts
+ * (e.g. 10% of €1 = €0.10) never show as 0.00 due to float drift.
+ * @param value - amount in euros
+ * @param showSymbol - if true (default), prefix with €
  */
-export function formatEuroWithDecimals(value?: number | null): string {
-  return formatEuro(value, true)
+export function formatEuro(value: number, showSymbol: boolean = true): string {
+  const r = roundCurrency(value)
+  const str = r % 1 === 0 ? String(r) : r.toFixed(2)
+  return showSymbol ? `€${str}` : str
 }
-
-
-
-
-

@@ -436,6 +436,34 @@ body {
   color: inherit !important;
 }
 
+/* Profession group headers in Quick form - match Full form optgroup style (bold, dark, spaced) */
+/* SurveyJS dropdown "group heading" items (Quick form professional roles) */
+.sv-list__item.profession-group-header,
+.sv-list__item.profession-group-header .sv-list__item-text {
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  opacity: 1 !important;
+}
+
+.sv-list__item.profession-group-header {
+  padding: 10px 12px 6px !important;
+  margin-top: 6px !important;
+  cursor: default !important;
+  pointer-events: none !important;
+  background: transparent !important;
+}
+
+.sv-list__item.profession-group-header:first-child {
+  margin-top: 0 !important;
+}
+
+/* Indent profession options under headers (Quick form) */
+.sv-list__item.profession-group-option {
+  padding-left: 28px !important;
+  font-weight: 400 !important;
+  color: #374151 !important;
+}
+
 .surveyjs-form-wrapper[data-theme="custom"] .sv-dropdown__value {
   color: inherit !important;
 }

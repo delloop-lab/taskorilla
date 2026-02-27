@@ -18,10 +18,19 @@ import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
 import UserRatingsDisplay from '@/components/UserRatingsDisplay'
 import { compressAvatar } from '@/lib/image-utils'
 import { useLanguage } from '@/lib/i18n'
+import { formatRate } from '@/lib/currency'
 
 // AppUser interface that extends User and includes all properties used in this component
 interface AppUser extends User {
   languages?: string[] | null
+}
+
+/** Base URL for shareable profile links and QR – always use live site URL from env, never localhost */
+function getProfileBaseUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL
+  if (envUrl) return String(envUrl).replace(/\/$/, '')
+  if (typeof window !== 'undefined') return window.location.origin
+  return ''
 }
 
 function ProfilePageContent() {
@@ -40,7 +49,7 @@ function ProfilePageContent() {
   const [fullName, setFullName] = useState('')
   const [companyName, setCompanyName] = useState('')
   const [postcode, setPostcode] = useState('')
-  const [country, setCountry] = useState('')
+  const [country, setCountry] = useState('Portugal')
   const [phoneCountryCode, setPhoneCountryCode] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [geocoding, setGeocoding] = useState(false)
@@ -110,18 +119,50 @@ function ProfilePageContent() {
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)
   const [showQrCode, setShowQrCode] = useState(false)
   const [showShareSuccess, setShowShareSuccess] = useState(false)
+  const [qrCopyStatus, setQrCopyStatus] = useState<'idle' | 'success' | 'error'>('idle')
 
   useEffect(() => {
     loadProfile()
   }, [])
   
-  // Generate QR code when profile loads
+  // Generate QR code when profile loads (always use live URL)
   useEffect(() => {
     if (profile && profile.profile_slug) {
-      const profileUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/user/${profile.profile_slug || profile.id}`
-      setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(profileUrl)}`)
+      const profileUrl = `${getProfileBaseUrl()}/user/${profile.profile_slug || profile.id}`
+      if (profileUrl.startsWith('http')) {
+        setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(profileUrl)}`)
+      }
     }
   }, [profile])
+
+  const copyQrImageToClipboard = async () => {
+    if (!profile) return
+    setQrCopyStatus('idle')
+    const profileUrl = `${getProfileBaseUrl()}/user/${profile.profile_slug || profile.id}`
+    if (!profileUrl.startsWith('http')) {
+      setQrCopyStatus('error')
+      setTimeout(() => setQrCopyStatus('idle'), 2000)
+      return
+    }
+    try {
+      const res = await fetch(`/api/qr-download?data=${encodeURIComponent(profileUrl)}`)
+      if (!res.ok) throw new Error('Fetch failed')
+      const arrayBuffer = await res.arrayBuffer()
+      // ClipboardItem requires a Blob with explicit image/png for reliable paste
+      const blob = new Blob([arrayBuffer], { type: 'image/png' })
+      if (!navigator.clipboard?.write) {
+        setQrCopyStatus('error')
+        setTimeout(() => setQrCopyStatus('idle'), 2000)
+        return
+      }
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+      setQrCopyStatus('success')
+      setTimeout(() => setQrCopyStatus('idle'), 2000)
+    } catch {
+      setQrCopyStatus('error')
+      setTimeout(() => setQrCopyStatus('idle'), 2000)
+    }
+  }
 
   // Update ratings when userRatings finish loading
   useEffect(() => {
@@ -163,7 +204,7 @@ function ProfilePageContent() {
       setFullName(data?.full_name || '')
       setCompanyName(data?.company_name || '')
       setPostcode(data?.postcode || '')
-      setCountry(data?.country || '')
+      setCountry(data?.country || 'Portugal')
       setPhoneCountryCode(data?.phone_country_code || '')
       setPhoneNumber(data?.phone_number || '')
       setAvatarUrl(data?.avatar_url || null)
@@ -621,12 +662,12 @@ function ProfilePageContent() {
       }
       // Note: We generate slugs for ALL users (helpers and taskers) so profiles are shareable
 
-      // Parse hourly rate safely
+      // Parse hourly rate safely and round to 2 decimals to avoid float drift (e.g. 80 → 79.99)
       let hourlyRateValue = null
       if (hourlyRate && hourlyRate.trim()) {
         const parsed = parseFloat(hourlyRate.trim())
         if (!isNaN(parsed) && parsed >= 0) {
-          hourlyRateValue = parsed
+          hourlyRateValue = Math.round(parsed * 100) / 100
         }
       }
 
@@ -709,7 +750,7 @@ function ProfilePageContent() {
         setFullName(updatedData.full_name || '')
         setCompanyName(updatedData.company_name || '')
         setPostcode(updatedData.postcode || '')
-        setCountry(updatedData.country || '')
+        setCountry(updatedData.country || 'Portugal')
         setPhoneCountryCode(updatedData.phone_country_code || '')
         setPhoneNumber(updatedData.phone_number || '')
         setAvatarUrl(updatedData.avatar_url || null)
@@ -921,7 +962,7 @@ function ProfilePageContent() {
             <button
               onClick={() => {
                 if (!profile) return
-                const profileUrl = `${window.location.origin}/user/${profile.profile_slug || profile.id}`
+                const profileUrl = `${getProfileBaseUrl()}/user/${profile.profile_slug || profile.id}`
                 navigator.clipboard.writeText(profileUrl)
                 setShowShareSuccess(true)
                 setTimeout(() => setShowShareSuccess(false), 3000)
@@ -955,10 +996,26 @@ function ProfilePageContent() {
             <h3 className="text-lg font-semibold mb-4">{t('profile.scanQrCode')}</h3>
             <img src={qrCodeUrl} alt="QR Code" className="mx-auto mb-4" />
             <p className="text-sm text-gray-600 text-center mb-4">{t('profile.shareProfileDescription')}</p>
+            <div className="flex gap-2 mb-4">
+              <button
+                type="button"
+                onClick={copyQrImageToClipboard}
+                className="flex-1 bg-gray-100 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-200 border border-gray-300"
+              >
+                {qrCopyStatus === 'success' ? t('profile.copied') : qrCopyStatus === 'error' ? t('profile.copyFailed') : t('profile.copyQrImage')}
+              </button>
+              <a
+                href={`/api/qr-download?data=${encodeURIComponent(`${getProfileBaseUrl()}/user/${profile.profile_slug || profile.id}`)}`}
+                download="taskorilla-profile-qr.png"
+                className="flex-1 text-center bg-gray-100 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-200 border border-gray-300 no-underline"
+              >
+                {t('profile.downloadQrImage')}
+              </a>
+            </div>
             <div className="mb-4 p-3 bg-gray-50 rounded-md">
               <p className="text-xs text-gray-500 mb-1">{t('profile.profileLink')}</p>
               <p className="text-sm text-gray-900 break-all">
-                {typeof window !== 'undefined' ? window.location.origin : ''}/user/{profile.profile_slug || profile.id}
+                {getProfileBaseUrl()}/user/{profile.profile_slug || profile.id}
               </p>
             </div>
             <button
@@ -1553,6 +1610,9 @@ function ProfilePageContent() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   PayPal Email {process.env.NEXT_PUBLIC_PAYMENT_PROVIDER === 'paypal' && <span className="text-red-500">*</span>}
                 </label>
+                <p className="mb-2 text-xs text-gray-600">
+                  Please enter the email linked to your PayPal account. This is needed so we can send your payouts.
+                </p>
                 {editing ? (
                   <div>
                     <input
@@ -1589,38 +1649,44 @@ function ProfilePageContent() {
               </div>
             )}
 
-            {/* IBAN for Payouts (Airwallex/bank transfer) */}
-            {isHelper && process.env.NEXT_PUBLIC_PAYMENT_PROVIDER !== 'paypal' && (
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('profile.iban')}
-                </label>
-                {editing ? (
-                  <div>
+            {/*
+              IBAN for Payouts (Airwallex/bank transfer)
+
+              Commented out per request (hide IBAN field + helper text on /profile).
+            */}
+            {/*
+              {isHelper && process.env.NEXT_PUBLIC_PAYMENT_PROVIDER !== 'paypal' && (
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('profile.iban')}
+                  </label>
+                  {editing ? (
+                    <div>
+                      <input
+                        type="text"
+                        value={iban}
+                        onChange={(e) => {
+                          const cleaned = e.target.value.replace(/\s/g, '').toUpperCase()
+                          setIban(cleaned)
+                        }}
+                        placeholder={t('profile.ibanPlaceholder')}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        {t('profile.ibanHelper')}
+                      </p>
+                    </div>
+                  ) : (
                     <input
                       type="text"
-                      value={iban}
-                      onChange={(e) => {
-                        const cleaned = e.target.value.replace(/\s/g, '').toUpperCase()
-                        setIban(cleaned)
-                      }}
-                      placeholder={t('profile.ibanPlaceholder')}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                      value={profile.iban || t('profile.notSet')}
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
                     />
-                    <p className="mt-1 text-xs text-gray-500">
-                      {t('profile.ibanHelper')}
-                    </p>
-                  </div>
-                ) : (
-                  <input
-                    type="text"
-                    value={profile.iban || t('profile.notSet')}
-                    disabled
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
-                  />
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              ))}
+            */}
 
             {/* Payments Section - For Taskers */}
             {isTasker && payments.totalTasks > 0 && (
@@ -1724,11 +1790,11 @@ function ProfilePageContent() {
 
             {/* Earnings Section - Only for Helpers */}
             {isHelper && earnings.totalTasks > 0 && (
-              <div className="border-t pt-6 mt-6">
+              <div className="mt-8 rounded-xl border-2 border-green-200 bg-green-50/60 p-5 shadow-sm">
                 {/* Clickable Header */}
                 <button 
                   onClick={() => setEarningsExpanded(!earningsExpanded)}
-                  className="w-full flex items-center justify-between text-left mb-4"
+                  className={`-mx-2 w-[calc(100%+1rem)] rounded-lg px-2 py-2 flex items-center justify-between text-left mb-4 hover:bg-white/60 focus:outline-none focus:ring-2 focus:ring-green-200 ${earningsExpanded ? 'bg-white/70' : ''}`}
                 >
                   <h3 className="text-lg font-semibold text-gray-900">{t('profile.earnings')}</h3>
                   <div className="flex items-center gap-3">
@@ -2004,7 +2070,7 @@ function ProfilePageContent() {
                       </>
                     ) : (
                       <p className="text-gray-700">
-                        {profile.hourly_rate ? `€${profile.hourly_rate}/hr` : t('profile.notSet')}
+                        {profile.hourly_rate != null ? `€${formatRate(Number(profile.hourly_rate))}/hr` : t('profile.notSet')}
                       </p>
                     )}
                   </div>
@@ -2464,14 +2530,14 @@ function ProfilePageContent() {
                       <div className="flex gap-2">
                         <input
                           type="text"
-                          value={`${typeof window !== 'undefined' ? window.location.origin : ''}/user/${profile.profile_slug}`}
+                          value={`${getProfileBaseUrl()}/user/${profile.profile_slug}`}
                           readOnly
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700"
                         />
                         <button
                           type="button"
                           onClick={() => {
-                            const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/user/${profile.profile_slug}`
+                            const url = `${getProfileBaseUrl()}/user/${profile.profile_slug}`
                             navigator.clipboard.writeText(url)
                             setStatusMessage(t('profile.profileLinkCopied'))
                           }}
@@ -2500,7 +2566,7 @@ function ProfilePageContent() {
                     setFullName(profile.full_name || '')
                     setCompanyName(profile.company_name || '')
                     setPostcode(profile.postcode || '')
-                    setCountry(profile.country || '')
+                    setCountry(profile.country || 'Portugal')
                     setPhoneCountryCode(profile.phone_country_code || '')
                     setPhoneNumber(profile.phone_number || '')
                     setIsTasker(profile.is_tasker ?? true)

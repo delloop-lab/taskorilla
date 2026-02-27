@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import { useEffect, useState, useRef, useId } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Task } from '@/lib/types'
@@ -14,8 +14,20 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 })
 
+interface MapMarker {
+  id: string
+  title: string
+  address?: string | null
+  tooltip?: string | null
+  logo_url?: string | null
+  business_url?: string | null
+  latitude: number | null
+  longitude: number | null
+}
+
 interface MapProps {
   tasks: Task[]
+  markers?: MapMarker[]
   onTaskClick?: (task: Task) => void
 }
 
@@ -134,9 +146,10 @@ function addMarkerOffsets(tasks: Task[]): Array<{ task: Task; lat: number; lon: 
   return result
 }
 
-export default function TaskMap({ tasks, onTaskClick }: MapProps) {
+export default function TaskMap({ tasks, markers = [], onTaskClick }: MapProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null)
+  const mapId = useId()
   
   // Default to Portugal (Lisbon) if no tasks
   const defaultCenter: [number, number] = [38.7223, -9.1393]
@@ -186,6 +199,7 @@ export default function TaskMap({ tasks, onTaskClick }: MapProps) {
 
   return (
     <MapContainer
+      key={mapId}
       center={defaultCenter}
       zoom={defaultZoom}
       style={{ width: '100%', height: '100%' }}
@@ -207,7 +221,7 @@ export default function TaskMap({ tasks, onTaskClick }: MapProps) {
         // Add offsets to markers at the same location so they're all visible
         const tasksWithOffsets = addMarkerOffsets(tasks)
         
-        return tasksWithOffsets.map(({ task, lat, lon }) => {
+        const taskMarkers = tasksWithOffsets.map(({ task, lat, lon }) => {
           // Validate coordinates are within reasonable ranges
           if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
             console.error(`Task ${task.id} has invalid coordinates:`, { lat, lon })
@@ -240,6 +254,14 @@ export default function TaskMap({ tasks, onTaskClick }: MapProps) {
                 click: () => handleMarkerClick(task),
               }}
             >
+            <Tooltip
+              direction="top"
+              offset={[0, -18]}
+              opacity={1}
+              className="task-marker-tooltip"
+            >
+              {task.title}
+            </Tooltip>
             <Popup>
               <div style={{ padding: '8px', minWidth: '200px' }}>
                 <h3 style={{ 
@@ -287,6 +309,90 @@ export default function TaskMap({ tasks, onTaskClick }: MapProps) {
           </Marker>
           )
         })
+
+        const extraMarkers = markers
+          .filter(m => m.latitude != null && m.longitude != null && !isNaN(Number(m.latitude)) && !isNaN(Number(m.longitude)))
+          .map(marker => {
+            const lat = Number(marker.latitude)
+            const lon = Number(marker.longitude)
+
+            if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+              console.error(`Map marker ${marker.id} has invalid coordinates:`, { lat, lon })
+              return null
+            }
+
+            const rawLogo = marker.logo_url || ''
+            const logoSrc = rawLogo.startsWith('http') || rawLogo.startsWith('/')
+              ? rawLogo
+              : `/${rawLogo}`
+            const hasLogo = !!rawLogo
+            const html = hasLogo
+              ? `<div style="background-color: #ffffff; padding: 4px 6px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.35); border: 2px solid #ffffff; display: inline-flex; align-items: center; justify-content: center;">
+                   <img src="${logoSrc}" alt="${marker.title}" style="height: 40px; width: 40px; object-fit: contain;" />
+                 </div>`
+              : `<div style="background-color: #10b981; color: white; padding: 6px 10px; border-radius: 6px; box-shadow: 0 3px 6px rgba(0,0,0,0.4); font-size: 12px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; white-space: nowrap; border: 2px solid white;">
+                   ${marker.title}
+                 </div>`
+
+            const icon = L.divIcon({
+              className: 'custom-marker custom-marker-place',
+              html,
+              iconSize: hasLogo ? [52, 52] : [80, 30],
+              iconAnchor: hasLogo ? [26, 26] : [40, 15],
+              popupAnchor: [0, -18],
+            })
+
+            return (
+              <Marker
+                key={`marker-${marker.id}`}
+                position={[lat, lon]}
+                icon={icon}
+              >
+                <Tooltip
+                  direction="top"
+                  offset={[0, -18]}
+                  opacity={1}
+                  className="task-marker-tooltip"
+                >
+                  {marker.tooltip || marker.title}
+                </Tooltip>
+                {(marker.address || marker.business_url) && (
+                  <Popup>
+                    <div style={{ padding: '8px', minWidth: '180px' }}>
+                      <h3 style={{ fontWeight: 700, marginBottom: '4px', color: '#111827', fontSize: '15px' }}>
+                        {marker.title}
+                      </h3>
+                      {marker.address && (
+                        <p style={{ fontSize: '13px', color: '#4b5563', marginBottom: marker.business_url ? '6px' : 0 }}>
+                          {marker.address}
+                        </p>
+                      )}
+                      {marker.business_url && (
+                        <a
+                          href={marker.business_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '13px',
+                            color: '#2563eb',
+                            fontWeight: 500,
+                            textDecoration: 'none',
+                          }}
+                        >
+                          Visit website →
+                        </a>
+                      )}
+                    </div>
+                  </Popup>
+                )}
+              </Marker>
+            )
+          })
+
+        return [...taskMarkers, ...extraMarkers]
       })()}
     </MapContainer>
   )

@@ -5,8 +5,15 @@ import NewTaskClient from './NewTaskClient'
 import SurveyJSTrialForm from '@/components/SurveyJSTrialForm'
 import { useLanguage } from '@/lib/i18n'
 
+const FORM_TYPE_STORAGE_KEY = 'newTaskFormType'
+
 export default function FormTypeSelector() {
-  const [formType, setFormType] = useState<'quick' | 'full'>('quick')
+  const [formType, setFormType] = useState<'quick' | 'full'>(() => {
+    if (typeof window === 'undefined') return 'quick'
+    const stored = localStorage.getItem(FORM_TYPE_STORAGE_KEY)
+    if (stored === 'quick' || stored === 'full') return stored
+    return 'quick'
+  })
   const { t } = useLanguage()
   
   return (

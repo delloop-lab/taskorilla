@@ -6,6 +6,7 @@ import { User } from '@/lib/types'
 import Link from 'next/link'
 import { STANDARD_SKILLS, helperMatchesSearch } from '@/lib/helper-constants'
 import { STANDARD_PROFESSIONS } from '@/lib/profession-constants'
+import { formatRate } from '@/lib/currency'
 import { User as UserIcon, Star } from 'lucide-react'
 import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
 import CompactUserRatingsDisplay from '@/components/CompactUserRatingsDisplay'
@@ -331,7 +332,7 @@ export default function FeaturedHelpers({ searchTerm = '', selectedSkill = null,
                   )}
                   {(helper.hourly_rate || (helper.professions && helper.professions.length > 0)) && (
                     <span className="text-sm font-semibold text-primary-600">
-                      {helper.hourly_rate ? `€${helper.hourly_rate}/hr` : 'Ask About Fees'}
+                      {helper.hourly_rate != null ? `€${formatRate(Number(helper.hourly_rate))}/hr` : 'Ask About Fees'}
                     </span>
                   )}
                 </div>

@@ -19,7 +19,7 @@ export const STANDARD_SKILLS = [
   'Painting / Home Improvement',
   'Event Setup / Assistance',
   'Shopping / Grocery Pickup',
-  'Odd Jobs / Miscellaneous'
+  'Odd Jobs / Miscellaneous',
 ]
 
 export const STANDARD_SERVICES = [
@@ -36,8 +36,39 @@ export const STANDARD_SERVICES = [
   'Painting & Home Improvement',
   'Event Help & Setup',
   'Shopping & Delivery',
-  'General Odd Jobs'
+  'General Odd Jobs',
 ]
+
+// Display helpers to keep filters aligned with profile dropdowns
+export function sortSkillsForDisplay(skills: string[]): string[] {
+  const skillsArray = Array.from(skills)
+  const standardLower = new Set(STANDARD_SKILLS.map((s) => s.toLowerCase()))
+
+  const orderedStandard = STANDARD_SKILLS.map((std) =>
+    skillsArray.find((s) => s.toLowerCase() === std.toLowerCase())
+  ).filter((s): s is string => Boolean(s))
+
+  const extras = skillsArray
+    .filter((s) => !standardLower.has(s.toLowerCase()))
+    .sort((a, b) => a.localeCompare(b))
+
+  return [...orderedStandard, ...extras]
+}
+
+export function sortServicesForDisplay(services: string[]): string[] {
+  const servicesArray = Array.from(services)
+  const standardLower = new Set(STANDARD_SERVICES.map((s) => s.toLowerCase()))
+
+  const orderedStandard = STANDARD_SERVICES.map((std) =>
+    servicesArray.find((s) => s.toLowerCase() === std.toLowerCase())
+  ).filter((s): s is string => Boolean(s))
+
+  const extras = servicesArray
+    .filter((s) => !standardLower.has(s.toLowerCase()))
+    .sort((a, b) => a.localeCompare(b))
+
+  return [...orderedStandard, ...extras]
+}
 
 // Helper function to check if search term matches any standard skill or service
 export function matchesStandardSkillOrService(searchTerm: string): string[] {

@@ -1,13 +1,18 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { User } from '@/lib/types'
 import Link from 'next/link'
 import FeaturedHelpers from '@/components/FeaturedHelpers'
-import { STANDARD_SKILLS, STANDARD_SERVICES, helperMatchesSearch } from '@/lib/helper-constants'
+import {
+  STANDARD_SKILLS,
+  STANDARD_SERVICES,
+  helperMatchesSearch,
+} from '@/lib/helper-constants'
 import { STANDARD_PROFESSIONS, helperMatchesProfession } from '@/lib/profession-constants'
+import { formatRate } from '@/lib/currency'
 import { useLanguage } from '@/lib/i18n'
 import { User as UserIcon } from 'lucide-react'
 import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
@@ -70,6 +75,12 @@ export default function BrowseHelpersPage() {
     return score
   }
 
+  // Build a ratings map once so we can look up helper ratings on the fly
+  const ratingsMap = useMemo(
+    () => new Map(userRatings.map((r: any) => [r.reviewee_id, r])),
+    [userRatings]
+  )
+
   // Auto-show filters if search term or any filter is selected
   useEffect(() => {
     if (searchTerm || selectedSkill || selectedService || selectedProfession || showProfessionalsOnly) {
@@ -99,20 +110,9 @@ export default function BrowseHelpersPage() {
                  helper.role !== 'admin' && 
                  helper.role !== 'superadmin'
         })
-        
-        // Add ratings from SQL function
-        // The SQL function returns 'reviewee_id' as the user identifier
-        const ratingsMap = new Map(userRatings.map((r: any) => [r.reviewee_id, r]))
-        const helpersWithRatings = onlyHelpers.map((helper: any) => {
-          const userRating = getUserRatingsById(helper.id, ratingsMap)
-          return {
-            ...helper,
-            userRatings: userRating || null
-          }
-        })
-        
+
         // Sort helpers by profile completion score, then badges, featured status, rating, and date
-        const sortedHelpers = helpersWithRatings.sort((a: any, b: any) => {
+        const sortedHelpers = onlyHelpers.sort((a: any, b: any) => {
           // Calculate completion scores
           const scoreA = calculateProfileCompletionScore(a)
           const scoreB = calculateProfileCompletionScore(b)
@@ -135,19 +135,12 @@ export default function BrowseHelpersPage() {
           if (aFeatured && !bFeatured) return -1
           if (!aFeatured && bFeatured) return 1
           
-          // Quaternary sort: Helper rating (if available)
-          const aRating = a.userRatings?.helper_avg_rating || 0
-          const bRating = b.userRatings?.helper_avg_rating || 0
-          if (bRating !== aRating) {
-            return bRating - aRating
-          }
-          
           // Final sort: Newest first (created_at)
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         })
         
         setHelpers(sortedHelpers)
-        
+
         // Combine database skills with standard skills for dropdown
         const allSkills = new Set<string>()
         const allServices = new Set<string>()
@@ -174,9 +167,10 @@ export default function BrowseHelpersPage() {
             helper.professions.forEach((profession: string) => allProfessions.add(profession))
           }
         })
-        
-        setAvailableSkills(Array.from(allSkills).sort())
-        setAvailableServices(Array.from(allServices).sort())
+
+        // Show skills A–Z in the filter dropdown
+        setAvailableSkills(Array.from(allSkills).sort((a, b) => a.localeCompare(b)))
+        setAvailableServices(Array.from(allServices).sort((a, b) => a.localeCompare(b)))
         setAvailableProfessions(Array.from(allProfessions).sort())
       }
     } catch (err: any) {
@@ -427,7 +421,12 @@ export default function BrowseHelpersPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredHelpers.map((helper) => (
+            {filteredHelpers.map((helper) => {
+              const helperRatings = ratingsMap.size
+                ? getUserRatingsById(helper.id, ratingsMap)
+                : null
+
+              return (
               <Link
                 key={helper.id}
                 href={`/user/${helper.profile_slug || helper.id}`}
@@ -466,12 +465,14 @@ export default function BrowseHelpersPage() {
                     </div>
                   </div>
 
-                  {/* Rating */}
-                  {helper.userRatings && (
+                  {/* Ratings: Helper stars from reviews only */}
+                  {helperRatings && (
                     <div className="mb-3">
                       <CompactUserRatingsDisplay 
-                        ratings={helper.userRatings} 
+                        ratings={helperRatings} 
                         size="sm"
+                        showTasker={false}
+                        showHelper={true}
                       />
                     </div>
                   )}
@@ -480,7 +481,7 @@ export default function BrowseHelpersPage() {
                   {(helper.hourly_rate || (helper.professions && helper.professions.length > 0)) && (
                     <div className="mb-3">
                       <span className="text-lg font-semibold text-primary-600">
-                        {helper.hourly_rate ? `€${helper.hourly_rate}/hr` : 'Ask About Fees'}
+                        {helper.hourly_rate != null ? `€${formatRate(Number(helper.hourly_rate))}/hr` : 'Ask About Fees'}
                       </span>
                     </div>
                   )}
@@ -596,7 +597,7 @@ export default function BrowseHelpersPage() {
                   </div>
                 </div>
               </Link>
-            ))}
+            )})}
           </div>
         )}
       </div>

@@ -696,8 +696,11 @@ export function renderEmailTemplate(
 ): string {
   // Handle special shortcodes FIRST (before normalization)
   // This ensures placeholders aren't affected by HTML normalization
-  const baseUrl = getBaseUrl()
-  
+  let baseUrl = getBaseUrl()
+  // Ensure HTTPS for email image URLs so clients don't block mixed content
+  if (process.env.NODE_ENV === 'production' && baseUrl.startsWith('http://')) {
+    baseUrl = baseUrl.replace(/^http:\/\//, 'https://')
+  }
   // Construct absolute image URL - ensure no double slashes
   const imageUrl = `${baseUrl}/images/gorilla-mascot-new-email.png`.replace(/([^:]\/)\/+/g, '$1')
   
@@ -711,8 +714,20 @@ export function renderEmailTemplate(
   // Use absolute URL and add display:block to prevent spacing issues
   // Maintain aspect ratio - don't constrain width, let it scale naturally
   const mascotImageHtml = `<img src="${imageUrl}" alt="Tee - Taskorilla Mascot" style="max-width: 100%; height: auto; display: block; margin: 0 auto; padding: 0;" />`
-  let rendered = htmlContent.replace(/\{\{tee_image\}\}/gi, mascotImageHtml)
-  rendered = rendered.replace(/\{\{mascot\}\}/gi, mascotImageHtml)
+  // Match placeholder with optional spaces, and HTML-entity-encoded form (e.g. from rich text editors)
+  const teeImagePatterns = [
+    /\{\{\s*tee_image\s*\}\}/gi,
+    /\{\{tee_image\}\}/gi,
+    /&#123;&#123;\s*tee_image\s*&#125;&#125;/gi,
+    /&#x7b;&#x7b;\s*tee_image\s*&#x7d;&#x7d;/gi,
+  ]
+  const mascotPatterns = [
+    /\{\{\s*mascot\s*\}\}/gi,
+    /\{\{mascot\}\}/gi,
+  ]
+  let rendered = htmlContent
+  teeImagePatterns.forEach((re) => { rendered = rendered.replace(re, mascotImageHtml) })
+  mascotPatterns.forEach((re) => { rendered = rendered.replace(re, mascotImageHtml) })
   
   // Replace regular variables BEFORE normalization
   for (const [key, value] of Object.entries(variables)) {
@@ -724,6 +739,16 @@ export function renderEmailTemplate(
   rendered = normalizeTemplateHTML(rendered)
   
   return rendered
+}
+
+/** Build mascot image HTML for emails. Exported so sendTemplateEmail can append if placeholder was missing. */
+function getMascotImageHtml(): string {
+  let baseUrl = getBaseUrl()
+  if (process.env.NODE_ENV === 'production' && baseUrl.startsWith('http://')) {
+    baseUrl = baseUrl.replace(/^http:\/\//, 'https://')
+  }
+  const imageUrl = `${baseUrl}/images/gorilla-mascot-new-email.png`.replace(/([^:]\/)\/+/g, '$1')
+  return `<img src="${imageUrl}" alt="Tee - Taskorilla Mascot" style="max-width: 100%; height: auto; display: block; margin: 16px auto 0; padding: 0;" />`
 }
 
 /**
@@ -743,12 +768,19 @@ export async function sendTemplateEmail(
     const userFirstName = recipientName ? recipientName.split(' ')[0] : ''
     
     // Render template with variables
-    const renderedHtml = renderEmailTemplate(htmlContent, {
+    let renderedHtml = renderEmailTemplate(htmlContent, {
       user_name: recipientName,
       user_first_name: userFirstName,
       user_email: recipientEmail,
       ...variables,
     })
+
+    // Fallback: if template was saved without {{tee_image}}, append mascot so image always shows
+    const mascotImg = getMascotImageHtml()
+    const hasMascot = /gorilla-mascot-new-email\.png|Tee - Taskorilla Mascot/i.test(renderedHtml)
+    if (!hasMascot) {
+      renderedHtml = renderedHtml + mascotImg
+    }
 
     // Wrap email content in clean HTML structure with proper line break preservation and width constraints
     const emailHtml = `<!DOCTYPE html>

@@ -11,12 +11,13 @@ import ReportModal from '@/components/ReportModal'
 import { User as UserIcon, Star } from 'lucide-react'
 import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
 import UserRatingsDisplay from '@/components/UserRatingsDisplay'
+import { formatRate } from '@/lib/currency'
 
 function UserProfileContent() {
   const params = useParams()
   const router = useRouter()
   const userId = params.id as string
-  const { users: userRatings } = useUserRatings()
+  const { users: userRatings, loading: ratingsLoading, error: ratingsError } = useUserRatings()
   
   const [profile, setProfile] = useState<User | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
@@ -541,7 +542,7 @@ function UserProfileContent() {
 
               {profile.is_helper && (profile.hourly_rate || (profile.professions && profile.professions.length > 0)) && (
                 <div className="text-lg font-semibold text-gray-900 mt-4">
-                  {profile.hourly_rate ? `€${profile.hourly_rate}/hr` : 'Ask About Fees'}
+                  {profile.hourly_rate != null ? `€${formatRate(Number(profile.hourly_rate))}/hr` : 'Ask About Fees'}
                 </div>
               )}
 
@@ -832,14 +833,20 @@ function UserProfileContent() {
                   <p className="text-2xl font-bold text-gray-900">{completedTasks.length}</p>
                 </div>
                 <div>
-                  {userRatingsSummary ? (
+                  {ratingsLoading ? (
+                    <div className="text-xs text-gray-400">Loading ratings...</div>
+                  ) : ratingsError ? (
+                    <div className="text-xs text-red-500">
+                      Unable to load ratings{ratingsError ? `: ${ratingsError}` : ''}
+                    </div>
+                  ) : userRatingsSummary ? (
                     <UserRatingsDisplay 
                       ratings={userRatingsSummary} 
                       size="sm"
                       showLabels={false}
                     />
                   ) : (
-                    <div className="text-xs text-gray-400">Loading ratings...</div>
+                    <div className="text-xs text-gray-400">No ratings yet</div>
                   )}
                 </div>
                 <div>
