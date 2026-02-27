@@ -57,6 +57,7 @@ export async function executeCreatePayout(
           .eq('id', helperId)
           .single()
         const p = profile as { paypal_email?: string; email?: string } | null
+        // Prefer explicit PayPal email if set, otherwise fall back to the helper's main account email
         paypalEmail = p?.paypal_email ?? p?.email ?? ''
       }
     }
@@ -64,8 +65,8 @@ export async function executeCreatePayout(
       return {
         status: 400,
         body: {
-          error: 'Helper has not set up PayPal email',
-          details: 'The helper needs to add their PayPal email to their profile to receive payouts.',
+          error: 'Missing helper email for PayPal payout',
+          details: 'The helper account does not have an email address configured.',
         },
       }
     }

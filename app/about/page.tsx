@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import Footer from "@/components/Footer";
 import { useLanguage } from "@/lib/i18n";
 import { Heart, Sparkles, Rocket } from "lucide-react";
 
@@ -29,7 +30,7 @@ export default function AboutPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <section className="bg-gradient-to-br from-primary to-accent text-white py-8 sm:py-12 md:py-16 px-4 relative overflow-hidden">
         <div className="container mx-auto max-w-4xl relative z-10">
@@ -50,7 +51,7 @@ export default function AboutPage() {
       </section>
 
       {/* Main Content */}
-      <section className="py-8 md:py-12 px-4">
+      <main className="py-8 md:py-12 px-4 flex-1">
         <div className="container mx-auto max-w-4xl">
           {/* Built From Scratch */}
           <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 md:p-8 mb-6 md:mb-8">
@@ -113,7 +114,9 @@ export default function AboutPage() {
             </div>
           </div>
         </div>
-      </section>
+      </main>
+
+      <Footer />
     </div>
   );
 }

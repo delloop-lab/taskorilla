@@ -119,7 +119,7 @@ export default function ConversationPage() {
             data.task_id
               ? supabase
                   .from('tasks')
-                  .select('id, title')
+                  .select('id, title, status, payment_status, created_by, assigned_to')
                   .eq('id', data.task_id)
                   .single()
               : Promise.resolve({ data: null })
@@ -236,20 +236,31 @@ export default function ConversationPage() {
     }
   }
 
+  // Once payment is complete for the related task and the participants are the tasker + helper,
+  // we allow sharing contact info in this conversation.
+  const canShareContact =
+    !!task &&
+    !!user &&
+    task.payment_status === 'paid' &&
+    (task.status === 'assigned' || task.status === 'in_progress' || task.status === 'completed') &&
+    (user.id === task.created_by || user.id === task.assigned_to)
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
     if ((!newMessage.trim() && !messageImage) || !user || !conversation || sending) return
 
-    // Check for contact information (email/phone) - block for safety
-    const contentCheck = checkForContactInfo(newMessage)
-    if (!contentCheck.isClean) {
-      setModalState({
-        isOpen: true,
-        type: 'warning',
-        title: 'Contact Information Detected',
-        message: contentCheck.message,
-      })
-      return
+    // Before payment (or when task is missing), keep current safety behaviour.
+    if (!canShareContact) {
+      const contentCheck = checkForContactInfo(newMessage)
+      if (!contentCheck.isClean) {
+        setModalState({
+          isOpen: true,
+          type: 'warning',
+          title: 'Contact Information Detected',
+          message: contentCheck.message,
+        })
+        return
+      }
     }
 
     setSending(true)
@@ -382,6 +393,12 @@ export default function ConversationPage() {
           </div>
         </div>
       </div>
+
+      {canShareContact && (
+        <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+          Payment for this task is confirmed. You can now share contact details.
+        </div>
+      )}
 
       {/* Messages */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6 min-h-[400px] max-h-[600px] overflow-y-auto">

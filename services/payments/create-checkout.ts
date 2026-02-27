@@ -95,16 +95,6 @@ export async function executeCreateCheckout(
   }
 
   if (isPayPalEnabled()) {
-    if (!helperProfile.paypal_email) {
-      return {
-        status: 400,
-        body: {
-          error: 'Helper has not set up their PayPal email',
-          code: 'HELPER_NOT_ONBOARDED',
-          message: 'The helper needs to add their PayPal email to their profile before you can pay.',
-        },
-      }
-    }
     const { createCheckout } = await import('./paypal/checkout')
     const totalAmount = task.budget + serviceFee
     const result = await createCheckout(taskId, totalAmount, {

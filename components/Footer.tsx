@@ -70,10 +70,14 @@ export default function Footer({ variant = 'default' }: FooterProps) {
           <Link href="/terms" className="hover:text-foreground transition-colors">{t('footer.termsOfService')}</Link>
           <span className="text-muted-foreground/30">|</span>
           <Link href="/advertising-opportunities" className="hover:text-foreground transition-colors">
-            Advertising Opportunities
+            Advertising
           </Link>
           <span className="text-muted-foreground/30">|</span>
-          <a href="mailto:tee@taskorilla.com" className="hover:text-foreground transition-colors">{t('footer.contact')}</a>
+          <Link href="/partnerships" className="hover:text-foreground transition-colors">
+            Partner
+          </Link>
+          <span className="text-muted-foreground/30">|</span>
+          <Link href="/contact" className="hover:text-foreground transition-colors">{t('footer.contact')}</Link>
           <span className="text-muted-foreground/30">|</span>
           <a 
             href="https://www.facebook.com/profile.php?id=61584791914940" 

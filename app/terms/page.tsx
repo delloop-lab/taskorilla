@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Footer from "@/components/Footer";
 import { useLanguage } from "@/lib/i18n";
 
 const sectionsEn = [
@@ -148,32 +149,38 @@ export default function TermsPage() {
     : "Welcome to Taskorilla. By using the platform you agree to these Terms. If you do not agree, please stop using the platform.";
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <Link
-        href="/"
-        className="text-primary-600 hover:text-primary-700 mb-6 inline-block"
-      >
-        {backText}
-      </Link>
-      <h1 className="text-4xl font-bold text-gray-900 mb-4">
-        {titleText}
-      </h1>
-      <p className="text-gray-600 mb-8">{lastUpdatedText}: {lastUpdated}</p>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <main className="flex-1">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <Link
+            href="/"
+            className="text-primary-600 hover:text-primary-700 mb-6 inline-block"
+          >
+            {backText}
+          </Link>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            {titleText}
+          </h1>
+          <p className="text-gray-600 mb-8">{lastUpdatedText}: {lastUpdated}</p>
 
-      <p className="text-gray-700 mb-8">
-        {introText}
-      </p>
+          <p className="text-gray-700 mb-8">
+            {introText}
+          </p>
 
-      <div className="space-y-6">
-        {sections.map(({ title, content }) => (
-          <section key={title}>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-              {title}
-            </h2>
-            <p className="text-gray-700">{content}</p>
-          </section>
-        ))}
-      </div>
+          <div className="space-y-6">
+            {sections.map(({ title, content }) => (
+              <section key={title}>
+                <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+                  {title}
+                </h2>
+                <p className="text-gray-700">{content}</p>
+              </section>
+            ))}
+          </div>
+        </div>
+      </main>
+
+      <Footer />
     </div>
   );
 }

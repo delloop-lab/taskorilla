@@ -18,7 +18,7 @@ export default function AdvertisingOpportunitiesPage() {
 
           {/* Hero */}
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Advertising Opportunities
+            Advertising
             <span className="block text-primary-600 text-2xl sm:text-3xl mt-1">
               Put your business on the Taskorilla map.
             </span>
@@ -155,7 +155,7 @@ export default function AdvertisingOpportunitiesPage() {
         </div>
       </main>
 
-      <Footer variant="centered" />
+      <Footer />
     </div>
   )
 }

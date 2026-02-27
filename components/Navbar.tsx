@@ -685,12 +685,25 @@ export default function Navbar() {
                 }`}
                 title={t('language.switchToEnglish')}
               >
-                <svg className="w-8 h-6" viewBox="0 0 5 3" xmlns="http://www.w3.org/2000/svg">
-                  <rect width="5" height="3" fill="#012169"/>
-                  <path d="M0,0 L5,3 M5,0 L0,3" stroke="#fff" strokeWidth="0.6"/>
-                  <path d="M0,0 L5,3 M5,0 L0,3" stroke="#C8102E" strokeWidth="0.3" strokeLinecap="round"/>
-                  <path d="M2.5,0 V3 M0,1.5 H5" stroke="#fff" strokeWidth="1"/>
-                  <path d="M2.5,0 V3 M0,1.5 H5" stroke="#C8102E" strokeWidth="0.6"/>
+                <svg className="w-8 h-6" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
+                  {/* Blue background */}
+                  <rect width="60" height="40" fill="#00008B" />
+                  {/* Union Jack in canton */}
+                  <rect width="24" height="16" fill="#012169" />
+                  <path d="M0,0 L24,16 M24,0 L0,16" stroke="#FFFFFF" strokeWidth="3" />
+                  <path d="M0,0 L24,16 M24,0 L0,16" stroke="#C8102E" strokeWidth="1.5" />
+                  <rect x="10" width="4" height="16" fill="#FFFFFF" />
+                  <rect y="6" width="24" height="4" fill="#FFFFFF" />
+                  <rect x="11" width="2" height="16" fill="#C8102E" />
+                  <rect y="7" width="24" height="2" fill="#C8102E" />
+                  {/* Commonwealth Star */}
+                  <circle cx="30" cy="26" r="4" fill="#FFFFFF" />
+                  {/* Southern Cross simplified */}
+                  <circle cx="45" cy="8" r="2" fill="#FFFFFF" />
+                  <circle cx="50" cy="16" r="2" fill="#FFFFFF" />
+                  <circle cx="42" cy="18" r="2" fill="#FFFFFF" />
+                  <circle cx="48" cy="24" r="2" fill="#FFFFFF" />
+                  <circle cx="52" cy="10" r="1.5" fill="#FFFFFF" />
                 </svg>
               </button>
               <div className="w-px h-6 bg-gray-300" />

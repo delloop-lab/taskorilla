@@ -1578,41 +1578,12 @@ function ProfilePageContent() {
               )}
             </div>
 
-            {/* PayPal Email for Payouts */}
+            {/* PayPal Email for Payouts (optional) */}
             {isHelper && (
               <div>
-                {/* Banner when PayPal is active but email not set */}
-                {process.env.NEXT_PUBLIC_PAYMENT_PROVIDER === 'paypal' && !profile.paypal_email && !editing && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
-                    <div className="flex items-start gap-3">
-                      <svg className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                      </svg>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">PayPal email required to receive payouts</p>
-                        <p className="text-xs text-gray-600 mt-1">
-                          Click Edit above, then add the email address linked to your PayPal account.
-                          {' '}
-                          <a
-                            href="https://www.paypal.com/signup"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 underline"
-                          >
-                            Don&apos;t have PayPal? Sign up free
-                          </a>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  PayPal Email {process.env.NEXT_PUBLIC_PAYMENT_PROVIDER === 'paypal' && <span className="text-red-500">*</span>}
+                  PayPal Email
                 </label>
-                <p className="mb-2 text-xs text-gray-600">
-                  Please enter the email linked to your PayPal account. This is needed so we can send your payouts.
-                </p>
                 {editing ? (
                   <div>
                     <input
@@ -1623,20 +1594,8 @@ function ProfilePageContent() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     />
                     <p className="mt-1 text-xs text-gray-500">
-                      {process.env.NEXT_PUBLIC_PAYMENT_PROVIDER === 'paypal'
-                        ? 'Required. Enter the email linked to your PayPal account to receive payouts.'
-                        : 'Optional. Enter your PayPal email if you want to receive payouts via PayPal.'}
+                      Leave blank to use your Taskorilla login email. Add a different email only if you want payouts sent elsewhere.
                     </p>
-                    {process.env.NEXT_PUBLIC_PAYMENT_PROVIDER === 'paypal' && (
-                      <a
-                        href="https://www.paypal.com/signup"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block mt-2 text-xs text-blue-600 hover:text-blue-800 underline"
-                      >
-                        Don&apos;t have a PayPal account? Sign up here
-                      </a>
-                    )}
                   </div>
                 ) : (
                   <input

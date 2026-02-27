@@ -97,20 +97,12 @@ export default function PayoutsPage() {
         </div>
       )}
 
-      {/* Payout method warning */}
+      {/* Payout method info (no longer required for PayPal – we use your account email by default) */}
       {(() => {
         const provider = process.env.NEXT_PUBLIC_PAYMENT_PROVIDER || 'airwallex'
-        const needsPaypal = provider === 'paypal' && !profile?.paypal_email
         const needsIban = provider === 'airwallex' && !profile?.iban
-        const needsAny = provider !== 'paypal' && provider !== 'airwallex' && !profile?.iban && !profile?.paypal_email
 
-        if (!needsPaypal && !needsIban && !needsAny) return null
-
-        const message = needsPaypal
-          ? 'Add your PayPal email address to your profile to receive payouts.'
-          : needsIban
-          ? 'Add your IBAN to your profile to receive bank transfer payouts.'
-          : 'Add your payment details to your profile to receive payouts.'
+        if (!needsIban) return null
 
         return (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
@@ -119,28 +111,16 @@ export default function PayoutsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">Payout Details Required</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Bank payout details recommended</h3>
                 <p className="text-sm text-gray-700 mb-3">
-                  {message}
+                  Add your IBAN to your profile if you want to receive bank transfer payouts. For PayPal payouts we&apos;ll use your main account email by default.
                 </p>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <a
-                    href="/profile"
-                    className="inline-block px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700"
-                  >
-                    Update Profile
-                  </a>
-                  {needsPaypal && (
-                    <a
-                      href="https://www.paypal.com/signup"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:text-blue-800 underline"
-                    >
-                      Don&apos;t have PayPal? Sign up free
-                    </a>
-                  )}
-                </div>
+                <a
+                  href="/profile"
+                  className="inline-block px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700"
+                >
+                  Update Profile
+                </a>
               </div>
             </div>
           </div>

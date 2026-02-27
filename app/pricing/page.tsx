@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useLanguage } from '@/lib/i18n'
+import Footer from '@/components/Footer'
 
 export default function PricingPage() {
   const { language } = useLanguage()
@@ -457,6 +458,8 @@ export default function PricingPage() {
           .comparison-table td:nth-of-type(4):before { content: "Risk"; }
         }
       `}</style>
+
+      <Footer />
     </div>
   )
 }

@@ -1,9 +1,10 @@
 'use client'
-
+ 
 import Link from 'next/link'
 import { MessageCircle, Search as SearchIcon } from 'lucide-react'
 import HelpSearchBar from '@/components/HelpSearchBar'
 import HelpCategoryCard from '@/components/HelpCategoryCard'
+import Footer from '@/components/Footer'
 import { getCategories, getFAQsByCategory, getGuidesByCategory, getCategoryIcon, getCategoryDescription, slugify, getAllFAQs, type Language } from '@/lib/help-utils'
 import { useLanguage } from '@/lib/i18n'
 
@@ -22,7 +23,7 @@ export default function HelpCenter() {
   ].filter(Boolean)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-primary to-accent text-white py-16 px-4">
         <div className="container mx-auto max-w-6xl">
@@ -135,6 +136,8 @@ export default function HelpCenter() {
           </p>
         </div>
       </section>
+
+      <Footer />
     </div>
   )
 }
