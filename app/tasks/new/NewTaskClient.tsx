@@ -109,10 +109,11 @@ export default function NewTaskClient() {
       }
 
       if (draft.formData) {
+        const draftFormData = draft.formData
         setFormData((prev) => ({
           ...prev,
-          ...draft.formData,
-          due_date: draft.formData.due_date || prev.due_date,
+          ...draftFormData,
+          due_date: draftFormData.due_date || prev.due_date,
         }))
       }
       if (Array.isArray(draft.imageUrls)) setImageUrls(draft.imageUrls)

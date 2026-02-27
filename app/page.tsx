@@ -8,6 +8,7 @@ import { TransparentGorillaImage } from '@/components/TransparentGorillaImage'
 import TrafficTracker from '@/components/TrafficTracker'
 import Footer from '@/components/Footer'
 import { useLanguage } from '@/lib/i18n'
+import { SocialBar } from '@/components/SocialBar'
 
 export default function Home() {
   const { t } = useLanguage()
@@ -16,7 +17,8 @@ export default function Home() {
       <TrafficTracker pageName="home" />
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-secondary/10 pt-14 md:pt-20 pb-8 md:pb-12 px-4">
-        <div className="container mx-auto max-w-6xl">
+        <div className="container mx-auto max-w-6xl relative">
+          <SocialBar className="absolute right-0 top-[-2.5rem] md:top-[-3rem] md:right-2 lg:right-0" />
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="space-y-6 animate-fade-in">
               <h1 className="text-5xl md:text-6xl font-bold text-foreground leading-tight">
