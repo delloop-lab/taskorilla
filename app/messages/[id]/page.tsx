@@ -396,7 +396,7 @@ export default function ConversationPage() {
 
       {canShareContact && (
         <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
-          Payment for this task is confirmed. You can now share contact details.
+          Payment for this task is confirmed. You can now share your contact details, but for safety and clarity, it's best to keep all communication here on Taskorilla.
         </div>
       )}
 
