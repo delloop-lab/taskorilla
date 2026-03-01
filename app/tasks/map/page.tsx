@@ -386,7 +386,6 @@ export default function TasksMapPage() {
           <p className="text-sm text-gray-500">
             {tasks.length} tasks on map{placeMarkers.length ? ` • ${placeMarkers.length} places` : ''}
           </p>
-          <p className="text-xs text-gray-400">Check browser console for debugging info</p>
         </div>
         <Link
           href="/tasks"

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useId } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet'
+import MarkerClusterGroup from 'react-leaflet-cluster'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Task } from '@/lib/types'
@@ -102,50 +103,6 @@ function MapCenter({ tasks }: { tasks: Task[] }) {
   return null
 }
 
-// Helper function to add small offsets to markers at the same location
-function addMarkerOffsets(tasks: Task[]): Array<{ task: Task; lat: number; lon: number }> {
-  const coordinateMap = new Map<string, number[]>()
-  const result: Array<{ task: Task; lat: number; lon: number }> = []
-  
-  tasks.forEach((task) => {
-    if (!task.latitude || !task.longitude) return
-    
-    const lat = typeof task.latitude === 'number' ? task.latitude : parseFloat(String(task.latitude || 0))
-    const lon = typeof task.longitude === 'number' ? task.longitude : parseFloat(String(task.longitude || 0))
-    
-    if (isNaN(lat) || isNaN(lon)) return
-    
-    // Round to 4 decimal places to group nearby markers (about 11 meters apart)
-    const roundedLat = Math.round(lat * 10000) / 10000
-    const roundedLon = Math.round(lon * 10000) / 10000
-    const key = `${roundedLat},${roundedLon}`
-    
-    if (!coordinateMap.has(key)) {
-      coordinateMap.set(key, [])
-    }
-    
-    const indices = coordinateMap.get(key)!
-    indices.push(result.length)
-    
-    // Calculate offset based on how many markers are at this location
-    const offsetIndex = indices.length - 1
-    const offsetRadius = 0.0003 // About 33 meters
-    const angle = (offsetIndex * 137.5) % 360 // Golden angle for even distribution
-    const angleRad = (angle * Math.PI) / 180
-    
-    const offsetLat = lat + (offsetRadius * Math.cos(angleRad))
-    const offsetLon = lon + (offsetRadius * Math.sin(angleRad))
-    
-    result.push({
-      task,
-      lat: offsetIndex === 0 ? lat : offsetLat, // First marker stays at original position
-      lon: offsetIndex === 0 ? lon : offsetLon
-    })
-  })
-  
-  return result
-}
-
 export default function TaskMap({ tasks, markers = [], onTaskClick }: MapProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null)
@@ -217,33 +174,59 @@ export default function TaskMap({ tasks, markers = [], onTaskClick }: MapProps) 
       <MapInstanceHandler onMapReady={setMapInstance} />
       <MapCenter tasks={tasks} />
       
-      {(() => {
-        // Add offsets to markers at the same location so they're all visible
-        const tasksWithOffsets = addMarkerOffsets(tasks)
-        
-        const taskMarkers = tasksWithOffsets.map(({ task, lat, lon }) => {
-          // Validate coordinates are within reasonable ranges
-          if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-            console.error(`Task ${task.id} has invalid coordinates:`, { lat, lon })
+      <MarkerClusterGroup
+        chunkedLoading
+        maxClusterRadius={50}
+        spiderfyOnMaxZoom={true}
+        spiderfyDistanceMultiplier={2.5}
+        spiderLegPolylineOptions={{ weight: 1.5, color: '#94a3b8', opacity: 0.6 }}
+        showCoverageOnHover={false}
+        zoomToBoundsOnClick={true}
+        disableClusteringAtZoom={16}
+        iconCreateFunction={(cluster: any) => {
+          const count = cluster.getChildCount()
+          let size = 'small'
+          let dimensions = 36
+          if (count >= 10) { size = 'large'; dimensions = 48 }
+          else if (count >= 5) { size = 'medium'; dimensions = 42 }
+          return L.divIcon({
+            html: `<div style="
+              background: #2563eb;
+              color: white;
+              border-radius: 50%;
+              width: ${dimensions}px;
+              height: ${dimensions}px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 700;
+              font-size: ${count >= 10 ? '15px' : '13px'};
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+              border: 3px solid white;
+              box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+            ">${count}</div>`,
+            className: 'custom-cluster-icon',
+            iconSize: L.point(dimensions, dimensions),
+          })
+        }}
+      >
+      {tasks.map((task) => {
+          const lat = typeof task.latitude === 'number' ? task.latitude : parseFloat(String(task.latitude || 0))
+          const lon = typeof task.longitude === 'number' ? task.longitude : parseFloat(String(task.longitude || 0))
+
+          if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
             return null
           }
 
-          // Format budget for marker display
           const budgetDisplay = task.budget ? `€${task.budget}` : 'Quote'
           
           const customIcon = L.divIcon({
             className: 'custom-marker',
             html: `<div style="background-color: #2563eb; color: white; padding: 6px 10px; border-radius: 6px; box-shadow: 0 3px 6px rgba(0,0,0,0.4); font-size: 13px; font-weight: 700; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; letter-spacing: 0.3px; white-space: nowrap; display: inline-block; border: 2px solid white; z-index: 1000; position: relative;">${budgetDisplay}</div>`,
             iconSize: [70, 35],
-            iconAnchor: [35, 17], // Center horizontally, bottom vertically
-            popupAnchor: [0, -17], // Popup appears above marker
+            iconAnchor: [35, 17],
+            popupAnchor: [0, -17],
           })
-          
-          // Verify icon was created
-          if (!customIcon) {
-            console.error(`❌ Failed to create icon for task ${task.id}`)
-            return null
-          }
 
           return (
             <Marker
@@ -308,8 +291,10 @@ export default function TaskMap({ tasks, markers = [], onTaskClick }: MapProps) 
             </Popup>
           </Marker>
           )
-        })
+        })}
+      </MarkerClusterGroup>
 
+      {(() => {
         const extraMarkers = markers
           .filter(m => m.latitude != null && m.longitude != null && !isNaN(Number(m.latitude)) && !isNaN(Number(m.longitude)))
           .map(marker => {
@@ -392,7 +377,7 @@ export default function TaskMap({ tasks, markers = [], onTaskClick }: MapProps) 
             )
           })
 
-        return [...taskMarkers, ...extraMarkers]
+        return extraMarkers
       })()}
     </MapContainer>
   )

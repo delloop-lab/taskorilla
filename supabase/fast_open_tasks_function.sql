@@ -59,6 +59,7 @@ AS $$
   WHERE t.status = 'open'
     AND t.hidden_by_admin = false
     AND t.archived = false
+    AND t.assigned_to IS NULL
   ORDER BY t.created_at DESC
   LIMIT task_limit;
 $$;

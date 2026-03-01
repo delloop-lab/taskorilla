@@ -1,6 +1,6 @@
 {
   "name": "task-marketplace",
-  "version": "0.99.980",
+  "version": "0.99.981",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -37,6 +37,7 @@
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^18",
     "react-leaflet": "^4.2.1",
+    "react-leaflet-cluster": "^2.1.0",
     "sharp": "^0.34.5",
     "stripe": "^20.3.0",
     "survey-core": "^1.12.57",

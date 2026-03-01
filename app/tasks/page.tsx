@@ -509,7 +509,7 @@ function TasksPageContent() {
         // Apply filter-specific conditions (most selective first)
         switch (activeFilter) {
           case 'open':
-            query = query.eq('status', 'open')
+            query = query.eq('status', 'open').is('assigned_to', null)
             break
           case 'my_tasks':
             if (user) {
@@ -521,7 +521,7 @@ function TasksPageContent() {
           case 'new':
             const sevenDaysAgo = new Date()
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-            query = query.eq('status', 'open').gte('created_at', sevenDaysAgo.toISOString())
+            query = query.eq('status', 'open').is('assigned_to', null).gte('created_at', sevenDaysAgo.toISOString())
             break
           case 'my_bids':
             if (taskIdsWithBids.length > 0) {
@@ -815,6 +815,14 @@ function TasksPageContent() {
         }
       }
       
+      // Hide one-to-one tasks (assigned_to is set) from users who are neither the owner nor the assigned helper
+      const isMyOneToOne = (task: any) => {
+        if (!task.assigned_to) return true
+        if (!user) return false
+        return task.created_by === user.id || task.assigned_to === user.id
+      }
+      tasksWithProfiles = tasksWithProfiles.filter(isMyOneToOne)
+
       // Apply filter-specific client-side filtering
       if (activeFilter === 'all' && user) {
         tasksWithProfiles = tasksWithProfiles.filter(task => {
