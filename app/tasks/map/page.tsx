@@ -383,9 +383,9 @@ export default function TasksMapPage() {
       <div className="bg-white border-b px-4 py-3 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Tasks Map</h1>
-          <p className="text-sm text-gray-500">
+          {/* <p className="text-sm text-gray-500">
             {tasks.length} tasks on map{placeMarkers.length ? ` • ${placeMarkers.length} places` : ''}
-          </p>
+          </p> */}
         </div>
         <Link
           href="/tasks"
