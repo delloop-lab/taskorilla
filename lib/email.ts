@@ -123,6 +123,49 @@ export async function sendNewBidNotification(
   }
 }
 
+export async function sendBidSelectedPendingPayment(
+  bidderEmail: string,
+  bidderName: string,
+  taskTitle: string,
+  taskOwnerName: string,
+  bidAmount: number,
+  taskId: string
+): Promise<{ result: any; htmlContent: string }> {
+  try {
+    const mailTransporter = ensureTransporter()
+    const safeBidderName = safeName(bidderName, 'Helper')
+    const safeTaskOwnerName = safeName(taskOwnerName, 'Task Owner')
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #f59e0b;">Great news!</h2>
+        <p>Hi ${safeBidderName},</p>
+        <p><strong>${safeTaskOwnerName}</strong> has selected your bid of <strong>€${bidAmount}</strong> for:</p>
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">${taskTitle}</h3>
+        </div>
+        <p>The task owner is now completing payment. We'll notify you as soon as payment is confirmed and you can begin work.</p>
+        <p style="color: #6b7280; font-size: 14px;"><strong>Please do not start work until you receive payment confirmation.</strong></p>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks/${taskId}" 
+           style="display: inline-block; background-color: #f59e0b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
+          View Task
+        </a>
+      </div>
+    `
+    
+    const result = await mailTransporter.sendMail({
+      from: getFromAddress(),
+      to: bidderEmail,
+      subject: `Your bid was selected for "${taskTitle}" — awaiting payment`,
+      html: htmlContent,
+    })
+    
+    return { result, htmlContent }
+  } catch (error: any) {
+    console.error('Error sending bid selected notification:', error)
+    throw new Error(`Failed to send bid selected notification: ${error.message || 'Unknown error'}`)
+  }
+}
+
 export async function sendBidAcceptedNotification(
   bidderEmail: string,
   bidderName: string,
@@ -137,13 +180,13 @@ export async function sendBidAcceptedNotification(
     const safeTaskOwnerName = safeName(taskOwnerName, 'Task Owner')
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #10b981;">Congratulations!</h2>
+        <h2 style="color: #10b981;">Payment confirmed — you can start!</h2>
         <p>Hi ${safeBidderName},</p>
-        <p><strong>${safeTaskOwnerName}</strong> has accepted your bid of <strong>$${bidAmount}</strong> for:</p>
+        <p><strong>${safeTaskOwnerName}</strong> has completed payment of <strong>€${bidAmount}</strong> for:</p>
         <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">${taskTitle}</h3>
         </div>
-        <p>The task is now assigned to you. You can start working on it!</p>
+        <p>The task is now officially assigned to you. You can start working on it!</p>
         <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks/${taskId}" 
            style="display: inline-block; background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
           View Task
@@ -154,7 +197,7 @@ export async function sendBidAcceptedNotification(
     const result = await mailTransporter.sendMail({
       from: getFromAddress(),
       to: bidderEmail,
-      subject: `Your bid was accepted for "${taskTitle}"`,
+      subject: `Payment confirmed — start work on "${taskTitle}"`,
       html: htmlContent,
     })
     

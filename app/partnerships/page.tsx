@@ -26,7 +26,7 @@ export default function PartnershipsPage() {
 
           <div className="space-y-3 text-gray-700 leading-relaxed max-w-3xl">
             <p>
-              Taskorilla is expanding internationally.
+              Taskorilla was born global.
             </p>
             <p>
               We are looking for experienced, driven operators to launch and grow the platform in new markets.

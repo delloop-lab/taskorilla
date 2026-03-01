@@ -80,7 +80,7 @@ export default function UserProfileModal({
   // Update ratings summary when userRatings or userId changes
   useEffect(() => {
     if (userId && userRatings.length > 0) {
-      const ratingsMap = new Map(userRatings.map((r: any) => [r.reviewee_id, r]));
+      const ratingsMap = new Map(userRatings.map((r: any) => [String(r.reviewee_id), r]));
       const rating = getUserRatingsById(userId, ratingsMap);
       setUserRatingsSummary(rating || null);
     } else {

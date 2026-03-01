@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import {
   sendNewBidNotification,
+  sendBidSelectedPendingPayment,
   sendBidAcceptedNotification,
   sendBidRejectedNotification,
   sendNewMessageNotification,
@@ -77,7 +78,32 @@ export async function POST(request: NextRequest) {
         }
         break
 
-      case 'bid_accepted':
+      case 'bid_selected_pending_payment': {
+        const bidSelectedResult = await sendBidSelectedPendingPayment(
+          params.bidderEmail,
+          params.bidderName,
+          params.taskTitle,
+          params.taskOwnerName,
+          params.bidAmount,
+          params.taskId
+        )
+        emailLogData = {
+          recipient_email: params.bidderEmail,
+          recipient_name: params.bidderName,
+          subject: `Your bid was selected for "${params.taskTitle}" — awaiting payment`,
+          email_type: 'bid_selected_pending_payment',
+          related_task_id: params.taskId,
+          metadata: {
+            taskTitle: params.taskTitle,
+            taskOwnerName: params.taskOwnerName,
+            bidAmount: params.bidAmount,
+            html_content: bidSelectedResult.htmlContent,
+          },
+        }
+        break
+      }
+
+      case 'bid_accepted': {
         const bidAcceptedResult = await sendBidAcceptedNotification(
           params.bidderEmail,
           params.bidderName,
@@ -89,7 +115,7 @@ export async function POST(request: NextRequest) {
         emailLogData = {
           recipient_email: params.bidderEmail,
           recipient_name: params.bidderName,
-          subject: `Your bid was accepted for "${params.taskTitle}"`,
+          subject: `Payment confirmed — start work on "${params.taskTitle}"`,
           email_type: 'bid_accepted',
           related_task_id: params.taskId,
           metadata: {
@@ -100,6 +126,7 @@ export async function POST(request: NextRequest) {
           },
         }
         break
+      }
 
       case 'bid_rejected':
         const bidRejectedResult = await sendBidRejectedNotification(

@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   title TEXT NOT NULL,
   description TEXT NOT NULL,
   budget DECIMAL(10, 2),
-  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'completed', 'cancelled')),
+  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'pending_payment', 'in_progress', 'completed', 'cancelled')),
   created_by UUID REFERENCES auth.users(id) NOT NULL,
   assigned_to UUID REFERENCES auth.users(id),
   category TEXT,

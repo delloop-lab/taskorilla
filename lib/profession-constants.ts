@@ -1,62 +1,111 @@
-// Standard professions for helpers
+// Standard professions for helpers — grouped to mirror the task category tree in the DB.
 // Used for the "Required Professional Roles" selection in task creation,
-// plus helper filtering and other UI surfaces.
+// helper filtering, and other UI surfaces.
 
 export const PROFESSION_GROUPS = [
   {
-    heading: 'Health & Wellbeing',
+    heading: 'Cleaning & Home Services',
     options: [
-      'Therapist / Counsellor',
-      'Life Coach',
-      'Physiotherapist / Massage Therapist',
-      'Personal Trainer / Fitness Coach',
-      'Nutritionist / Dietitian',
-      'Yoga / Pilates Instructor',
+      'House Cleaner',
+      'Office Cleaner',
+      'Carpet Cleaner',
+      'Window Cleaner',
+      'End-of-Lease Cleaner',
+      'Ironing / Laundry',
+      'Organiser / Declutterer',
     ],
   },
   {
-    heading: 'Beauty & Personal Care',
+    heading: 'Home & Garden',
     options: [
-      'Hairdresser / Barber',
-      'Nail Technician / Manicurist',
-      'Makeup Artist / Beauty Therapist',
+      'Gardener',
+      'Lawn Mowing',
+      'Landscaper',
+      'Painter (Interior / Exterior)',
+      'Fencing',
+      'Decking',
+      'Pool Maintenance',
     ],
   },
   {
-    heading: 'Home & Lifestyle',
+    heading: 'Handyman & Maintenance',
     options: [
-      'Cleaner',
-      'Handyman / Maintenance',
-      'Chef / Personal Cook',
-      'Interior Designer / Home Stylist',
-      'Personal Stylist',
-      'Pet Trainer / Dog Walker',
+      'Handyman / General Repairs',
+      'Plumber',
+      'Electrician',
+      'Carpenter',
+      'Furniture Assembler',
+      'Tiler',
+      'Mounting & Installation',
+    ],
+  },
+  {
+    heading: 'Moving & Delivery',
+    options: [
+      'Removalist',
+      'Delivery Driver',
+      'Packer / Unpacker',
+      'Heavy Lifter / Loader',
+      'Courier / Errand Runner',
+    ],
+  },
+  {
+    heading: 'Tech & IT',
+    options: [
+      'IT Support',
+      'Computer Repair',
+      'Phone / Tablet Repair',
+      'Web Developer',
+      'App Developer',
+      'Smart Home Setup',
+      'Data Entry',
+    ],
+  },
+  {
+    heading: 'Events, Photography & Media',
+    options: [
+      'Event Planner',
+      'Photographer',
+      'Videographer',
+      'Video Editor',
+      'Graphic Designer',
+      'Caterer',
+      'DJ / Entertainer',
     ],
   },
   {
     heading: 'Business & Professional Services',
     options: [
-      'Business Coach / Mentor',
-      'Translation / Language Services',
-      'Accountant / Bookkeeper',
-      'Lawyer / Legal Consultant',
-      'Marketing Consultant / Strategist',
-      'Sales / Business Development',
+      'Virtual Assistant',
+      'Bookkeeper / Accountant',
+      'Marketing Consultant',
       'Social Media Manager',
+      'Copywriter / Content Writer',
+      'Business Coach',
+      'Translator',
     ],
   },
   {
-    heading: 'Creative & Media',
+    heading: 'Tutoring & Lessons',
     options: [
-      'Photographer / Videographer',
-      'Graphic Designer / Illustrator',
-      'Copywriter / Content Writer / Event Planner',
+      'Academic Tutor',
+      'Language Teacher',
+      'Music Teacher',
+      'Driving Instructor',
+      'Sports Coach',
+      'Art Teacher',
     ],
   },
   {
-    heading: 'Science & Research',
+    heading: 'Health & Beauty',
     options: [
-      'Scientist',
+      'Hairdresser / Barber',
+      'Nail Technician',
+      'Makeup Artist',
+      'Massage Therapist',
+      'Personal Trainer',
+      'Yoga / Pilates Instructor',
+      'Nutritionist',
     ],
   },
 ] as const
@@ -66,12 +115,11 @@ export const STANDARD_PROFESSIONS = PROFESSION_GROUPS.flatMap((group) => group.o
 // Helper function to check if a helper has a matching profession
 export function helperMatchesProfession(helper: any, profession: string): boolean {
   if (!profession || !helper.professions) return false
-  
+
   const lowerProfession = profession.toLowerCase()
-  return helper.professions.some((p: string) => 
+  return helper.professions.some((p: string) =>
     p.toLowerCase() === lowerProfession ||
     p.toLowerCase().includes(lowerProfession) ||
     lowerProfession.includes(p.toLowerCase())
   )
 }
-

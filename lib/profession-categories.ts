@@ -1,5 +1,5 @@
-// Structured profession categories and subcategories
-// Used for professional helper profile editing
+// Structured profession categories and subcategories — mirrors the task DB category tree.
+// Used for professional helper profile editing.
 
 export interface ProfessionCategory {
   name: string
@@ -8,111 +8,111 @@ export interface ProfessionCategory {
 
 export const PROFESSION_CATEGORIES: ProfessionCategory[] = [
   {
-    name: 'Health and Wellbeing',
+    name: 'Cleaning & Home Services',
     subs: [
-      'Therapist',
-      'Counsellor',
-      'Life Coach',
-      'Yoga Instructor',
-      'Pilates Instructor',
-      'Personal Trainer',
-      'Nutritionist',
-      'Reiki Practitioner',
-      'Breathwork Coach',
-      'Meditation Teacher',
-      'Massage Therapist',
-      'Holistic Practitioner'
-    ]
+      'House Cleaner',
+      'Office Cleaner',
+      'Carpet Cleaner',
+      'Window Cleaner',
+      'End-of-Lease Cleaner',
+      'Ironing / Laundry',
+      'Organiser / Declutterer',
+    ],
   },
   {
-    name: 'Business and Marketing Services',
+    name: 'Home & Garden',
     subs: [
-      'Marketing Consultant',
-      'Social Media Manager',
-      'SEO Specialist',
-      'Copywriter',
-      'Brand Strategist',
-      'Graphic Designer',
-      'Website Designer',
-      'Content Creator',
-      'Email Marketing Specialist',
-      'Business Coach',
-      'Virtual Assistant'
-    ]
+      'Gardener',
+      'Lawn Mowing',
+      'Landscaper',
+      'Painter (Interior / Exterior)',
+      'Fencing',
+      'Decking',
+      'Pool Maintenance',
+    ],
   },
   {
-    name: 'Creative and Media',
+    name: 'Handyman & Maintenance',
     subs: [
+      'Handyman / General Repairs',
+      'Plumber',
+      'Electrician',
+      'Carpenter',
+      'Furniture Assembler',
+      'Tiler',
+      'Mounting & Installation',
+    ],
+  },
+  {
+    name: 'Moving & Delivery',
+    subs: [
+      'Removalist',
+      'Delivery Driver',
+      'Packer / Unpacker',
+      'Heavy Lifter / Loader',
+      'Courier / Errand Runner',
+    ],
+  },
+  {
+    name: 'Tech & IT',
+    subs: [
+      'IT Support',
+      'Computer Repair',
+      'Phone / Tablet Repair',
+      'Web Developer',
+      'App Developer',
+      'Smart Home Setup',
+      'Data Entry',
+    ],
+  },
+  {
+    name: 'Events, Photography & Media',
+    subs: [
+      'Event Planner',
       'Photographer',
       'Videographer',
       'Video Editor',
-      'Graphic Artist',
-      'Animator',
-      'Voiceover Artist',
-      'Podcast Editor',
-      'Music Producer',
-      'DJ',
-      'Illustrator'
-    ]
+      'Graphic Designer',
+      'Caterer',
+      'DJ / Entertainer',
+    ],
   },
   {
-    name: 'Medical and Clinical',
+    name: 'Business & Professional Services',
     subs: [
-      'Dentist',
-      'Physiotherapist',
-      'Chiropractor',
-      'Optometrist',
-      'Podiatrist',
-      'Occupational Therapist',
-      'Speech Therapist',
-      'Clinical Psychologist',
-      'Dietitian'
-    ]
+      'Virtual Assistant',
+      'Bookkeeper / Accountant',
+      'Marketing Consultant',
+      'Social Media Manager',
+      'Copywriter / Content Writer',
+      'Business Coach',
+      'Translator',
+    ],
   },
   {
-    name: 'Education and Personal Development',
+    name: 'Tutoring & Lessons',
     subs: [
-      'Tutor',
+      'Academic Tutor',
       'Language Teacher',
       'Music Teacher',
-      'Career Coach',
-      'Study Coach',
-      'Test Prep Specialist',
-      'Parenting Coach'
-    ]
+      'Driving Instructor',
+      'Sports Coach',
+      'Art Teacher',
+    ],
   },
   {
-    name: 'Events and Experiences',
+    name: 'Health & Beauty',
     subs: [
-      'Event Planner',
-      'Party Planner',
-      'Caterer',
-      'Baker',
-      'Balloon Stylist',
-      'Decorator',
-      'Face Painter',
-      'Entertainer',
-      'MC'
-    ]
+      'Hairdresser / Barber',
+      'Nail Technician',
+      'Makeup Artist',
+      'Massage Therapist',
+      'Personal Trainer',
+      'Yoga / Pilates Instructor',
+      'Nutritionist',
+    ],
   },
-  {
-    name: 'Tech and Digital Services',
-    subs: [
-      'Web Developer',
-      'App Developer',
-      'IT Support',
-      'Cybersecurity Specialist',
-      'Data Analyst',
-      'AI Consultant',
-      'Tech Troubleshooting'
-    ]
-  }
 ]
 
 // Flatten all professions into a single array for backward compatibility
-export const ALL_PROFESSIONS = PROFESSION_CATEGORIES.flatMap(category => category.subs)
-
-
-
-
-
+export const ALL_PROFESSIONS = PROFESSION_CATEGORIES.flatMap((category) => category.subs)

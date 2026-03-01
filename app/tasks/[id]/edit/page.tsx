@@ -702,16 +702,13 @@ export default function EditTaskPage() {
         willing_to_help: formData.willing_to_help,
       }
 
-      // Set fields based on task type
+      // Category applies to all task types
+      updateData.category_id = formData.category_id || null
+      updateData.sub_category_id = formData.sub_category_id || null
+
       if (taskType === 'professional') {
-        // Professional task: use required_professions, clear category
         updateData.required_professions = selectedProfessions.length > 0 ? selectedProfessions : null
-        updateData.category_id = null
-        updateData.sub_category_id = null
       } else {
-        // Helper task: use category, clear required_professions
-        updateData.category_id = formData.category_id || null
-        updateData.sub_category_id = formData.sub_category_id || null
         updateData.required_professions = null
       }
 
@@ -841,11 +838,8 @@ export default function EditTaskPage() {
               const newType = e.target.value as 'helper' | 'professional'
               setTaskType(newType)
               // Clear fields that don't apply to the new type
-              if (newType === 'professional') {
-                // Switching to professional - clear category
-                setFormData({ ...formData, category_id: '', sub_category_id: '' })
-              } else {
-                // Switching to helper - clear required professions
+              if (newType === 'helper') {
+                // Switching to helper - clear required professions only
                 setSelectedProfessions([])
               }
             }}
@@ -880,12 +874,11 @@ export default function EditTaskPage() {
             </p>
           </div>
 
-          {/* Category - only show for helper tasks */}
-          {taskType === 'helper' && (
-            <div>
-              <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-2">
-                Category
-              </label>
+          {/* Category - available for all task types */}
+          <div>
+            <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-2">
+              Category <span className="text-gray-500 font-normal">(Optional)</span>
+            </label>
               <select
                 id="category_id"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
@@ -903,7 +896,6 @@ export default function EditTaskPage() {
                 Choose the category that best fits your task.
               </p>
             </div>
-          )}
         </div>
 
         {formData.category_id && (

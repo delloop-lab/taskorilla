@@ -59,7 +59,7 @@ export default function ProfessionalsPage() {
         )
 
         // Attach ratings from SQL function so we can show stars
-        const ratingsMap = new Map(userRatings.map((r: any) => [r.reviewee_id, r]))
+        const ratingsMap = new Map(userRatings.map((r: any) => [String(r.reviewee_id), r]))
         const professionalsWithRatings = professionals.map((helper: any) => {
           const userRating = getUserRatingsById(helper.id, ratingsMap)
           return {

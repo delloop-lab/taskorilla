@@ -50,6 +50,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Task is already paid' }, { status: 400 })
     }
 
+    if (task.budget == null || task.budget <= 0) {
+      return NextResponse.json(
+        { error: 'This task has no agreed amount yet. The helper needs to submit a quote and you need to accept it before payment.' },
+        { status: 400 }
+      )
+    }
+
     const { data: helperProfile, error: helperError } = await supabase
       .from('profiles')
       .select('id, email, full_name, stripe_account_id, iban, paypal_email')

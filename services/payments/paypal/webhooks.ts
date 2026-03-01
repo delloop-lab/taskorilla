@@ -211,19 +211,21 @@ async function markTaskPaid(
 ) {
   if (!resource) return
 
-  // PAYMENT.CAPTURE.COMPLETED resource is a Capture object:
-  // custom_id is at the top level (inherited from the purchase unit)
   const taskId = resource.custom_id as string | undefined
 
   const orderId =
     (resource.supplementary_data as { related_ids?: { order_id?: string } })?.related_ids?.order_id ??
     (resource as { id?: string }).id
 
-  const updatePayload = {
+  // Payment confirmed: mark as paid AND move to in_progress (the real start gate)
+  const updatePayload: Record<string, unknown> = {
     payment_status: 'paid',
     payment_provider: 'paypal',
     payment_intent_id: orderId ?? undefined,
+    status: 'in_progress',
   }
+
+  let resolvedTaskId = taskId
 
   if (taskId) {
     const { error } = await supabase
@@ -234,16 +236,96 @@ async function markTaskPaid(
     if (error) {
       console.error('[PayPal Webhook] Failed to mark task paid:', error)
     } else {
-      console.log('[PayPal Webhook] Marked task paid:', taskId)
+      console.log('[PayPal Webhook] Marked task paid + in_progress:', taskId)
     }
   } else if (orderId) {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('tasks')
       .update(updatePayload)
       .eq('payment_intent_id', orderId)
-    if (error) console.error('[PayPal Webhook] Failed to mark task paid by order:', error)
+      .select('id')
+      .single()
+    if (error) {
+      console.error('[PayPal Webhook] Failed to mark task paid by order:', error)
+    } else {
+      resolvedTaskId = data?.id
+    }
   } else {
     console.warn('[PayPal Webhook] PAYMENT.CAPTURE.COMPLETED missing custom_id and order reference')
+    return
+  }
+
+  // Send "payment confirmed — start work" notification to the helper
+  if (resolvedTaskId) {
+    await notifyHelperPaymentConfirmed(resolvedTaskId, supabase)
+  }
+}
+
+async function notifyHelperPaymentConfirmed(taskId: string, supabase: SupabaseClient) {
+  try {
+    const { data: task } = await supabase
+      .from('tasks')
+      .select('id, title, budget, assigned_to, created_by')
+      .eq('id', taskId)
+      .single()
+
+    if (!task?.assigned_to) {
+      console.warn('[PayPal Webhook] Task has no assigned helper, skipping notification')
+      return
+    }
+
+    const { data: helper } = await supabase
+      .from('profiles')
+      .select('email, full_name')
+      .eq('id', task.assigned_to)
+      .single()
+
+    const { data: owner } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', task.created_by)
+      .single()
+
+    if (!helper?.email) {
+      console.warn('[PayPal Webhook] Helper email not found, skipping notification')
+      return
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const response = await fetch(`${appUrl}/api/send-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'bid_accepted',
+        bidderEmail: helper.email,
+        bidderName: helper.full_name || 'Helper',
+        taskTitle: task.title || 'Task',
+        taskOwnerName: owner?.full_name || 'Task Owner',
+        bidAmount: task.budget || 0,
+        taskId: taskId,
+      }),
+    })
+
+    if (response.ok) {
+      console.log('[PayPal Webhook] Sent payment-confirmed notification to helper:', helper.email)
+    } else {
+      console.error('[PayPal Webhook] Failed to send helper notification, status:', response.status)
+    }
+
+    // Add progress update to the task
+    try {
+      const helperName = helper.full_name?.split(' ')[0] || 'Helper'
+      await supabase.from('task_progress_updates').insert({
+        task_id: taskId,
+        user_id: task.created_by,
+        message: `✅ Payment confirmed! ${helperName} can now start work on this task.`,
+      })
+    } catch (progressErr) {
+      console.error('[PayPal Webhook] Failed to add progress update:', progressErr)
+    }
+  } catch (emailError) {
+    // Critical: don't let email failure affect the payment processing
+    console.error('[PayPal Webhook] Error sending helper notification (task still marked paid):', emailError)
   }
 }
 

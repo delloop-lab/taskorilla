@@ -132,7 +132,7 @@ export function checkForContactInfo(content: string): ContentCheckResult {
       containsEmail,
       containsPhone,
       containsPaymentInfo,
-      message: `For your safety, please do not share ${issues.join(' or ')}. All communication and payments must stay on the platform.`,
+      message: 'For safety, do not share phone numbers or emails. All messages and payments must stay on the platform. After payment, you and your helper can exchange contact info if needed.',
     }
   }
 

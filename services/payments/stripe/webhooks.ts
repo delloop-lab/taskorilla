@@ -340,13 +340,45 @@ async function handleCheckoutSessionCompleted(
   const helperId = session.metadata?.helper_id
   const taskerId = session.metadata?.tasker_id
   
-  if (session.payment_status === 'paid') {
+  if (session.payment_status === 'paid' && taskId) {
     console.log(`[Stripe Webhook] Payment confirmed for task ${taskId}`)
-    // TODO: Update task status to 'paid' in database
-    // TODO: Notify helper that payment was received
+    const supabaseAdmin = (await import('@supabase/supabase-js')).createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    )
+    await supabaseAdmin.from('tasks').update({
+      payment_status: 'paid',
+      status: 'in_progress',
+    }).eq('id', taskId)
+
+    // Notify helper — same pattern as PayPal webhook
+    try {
+      const { data: task } = await supabaseAdmin.from('tasks').select('id, title, budget, assigned_to, created_by').eq('id', taskId).single()
+      if (task?.assigned_to) {
+        const { data: helper } = await supabaseAdmin.from('profiles').select('email, full_name').eq('id', task.assigned_to).single()
+        const { data: owner } = await supabaseAdmin.from('profiles').select('full_name').eq('id', task.created_by).single()
+        if (helper?.email) {
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+          await fetch(`${appUrl}/api/send-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'bid_accepted',
+              bidderEmail: helper.email,
+              bidderName: helper.full_name || 'Helper',
+              taskTitle: task.title || 'Task',
+              taskOwnerName: owner?.full_name || 'Task Owner',
+              bidAmount: task.budget || 0,
+              taskId,
+            }),
+          })
+        }
+      }
+    } catch (emailErr) {
+      console.error('[Stripe Webhook] Error sending helper notification (task still marked paid):', emailErr)
+    }
   } else if (session.payment_status === 'unpaid') {
     console.log(`[Stripe Webhook] Payment pending for task ${taskId}`)
-    // TODO: Handle async payment methods
   }
   
   return {

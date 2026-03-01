@@ -9,6 +9,8 @@ interface CompactUserRatingsDisplayProps {
   className?: string
   showTasker?: boolean
   showHelper?: boolean
+  /** When true and ratings is null, show nothing instead of "No ratings" (avoids flashing before ratings load) */
+  loading?: boolean
 }
 
 /**
@@ -21,8 +23,10 @@ export default function CompactUserRatingsDisplay({
   className = '',
   showTasker = true,
   showHelper = true,
+  loading = false,
 }: CompactUserRatingsDisplayProps) {
   if (!ratings) {
+    if (loading) return null
     return (
       <div className={`text-xs sm:text-sm text-gray-400 ${className}`}>
         No ratings

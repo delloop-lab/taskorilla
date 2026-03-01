@@ -172,7 +172,7 @@ function ProfilePageContent() {
     // The SQL function returns 'reviewee_id' as the user identifier
     console.log('📊 Profile: Loading ratings for user:', user.id)
     console.log('📊 Profile: Available ratings:', userRatings.length)
-    const ratingsMap = new Map(userRatings.map((r: any) => [r.reviewee_id, r]))
+    const ratingsMap = new Map(userRatings.map((r: any) => [String(r.reviewee_id), r]))
     console.log('📊 Profile: Ratings map keys:', Array.from(ratingsMap.keys()))
     const userRating = getUserRatingsById(user.id, ratingsMap)
     console.log('📊 Profile: Found rating:', userRating)

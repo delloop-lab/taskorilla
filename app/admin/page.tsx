@@ -49,6 +49,8 @@ type Task = {
   category?: string
   hidden_by_admin?: boolean
   hidden_reason?: string | null
+  payment_status?: string | null
+  updated_at?: string
 }
 
 type Bid = {
@@ -89,7 +91,7 @@ export default function SuperadminDashboard() {
   const [traffic, setTraffic] = useState<Traffic[]>([])
   const [dailyTraffic, setDailyTraffic] = useState<DailyTraffic[]>([])
   const [trafficDays, setTrafficDays] = useState<number>(30)
-  const [tab, setTab] = useState<'users' | 'tasks' | 'stats' | 'revenue' | 'email' | 'traffic' | 'settings' | 'reports' | 'maps' | 'blog'>('users')
+  const [tab, setTab] = useState<'users' | 'tasks' | 'awaiting_payment' | 'stats' | 'revenue' | 'email' | 'traffic' | 'settings' | 'reports' | 'maps' | 'blog'>('users')
   const [reports, setReports] = useState<any[]>([])
   const [loadingReports, setLoadingReports] = useState(false)
   const [deletingReportId, setDeletingReportId] = useState<string | null>(null)
@@ -473,7 +475,7 @@ export default function SuperadminDashboard() {
   async function fetchTasks() {
     const { data, error } = await supabase
       .from('tasks')
-      .select('id, title, status, assigned_to, created_by, created_at, budget, category, hidden_by_admin, hidden_reason')
+      .select('id, title, status, assigned_to, created_by, created_at, budget, category, hidden_by_admin, hidden_reason, payment_status, updated_at')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -1563,6 +1565,7 @@ export default function SuperadminDashboard() {
   // Calculate stats data
   const taskStatusCounts = {
     open: tasks.filter(t => t.status === 'open').length,
+    pending_payment: tasks.filter(t => t.status === 'pending_payment').length,
     in_progress: tasks.filter(t => t.status === 'in_progress').length,
     completed: tasks.filter(t => t.status === 'completed').length,
     cancelled: tasks.filter(t => t.status === 'cancelled').length,
@@ -1787,7 +1790,7 @@ export default function SuperadminDashboard() {
 
         {/* Tabs */}
         <div className="mb-4 sm:mb-6 flex flex-wrap gap-2 items-center">
-          {(['users', 'tasks', 'reports', 'stats', 'revenue', 'email', 'traffic', 'settings', 'maps', 'blog'] as const).map((t: typeof tab) => (
+          {(['users', 'tasks', 'awaiting_payment', 'reports', 'stats', 'revenue', 'email', 'traffic', 'settings', 'maps', 'blog'] as const).map((t: typeof tab) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -1797,7 +1800,7 @@ export default function SuperadminDashboard() {
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
               }`}
             >
-              {t.charAt(0).toUpperCase() + t.slice(1)}
+              {t === 'awaiting_payment' ? 'Awaiting Payment' : t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
           ))}
           <Link
@@ -2565,11 +2568,12 @@ export default function SuperadminDashboard() {
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
                         <span className={`px-2 py-1 rounded text-xs font-semibold ${
                           t.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          t.status === 'pending_payment' ? 'bg-amber-100 text-amber-800' :
                           t.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
                           t.status === 'cancelled' ? 'bg-red-100 text-red-800' :
                           'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {t.status}
+                          {t.status === 'pending_payment' ? 'Awaiting Payment' : t.status}
                         </span>
                       </td>
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden md:table-cell">
@@ -2708,6 +2712,75 @@ export default function SuperadminDashboard() {
           </div>
         )}
 
+        {/* Awaiting Payment Tab - Tasks with bid accepted but payment not completed */}
+        {tab === 'awaiting_payment' && (() => {
+          const awaitingPaymentTasks = tasks.filter(t =>
+            (t.status === 'pending_payment' || (t.status === 'in_progress' && t.payment_status === 'pending')) &&
+            t.assigned_to != null
+          )
+          return (
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+            <h2 className="text-xl font-semibold mb-4">
+              Tasks Awaiting Payment ({awaitingPaymentTasks.length})
+            </h2>
+            <p className="text-sm text-gray-600 mb-4">
+              These tasks have an accepted bid but payment has not been completed. They will auto-release after 48 hours if unpaid.
+            </p>
+            {awaitingPaymentTasks.length === 0 ? (
+              <p className="text-gray-500 py-8 text-center">No tasks awaiting payment.</p>
+            ) : (
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <table className="min-w-full border border-gray-300">
+                  <thead className="bg-amber-50">
+                    <tr>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Title</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Budget</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Tasker</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Helper</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Updated</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {awaitingPaymentTasks.map(t => (
+                      <tr key={t.id} className="hover:bg-gray-50">
+                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
+                          <div className="truncate max-w-[200px] sm:max-w-none" title={t.title}>{t.title}</div>
+                        </td>
+                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
+                          {t.budget != null ? `€${Number(t.budget).toFixed(2)}` : '-'}
+                        </td>
+                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
+                          <div className="truncate max-w-[150px]" title={users.find(u => u.id === t.created_by)?.email || t.created_by}>
+                            {users.find(u => u.id === t.created_by)?.email || t.created_by}
+                          </div>
+                        </td>
+                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
+                          <div className="truncate max-w-[150px]" title={users.find(u => u.id === t.assigned_to)?.email ?? t.assigned_to ?? ''}>
+                            {users.find(u => u.id === t.assigned_to)?.email ?? t.assigned_to ?? '-'}
+                          </div>
+                        </td>
+                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-600">
+                          {t.updated_at ? new Date(t.updated_at).toLocaleString() : '-'}
+                        </td>
+                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
+                          <Link
+                            href={`/tasks/${t.id}`}
+                            className="text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            View Task
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+          )
+        })()}
+
         {/* Stats Tab */}
         {tab === 'stats' && (
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
@@ -2797,16 +2870,17 @@ export default function SuperadminDashboard() {
                   <div style={{ height: '300px' }}>
                     <Bar
                       data={{
-                        labels: ['Open', 'In Progress', 'Completed', 'Cancelled'],
+                        labels: ['Open', 'Awaiting Payment', 'In Progress', 'Completed', 'Cancelled'],
                         datasets: [{
                           label: 'Tasks',
                           data: [
                             taskStatusCounts.open,
+                            taskStatusCounts.pending_payment,
                             taskStatusCounts.in_progress,
                             taskStatusCounts.completed,
                             taskStatusCounts.cancelled
                           ],
-                          backgroundColor: ['#facc15', '#3b82f6', '#10b981', '#ef4444'],
+                          backgroundColor: ['#facc15', '#f59e0b', '#3b82f6', '#10b981', '#ef4444'],
                         }],
                       }}
                       options={{
@@ -3334,11 +3408,57 @@ export default function SuperadminDashboard() {
                     </div>
                   </div>
 
+                  {/* Bulk actions - above table so visible without scrolling */}
+                  {filteredEmailLogs.length > 0 && (
+                    <div className="mb-4 flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={fetchEmailLogs}
+                        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-sm rounded-md font-medium text-gray-800"
+                      >
+                        Refresh
+                      </button>
+                      <button
+                        onClick={() => setSelectedEmailLogIds(selectedEmailLogIds.length === filteredEmailLogs.length ? [] : filteredEmailLogs.map((log) => log.id))}
+                        className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm rounded-md font-medium"
+                      >
+                        {selectedEmailLogIds.length === filteredEmailLogs.length ? 'Clear selection' : 'Select all'}
+                      </button>
+                      {selectedEmailLogIds.length > 0 ? (
+                        <button
+                          onClick={() => setDeletingEmailLogId('bulk')}
+                          className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded-md font-medium flex items-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Delete selected ({selectedEmailLogIds.length})
+                        </button>
+                      ) : (
+                        <span className="text-xs sm:text-sm text-gray-500">Select rows or &quot;Select all&quot; to delete in bulk</span>
+                      )}
+                    </div>
+                  )}
+
                   {/* Logs Table */}
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 text-sm">
                       <thead className="bg-gray-50">
                         <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-10">
+                            <input
+                              type="checkbox"
+                              checked={filteredEmailLogs.length > 0 && selectedEmailLogIds.length === filteredEmailLogs.length}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedEmailLogIds(filteredEmailLogs.map((log) => log.id))
+                                } else {
+                                  setSelectedEmailLogIds([])
+                                }
+                              }}
+                              className="cursor-pointer"
+                              title="Select all"
+                            />
+                          </th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Sent At
                           </th>
@@ -3361,7 +3481,21 @@ export default function SuperadminDashboard() {
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {filteredEmailLogs.map((log) => (
-                          <tr key={log.id}>
+                          <tr key={log.id} className={selectedEmailLogIds.includes(log.id) ? 'bg-blue-50' : ''}>
+                            <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-500">
+                              <input
+                                type="checkbox"
+                                checked={selectedEmailLogIds.includes(log.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedEmailLogIds([...selectedEmailLogIds, log.id])
+                                  } else {
+                                    setSelectedEmailLogIds(selectedEmailLogIds.filter((id) => id !== log.id))
+                                  }
+                                }}
+                                className="cursor-pointer"
+                              />
+                            </td>
                             <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-500">
                               {log.created_at ? new Date(log.created_at).toLocaleString() : '-'}
                             </td>
@@ -3381,13 +3515,23 @@ export default function SuperadminDashboard() {
                               {log.status || '-'}
                             </td>
                             <td className="px-4 py-2 text-right text-xs text-gray-700">
-                              <button
-                                type="button"
-                                onClick={() => setViewingEmailLog(log)}
-                                className="text-blue-600 hover:text-blue-800"
-                              >
-                                View
-                              </button>
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setViewingEmailLog(log)}
+                                  className="text-blue-600 hover:text-blue-800"
+                                >
+                                  View
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setDeletingEmailLogId(log.id)}
+                                  className="text-red-600 hover:text-red-800"
+                                  title="Delete email log"
+                                >
+                                  Delete
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}

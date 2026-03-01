@@ -113,14 +113,22 @@ export default function NewTaskClient() {
         setFormData((prev) => ({
           ...prev,
           ...draftFormData,
-          due_date: draftFormData.due_date || prev.due_date,
+          // When requesting a specific helper, don't reuse another task's title/description or old date/location
+          ...(helperIdParam
+            ? { title: '', description: '', due_date: todayDateString, location: '', latitude: null, longitude: null }
+            : {}),
+          due_date: helperIdParam ? todayDateString : (draftFormData.due_date || prev.due_date),
         }))
       }
       if (Array.isArray(draft.imageUrls)) setImageUrls(draft.imageUrls)
       if (Array.isArray(draft.selectedTags)) setSelectedTags(draft.selectedTags)
       if (Array.isArray(draft.requiredSkills)) setRequiredSkills(draft.requiredSkills)
-      if (typeof draft.postcode === 'string') setPostcode(draft.postcode)
-      if (typeof draft.country === 'string') {
+      if (typeof draft.postcode === 'string' && !helperIdParam) setPostcode(draft.postcode)
+      if (helperIdParam) {
+        setPostcode('')
+        setClosestAddress(null)
+      }
+      if (typeof draft.country === 'string' && !helperIdParam) {
         const c = draft.country || 'Portugal'
         setCountry(c === 'Ireland' ? 'Portugal' : c)
       }
@@ -159,12 +167,39 @@ export default function NewTaskClient() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('country')
+        .select('country, postcode')
         .eq('id', user.id)
         .single()
 
       const profileCountry = profile?.country || 'Portugal'
-      setCountry(profileCountry === 'Ireland' ? 'Portugal' : profileCountry)
+      const normalizedCountry = profileCountry === 'Ireland' ? 'Portugal' : profileCountry
+      setCountry(normalizedCountry)
+
+      if (profile?.postcode?.trim()) {
+        const formattedPostcode = formatPostcodeForCountry(profile.postcode.trim(), normalizedCountry)
+        setPostcode(formattedPostcode)
+        const { isPostcodeComplete } = await import('@/lib/geocoding')
+        if (isPostcodeComplete(formattedPostcode, normalizedCountry)) {
+          setGeocoding(true)
+          try {
+            const result = await geocodePostcode(formattedPostcode, normalizedCountry)
+            if (result) {
+              const derivedAddress = result.closest_address || result.display_name
+              setClosestAddress(derivedAddress || null)
+              setFormData(prev => ({
+                ...prev,
+                latitude: result.latitude,
+                longitude: result.longitude,
+                location: derivedAddress || prev.location,
+              }))
+            }
+          } catch (e) {
+            console.error('Error geocoding profile postcode:', e)
+          } finally {
+            setGeocoding(false)
+          }
+        }
+      }
     } catch (error) {
       console.error('Error loading user country:', error)
     }
@@ -197,23 +232,6 @@ export default function NewTaskClient() {
   }, [requestedHelper])
 
   useEffect(() => {
-    if (requestedHelper) {
-      setFormData(prev => {
-        if (prev.budget) {
-          return prev
-        }
-        const autoBudget = requestedHelper.hourly_rate
-          ? requestedHelper.hourly_rate.toString()
-          : '0'
-        return {
-          ...prev,
-          budget: autoBudget,
-        }
-      })
-    }
-  }, [requestedHelper])
-
-  useEffect(() => {
     if (!helperIdParam) {
       setRequestedHelper(null)
       setHelperRequestError(null)
@@ -226,7 +244,7 @@ export default function NewTaskClient() {
       setRequestedHelperLoading(true)
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, email, avatar_url, hourly_rate, professional_offerings, profile_slug, company_name')
+        .select('id, full_name, email, avatar_url, hourly_rate, professional_offerings, profile_slug, company_name, skills, services_offered')
         .eq('id', helperIdParam)
         .single()
 
@@ -240,7 +258,14 @@ export default function NewTaskClient() {
       } else {
         setHelperRequestError(null)
         setRequestedHelper(data as User)
-        const defaultOffering = helperOfferingParam || data.professional_offerings?.[0] || ''
+        // Prefer professional_offerings; for helpers without them, use skills + services_offered
+        const proOfferings = data.professional_offerings && data.professional_offerings.length > 0 ? data.professional_offerings : []
+        const skillsList = Array.isArray(data.skills) ? data.skills : []
+        const servicesList = Array.isArray(data.services_offered) ? data.services_offered : []
+        const helperOfferings = proOfferings.length > 0
+          ? proOfferings
+          : [...new Set([...skillsList, ...servicesList])].filter(Boolean)
+        const defaultOffering = helperOfferingParam || helperOfferings[0] || ''
         setSelectedHelperOffering(defaultOffering)
         const helperName = data.full_name?.split(' ')[0] || 'this helper'
         setFormData(prev => {
@@ -251,8 +276,8 @@ export default function NewTaskClient() {
           }
           if (!prev.description) {
             updated.description = defaultOffering
-              ? `Hi ${helperName}, I'd like to hire you for ${defaultOffering}. Please let me know your availability and preferred schedule.`
-              : `Hi ${helperName}, I'd like to hire you for a new task. Please let me know your availability and preferred schedule.`
+              ? `Hi ${helperName}, I'd like to hire you for ${defaultOffering}. Please let me know your availability, preferred schedule, and your quote/price for this.`
+              : `Hi ${helperName}, I'd like to hire you for a new task. Please let me know your availability, preferred schedule, and your quote/price for this.`
           }
           return updated
         })
@@ -266,16 +291,17 @@ export default function NewTaskClient() {
     }
   }, [helperIdParam, helperOfferingParam])
 
+  // When user picks a different skill/offering pill, refresh title and description to match
   useEffect(() => {
-    if (!requestedHelper || !selectedHelperOffering) return
-    setFormData(prev => {
-      if (prev.description) return prev
-      const helperName = requestedHelper.full_name?.split(' ')[0] || 'there'
-      return {
-        ...prev,
-        description: `Hi ${helperName}, I'd like to hire you for ${selectedHelperOffering}. Please let me know your availability and any prep work needed.`
-      }
-    })
+    if (!requestedHelper) return
+    const helperName = requestedHelper.full_name?.split(' ')[0] || 'there'
+    setFormData(prev => ({
+      ...prev,
+      title: selectedHelperOffering ? `${selectedHelperOffering} with ${helperName}` : `Request ${helperName}`,
+      description: selectedHelperOffering
+        ? `Hi ${helperName}, I'd like to hire you for ${selectedHelperOffering}. Please let me know your availability, any prep work needed, and your quote/price for this.`
+        : `Hi ${helperName}, I'd like to hire you for a new task. Please let me know your availability, preferred schedule, and your quote/price for this.`,
+    }))
   }, [requestedHelper, selectedHelperOffering])
 
   const checkUser = async () => {
@@ -630,11 +656,9 @@ export default function NewTaskClient() {
         assigned_to: requestedHelper ? requestedHelper.id : null,
       }
 
-      // Add category fields only for Helper tasks
-      if (taskType === 'helper') {
-        taskDataToInsert.category_id = formData.category_id || null
-        taskDataToInsert.sub_category_id = formData.sub_category_id || null
-      }
+      // Category applies to all task types
+      taskDataToInsert.category_id = formData.category_id || null
+      taskDataToInsert.sub_category_id = formData.sub_category_id || null
 
       // Try to add optional fields, but handle gracefully if columns don't exist
       let taskData: any = null
@@ -872,9 +896,7 @@ export default function NewTaskClient() {
                   checked={taskType === 'helper'}
                   onChange={(e) => {
                     setTaskType('helper')
-                    // Clear professional fields when switching to helper
                     setSelectedProfessions([])
-                    setFormData({ ...formData, category_id: '', sub_category_id: '' })
                   }}
                   className="w-4 h-4 text-blue-600 focus:ring-blue-500 focus:ring-2"
                 />
@@ -948,27 +970,35 @@ export default function NewTaskClient() {
 
             {requestedHelper && (
               <>
-                {requestedHelper.professional_offerings && requestedHelper.professional_offerings.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-800 mb-2">Popular offerings</p>
-                    <div className="flex flex-wrap gap-2">
-                      {requestedHelper.professional_offerings.map((offering) => (
-                        <button
-                          key={offering}
-                          type="button"
-                          onClick={() => setSelectedHelperOffering(offering)}
-                          className={`px-3 py-1 rounded-full border text-xs ${
-                            selectedHelperOffering === offering
-                              ? 'bg-primary-600 text-white border-primary-600'
-                              : 'bg-white text-primary-700 border-primary-200 hover:bg-primary-50'
-                          }`}
-                        >
-                          {offering}
-                        </button>
-                      ))}
+                {(() => {
+                  const proOfferings = requestedHelper.professional_offerings && requestedHelper.professional_offerings.length > 0 ? requestedHelper.professional_offerings : []
+                  const skillsList = Array.isArray(requestedHelper.skills) ? requestedHelper.skills : []
+                  const servicesList = Array.isArray(requestedHelper.services_offered) ? requestedHelper.services_offered : []
+                  const offerings = proOfferings.length > 0 ? proOfferings : [...new Set([...skillsList, ...servicesList])].filter(Boolean)
+                  return offerings.length > 0 ? (
+                    <div>
+                      <p className="text-sm font-medium text-gray-800 mb-2">
+                        {proOfferings.length > 0 ? 'Popular offerings' : 'Skills & services'}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {offerings.map((offering) => (
+                          <button
+                            key={offering}
+                            type="button"
+                            onClick={() => setSelectedHelperOffering(offering)}
+                            className={`px-3 py-1 rounded-full border text-xs ${
+                              selectedHelperOffering === offering
+                                ? 'bg-primary-600 text-white border-primary-600'
+                                : 'bg-white text-primary-700 border-primary-200 hover:bg-primary-50'
+                            }`}
+                          >
+                            {offering}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  ) : null
+                })()}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Focus of this request
@@ -977,7 +1007,7 @@ export default function NewTaskClient() {
                     type="text"
                     value={selectedHelperOffering}
                     onChange={(e) => setSelectedHelperOffering(e.target.value)}
-                    placeholder="e.g., Weekly therapy sessions"
+                    placeholder={requestedHelper.professional_offerings?.length ? 'e.g., Weekly therapy sessions' : 'e.g., Window cleaning, Handyman'}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 bg-white"
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -1100,17 +1130,21 @@ export default function NewTaskClient() {
                 />
                 <p className="mt-1 text-xs text-gray-500">
                   Enter your budget. If you leave it blank, visitors will see "Quote" instead.
-                  <br />
-                  <span className="text-xs text-gray-500">
-                  </span>
+                  {requestedHelper && (
+                    <>
+                      <br />
+                      <span className="text-xs text-gray-500">
+                        Leave blank to receive a quote from the helper after they review the task.
+                      </span>
+                    </>
+                  )}
                 </p>
               </div>
 
               {/* Category - Only show for Helper tasks */}
-              {taskType === 'helper' && (
-                <div>
+              <div>
                   <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-2">
-                    Category
+                    Category <span className="text-gray-500 font-normal">(Optional)</span>
                   </label>
                   <select
                     id="category_id"
@@ -1129,11 +1163,10 @@ export default function NewTaskClient() {
                     Choose the category that best fits your task.
                   </p>
                 </div>
-              )}
             </div>
 
-            {/* Sub-Category - Only show for Helper tasks */}
-            {taskType === 'helper' && formData.category_id && (
+            {/* Sub-Category */}
+            {formData.category_id && (
               <div>
                 <label htmlFor="sub_category_id" className="block text-sm font-medium text-gray-700 mb-2">
                   Sub-Category (Optional)

@@ -56,7 +56,7 @@ function UserProfileContent() {
     // The SQL function returns 'reviewee_id' as the user identifier
     console.log('📊 User Profile: Updating ratings for:', profile.id)
     console.log('📊 User Profile: Available ratings:', userRatings.length)
-    const ratingsMap = new Map(userRatings.map((r: any) => [r.reviewee_id, r]))
+    const ratingsMap = new Map(userRatings.map((r: any) => [String(r.reviewee_id), r]))
     const userRating = getUserRatingsById(profile.id, ratingsMap)
     console.log('📊 User Profile: Found rating:', userRating)
     setUserRatingsSummary(userRating)
@@ -503,7 +503,7 @@ function UserProfileContent() {
                       className="px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-md text-xs sm:text-sm font-semibold hover:bg-primary-700 transition-colors cursor-pointer relative z-10"
                       type="button"
                     >
-                      Request this helper
+                      Send Request
                     </button>
                   )}
                   <button
@@ -626,7 +626,7 @@ function UserProfileContent() {
                           className="text-sm px-3 py-1 bg-primary-50 text-primary-700 border border-primary-200 rounded hover:bg-primary-100 cursor-pointer relative z-10"
                           type="button"
                         >
-                          Request this
+                          Send Request
                         </button>
                       )}
                     </li>

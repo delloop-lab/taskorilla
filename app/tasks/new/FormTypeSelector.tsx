@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import NewTaskClient from './NewTaskClient'
 import SurveyJSTrialForm from '@/components/SurveyJSTrialForm'
 import { useLanguage } from '@/lib/i18n'
@@ -8,6 +9,9 @@ import { useLanguage } from '@/lib/i18n'
 const FORM_TYPE_STORAGE_KEY = 'newTaskFormType'
 
 export default function FormTypeSelector() {
+  const searchParams = useSearchParams()
+  const hasRequestedHelper = Boolean(searchParams?.get('helperId'))
+
   const [formType, setFormType] = useState<'quick' | 'full'>(() => {
     if (typeof window === 'undefined') return 'quick'
     const stored = localStorage.getItem(FORM_TYPE_STORAGE_KEY)
@@ -15,7 +19,18 @@ export default function FormTypeSelector() {
     return 'quick'
   })
   const { t } = useLanguage()
-  
+
+  // When requesting a specific helper, always use the Full form: it skips "Helper vs Professional"
+  // and handles assigned_to + optional budget. The Quick form does not support helperId.
+  if (hasRequestedHelper) {
+    return (
+      <div className="w-full">
+        <div className="h-[10px] bg-gray-100 mb-0" />
+        <NewTaskClient />
+      </div>
+    )
+  }
+
   return (
     <div className="w-full">
       {/* Background color above Form Type box */}

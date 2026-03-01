@@ -10,12 +10,16 @@ import { formatEuro } from '@/lib/currency'
 import Link from 'next/link'
 import UserProfileModal from '@/components/UserProfileModal'
 import StandardModal from '@/components/StandardModal'
-import { extractTownName } from '@/lib/geocoding'
+import { extractTownName, geocodePostcode, calculateDistance } from '@/lib/geocoding'
 import { checkForContactInfo } from '@/lib/content-filter'
 import { User as UserIcon } from 'lucide-react'
 import { compressTaskImage } from '@/lib/image-utils'
 import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
 import CompactUserRatingsDisplay from '@/components/CompactUserRatingsDisplay'
+
+const PAYMENT_TIMEOUT_HOURS = typeof process.env.NEXT_PUBLIC_PAYMENT_TIMEOUT_HOURS !== 'undefined'
+  ? parseInt(process.env.NEXT_PUBLIC_PAYMENT_TIMEOUT_HOURS, 10) || 48
+  : 48
 
 export default function TaskDetailPage() {
   const params = useParams()
@@ -80,6 +84,9 @@ export default function TaskDetailPage() {
   const [pendingCancelTask, setPendingCancelTask] = useState<boolean>(false)
   const [expandedBidReviews, setExpandedBidReviews] = useState<string | null>(null)
   const [expandedBidBadges, setExpandedBidBadges] = useState<string | null>(null)
+  const [releasedDueToPaymentTimeout, setReleasedDueToPaymentTimeout] = useState(false)
+  const [distanceFromUser, setDistanceFromUser] = useState<number | null>(null)
+  const [assignedHelper, setAssignedHelper] = useState<{ id: string; full_name: string | null; email: string | null; avatar_url: string | null } | null>(null)
 
   useEffect(() => {
     loadTask()
@@ -88,6 +95,23 @@ export default function TaskDetailPage() {
     loadProgressUpdates()
     checkUser()
   }, [taskId])
+
+  // Compute distance from logged-in user to task when we have task coords and user postcode
+  useEffect(() => {
+    if (!task?.latitude || !task?.longitude || !userProfile?.postcode) {
+      setDistanceFromUser(null)
+      return
+    }
+    let cancelled = false
+    geocodePostcode(userProfile.postcode, userProfile.country || undefined)
+      .then((res) => {
+        if (cancelled || !res) return
+        const km = calculateDistance(res.latitude, res.longitude, task.latitude!, task.longitude!)
+        if (!cancelled) setDistanceFromUser(Math.round(km * 10) / 10)
+      })
+      .catch(() => { if (!cancelled) setDistanceFromUser(null) })
+    return () => { cancelled = true }
+  }, [task?.id, task?.latitude, task?.longitude, userProfile?.postcode, userProfile?.country])
 
   // Handle return from payment - poll until DB reflects paid status
   useEffect(() => {
@@ -138,7 +162,7 @@ export default function TaskDetailPage() {
     if (!task || !task.user || !task.created_by) return
     
     // Get user ratings from SQL function
-    const ratingsMap = new Map(userRatings.map((r: any) => [r.reviewee_id, r]))
+    const ratingsMap = new Map(userRatings.map((r: any) => [String(r.reviewee_id), r]))
     const userRating = getUserRatingsById(task.created_by, ratingsMap)
     
     console.log('📊 Task Detail: Updating ratings for tasker:', {
@@ -230,11 +254,11 @@ export default function TaskDetailPage() {
     const { data: { user } } = await supabase.auth.getUser()
     setUser(user)
     
-    // Load user profile to check if they are a helper
+    // Load user profile (for helper check and distance from postcode)
     if (user) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('is_helper')
+        .select('is_helper, postcode, country')
         .eq('id', user.id)
         .single()
       setUserProfile(profile)
@@ -245,7 +269,8 @@ export default function TaskDetailPage() {
 
   const loadTask = async () => {
     try {
-      // Check if user is admin
+      setReleasedDueToPaymentTimeout(false)
+      // Check if user is admin first - admins viewing should NOT trigger 48h auto-release
       const { data: { user } } = await supabase.auth.getUser()
       let isAdmin = false
       if (user) {
@@ -255,6 +280,31 @@ export default function TaskDetailPage() {
           .eq('id', user.id)
           .single()
         isAdmin = profile?.role === 'admin' || profile?.role === 'superadmin'
+      }
+      // 48-hour auto-release: only when non-admin views (task owner or helper). Skip for admins so they can inspect without triggering release.
+      if (!isAdmin) {
+        const cutoff = new Date(Date.now() - PAYMENT_TIMEOUT_HOURS * 60 * 60 * 1000).toISOString()
+        const { data: reverted } = await supabase
+          .from('tasks')
+          .update({
+            status: 'open',
+            payment_status: null,
+            payment_intent_id: null,
+            assigned_to: null,
+          })
+          .eq('id', taskId)
+          .eq('status', 'pending_payment')
+          .lt('updated_at', cutoff)
+          .select('id')
+          .maybeSingle()
+        if (reverted) {
+          setReleasedDueToPaymentTimeout(true)
+          await supabase
+            .from('bids')
+            .update({ status: 'rejected' })
+            .eq('task_id', taskId)
+            .eq('status', 'accepted')
+        }
       }
 
       let query = supabase
@@ -279,9 +329,15 @@ export default function TaskDetailPage() {
         return
       }
 
+      // Pre-assigned (request-this-helper) tasks: only creator, assigned helper, or admin may view
+      if (taskData?.assigned_to != null && (!user || (taskData.created_by !== user.id && taskData.assigned_to !== user.id && !isAdmin))) {
+        router.push('/tasks')
+        return
+      }
+
       // Fetch profile and rating for task creator
       if (taskData) {
-        const [profileResult, reviewsResult, imagesResult, completionPhotosResult, progressUpdatesResult] = await Promise.all([
+        const [profileResult, reviewsResult, imagesResult, completionPhotosResult, progressUpdatesResult, tagsResult, assignedHelperResult] = await Promise.all([
           supabase
             .from('profiles')
             .select('id, email, full_name, avatar_url')
@@ -301,14 +357,13 @@ export default function TaskDetailPage() {
             .select('*')
             .eq('task_id', taskId)
             .order('created_at', { ascending: false }),
-          taskData.status === 'in_progress'
+          (taskData.status === 'pending_payment' || taskData.status === 'in_progress')
             ? (supabase
                 .from('task_progress_updates')
                 .select('*, user:profiles(id, full_name, avatar_url)')
                 .eq('task_id', taskId)
                 .order('created_at', { ascending: false }) as any)
                 .then((result: any) => {
-                  // Handle case where table doesn't exist yet
                   if (result.error && (result.error.code === 'PGRST205' || result.error.message?.includes('Could not find the table'))) {
                     console.warn('task_progress_updates table does not exist. Please run: supabase/add_progress_tracking.sql')
                     return { data: [], error: null }
@@ -316,19 +371,34 @@ export default function TaskDetailPage() {
                   return result
                 })
                 .catch(() => ({ data: [], error: null }))
-            : Promise.resolve({ data: [] })
+            : Promise.resolve({ data: [] }),
+          supabase
+            .from('task_tags')
+            .select('tag_id, tags(id, name)')
+            .eq('task_id', taskId),
+          taskData.assigned_to
+            ? supabase.from('profiles').select('id, full_name, email, avatar_url').eq('id', taskData.assigned_to).single()
+            : Promise.resolve({ data: null }),
         ])
 
         const profileData = profileResult.data
         const imagesData = imagesResult.data || []
         const completionPhotosData = completionPhotosResult.data || []
+        if (assignedHelperResult?.data) setAssignedHelper(assignedHelperResult.data)
         const progressUpdatesData = progressUpdatesResult.data || []
+        const tagsData = tagsResult?.data || []
+        const tags: { id: string; name: string }[] = []
+        tagsData.forEach((tt: any) => {
+          const t = tt?.tags
+          if (Array.isArray(t)) t.forEach((x: any) => x?.id && x?.name && tags.push({ id: x.id, name: x.name }))
+          else if (t && t.id && t.name) tags.push({ id: t.id, name: t.name })
+        })
 
         // Get user ratings from SQL function
         // The SQL function returns 'reviewee_id' as the user identifier
         let userRating = null
         if (userRatings.length > 0) {
-          const ratingsMap = new Map(userRatings.map((r: any) => [r.reviewee_id, r]))
+          const ratingsMap = new Map(userRatings.map((r: any) => [String(r.reviewee_id), r]))
           userRating = getUserRatingsById(taskData.created_by, ratingsMap)
           console.log('📊 Task Detail loadTask: Found rating for tasker:', {
             taskerId: taskData.created_by,
@@ -347,7 +417,8 @@ export default function TaskDetailPage() {
           } : null,
           images: imagesData.length > 0 ? imagesData : undefined,
           completion_photos: completionPhotosData.length > 0 ? completionPhotosData : undefined,
-          progress_updates: progressUpdatesData.length > 0 ? progressUpdatesData : undefined
+          progress_updates: progressUpdatesData.length > 0 ? progressUpdatesData : undefined,
+          tags
         })
         
         if (progressUpdatesData.length > 0) {
@@ -620,9 +691,9 @@ export default function TaskDetailPage() {
         await supabase
           .from('tasks')
           .update({
-            status: 'in_progress',
+            status: 'pending_payment',
             assigned_to: acceptedBid.user_id,
-            budget: acceptedBid.amount, // Set budget to accepted bid amount for payment
+            budget: acceptedBid.amount,
           })
           .eq('id', taskId)
 
@@ -630,7 +701,7 @@ export default function TaskDetailPage() {
         try {
           const helperName = acceptedBid.user?.full_name?.split(' ')[0] || 'Helper'
           const taskerName = task?.user?.full_name?.split(' ')[0] || 'Task owner'
-          const progressMessage = `🎉 Congratulations! ${taskerName} has accepted ${helperName}'s bid of €${acceptedBid.amount.toFixed(2)}. The task is now in progress!`
+          const progressMessage = `${taskerName} has selected ${helperName}'s bid of €${acceptedBid.amount.toFixed(2)}. Awaiting payment confirmation before work begins.`
           
           // Try with update_type first, fall back without it
           const { error: err1 } = await supabase
@@ -658,13 +729,13 @@ export default function TaskDetailPage() {
 
         // Send email notifications
         try {
-          setAcceptBidStatus('Bid accepted. Notifying helpers...')
-          // Email to accepted bidder
+          setAcceptBidStatus('Bid selected. Notifying helpers...')
+          // Email to selected bidder — payment pending, don't start work yet
           await fetch('/api/send-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              type: 'bid_accepted',
+              type: 'bid_selected_pending_payment',
               bidderEmail: acceptedBid.user?.email || '',
               bidderName: acceptedBid.user?.full_name || acceptedBid.user?.email || 'User',
               taskTitle: task?.title || '',
@@ -697,7 +768,7 @@ export default function TaskDetailPage() {
         // Restore previous behavior: immediately prompt task owner to pay after accepting a bid.
         // This keeps the "accept -> pay" flow instead of waiting until completion time.
         try {
-          setAcceptBidStatus('Bid accepted. Redirecting to payment...')
+          setAcceptBidStatus('Bid selected. Redirecting to payment...')
           const { data: { session } } = await supabase.auth.getSession()
           const checkoutResponse = await fetch('/api/payments/create-checkout', {
             method: 'POST',
@@ -741,7 +812,7 @@ export default function TaskDetailPage() {
 
       loadTask()
       loadBids()
-      setAcceptBidStatus('Bid accepted successfully.')
+      setAcceptBidStatus('Bid selected — complete payment to start the task.')
       setTimeout(() => setAcceptBidStatus(null), 4000)
     } catch (error) {
       console.error('Error accepting bid:', error)
@@ -1937,6 +2008,58 @@ export default function TaskDetailPage() {
     }
   }
 
+  const handleMakeTaskPublic = () => {
+    if (!user || !task || task.created_by !== user.id) {
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: 'Permission Denied',
+        message: 'Only the task owner can make a task open to all helpers.',
+      })
+      return
+    }
+    if (task.status !== 'open' || !task.assigned_to) return
+
+    setModalState({
+      isOpen: true,
+      type: 'confirm',
+      title: 'Open to all helpers?',
+      message: 'This task will become visible to all helpers. Anyone can submit a bid. The current helper can still bid again.\n\nIf this task was written for a specific helper (e.g. "Branding with Antonio"), the title or description may no longer make sense once it\'s public. Consider editing the task after opening it to all.',
+      onConfirm: () => {
+        setModalState({ ...modalState, isOpen: false })
+        performMakeTaskPublic()
+      },
+    })
+  }
+
+  const performMakeTaskPublic = async () => {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ assigned_to: null })
+        .eq('id', taskId)
+
+      if (error) throw error
+
+      loadTask()
+      loadBids()
+      setModalState({
+        isOpen: true,
+        type: 'success',
+        title: 'Task now public',
+        message: 'This task is now visible to all helpers. Anyone can submit a bid.',
+      })
+    } catch (error: any) {
+      console.error('Error making task public:', error)
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: error.message || 'Failed to make task public. Please try again.',
+      })
+    }
+  }
+
   const handleUnarchiveTask = async () => {
     if (!user || !task || task.created_by !== user.id) {
       setModalState({
@@ -2204,6 +2327,7 @@ export default function TaskDetailPage() {
   }, 0)
   const hasOutstandingRevisionRequest =
     latestRevisionRequestTime > 0 && latestRevisionCompletedTime < latestRevisionRequestTime
+  const visibleBids = bids.filter(b => b.status !== 'rejected')
   
   // Helper function to check if user can see bid details
   const canSeeBidDetails = (bid: Bid) => {
@@ -2369,6 +2493,8 @@ export default function TaskDetailPage() {
                 className={`px-3 py-1 text-xs sm:text-sm font-medium rounded flex-shrink-0 self-start ${
                   task.status === 'open'
                     ? 'bg-green-100 text-green-800'
+                    : task.status === 'pending_payment'
+                    ? 'bg-amber-100 text-amber-800'
                     : task.status === 'in_progress'
                     ? 'bg-blue-100 text-blue-800'
                     : task.status === 'completed'
@@ -2376,9 +2502,15 @@ export default function TaskDetailPage() {
                     : 'bg-red-100 text-red-800'
                 }`}
               >
-                {task.status.replace('_', ' ')}
+                {task.status === 'open' && task.assigned_to ? 'Awaiting quote' : task.status === 'pending_payment' ? 'Awaiting Payment' : task.status.replace('_', ' ')}
               </span>
             </div>
+
+            {releasedDueToPaymentTimeout && (
+              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 sm:px-4 py-3 text-xs sm:text-sm text-amber-800">
+                This task was released because payment was not completed within {PAYMENT_TIMEOUT_HOURS} hours. It is not visible to the public; only you and the helper can see it. The helper can submit a new quote if you still want to proceed.
+              </div>
+            )}
 
             <div className="mb-6">
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Description</h2>
@@ -2458,10 +2590,74 @@ export default function TaskDetailPage() {
               </p>
             </div>
           )}
+          <div>
+            <p className="text-xs sm:text-sm text-gray-500">Assigned To</p>
+            {assignedHelper ? (
+              <div className="flex items-center gap-2 mt-0.5">
+                {assignedHelper.avatar_url ? (
+                  <img src={assignedHelper.avatar_url} alt={assignedHelper.full_name || ''} className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  </div>
+                )}
+                <p className="text-base sm:text-lg font-medium">{assignedHelper.full_name || assignedHelper.email}</p>
+              </div>
+            ) : (
+              <p className="text-base sm:text-lg font-medium text-gray-400">Not assigned</p>
+            )}
+          </div>
+          <div>
+            <p className="text-xs sm:text-sm text-gray-500">Distance</p>
+            <p className="text-base sm:text-lg font-medium">
+              {distanceFromUser != null ? `${distanceFromUser} km` : '—'}
+            </p>
+          </div>
+          <div className="md:col-span-2">
+            <p className="text-xs sm:text-sm text-gray-500 mb-1">Tags</p>
+            <div className="flex flex-wrap gap-1.5">
+              {task.tags && Array.isArray(task.tags) && task.tags.length > 0
+                ? task.tags.map((tag: any) =>
+                    tag && tag.id && tag.name ? (
+                      <span key={tag.id} className="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium bg-blue-100 text-blue-800">
+                        {tag.name}
+                      </span>
+                    ) : null
+                  )
+                : <span className="text-gray-500 text-sm">—</span>}
+            </div>
+          </div>
         </div>
 
-        {/* Payment Section - Show for task owner when task is assigned */}
-        {isTaskOwner && task.status === 'in_progress' && task.assigned_to && (() => {
+        {/* Pending Payment Banner */}
+        {task.status === 'pending_payment' && (
+          <div className="mb-6 border rounded-lg p-4 bg-amber-50 border-amber-300">
+            {isTaskOwner ? (
+              <>
+                <h3 className="text-lg font-semibold text-amber-900 mb-1">Payment Required</h3>
+                <p className="text-sm text-amber-800">
+                  You've selected a helper for this task. Please complete payment below to confirm the assignment and allow work to begin.
+                </p>
+              </>
+            ) : user && task.assigned_to === user.id ? (
+              <>
+                <h3 className="text-lg font-semibold text-amber-900 mb-1">Awaiting Payment</h3>
+                <p className="text-sm text-amber-800">
+                  Your bid has been selected! The task owner is completing payment. You'll be notified by email once payment is confirmed and you can start work.
+                  <strong className="block mt-1">Please do not begin work until you receive confirmation.</strong>
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-semibold text-amber-900 mb-1">Awaiting Payment</h3>
+                <p className="text-sm text-amber-800">A helper has been selected. The task owner is completing payment.</p>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Payment Section - Show for task owner when task is assigned (pending_payment or in_progress) */}
+        {isTaskOwner && (task.status === 'pending_payment' || task.status === 'in_progress') && task.assigned_to && (() => {
           // Get payment amount from task budget or accepted bid
           const acceptedBid = bids.find(b => b.status === 'accepted')
           const paymentAmount = task.budget || acceptedBid?.amount
@@ -2540,6 +2736,11 @@ export default function TaskDetailPage() {
           </div>
         )}
 
+        {isTaskOwner && task.assigned_to && task.status === 'open' && (task.budget == null || task.budget === 0) && !bids.some(b => b.user_id === task.assigned_to) && (
+          <div className="mb-4 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+            Waiting for {task.assigned_to_user?.full_name || 'the helper'} to submit a quote. You&apos;ll be able to accept and pay once they do.
+          </div>
+        )}
         {isTaskOwner && (
           <div className="mb-6 flex flex-wrap gap-2 sm:gap-3">
             {task.status === 'open' && (
@@ -2549,6 +2750,14 @@ export default function TaskDetailPage() {
               >
                 Edit Task
               </Link>
+            )}
+            {task.status === 'open' && task.assigned_to && (
+              <button
+                onClick={handleMakeTaskPublic}
+                className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium hover:bg-blue-700 flex-1 sm:flex-none min-w-[120px]"
+              >
+                Open to all helpers
+              </button>
             )}
             {task.status === 'in_progress' && (
               <button
@@ -2632,8 +2841,8 @@ export default function TaskDetailPage() {
           </div>
         )}
 
-        {/* Progress Updates - Only show for in_progress tasks */}
-        {task.status === 'in_progress' && (
+        {/* Progress Updates - Show for pending_payment and in_progress tasks */}
+        {(task.status === 'pending_payment' || task.status === 'in_progress') && (
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Progress Updates</h3>
             <p className="text-sm text-gray-600 mb-4">The Tasker will be automatically advised of any new update.</p>
@@ -2873,8 +3082,8 @@ export default function TaskDetailPage() {
           </div>
         )}
 
-        {/* Completion Photos Display */}
-        {task.completion_photos && task.completion_photos.length > 0 && (
+        {/* Completion Photos Display - only relevant when task is active or completed */}
+        {task.completion_photos && task.completion_photos.length > 0 && (task.status === 'in_progress' || task.status === 'completed') && (
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-3">Completion Photos</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -2920,6 +3129,11 @@ export default function TaskDetailPage() {
         </div>
       )}
 
+      {canBid && task.assigned_to === user?.id && (task.budget == null || task.budget === 0) && (
+        <p className="mb-3 text-sm text-primary-700 bg-primary-50 border border-primary-200 rounded-md px-3 py-2">
+          Submit your quote (amount and message) so the tasker can accept and pay.
+        </p>
+      )}
       {canBid && (
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Submit a Bid</h2>
@@ -2975,18 +3189,20 @@ export default function TaskDetailPage() {
 
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Bids ({bids.length})
+          Bids ({visibleBids.length})
         </h2>
         {acceptBidStatus && (
           <div className="mb-4 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800" aria-live="polite">
             {acceptBidStatus}
           </div>
         )}
-        {bids.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No bids yet. Be the first to bid!</p>
+        {visibleBids.length === 0 ? (
+          <p className="text-gray-500 text-center py-8">
+            {task.assigned_to ? 'Awaiting quote.' : 'No bids yet. Be the first to bid!'}
+          </p>
         ) : (
           <div className="space-y-4">
-            {bids.map((bid) => (
+            {visibleBids.map((bid) => (
               <div
                 key={bid.id}
                 className={`border rounded-lg p-4 ${

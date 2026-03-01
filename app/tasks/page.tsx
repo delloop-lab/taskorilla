@@ -26,39 +26,54 @@ const debugWarn = (...args: any[]) => isDev && console.warn(...args)
 
 type FilterType = 'all' | 'open' | 'my_tasks' | 'new' | 'my_bids'
 
-// Skeleton card component for loading state
+// Skeleton card component for loading state — mirrors full view card layout
 function TaskSkeletonCard() {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
-      {/* Image placeholder */}
-      <div className="w-full h-48 bg-gray-200"></div>
-      
-      <div className="p-4 sm:p-6">
-        {/* Title and price row */}
-        <div className="flex justify-between items-start mb-3">
-          <div className="flex-1">
-            <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
-            <div className="h-8 bg-gray-200 rounded w-24"></div>
+      <div className="p-4 sm:p-5 flex flex-col">
+        {/* Thumbnail + title/price row */}
+        <div className="grid grid-cols-[48px_1fr] sm:grid-cols-[96px_1fr] gap-3 sm:gap-4">
+          <div className="row-span-2 self-start w-12 h-12 sm:w-24 sm:h-24 rounded-lg bg-gray-200" />
+          <div className="min-w-0">
+            <div className="h-5 bg-gray-200 rounded w-3/4 mb-2" />
+            <div className="flex items-center justify-between gap-2">
+              <div className="h-7 bg-gray-200 rounded w-20" />
+              <div className="h-5 bg-gray-200 rounded w-14" />
+            </div>
           </div>
-          <div className="h-6 bg-gray-200 rounded w-16"></div>
+          <div className="h-3 bg-gray-200 rounded w-full" />
         </div>
-        
-        {/* Description */}
-        <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-5/6 mb-4"></div>
-        
-        {/* User row */}
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-7 h-7 bg-gray-200 rounded-full"></div>
-          <div className="h-4 bg-gray-200 rounded w-32"></div>
+
+        {/* Poster row */}
+        <div className="flex items-center gap-2 mt-3 pt-2 border-t border-gray-100">
+          <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-200 rounded-full" />
+          <div className="h-3 bg-gray-200 rounded w-28" />
+          <div className="h-3 bg-gray-200 rounded w-24 ml-2" />
         </div>
-        
-        {/* Bottom info */}
-        <div className="border-t border-gray-200 pt-4 mt-4">
-          <div className="flex flex-wrap gap-3">
-            <div className="h-4 bg-gray-200 rounded w-24"></div>
-            <div className="h-4 bg-gray-200 rounded w-20"></div>
-            <div className="h-4 bg-gray-200 rounded w-16"></div>
+
+        {/* Metadata grid */}
+        <div className="mt-auto pt-3 border-t border-gray-200">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
+            <div>
+              <div className="h-2.5 bg-gray-200 rounded w-16 mb-1.5" />
+              <div className="h-3.5 bg-gray-200 rounded w-24" />
+            </div>
+            <div>
+              <div className="h-2.5 bg-gray-200 rounded w-16 mb-1.5" />
+              <div className="h-3.5 bg-gray-200 rounded w-20" />
+            </div>
+            <div>
+              <div className="h-2.5 bg-gray-200 rounded w-10 mb-1.5" />
+              <div className="h-3.5 bg-gray-200 rounded w-12" />
+            </div>
+            <div>
+              <div className="h-2.5 bg-gray-200 rounded w-16 mb-1.5" />
+              <div className="h-3.5 bg-gray-200 rounded w-14" />
+            </div>
+            <div>
+              <div className="h-2.5 bg-gray-200 rounded w-8 mb-1.5" />
+              <div className="h-3.5 bg-gray-200 rounded w-24" />
+            </div>
           </div>
         </div>
       </div>
@@ -148,7 +163,7 @@ function TasksPageContent() {
   const [reportTargetName, setReportTargetName] = useState<string | null>(null)
   const [reportType, setReportType] = useState<'task' | 'user'>('task')
   const [sessionReady, setSessionReady] = useState(false)
-  const [compactView, setCompactView] = useState(false) // Default to full cards view
+  const [viewMode, setViewMode] = useState<'compact' | 'full' | 'accordion'>('full')
   
   // Simple version counter to track which load is current
   const loadVersionRef = useRef(0)
@@ -156,6 +171,15 @@ function TasksPageContent() {
   const initialLoadStartedRef = useRef(false) // Prevent duplicate initial loads
   const loadTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isLoadingRef = useRef(false)
+
+  // Refs to escape stale closures — loadTasks may run from a setTimeout
+  // that captured an old render's closure where userRatings/userLocation were empty.
+  const userRatingsRef = useRef(userRatings)
+  const userLocationRef = useRef(userLocation)
+  const tasksLoadedVersionRef = useRef(0)
+
+  useEffect(() => { userRatingsRef.current = userRatings }, [userRatings])
+  useEffect(() => { userLocationRef.current = userLocation }, [userLocation])
 
   const loadCategories = async () => {
     try {
@@ -354,12 +378,13 @@ function TasksPageContent() {
           return
         }
         
-        // Query 1: Get OPEN tasks where user placed bids (with task status join)
+        // Query 1: Get OPEN tasks where user placed active bids (with task status join)
         let placedBidsQuery = supabase
           .from('bids')
           .select('task_id, tasks!inner(id, status, archived)')
           .eq('user_id', user.id)
-          .eq('tasks.status', 'open') // Only open tasks
+          .neq('status', 'rejected')
+          .eq('tasks.status', 'open')
         
         // Filter archived if showArchived is false
         if (!showArchived) {
@@ -397,12 +422,13 @@ function TasksPageContent() {
         if (myOpenTasks && myOpenTasks.length > 0) {
           const myTaskIds = myOpenTasks.map(t => t.id)
           
-          // Get bids on my open tasks (from others)
+          // Get active bids on my open tasks (from others, excluding rejected)
           const { data: bidsOnMyTasks, error: bidsOnMyTasksError } = await supabase
             .from('bids')
             .select('task_id')
             .in('task_id', myTaskIds)
-            .neq('user_id', user.id) // Bids from others, not self
+            .neq('user_id', user.id)
+            .neq('status', 'rejected')
           
           if (bidsOnMyTasksError) {
             console.error('Error fetching bids on my tasks:', bidsOnMyTasksError)
@@ -578,7 +604,7 @@ function TasksPageContent() {
           ? supabase.from('categories').select('*').in('id', categoryIds)
           : Promise.resolve({ data: [] }),
         supabase.from('task_tags').select('task_id, tag_id, tags(*)').in('task_id', taskIds),
-        supabase.from('bids').select('task_id, id').in('task_id', taskIds)
+        supabase.from('bids').select('task_id, id, status').in('task_id', taskIds)
       ])
       
       const relatedDataEnd = performance.now()
@@ -596,9 +622,10 @@ function TasksPageContent() {
       const taskTagsData = tagsResult.data || []
       const bidsData = bidsResult.data || []
       
-      // Process data
+      // Process data — only count active bids (not rejected)
       const bidsByTaskId: Record<string, number> = {}
       bidsData.forEach((bid: any) => {
+        if (bid.status === 'rejected') return
         bidsByTaskId[bid.task_id] = (bidsByTaskId[bid.task_id] || 0) + 1
       })
       
@@ -608,13 +635,14 @@ function TasksPageContent() {
         if (tt.tags) tagsByTaskId[tt.task_id].push(tt.tags)
       })
       
-      // Create a map of user ratings from the SQL function results
+      // Read from refs so background/setTimeout calls always get the latest data
       const processStart = performance.now()
+      const currentRatings = userRatingsRef.current
+      const currentLocation = userLocationRef.current
       const ratingsMap = new Map(
-        userRatings.map((r: any) => [r.reviewee_id, r])
+        currentRatings.map((r: any) => [String(r.reviewee_id), r])
       )
       
-      // Map tasks with profiles (optimized - no excessive logging)
       let tasksWithProfiles = tasksData.map(task => {
         const creator = profilesData.find(p => p.id === task.created_by)
         const userRating = getUserRatingsById(task.created_by, ratingsMap)
@@ -622,11 +650,10 @@ function TasksPageContent() {
         const subCategoryObj = task.sub_category_id ? categoriesData.find(c => c.id === task.sub_category_id) : null
         const tags = tagsByTaskId[task.id] || []
         
-        // Calculate distance if user location is available (non-blocking)
         let distance: number | undefined = undefined
-        if (userLocation && task.latitude && task.longitude) {
+        if (currentLocation && task.latitude && task.longitude) {
           try {
-            distance = calculateDistance(userLocation.lat, userLocation.lng, task.latitude, task.longitude)
+            distance = calculateDistance(currentLocation.lat, currentLocation.lng, task.latitude, task.longitude)
           } catch (err) {
             // Distance calculation failed, continue without it
             debugWarn('Distance calculation failed:', err)
@@ -793,9 +820,10 @@ function TasksPageContent() {
         tasksWithProfiles = tasksWithProfiles.filter(task => {
           const isOpen = task.status === 'open'
           const isCompleted = task.status === 'completed'
+          const isPendingOrActive = task.status === 'pending_payment' || task.status === 'in_progress'
           const isPostedByMe = task.created_by === user.id
           const isHelpedByMe = task.assigned_to === user.id
-          return isOpen || (isCompleted && isPostedByMe) || (isCompleted && isHelpedByMe)
+          return isOpen || (isPendingOrActive && (isPostedByMe || isHelpedByMe)) || (isCompleted && (isPostedByMe || isHelpedByMe))
         })
       } else if (activeFilter === 'all' && !user) {
         tasksWithProfiles = tasksWithProfiles.filter(task => task.status === 'open')
@@ -835,6 +863,7 @@ function TasksPageContent() {
       
       if (loadVersionRef.current === thisVersion) {
         setTasks(tasksWithProfiles)
+        tasksLoadedVersionRef.current += 1
         setLoading(false)
         initialLoadDoneRef.current = true
         isLoadingRef.current = false
@@ -982,35 +1011,48 @@ function TasksPageContent() {
     // The initial load already handles defaults via getActiveFilter()
   }, [searchParams, sessionReady, filter])
 
-  // Reload tasks when ratings finish loading (to attach ratings to tasks)
-  // This ensures tasks get ratings even if they loaded before ratings were ready
-  // Use debouncing to prevent rapid reloads
+  // Patch ratings and distance onto existing tasks when data becomes available.
+  // Uses functional updater (prev =>) so it always operates on the latest task state,
+  // avoiding stale-closure overwrites that caused intermittent disappearing data.
   useEffect(() => {
-    if (!sessionReady || ratingsLoading) return
-    
-    // Only reload if initial load is done (to avoid double-loading on initial mount)
-    // After initial load completes, reload when ratings become available
-    if (initialLoadDoneRef.current && userRatings.length > 0) {
-      // Clear any pending reload
-      if (loadTimeoutRef.current) {
-        clearTimeout(loadTimeoutRef.current)
-      }
-      
-      // Debounce the reload
-      loadTimeoutRef.current = setTimeout(() => {
-        if (process.env.NODE_ENV === 'development') {
-          debugLog(`🔄 Ratings finished loading (${userRatings.length} users), reprocessing tasks to attach ratings`)
-        }
-        loadTasks(filter)
-      }, 300) // 300ms debounce
-    }
+    if (tasks.length === 0) return
+    const currentRatings = userRatingsRef.current
+    const currentLocation = userLocationRef.current
 
-    return () => {
-      if (loadTimeoutRef.current) {
-        clearTimeout(loadTimeoutRef.current)
-      }
-    }
-  }, [ratingsLoading, sessionReady, userRatings.length, filter])
+    const ratingsMap = !ratingsLoading && currentRatings.length > 0
+      ? new Map(currentRatings.map((r: any) => [String(r.reviewee_id), r]))
+      : null
+
+    setTasks(prev => {
+      if (prev.length === 0) return prev
+      let changed = false
+      const updated = prev.map(task => {
+        let newUser = task.user
+        let newDistance = task.distance
+
+        if (ratingsMap && task.user && task.created_by) {
+          const rating = getUserRatingsById(task.created_by, ratingsMap)
+          if (rating !== (task.user as any)?.userRatings) {
+            newUser = { ...task.user, userRatings: rating || null }
+            changed = true
+          }
+        }
+
+        if (currentLocation && task.latitude && task.longitude && (newDistance === undefined || newDistance === null)) {
+          try {
+            newDistance = calculateDistance(currentLocation.lat, currentLocation.lng, task.latitude, task.longitude)
+            changed = true
+          } catch {}
+        }
+
+        if (newUser !== task.user || newDistance !== task.distance) {
+          return { ...task, user: newUser, distance: newDistance }
+        }
+        return task
+      })
+      return changed ? updated : prev
+    })
+  }, [userRatings, ratingsLoading, userLocation])
 
   // Reload when other filters change (but not on initial load)
   // Use debouncing to prevent rapid reloads when user is typing/selecting
@@ -1069,27 +1111,7 @@ function TasksPageContent() {
     }
   }, [searchTerm, selectedCategory, selectedSubCategory, selectedProfession, selectedSkill, minBudget, maxBudget, maxDistance, minimumRating, selectedTagIds])
 
-  // Reload when user location becomes available (but not on initial load)
-  // Use debouncing to prevent rapid reloads
-  useEffect(() => {
-    if (sessionReady && userLocation && initialLoadDoneRef.current) {
-      // Clear any pending reload
-      if (loadTimeoutRef.current) {
-        clearTimeout(loadTimeoutRef.current)
-      }
-      
-      // Debounce the reload
-      loadTimeoutRef.current = setTimeout(() => {
-        loadTasks(filter)
-      }, 300)
-    }
-
-    return () => {
-      if (loadTimeoutRef.current) {
-        clearTimeout(loadTimeoutRef.current)
-      }
-    }
-  }, [userLocation, sessionReady, filter])
+  // (Ratings and distance are patched directly onto tasks by the useEffect above)
 
   // Load pending reviews in background (non-blocking)
   useEffect(() => {
@@ -1636,12 +1658,8 @@ function TasksPageContent() {
             <span className="text-sm text-gray-500 hidden sm:inline">{t('tasks.view')}:</span>
             <div className="flex bg-gray-100 rounded-lg p-1">
               <button
-                onClick={() => setCompactView(true)}
-                className={`p-2 rounded-md transition-colors ${
-                  compactView 
-                    ? 'bg-white text-primary-600 shadow-sm' 
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
+                onClick={() => setViewMode('compact')}
+                className={`p-2 rounded-md transition-colors ${viewMode === 'compact' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                 title={t('tasks.compactView')}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1649,16 +1667,22 @@ function TasksPageContent() {
                 </svg>
               </button>
               <button
-                onClick={() => setCompactView(false)}
-                className={`p-2 rounded-md transition-colors ${
-                  !compactView 
-                    ? 'bg-white text-primary-600 shadow-sm' 
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
+                onClick={() => setViewMode('full')}
+                className={`p-2 rounded-md transition-colors ${viewMode === 'full' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                 title={t('tasks.fullView')}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setViewMode('accordion')}
+                className={`p-2 rounded-md transition-colors ${viewMode === 'accordion' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                title="Accordion view"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l3 3m0 0l3-3m-3 3V12" />
                 </svg>
               </button>
             </div>
@@ -1666,7 +1690,7 @@ function TasksPageContent() {
         </div>
       )}
 
-      <div className={`grid gap-4 sm:gap-6 items-start ${compactView ? 'md:grid-cols-2 lg:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-2'}`}>
+      <div className={`grid gap-4 sm:gap-6 ${viewMode === 'compact' ? 'md:grid-cols-2 lg:grid-cols-3' : viewMode === 'accordion' ? 'grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-2'}`}>
         {tasks.length === 0 && !loading ? (
           <div className="col-span-full text-center py-12 text-gray-500">
             {t('tasks.noTasksFound')}
@@ -1709,12 +1733,12 @@ function TasksPageContent() {
                   }
                 }}
                 data-task-id={task.id}
-                className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col relative self-start ${
+                className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col relative ${
                   isAdmin && task.hidden_by_admin ? 'border-2 border-red-300 bg-red-50' : ''
                 }`}
               >
                 {/* COMPACT VIEW */}
-                {compactView ? (
+                {viewMode === 'compact' ? (
                   <div className="p-4">
                     {/* Title - first line */}
                     <h3 className="text-base font-semibold text-gray-900 mb-1 line-clamp-2">{task.title}</h3>
@@ -1754,6 +1778,8 @@ function TasksPageContent() {
                           className={`px-2 py-0.5 text-xs font-medium rounded ${
                             task.status === 'open'
                               ? 'bg-green-100 text-green-800'
+                              : task.status === 'pending_payment'
+                              ? 'bg-amber-100 text-amber-800'
                               : task.status === 'in_progress'
                               ? 'bg-blue-100 text-blue-800'
                               : task.status === 'completed'
@@ -1761,22 +1787,146 @@ function TasksPageContent() {
                               : 'bg-red-100 text-red-800'
                           }`}
                         >
-                          {task.status === 'open' ? t('tasks.statusOpen') : task.status === 'in_progress' ? t('tasks.statusInProgress') : task.status === 'completed' ? t('tasks.statusCompleted') : task.status.replace('_', ' ')}
+                          {task.status === 'open' ? t('tasks.statusOpen') : task.status === 'pending_payment' ? t('tasks.statusPendingPayment') : task.status === 'in_progress' ? t('tasks.statusInProgress') : task.status === 'completed' ? t('tasks.statusCompleted') : task.status.replace('_', ' ')}
                         </span>
                       </div>
                     </div>
                     
-                    {/* Location row */}
-                    {task.location && (
-                      <div className="flex items-center">
+                    {/* Location + distance row */}
+                    <div className="flex items-center justify-between gap-2 mt-1">
+                      {task.location && (
                         <span className="text-xs text-gray-500 truncate">
                           📍 {task.location.split(',')[0]}
                         </span>
+                      )}
+                      {task.distance != null ? (
+                        <span className="text-xs text-gray-400 flex-shrink-0">{task.distance} km</span>
+                      ) : !currentUserId ? (
+                        <span className="text-xs text-gray-400 italic flex-shrink-0">{t('tasks.loginToSeeDistance')}</span>
+                      ) : null}
+                    </div>
+                    {(task as any).assigned_helper && (
+                      <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+                        <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                        <span className="text-gray-400">For:</span>
+                        {(task as any).assigned_helper.avatar_url && (
+                          <img src={(task as any).assigned_helper.avatar_url} alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
+                        )}
+                        <span className="truncate font-medium text-gray-600">{(task as any).assigned_helper.full_name || (task as any).assigned_helper.email}</span>
                       </div>
                     )}
                   </div>
+                ) : viewMode === 'accordion' ? (
+                  /* ACCORDION VIEW */
+                  <div className="p-4 sm:p-5">
+                    {showSampleSash && (
+                      <div className="absolute top-0 left-0 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[0.7875rem] font-bold px-[5.4] py-[1.8] rounded-br-lg shadow-lg z-10 transform -rotate-12 origin-top-left uppercase tracking-wider">
+                        {t('tasks.sample')}
+                      </div>
+                    )}
+                    {isNew && !isSample && (
+                      <div className="absolute top-2 right-2 z-10 bg-gradient-to-r from-red-500 to-orange-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-md shadow-md uppercase tracking-wider">
+                        {t('tasks.new')}
+                      </div>
+                    )}
+                    {/* Top row: larger thumbnail + title/price/badges */}
+                    <div className="grid grid-cols-[96px_1fr] sm:grid-cols-[128px_1fr] gap-3 sm:gap-4">
+                      <div
+                        className="row-span-2 self-start w-24 h-24 sm:w-32 sm:h-32 rounded-lg overflow-hidden flex-shrink-0"
+                        style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
+                      >
+                        <img src={task.image_url || (task.required_professions && task.required_professions.length > 0 ? '/default_task_image_pro.png' : '/default_task_image.png')} alt={task.title} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-0.5 break-words line-clamp-2">{task.title}</h3>
+                        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                          <p className="text-xl sm:text-2xl font-bold text-primary-600">{task.budget ? `€${task.budget}` : t('tasks.quote')}</p>
+                          <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                            {isAdmin && task.hidden_by_admin && <span className="px-2 py-0.5 text-xs font-medium rounded bg-red-600 text-white whitespace-nowrap">🔒 {t('tasks.hidden')}</span>}
+                            {currentUserId && task.created_by === currentUserId && filter !== 'my_bids' && <span className="px-2 py-0.5 text-xs font-medium rounded bg-red-100 text-red-700 whitespace-nowrap">{t('tasks.myTaskBadge')}</span>}
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded whitespace-nowrap ${task.status === 'open' ? 'bg-green-100 text-green-800' : task.status === 'pending_payment' ? 'bg-amber-100 text-amber-800' : task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : task.status === 'completed' ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800'}`}>
+                              {task.status === 'open' ? t('tasks.statusOpen') : task.status === 'pending_payment' ? t('tasks.statusPendingPayment') : task.status === 'in_progress' ? t('tasks.statusInProgress') : task.status === 'completed' ? t('tasks.statusCompleted') : task.status.replace('_', ' ')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Description — second column */}
+                      <p className="text-gray-600 text-xs sm:text-sm line-clamp-2 break-words">{task.description || ' '}</p>
+                    </div>
+                    {/* Collapsible details */}
+                    <details className="mt-3 group" onClick={(e) => e.stopPropagation()}>
+                      <summary className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-primary-600 cursor-pointer list-none select-none w-fit">
+                        <svg className="w-3.5 h-3.5 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                        <span className="group-open:hidden">More details</span>
+                        <span className="hidden group-open:inline">Less</span>
+                      </summary>
+                      {task.user && (
+                        <>
+                          <div className="flex items-center gap-2 flex-wrap mt-3 pt-2 border-t border-gray-100">
+                            <button
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedUserId(task.user?.id || null); setIsProfileModalOpen(true) }}
+                              className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 hover:underline flex items-center gap-1.5 min-w-0"
+                            >
+                              {task.user.avatar_url ? (
+                                <img src={task.user.avatar_url} alt={task.user.full_name || task.user.email} className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover flex-shrink-0" />
+                              ) : (
+                                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0"><UserIcon className="w-3 h-3 text-gray-500" /></div>
+                              )}
+                              <span className="font-medium truncate">by {task.user.full_name || task.user.email}</span>
+                            </button>
+                            <CompactUserRatingsDisplay ratings={task.user?.userRatings || null} size="sm" className="ml-1" loading={ratingsLoading} />
+                          </div>
+                          {(task as any).assigned_helper && (
+                            <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1.5">
+                              <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                              <span className="text-gray-400">Assigned to:</span>
+                              <button
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedUserId((task as any).assigned_helper.id); setIsProfileModalOpen(true) }}
+                                className="text-primary-600 hover:underline font-medium flex items-center gap-1"
+                              >
+                                {(task as any).assigned_helper.avatar_url && (
+                                  <img src={(task as any).assigned_helper.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
+                                )}
+                                {(task as any).assigned_helper.full_name || (task as any).assigned_helper.email}
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      <div className="mt-auto pt-3 border-t border-gray-200">
+                        <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2.5 text-sm">
+                          <div className="min-w-0">
+                            <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Location</dt>
+                            <dd className="text-gray-800 font-medium line-clamp-2 break-words">{task.location ? (() => { const p = task.location.split(',').map((x: string) => x.trim()); return p[0] ? `${p[0]}${p[1] ? `, ${p[1]}` : ''}` : '—' })() : '—'}</dd>
+                          </div>
+                          <div className="min-w-0">
+                            <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Category</dt>
+                            <dd className="text-gray-800 font-medium line-clamp-2 break-words">{task.sub_category_obj?.name || task.category_obj?.name || task.category || '—'}</dd>
+                          </div>
+                          <div className="min-w-0">
+                            <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Bids</dt>
+                            <dd className="text-gray-800 font-medium">{(typeof (task as any).bidCount === 'number' ? (task as any).bidCount : 0)} {(task as any).bidCount === 1 ? t('tasks.bid') : t('tasks.bidPlural')}</dd>
+                          </div>
+                          <div className="min-w-0">
+                            <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Distance</dt>
+                            <dd className="text-gray-800 font-medium">{task.distance != null ? `${task.distance} km` : !currentUserId ? <span className="text-xs text-gray-400 italic">{t('tasks.loginToSeeDistance')}</span> : '—'}</dd>
+                          </div>
+                          <div className="min-w-0 sm:col-span-2">
+                            <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">{t('tasks.due')}</dt>
+                            <dd className="text-gray-800 font-medium">{task.due_date ? (() => { try { return format(new Date(task.due_date), 'MMM d, yyyy') } catch { return t('tasks.invalidDate') } })() : '—'}</dd>
+                          </div>
+                        </dl>
+                        {currentUserId && task.created_by !== currentUserId && (
+                          <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setReportTargetId(task.id); setReportTargetName(task.title); setReportType('task'); setReportModalOpen(true) }} className="mt-2 flex items-center gap-1.5 text-red-600 hover:text-red-700 font-medium text-sm">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                            Report
+                          </button>
+                        )}
+                      </div>
+                    </details>
+                  </div>
                 ) : (
-                  /* FULL VIEW */
+                  /* FULL VIEW - compact thumbnail layout */
                   <>
                     {showSampleSash && (
                       <div className="absolute top-0 left-0 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[0.7875rem] font-bold px-[5.4] py-[1.8] rounded-br-lg shadow-lg z-10 transform -rotate-12 origin-top-left uppercase tracking-wider">
@@ -1784,231 +1934,150 @@ function TasksPageContent() {
                       </div>
                     )}
                     {isNew && !isSample && (
-                      <div className="absolute top-0 right-0 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold px-3 sm:px-4 py-1 rounded-bl-lg rounded-tr-lg shadow-lg z-10 transform rotate-12 origin-top-right">
+                      <div className="absolute top-2 right-2 z-10 bg-gradient-to-r from-red-500 to-orange-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-md shadow-md uppercase tracking-wider">
                         {t('tasks.new')}
                       </div>
                     )}
-                    {task.image_url && (
-                      <div className="w-full h-48 sm:h-64 bg-gray-100 overflow-hidden flex items-center justify-center">
-                        <img
-                          src={task.image_url}
-                          alt={task.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
 
-                    <div className="p-4 sm:p-6 flex flex-col">
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 sm:mb-2 break-words">{task.title}</h3>
-                          <p className="text-2xl sm:text-3xl font-bold text-primary-600">{task.budget ? `€${task.budget}` : t('tasks.quote')}</p>
+                    <div className="p-4 sm:p-5 flex flex-col flex-1 min-h-0">
+                      {/* Thumbnail left, title/price/badges right */}
+                      <div className="grid grid-cols-[48px_1fr] sm:grid-cols-[96px_1fr] gap-3 sm:gap-4">
+                        {/* Square thumbnail — fixed size, pinned to top */}
+                        <div
+                          className="row-span-2 self-start w-12 h-12 sm:w-24 sm:h-24 rounded-lg overflow-hidden flex-shrink-0"
+                          style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
+                        >
+                          <img src={task.image_url || (task.required_professions && task.required_professions.length > 0 ? '/default_task_image_pro.png' : '/default_task_image.png')} alt={task.title} className="w-full h-full object-cover" />
                         </div>
-                        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap flex-shrink-0">
-                        {isAdmin && task.hidden_by_admin && (
-                          <span className="px-2 sm:px-2.5 py-1 text-xs font-bold rounded uppercase bg-red-600 text-white whitespace-nowrap">
-                            🔒 {t('tasks.hidden')}
-                          </span>
-                        )}
-                        {/* Bid relationship badges - show in Bids filter */}
-                        {filter === 'my_bids' && (task as any).userPlacedBid && (
-                          <span className="px-2 sm:px-2.5 py-1 text-xs font-bold rounded uppercase bg-blue-100 text-blue-700 whitespace-nowrap">
-                            ✋ {t('tasks.youBid')}
-                          </span>
-                        )}
-                        {filter === 'my_bids' && (task as any).bidsReceivedCount > 0 && task.created_by === currentUserId && (
-                          <span className="px-2 sm:px-2.5 py-1 text-xs font-bold rounded uppercase bg-green-100 text-green-700 whitespace-nowrap">
-                            📥 {(task as any).bidsReceivedCount} {(task as any).bidsReceivedCount !== 1 ? t('tasks.bidsReceived') : t('tasks.bidReceived')}
-                          </span>
-                        )}
-                        {currentUserId && task.created_by === currentUserId && filter !== 'my_bids' && (
-                          <span className="px-2 sm:px-2.5 py-1 text-xs font-bold rounded uppercase bg-red-100 text-red-700 whitespace-nowrap">
-                            {t('tasks.myTaskBadge')}
-                          </span>
-                        )}
-                          <span
-                            className={`px-2 sm:px-2.5 py-1 text-xs font-medium rounded whitespace-nowrap ${
-                              task.status === 'open'
-                                ? 'bg-green-100 text-green-800'
-                                : task.status === 'in_progress'
-                                ? 'bg-blue-100 text-blue-800'
-                                : task.status === 'completed'
-                                ? 'bg-gray-100 text-gray-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}
-                          >
-                            {task.status === 'open' ? t('tasks.statusOpen') : task.status === 'in_progress' ? t('tasks.statusInProgress') : task.status === 'completed' ? t('tasks.statusCompleted') : task.status.replace('_', ' ')}
-                          </span>
+                        {/* Title, price, badges */}
+                        <div className="min-w-0">
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-0.5 break-words line-clamp-2">{task.title}</h3>
+                          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                            <p className="text-xl sm:text-2xl font-bold text-primary-600">{task.budget ? `€${task.budget}` : t('tasks.quote')}</p>
+                            <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                              {isAdmin && task.hidden_by_admin && (
+                                <span className="px-2 py-0.5 text-xs font-medium rounded bg-red-600 text-white whitespace-nowrap">🔒 {t('tasks.hidden')}</span>
+                              )}
+                              {filter === 'my_bids' && (task as any).userPlacedBid && (
+                                <span className="px-2 py-0.5 text-xs font-medium rounded bg-blue-100 text-blue-700 whitespace-nowrap">✋ {t('tasks.youBid')}</span>
+                              )}
+                              {filter === 'my_bids' && (task as any).bidsReceivedCount > 0 && task.created_by === currentUserId && (
+                                <span className="px-2 py-0.5 text-xs font-medium rounded bg-green-100 text-green-700 whitespace-nowrap">📥 {(task as any).bidsReceivedCount} {(task as any).bidsReceivedCount !== 1 ? t('tasks.bidsReceived') : t('tasks.bidReceived')}</span>
+                              )}
+                              {currentUserId && task.created_by === currentUserId && filter !== 'my_bids' && (
+                                <span className="px-2 py-0.5 text-xs font-medium rounded bg-red-100 text-red-700 whitespace-nowrap">{t('tasks.myTaskBadge')}</span>
+                              )}
+                              <span className={`px-2 py-0.5 text-xs font-medium rounded whitespace-nowrap ${task.status === 'open' ? 'bg-green-100 text-green-800' : task.status === 'pending_payment' ? 'bg-amber-100 text-amber-800' : task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : task.status === 'completed' ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800'}`}>
+                                {task.status === 'open' ? t('tasks.statusOpen') : task.status === 'pending_payment' ? t('tasks.statusPendingPayment') : task.status === 'in_progress' ? t('tasks.statusInProgress') : task.status === 'completed' ? t('tasks.statusCompleted') : task.status.replace('_', ' ')}
+                              </span>
+                            </div>
+                          </div>
                         </div>
+                        {/* Description — second column, below title */}
+                        <p className="text-gray-600 text-xs sm:text-sm line-clamp-2 break-words">{task.description || ' '}</p>
                       </div>
 
-                      <p className="text-gray-600 text-xs sm:text-sm mb-3 line-clamp-2 break-words">{task.description}</p>
-
+                      {/* Poster row */}
                       {task.user && (
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              setSelectedUserId(task.user?.id || null)
-                              setIsProfileModalOpen(true)
-                            }}
-                            className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 hover:underline flex items-center gap-1.5 sm:gap-2 min-w-0"
-                          >
-                            {task.user.avatar_url ? (
-                              <img
-                                src={task.user.avatar_url}
-                                alt={task.user.full_name || task.user.email}
-                                className="w-6 h-6 sm:w-7 sm:h-7 aspect-square rounded-full object-cover object-center flex-shrink-0"
-                              />
-                            ) : (
-                              <div className="w-6 h-6 sm:w-7 sm:h-7 aspect-square rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                                <UserIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
-                              </div>
-                            )}
-                            <span className="font-medium truncate">by {task.user.full_name || task.user.email}</span>
-                          </button>
-                          <CompactUserRatingsDisplay 
-                            ratings={task.user?.userRatings || null} 
-                            size="sm"
-                            className="ml-2"
-                          />
+                        <div className="flex flex-col gap-1 mt-2 pt-2 border-t border-gray-100">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                setSelectedUserId(task.user?.id || null)
+                                setIsProfileModalOpen(true)
+                              }}
+                              className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 hover:underline flex items-center gap-1.5 sm:gap-2 min-w-0"
+                            >
+                              {task.user.avatar_url ? (
+                                <img src={task.user.avatar_url} alt={task.user.full_name || task.user.email} className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover flex-shrink-0" />
+                              ) : (
+                                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                  <UserIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
+                                </div>
+                              )}
+                              <span className="font-medium truncate">by {task.user.full_name || task.user.email}</span>
+                            </button>
+                            <CompactUserRatingsDisplay ratings={task.user?.userRatings || null} size="sm" className="ml-1" loading={ratingsLoading} />
+                          </div>
+                          {(task as any).assigned_helper && (
+                            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                              <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                              <span className="text-gray-400">Assigned to:</span>
+                              <button
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedUserId((task as any).assigned_helper.id); setIsProfileModalOpen(true) }}
+                                className="text-primary-600 hover:underline font-medium flex items-center gap-1"
+                              >
+                                {(task as any).assigned_helper.avatar_url && (
+                                  <img src={(task as any).assigned_helper.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
+                                )}
+                                {(task as any).assigned_helper.full_name || (task as any).assigned_helper.email}
+                              </button>
+                            </div>
+                          )}
                         </div>
                       )}
-                    </div>
 
-                    <div className="px-4 sm:px-6 mb-4 pb-4 border-b border-gray-200"></div>
-
-                    <div className="px-4 sm:px-6 pb-4 sm:pb-6 flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm">
-                      {task.location && (() => {
-                    const parts = task.location.split(',').map(p => p.trim())
-                    let city = ''
-                    let county = ''
-                    
-                    const hasPortuguesePostcode = parts.some(p => /^\d{4}-\d{3}$/.test(p))
-                    
-                    if (hasPortuguesePostcode) {
-                      if (parts.length >= 3) {
-                        const firstPart = parts[0].toLowerCase()
-                        const looksLikeStreet = /\d|street|avenue|road|rua|avenida|rua da|rua do|rua de/i.test(firstPart)
-                        
-                        if (looksLikeStreet && parts.length >= 4) {
-                          city = parts[2] || parts[0]
-                          county = parts[3] || ''
-                        } else {
-                          city = parts[0]
-                          if (parts.length >= 4 && !/^\d{4}-\d{3}$/.test(parts[1])) {
-                            county = parts[1]
-                          }
-                        }
-                      } else {
-                        city = parts[0] || ''
-                      }
-                    } else {
-                      city = parts[0] || ''
-                      county = parts[1] || ''
-                    }
-                    
-                    if (city) {
-                      return (
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-gray-500">🏠</span>
-                          <span className="text-gray-700 font-medium">
-                            {city}{county ? `, ${county}` : ''}
-                          </span>
-                        </div>
-                      )
-                    }
-                    return null
-                  })()}
-
-                  {(task.sub_category_obj || task.category_obj || task.category) && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-gray-500">Category:</span>
-                      <span className="text-gray-700 font-medium bg-gray-100 px-2.5 py-1 rounded">
-                        {task.sub_category_obj?.name || task.category_obj?.name || task.category}
-                      </span>
-                    </div>
-                  )}
-
-                  {typeof (task as any).bidCount === 'number' && (task as any).bidCount > 0 && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-gray-500">💰</span>
-                      <span className="text-gray-700 font-medium">
-                        {(task as any).bidCount} {(task as any).bidCount === 1 ? t('tasks.bid') : t('tasks.bidPlural')}
-                      </span>
-                    </div>
-                  )}
-
-                  {task.distance !== undefined && task.distance !== null && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-gray-500">📍</span>
-                      <span className="text-gray-700 font-medium">
-                        {task.distance} km
-                      </span>
-                    </div>
-                  )}
-
-                  {task.due_date && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-gray-500">📅</span>
-                      <span className="text-gray-700">
-                        {t('tasks.due')}: {(() => {
-                          try {
-                            return format(new Date(task.due_date!), 'MMM d, yyyy')
-                          } catch (e) {
-                            return t('tasks.invalidDate')
-                          }
-                        })()}
-                      </span>
-                    </div>
-                  )}
-
-                  {currentUserId && task.created_by !== currentUserId && (
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        setReportTargetId(task.id)
-                        setReportTargetName(task.title)
-                        setReportType('task')
-                        setReportModalOpen(true)
-                      }}
-                      className="flex items-center gap-1.5 text-red-600 hover:text-red-700 font-medium text-sm transition-colors"
-                      title="Report this task"
-                      aria-label="Report this task"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                      </svg>
-                      <span>Report</span>
-                    </button>
-                  )}
-
-                  {task.willing_to_help && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-gray-500">🤝</span>
-                      <span className="text-primary-600 font-medium">
-                        Task poster will help
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                    {task.tags && Array.isArray(task.tags) && task.tags.length > 0 && (
-                      <div className="px-4 sm:px-6 pb-4 flex flex-wrap gap-1.5">
-                        {task.tags.map((tag) =>
-                          tag && tag.id && tag.name ? (
-                            <span
-                              key={tag.id}
-                              className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800"
-                            >
-                              {tag.name}
-                            </span>
-                          ) : null
-                        )}
+                      {/* Bottom metadata */}
+                      <div className="mt-auto pt-3 border-t border-gray-200">
+                        <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2.5 text-sm">
+                          <div className="min-w-0">
+                            <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Location</dt>
+                            <dd className="text-gray-800 font-medium line-clamp-2 break-words">
+                              {task.location ? (() => {
+                                const parts = task.location.split(',').map((p: string) => p.trim())
+                                let city = ''; let county = ''
+                                const hasPT = parts.some((p: string) => /^\d{4}-\d{3}$/.test(p))
+                                if (hasPT && parts.length >= 3) {
+                                  const first = parts[0].toLowerCase()
+                                  if (/\d|street|avenue|road|rua|avenida/i.test(first) && parts.length >= 4) { city = parts[2] || parts[0]; county = parts[3] || '' }
+                                  else { city = parts[0]; if (parts.length >= 4 && !/^\d{4}-\d{3}$/.test(parts[1])) county = parts[1] }
+                                } else { city = parts[0] || ''; county = parts[1] || '' }
+                                return city ? `${city}${county ? `, ${county}` : ''}` : '—'
+                              })() : '—'}
+                            </dd>
+                          </div>
+                          <div className="min-w-0">
+                            <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Category</dt>
+                            <dd className="text-gray-800 font-medium line-clamp-2 break-words">{task.sub_category_obj?.name || task.category_obj?.name || task.category || '—'}</dd>
+                          </div>
+                          <div className="min-w-0">
+                            <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Bids</dt>
+                            <dd className="text-gray-800 font-medium">{(typeof (task as any).bidCount === 'number' ? (task as any).bidCount : 0)} {(task as any).bidCount === 1 ? t('tasks.bid') : t('tasks.bidPlural')}</dd>
+                          </div>
+                          <div className="min-w-0">
+                            <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Distance</dt>
+                            <dd className="text-gray-800 font-medium">{task.distance != null ? `${task.distance} km` : !currentUserId ? <span className="text-xs text-gray-400 italic">{t('tasks.loginToSeeDistance')}</span> : '—'}</dd>
+                          </div>
+                          <div className="min-w-0 sm:col-span-2 flex items-center justify-between gap-2 flex-wrap">
+                            <div>
+                              <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">{t('tasks.due')}</dt>
+                              <dd className="text-gray-800 font-medium">{task.due_date ? (() => { try { return format(new Date(task.due_date), 'MMM d, yyyy') } catch (e) { return t('tasks.invalidDate') } })() : '—'}</dd>
+                            </div>
+                            <div className="flex items-center gap-3 flex-wrap">
+                              {task.willing_to_help && (
+                                <div className="flex items-center gap-1 text-primary-600">
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                                  <span className="text-xs font-medium">Poster will help</span>
+                                </div>
+                              )}
+                              {currentUserId && task.created_by !== currentUserId && (
+                                <button
+                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setReportTargetId(task.id); setReportTargetName(task.title); setReportType('task'); setReportModalOpen(true) }}
+                                  className="flex items-center gap-1 text-red-500 hover:text-red-700 text-xs font-medium"
+                                  title="Report this task"
+                                  aria-label="Report this task"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                  <span>Report</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </dl>
                       </div>
-                    )}
+                    </div>
                   </>
                 )}
               </Link>

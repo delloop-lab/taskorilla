@@ -77,7 +77,7 @@ export default function BrowseHelpersPage() {
 
   // Build a ratings map once so we can look up helper ratings on the fly
   const ratingsMap = useMemo(
-    () => new Map(userRatings.map((r: any) => [r.reviewee_id, r])),
+    () => new Map(userRatings.map((r: any) => [String(r.reviewee_id), r])),
     [userRatings]
   )
 
