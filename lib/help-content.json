@@ -5,6 +5,7 @@
     "type": "faq",
     "title": "How do I create a Taskorilla account?",
     "content": "Click 'Sign Up,' enter your email, pick a password, choose between Helper, Tasker, or both, and confirm. You're ready to post or do tasks.",
+    "guideSlug": "getting-started-with-taskorilla",
     "tags": ["account", "signup", "registration", "getting started"]
   },
   {
@@ -37,6 +38,7 @@
     "type": "faq",
     "title": "How do I post a task?",
     "content": "Click 'Post a Task,' describe what you need, set location, time, and budget. Then hit 'Post.'",
+    "guideSlug": "how-to-post-a-task",
     "tags": ["post task", "create task", "new task", "task posting"]
   },
   {
@@ -69,6 +71,7 @@
     "type": "faq",
     "title": "How do I become a Helper?",
     "content": "Sign up, complete your profile, verify your ID, and you're ready to browse tasks.",
+    "guideSlug": "working-as-a-helper",
     "tags": ["become helper", "helper signup", "join helpers", "start helping"]
   },
   {
@@ -109,6 +112,7 @@
     "type": "faq",
     "title": "How does payment work?",
     "content": "Taskers pay through our secure system. Helpers get paid after the task is confirmed as complete.",
+    "guideSlug": "understanding-payments-on-taskorilla",
     "tags": ["payment", "how to pay", "payment process", "pay helper"]
   },
   {
@@ -204,8 +208,8 @@
     "category": "Posting Tasks",
     "type": "guide",
     "title": "How to Post a Task",
-    "content": "**Step 1: Click 'Post a Task'**\n\nFrom the main menu or homepage, click 'Post a Task.' Enter a clear, descriptive title (e.g., 'Assemble IKEA Furniture') and provide detailed instructions about what needs to be done.\n\n**Step 2: Set Location and Timing**\n\nSpecify the neighbourhood where the task needs to happen, by using your postcode. Then when you need the task done. You can set a specific date/time or mark it as flexible.\n\n**Step 3: Set Your Budget**\n\nEnter the amount you're willing to pay. Taskorilla will show you the service fee upfront. Be fair, competitive budgets attract better Helpers!\n\n**Step 4: Add Photos (Optional)**\n\nUpload photos to give Helpers a better idea of what's involved. This helps them provide accurate bids.\n\n**Step 5: Publish Your Task**\n\nClick 'Post.' Your task goes live immediately, and nearby Helpers get notified. You'll receive bids and can message with interested Helpers to finalize details.\n\n**Step 6: Manage Your Tasks**\n\nFrom your dashboard, you can edit task details, cancel if needed, or message Helpers. Once the task is complete, confirm completion and leave a review.",
-    "tags": ["post task", "create task", "task posting guide", "how to post", "new task"]
+    "content": "**Step 1: Navigate to Post a Task**\n\nClick the 'Post New Task' button from the navigation bar or the Browse Tasks page. You'll be taken to the task creation form.\n\n**Step 2: Choose Your Form Type**\n\nYou'll see two options at the top:\n\n• Quick Form — A streamlined questionnaire-style form, great for simple tasks. Simply answer the questions and you'll be guided through the process automatically.\n\n• Full Form — The complete form with all options, best for detailed tasks. The steps below describe the Full Form.\n\n**Step 3: Select the Type of Help You Need**\n\nChoose one of:\n\n• Hire a Helper — For general tasks like cleaning, moving, errands, or handyman work.\n\n• Engage a Professional — For specialist work like legal advice, accounting, therapy, or marketing.\n\n**Step 4: Fill In the Task Details**\n\n• Task Title (required) — A short, clear name, e.g. 'Need help moving furniture'.\n\n• Description (required) — A detailed explanation of what needs to be done.\n\n• Task Images (optional) — Upload photos to help helpers understand the task.\n\n• Budget (optional) — Your budget in euros. Leave blank and helpers will submit quotes.\n\n• Category (optional) — Pick the closest category, e.g. Home & Garden, Business.\n\n• Sub-Category (optional) — Appears after selecting a category for more precision.\n\n• Tags (optional) — Keywords to help your task get found. Press Enter after each tag.\n\n• Required Skills (optional) — Specific skills needed. Press Enter after each.\n\n• Professional Roles (optional) — Only for Professional tasks. Select roles like Accountant, Lawyer, etc.\n\n**Step 5: Set Your Location**\n\n• Country (required) — Select from the dropdown. This is auto-filled from your profile.\n\n• Postcode — Enter your postcode and the system will auto-detect your location.\n\n• Location — Your neighbourhood or city name. This is auto-filled from the postcode, or you can type it manually.\n\n**Step 6: Set a Due Date**\n\nChoose when you need the task completed. This defaults to today's date.\n\n**Step 7: Post Your Task**\n\nClick 'Post Task'. If you're not logged in, you'll be prompted to log in first — your draft is automatically saved so you won't lose any details.\n\n**What Happens Next?**\n\n1. Your task goes live and appears in Browse Tasks for helpers to see.\n\n2. Helpers in your area can submit bids with their price and a message.\n\n3. You'll be notified when bids come in.\n\n4. Review bids, check helper profiles and ratings, then accept the best one.\n\n5. Complete payment — the helper is only told to start work after payment is confirmed.\n\n6. Once the helper completes the work, you can rate and review them.\n\n**Requesting a Specific Helper (One-to-One)**\n\nIf you've found a helper you like from the Helpers or Professionals page, go to their profile and click 'Request This Helper'. The form will pre-fill with their name and offerings. Pick a skill or offering from their list, or type your own. Fill in the remaining details and post. The task will be sent directly to that helper.",
+    "tags": ["post task", "create task", "task posting guide", "how to post", "new task", "quick form", "full form", "helper", "professional"]
   },
   {
     "id": "guide-being-tasker",

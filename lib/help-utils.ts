@@ -7,6 +7,7 @@ export interface HelpItem {
   type: 'faq' | 'guide'
   title: string
   content: string
+  guideSlug?: string
   tags: string[]
 }
 

@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp, BookOpen } from 'lucide-react'
 
 interface FAQItem {
   id: string
   title: string
   content: string
+  guideSlug?: string
 }
 
 interface FAQAccordionProps {
@@ -72,6 +73,21 @@ export default function FAQAccordion({ items, defaultOpen = null }: FAQAccordion
                   return <span key={i}>{part}</span>
                 })}
               </p>
+              {item.guideSlug && (
+                <div className="mt-3">
+                  <a
+                    href={`/help/guides/${item.guideSlug}`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      window.location.href = `/help/guides/${item.guideSlug}`
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700 transition-colors cursor-pointer"
+                  >
+                    <BookOpen className="w-4 h-4" />
+                    Learn How →
+                  </a>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -5,6 +5,7 @@
     "type": "faq",
     "title": "Como crio uma conta no Taskorilla?",
     "content": "Clique em 'Registar', introduza o seu email, escolha uma palavra-passe, selecione entre Ajudante, Requisitante ou ambos, e confirme. Está pronto para publicar ou realizar tarefas.",
+    "guideSlug": "primeiros-passos-com-o-taskorilla",
     "tags": ["conta", "registo", "inscrição", "primeiros passos"]
   },
   {
@@ -37,6 +38,7 @@
     "type": "faq",
     "title": "Como publico uma tarefa?",
     "content": "Clique em 'Publicar Tarefa', descreva o que precisa, defina a localização, hora e orçamento. Depois clique em 'Publicar'.",
+    "guideSlug": "como-publicar-uma-tarefa",
     "tags": ["publicar tarefa", "criar tarefa", "nova tarefa", "publicação de tarefa"]
   },
   {
@@ -69,6 +71,7 @@
     "type": "faq",
     "title": "Como me torno um Ajudante?",
     "content": "Registe-se, complete o seu perfil, verifique a sua identidade e está pronto para explorar tarefas.",
+    "guideSlug": "trabalhar-como-ajudante",
     "tags": ["tornar-se ajudante", "registo de ajudante", "juntar-se aos ajudantes", "começar a ajudar"]
   },
   {
@@ -109,6 +112,7 @@
     "type": "faq",
     "title": "Como funciona o pagamento?",
     "content": "Os requisitantes pagam através do nosso sistema seguro. Os Ajudantes recebem após a confirmação da conclusão da tarefa.",
+    "guideSlug": "compreender-pagamentos-no-taskorilla",
     "tags": ["pagamento", "como pagar", "processo de pagamento", "pagar ajudante"]
   },
   {
@@ -204,8 +208,8 @@
     "category": "Publicar Tarefas",
     "type": "guide",
     "title": "Como Publicar uma Tarefa",
-    "content": "**Passo 1: Clique em 'Publicar Tarefa'**\n\nNo menu principal ou página inicial, clique em 'Publicar Tarefa'. Introduza um título claro e descritivo (ex: 'Montar Móvel IKEA') e forneça instruções detalhadas sobre o que precisa ser feito.\n\n**Passo 2: Definir Localização e Horário**\n\nEspecifique onde a tarefa precisa ser realizada (morada ou código postal) e quando a precisa feita. Pode definir uma data/hora específica ou marcar como flexível.\n\n**Passo 3: Definir o Seu Orçamento**\n\nIntroduza o valor que está disposto a pagar. O Taskorilla mostrará a taxa de serviço antecipadamente. Seja justo, orçamentos competitivos atraem melhores Ajudantes!\n\n**Passo 4: Adicionar Fotografias (Opcional)**\n\nCarregue fotografias para dar aos Ajudantes uma melhor ideia do que está envolvido. Isto ajuda-os a fornecer propostas mais precisas.\n\n**Passo 5: Publicar a Sua Tarefa**\n\nClique em 'Publicar'. A sua tarefa fica disponível imediatamente e os Ajudantes próximos são notificados. Receberá propostas e pode conversar com Ajudantes interessados para finalizar detalhes.\n\n**Passo 6: Gerir as Suas Tarefas**\n\nA partir do seu painel, pode editar detalhes da tarefa, cancelar se necessário ou enviar mensagens aos Ajudantes. Quando a tarefa estiver concluída, confirme a conclusão e deixe uma avaliação.",
-    "tags": ["publicar tarefa", "criar tarefa", "guia de publicação", "como publicar", "nova tarefa"]
+    "content": "**Passo 1: Aceder a Publicar Tarefa**\n\nClique no botão 'Publicar Nova Tarefa' na barra de navegação ou na página Explorar Tarefas. Será direcionado para o formulário de criação de tarefa.\n\n**Passo 2: Escolha o Tipo de Formulário**\n\nVerá duas opções no topo:\n\n• Formulário Rápido — Um formulário simplificado, ideal para tarefas simples. Basta responder às perguntas e será guiado automaticamente.\n\n• Formulário Completo — O formulário completo com todas as opções, ideal para tarefas detalhadas. Os passos abaixo descrevem o Formulário Completo.\n\n**Passo 3: Selecione o Tipo de Ajuda**\n\nEscolha uma das opções:\n\n• Contratar um Ajudante — Para tarefas gerais como limpeza, mudanças, recados ou trabalhos manuais.\n\n• Contratar um Profissional — Para trabalho especializado como assessoria jurídica, contabilidade, terapia ou marketing.\n\n**Passo 4: Preencha os Detalhes da Tarefa**\n\n• Título da Tarefa (obrigatório) — Um nome curto e claro, ex: 'Preciso de ajuda para mudar móveis'.\n\n• Descrição (obrigatório) — Uma explicação detalhada do que precisa ser feito.\n\n• Imagens da Tarefa (opcional) — Carregue fotos para ajudar os ajudantes a compreender a tarefa.\n\n• Orçamento (opcional) — O seu orçamento em euros. Deixe em branco e os ajudantes enviarão orçamentos.\n\n• Categoria (opcional) — Escolha a categoria mais adequada, ex: Casa & Jardim, Negócios.\n\n• Subcategoria (opcional) — Aparece após selecionar uma categoria para maior precisão.\n\n• Etiquetas (opcional) — Palavras-chave para ajudar a encontrar a sua tarefa. Prima Enter após cada etiqueta.\n\n• Competências Necessárias (opcional) — Competências específicas necessárias. Prima Enter após cada uma.\n\n• Funções Profissionais (opcional) — Apenas para tarefas Profissionais. Selecione funções como Contabilista, Advogado, etc.\n\n**Passo 5: Defina a Sua Localização**\n\n• País (obrigatório) — Selecione no menu. É preenchido automaticamente a partir do seu perfil.\n\n• Código Postal — Introduza o seu código postal e o sistema deteta automaticamente a localização.\n\n• Localização — O seu bairro ou cidade. É preenchido automaticamente pelo código postal, ou pode escrever manualmente.\n\n**Passo 6: Defina a Data Limite**\n\nEscolha quando precisa que a tarefa seja concluída. Por defeito é a data de hoje.\n\n**Passo 7: Publique a Sua Tarefa**\n\nClique em 'Publicar Tarefa'. Se não estiver ligado, será solicitado que faça login primeiro — o seu rascunho é guardado automaticamente para não perder nenhum detalhe.\n\n**O Que Acontece a Seguir?**\n\n1. A sua tarefa fica ativa e aparece em Explorar Tarefas para os ajudantes verem.\n\n2. Os ajudantes na sua área podem submeter propostas com o preço e uma mensagem.\n\n3. Será notificado quando chegarem propostas.\n\n4. Reveja as propostas, consulte os perfis e avaliações dos ajudantes, e aceite a melhor.\n\n5. Complete o pagamento — o ajudante só é informado para começar o trabalho após a confirmação do pagamento.\n\n6. Quando o ajudante concluir o trabalho, pode avaliá-lo.\n\n**Solicitar um Ajudante Específico (Um-para-Um)**\n\nSe encontrou um ajudante que gosta na página de Ajudantes ou Profissionais, vá ao perfil dele e clique em 'Solicitar Este Ajudante'. O formulário será preenchido com o nome e ofertas dele. Escolha uma competência ou oferta da lista, ou escreva a sua. Preencha os restantes detalhes e publique. A tarefa será enviada diretamente a esse ajudante.",
+    "tags": ["publicar tarefa", "criar tarefa", "guia de publicação", "como publicar", "nova tarefa", "formulário rápido", "formulário completo", "ajudante", "profissional"]
   },
   {
     "id": "guide-being-tasker",
