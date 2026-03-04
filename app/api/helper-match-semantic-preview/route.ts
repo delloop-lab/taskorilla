@@ -9,6 +9,8 @@ import {
   matchHelpersForTask,
 } from '@/lib/helper-matching'
 
+export const dynamic = 'force-dynamic'
+
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 const MODEL = 'text-embedding-3-small'
 
