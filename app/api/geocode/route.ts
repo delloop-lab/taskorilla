@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // SINGLE API: Use Nominatim only - it's free, reliable, and supports Portuguese postcodes correctly
+    let isApproximate = false
     let nominatimQuery = ''
     
     if (isPortugal && normalizedPostcode) {
@@ -207,6 +208,7 @@ export async function GET(request: NextRequest) {
         8600: 'Lagos',
         8500: 'Portimão',
         8000: 'Faro',
+        8200: 'Albufeira',
         1000: 'Lisboa',
         2000: 'Porto',
         3000: 'Coimbra',
@@ -258,13 +260,35 @@ export async function GET(request: NextRequest) {
             })
             
             if (cityMatch) {
-              console.log(`⚠️ Using city match for ${normalizedPostcode} in ${city} (not exact postcode)`)
+              console.log(`⚠️ Using city match for ${normalizedPostcode} in ${city} (approximate area fallback)`)
+              isApproximate = true
               data = [cityMatch]
             } else {
               data = []
             }
           }
         }
+      }
+    }
+
+    // Strategy 4: Generic area-code (XXXX) fallback for any Portuguese postcode.
+    // If all previous strategies failed, try geocoding just the first four digits.
+    if ((!data || data.length === 0) && isPortugal && normalizedPostcode) {
+      const areaCode = normalizedPostcode.split('-')[0]
+      console.log(
+        `⚠️ Falling back to area code ${areaCode} for postcode ${normalizedPostcode} (generic area fallback)`
+      )
+      try {
+        data = await fetchFromNominatim({
+          postalcode: areaCode,
+          countrycodes: 'pt',
+        })
+
+        if (data && data.length > 0) {
+          isApproximate = true
+        }
+      } catch (e) {
+        console.error('Error during generic area-code fallback:', e)
       }
     }
 
@@ -280,8 +304,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ result: null })
     }
 
-    // FINAL VALIDATION: Ensure returned postcode matches requested one
-    if (isPortugal && normalizedPostcode) {
+    // FINAL VALIDATION: Ensure returned postcode matches requested one.
+    // Skip this when we know we're using an approximate (area/city) fallback.
+    if (isPortugal && normalizedPostcode && !isApproximate) {
       const returnedPostcode = result.address?.postcode
       const displayNamePostcode = result.display_name.match(/\b\d{4}-\d{3}\b/)?.[0]
       
@@ -304,7 +329,11 @@ export async function GET(request: NextRequest) {
     let closestAddress = buildClosestAddress(result.address, normalizedPostcode || postcode || undefined, trimmedCountry)
     
     // Use the requested postcode in the address (not the returned one, to ensure accuracy)
-    const postcodeForAddress = normalizedPostcode || postcode || result.address?.postcode || undefined
+    // For approximate fallbacks, default to the primary area code (e.g. "8600") instead of full "8600-616".
+    let postcodeForAddress = normalizedPostcode || postcode || result.address?.postcode || undefined
+    if (isApproximate && normalizedPostcode) {
+      postcodeForAddress = normalizedPostcode.split('-')[0]
+    }
     
     if (closestAddress && postcodeForAddress) {
       // Replace postcode in address with the requested one

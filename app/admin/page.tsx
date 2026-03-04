@@ -47,6 +47,7 @@ type Task = {
   created_at: string
   budget?: number
   category?: string
+  is_sample_task?: boolean
   hidden_by_admin?: boolean
   hidden_reason?: string | null
   payment_status?: string | null
@@ -85,6 +86,7 @@ export default function SuperadminDashboard() {
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState<AppUser[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
   const [bids, setBids] = useState<Bid[]>([])
   const [reviews, setReviews] = useState<Review[]>([])
   const [messages, setMessages] = useState<any[]>([])
@@ -201,9 +203,22 @@ export default function SuperadminDashboard() {
   
   // Platform fee settings
   const [platformFeePercent, setPlatformFeePercent] = useState<number>(10) // 10% deducted from helper payout
-  const [taskerServiceFee, setTaskerServiceFee] = useState<number>(2) // €2 added to tasker's payment
+  const [taskerServiceFee, setTaskerServiceFee] = useState<number>(2) // €2 added to task owner's payment
+  // Feature flags
+  const [helperTaskMatchEnabled, setHelperTaskMatchEnabled] = useState<boolean>(false)
   const [savingSettings, setSavingSettings] = useState(false)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
+  // Helper task match preview
+  const [previewTaskId, setPreviewTaskId] = useState('')
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewError, setPreviewError] = useState<string | null>(null)
+  const [previewResult, setPreviewResult] = useState<{
+    task: any | null
+    matches: any[]
+    reason?: string
+  }>({ task: null, matches: [], reason: undefined })
+  const [sendingMatches, setSendingMatches] = useState(false)
+  const [sendMatchesMessage, setSendMatchesMessage] = useState<string | null>(null)
   
   // Revenue tracking
   const [revenue, setRevenue] = useState<{
@@ -475,13 +490,14 @@ export default function SuperadminDashboard() {
   async function fetchTasks() {
     const { data, error } = await supabase
       .from('tasks')
-      .select('id, title, status, assigned_to, created_by, created_at, budget, category, hidden_by_admin, hidden_reason, payment_status, updated_at')
+      .select('*')
       .order('created_at', { ascending: false })
 
     if (error) {
       console.error('Error fetching tasks:', error)
     } else if (data) {
       setTasks(data)
+      setSelectedTaskIds([])
     }
   }
 
@@ -535,6 +551,118 @@ export default function SuperadminDashboard() {
     } finally {
       setLoadingReports(false)
     }
+  }
+
+  const hasSelectedTasks = selectedTaskIds.length > 0
+
+  const handleBulkToggleSample = async () => {
+    if (!selectedTaskIds.length) return
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      const token = session?.access_token
+
+      await Promise.all(
+        selectedTaskIds.map((taskId) => {
+          const task = tasks.find((t) => t.id === taskId)
+          if (!task) return Promise.resolve(null)
+          const nextSample = !task.is_sample_task
+
+          return fetch('/api/admin/toggle-sample-task', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { Authorization: `Bearer ${token}` }),
+            },
+            body: JSON.stringify({ taskId, isSample: nextSample }),
+          })
+        })
+      )
+
+      await fetchTasks()
+      setSelectedTaskIds([])
+      setModalState({
+        isOpen: true,
+        type: 'success',
+        title: 'Success',
+        message: 'Sample status updated for selected tasks',
+      })
+    } catch (error: any) {
+      console.error('Error updating sample status in bulk:', error)
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message:
+          error.message ||
+          'Failed to update sample status for selected tasks. Please try again.',
+      })
+    }
+  }
+
+  const handleBulkToggleHidden = async () => {
+    if (!selectedTaskIds.length) return
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      const token = session?.access_token
+
+      await Promise.all(
+        selectedTaskIds.map((taskId) => {
+          const task = tasks.find((t) => t.id === taskId)
+          if (!task) return Promise.resolve(null)
+          const nextHidden = !task.hidden_by_admin
+
+          return fetch('/api/admin/hide-task', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { Authorization: `Bearer ${token}` }),
+            },
+            body: JSON.stringify({
+              taskId,
+              hidden: nextHidden,
+              reason: null,
+            }),
+          })
+        })
+      )
+
+      await fetchTasks()
+      setSelectedTaskIds([])
+      setModalState({
+        isOpen: true,
+        type: 'success',
+        title: 'Success',
+        message: 'Selected tasks visibility updated',
+      })
+    } catch (error: any) {
+      console.error('Error toggling hidden status in bulk:', error)
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message:
+          error.message ||
+          'Failed to update visibility for selected tasks. Please try again.',
+      })
+    }
+  }
+
+  const handleViewTask = () => {
+    if (selectedTaskIds.length !== 1) {
+      setModalState({
+        isOpen: true,
+        type: 'info',
+        title: 'Select a single task',
+        message: 'Please select exactly one task to view.',
+      })
+      return
+    }
+    const taskId = selectedTaskIds[0]
+    router.push(`/tasks/${taskId}`)
   }
 
   const handleDeleteClick = (reportId: string, e?: React.MouseEvent) => {
@@ -761,7 +889,7 @@ export default function SuperadminDashboard() {
     // Fetch all paid tasks
     const { data: paidTasks, error } = await supabase
       .from('tasks')
-      .select('id, title, budget, updated_at, payment_status, created_by, assigned_to')
+      .select('id, title, budget, created_at, updated_at, payment_status, created_by, assigned_to')
       .eq('payment_status', 'paid')
       .order('updated_at', { ascending: false })
 
@@ -804,6 +932,10 @@ export default function SuperadminDashboard() {
       .map(task => {
         const budget = task.budget || 0
         const platformFee = budget * (PLATFORM_FEE_PERCENT / 100)
+        // Use created_at as the effective completion/revenue date so we don't
+        // collapse everything to a recent bulk updated_at timestamp.
+        // Fall back to updated_at only if created_at is missing (should be rare).
+        const completedAt = task.created_at || task.updated_at
         return {
           id: task.id,
           title: task.title,
@@ -811,7 +943,7 @@ export default function SuperadminDashboard() {
           service_fee: SERVICE_FEE,
           platform_fee: platformFee,
           total_revenue: SERVICE_FEE + platformFee,
-          completed_at: task.updated_at,
+          completed_at: completedAt,
           tasker_email: task.created_by ? userEmails[task.created_by] || null : null,
           helper_email: task.assigned_to ? userEmails[task.assigned_to] || null : null
         }
@@ -957,6 +1089,8 @@ export default function SuperadminDashboard() {
           setPlatformFeePercent(parseFloat(setting.value) || 10)
         } else if (setting.key === 'tasker_service_fee') {
           setTaskerServiceFee(parseFloat(setting.value) || 2)
+        } else if (setting.key === 'helper_task_match_enabled') {
+          setHelperTaskMatchEnabled(setting.value === 'true')
         }
       })
       setSettingsLoaded(true)
@@ -994,6 +1128,19 @@ export default function SuperadminDashboard() {
 
       if (error2) throw error2
 
+      // Update helper task match feature flag
+      const { error: error3 } = await supabase
+        .from('platform_settings')
+        .upsert({
+          key: 'helper_task_match_enabled',
+          value: helperTaskMatchEnabled ? 'true' : 'false',
+          description: 'Enable helper task match system (matching + emails)',
+          updated_at: new Date().toISOString(),
+          updated_by: user?.id,
+        }, { onConflict: 'key' })
+
+      if (error3) throw error3
+
       setModalState({
         isOpen: true,
         type: 'success',
@@ -1010,6 +1157,78 @@ export default function SuperadminDashboard() {
       })
     } finally {
       setSavingSettings(false)
+    }
+  }
+
+  async function previewHelperTaskMatch(taskId: string) {
+    try {
+      setPreviewError(null)
+      setPreviewLoading(true)
+      setPreviewResult({ task: null, matches: [], reason: undefined })
+
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error('Not authenticated')
+      }
+
+      const response = await fetch(`/api/admin/helper-task-match-preview?taskId=${encodeURIComponent(taskId)}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      })
+
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to load preview (${response.status})`)
+      }
+
+      setPreviewResult({
+        task: data.task || null,
+        matches: data.matches || [],
+        reason: data.reason,
+      })
+    } catch (error: any) {
+      console.error('Error fetching helper task match preview:', error)
+      setPreviewError(error.message || 'Failed to load preview')
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
+
+  async function sendHelperTaskMatchEmails(taskId: string) {
+    try {
+      setSendMatchesMessage(null)
+      setSendingMatches(true)
+
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error('Not authenticated')
+      }
+
+      const response = await fetch('/api/admin/helper-task-match-send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ taskId }),
+      })
+
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to send helper match emails (${response.status})`)
+      }
+
+      setSendMatchesMessage(
+        `Sent ${data.sent || 0} email(s), skipped ${data.skipped || 0} (already sent or invalid).`
+      )
+    } catch (error: any) {
+      console.error('Error sending helper task match emails:', error)
+      setSendMatchesMessage(error.message || 'Failed to send helper match emails.')
+    } finally {
+      setSendingMatches(false)
     }
   }
 
@@ -2532,16 +2751,89 @@ export default function SuperadminDashboard() {
                 )}
               </div>
             )}
-            <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <div className="flex flex-wrap items-center justify-between mb-2 gap-3">
+              <div className="text-xs sm:text-sm text-gray-600">
+                {hasSelectedTasks
+                  ? `${selectedTaskIds.length} task${
+                      selectedTaskIds.length === 1 ? '' : 's'
+                    } selected`
+                  : 'No tasks selected'}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={!hasSelectedTasks}
+                  onClick={handleBulkToggleSample}
+                  className={`px-3 py-1 rounded-md text-xs sm:text-sm font-medium ${
+                    hasSelectedTasks
+                      ? 'bg-purple-600 text-white hover:bg-purple-700'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  Type
+                </button>
+                <button
+                  type="button"
+                  disabled={selectedTaskIds.length !== 1}
+                  onClick={handleViewTask}
+                  className={`px-3 py-1 rounded-md text-xs sm:text-sm font-medium ${
+                    selectedTaskIds.length === 1
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  View
+                </button>
+                <button
+                  type="button"
+                  disabled={!hasSelectedTasks}
+                  onClick={handleBulkToggleHidden}
+                  className={`px-3 py-1 rounded-md text-xs sm:text-sm font-medium ${
+                    hasSelectedTasks
+                      ? 'bg-red-600 text-white hover:bg-red-700'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  Hide
+                </button>
+                {hasSelectedTasks && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTaskIds([])}
+                    className="px-2 py-1 rounded-md text-xs sm:text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  >
+                    Clear selection
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="relative overflow-x-auto overflow-y-auto max-h-[750px] -mx-4 sm:mx-0">
               <table className="min-w-full border border-gray-300">
-                <thead className="bg-gray-100">
+                <thead className="bg-gray-100 sticky top-0 z-10">
                   <tr>
+                    <th className="border px-2 sm:px-4 py-2 text-center text-xs sm:text-sm w-8">
+                      <input
+                        type="checkbox"
+                        className="h-3 w-3 sm:h-4 sm:w-4"
+                        checked={
+                          tasks.length > 0 &&
+                          tasks.every((t) => selectedTaskIds.includes(t.id))
+                        }
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedTaskIds(tasks.map((t) => t.id))
+                          } else {
+                            setSelectedTaskIds([])
+                          }
+                        }}
+                      />
+                    </th>
                     <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Title</th>
                     <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Status</th>
+                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden md:table-cell">Type</th>
                     <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden md:table-cell">Assigned To</th>
                     <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden lg:table-cell">Created</th>
                     <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden sm:table-cell">Visibility</th>
-                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2558,12 +2850,41 @@ export default function SuperadminDashboard() {
                       )
                     })
                     .map(t => (
-                    <tr key={t.id} className={`hover:bg-gray-50 ${t.hidden_by_admin ? 'bg-red-50' : ''}`}>
+                    <tr
+                      key={t.id}
+                      className={`hover:bg-gray-50 ${
+                        t.hidden_by_admin
+                          ? 'bg-red-50'
+                          : t.is_sample_task
+                          ? 'bg-purple-50'
+                          : ''
+                      }`}
+                    >
+                      <td className="border px-2 sm:px-4 py-2 text-center text-xs sm:text-sm">
+                        <input
+                          type="checkbox"
+                          className="h-3 w-3 sm:h-4 sm:w-4"
+                          checked={selectedTaskIds.includes(t.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedTaskIds((prev) =>
+                                prev.includes(t.id) ? prev : [...prev, t.id]
+                              )
+                            } else {
+                              setSelectedTaskIds((prev) =>
+                                prev.filter((id) => id !== t.id)
+                              )
+                            }
+                          }}
+                        />
+                      </td>
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
-                        {t.hidden_by_admin && (
-                          <span className="text-red-600 font-semibold mr-2">🔒</span>
-                        )}
-                        <div className="truncate max-w-[200px] sm:max-w-none" title={t.title}>{t.title}</div>
+                        <div
+                          className="truncate max-w-[260px] sm:max-w-[320px]"
+                          title={t.title}
+                        >
+                          {t.title.length > 50 ? `${t.title.slice(0, 50)}…` : t.title}
+                        </div>
                       </td>
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
                         <span className={`px-2 py-1 rounded text-xs font-semibold ${
@@ -2575,6 +2896,17 @@ export default function SuperadminDashboard() {
                         }`}>
                           {t.status === 'pending_payment' ? 'Awaiting Payment' : t.status}
                         </span>
+                      </td>
+                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden md:table-cell">
+                        {t.is_sample_task ? (
+                          <span className="px-2 py-1 rounded text-xs font-semibold bg-purple-100 text-purple-800">
+                            Fake
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 rounded text-xs font-semibold bg-emerald-100 text-emerald-800">
+                            Real
+                          </span>
+                        )}
                       </td>
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden md:table-cell">
                         {t.assigned_to ? (
@@ -2596,112 +2928,6 @@ export default function SuperadminDashboard() {
                         )}
                         {t.hidden_reason && (
                           <div className="text-xs text-gray-500 mt-1 truncate max-w-[150px]" title={`Reason: ${t.hidden_reason}`}>Reason: {t.hidden_reason}</div>
-                        )}
-                      </td>
-                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
-                        {t.hidden_by_admin ? (
-                          <button
-                            onClick={async () => {
-                              try {
-                                // Get the current session to include auth token
-                                const { data: { session } } = await supabase.auth.getSession()
-                                const token = session?.access_token
-
-                                const response = await fetch('/api/admin/hide-task', {
-                                  method: 'POST',
-                                  headers: { 
-                                    'Content-Type': 'application/json',
-                                    ...(token && { 'Authorization': `Bearer ${token}` })
-                                  },
-                                  body: JSON.stringify({ taskId: t.id, hidden: false })
-                                })
-                                const result = await response.json()
-                                if (result.success) {
-                                  fetchTasks()
-                                  setModalState({
-                                    isOpen: true,
-                                    type: 'success',
-                                    title: 'Success',
-                                    message: 'Task unhidden successfully'
-                                  })
-                                } else {
-                                  setModalState({
-                                    isOpen: true,
-                                    type: 'error',
-                                    title: 'Error',
-                                    message: result.error || 'Failed to unhide task'
-                                  })
-                                }
-                              } catch (error) {
-                                console.error('Error unhiding task:', error)
-                                setModalState({
-                                  isOpen: true,
-                                  type: 'error',
-                                  title: 'Error',
-                                  message: 'Error unhiding task'
-                                })
-                              }
-                            }}
-                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
-                          >
-                            Unhide
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setModalConfirmText('Yes, Hide')
-                              setModalState({
-                                isOpen: true,
-                                type: 'confirm',
-                                title: 'Hide Task',
-                                message: 'Are you sure you want to hide this task? It will not be visible to regular users. You can unhide it later if needed.',
-                                onConfirm: async () => {
-                                  try {
-                                    // Get the current session to include auth token
-                                    const { data: { session } } = await supabase.auth.getSession()
-                                    const token = session?.access_token
-
-                                    const response = await fetch('/api/admin/hide-task', {
-                                      method: 'POST',
-                                      headers: { 
-                                        'Content-Type': 'application/json',
-                                        ...(token && { 'Authorization': `Bearer ${token}` })
-                                      },
-                                      body: JSON.stringify({ taskId: t.id, hidden: true, reason: null })
-                                    })
-                                    const result = await response.json()
-                                    if (result.success) {
-                                      fetchTasks()
-                                      setModalState({
-                                        isOpen: true,
-                                        type: 'success',
-                                        title: 'Success',
-                                        message: 'Task hidden successfully'
-                                      })
-                                    } else {
-                                      setModalState({
-                                        isOpen: true,
-                                        type: 'error',
-                                        title: 'Error',
-                                        message: result.error || 'Failed to hide task'
-                                      })
-                                    }
-                                  } catch (error) {
-                                    console.error('Error hiding task:', error)
-                                    setModalState({
-                                      isOpen: true,
-                                      type: 'error',
-                                      title: 'Error',
-                                      message: 'Error hiding task'
-                                    })
-                                  }
-                                }
-                              })
-                            }}
-                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
-                          >
-                            Hide
-                          </button>
                         )}
                       </td>
                     </tr>
@@ -3310,6 +3536,142 @@ export default function SuperadminDashboard() {
                 onSendFreeFormEmail={sendFreeFormEmail}
                 sendingEmail={sendingEmail}
               />
+
+              {/* Helper task match preview (no real emails sent) */}
+              <div className="mt-8 pt-6 border-t border-gray-200">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                  Helper Task Match Preview (no emails sent)
+                </h3>
+                <p className="text-xs text-gray-600 mb-3">
+                  Choose a task below to see which helpers would be matched for "New task near you" emails.
+                  This endpoint never sends real emails; it only shows the current matching result.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                  <select
+                    value={previewTaskId}
+                    onChange={(e) => setPreviewTaskId(e.target.value)}
+                    className="w-full sm:w-80 px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a task…</option>
+                    {tasks
+                      .slice()
+                      .sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''))
+                      .map(task => (
+                        <option key={task.id} value={task.id}>
+                          [{task.id.substring(0, 8)}] {task.title} — {task.status}
+                          {task.is_sample_task ? ' (sample)' : ''}
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => previewTaskId && previewHelperTaskMatch(previewTaskId)}
+                    disabled={!previewTaskId || previewLoading}
+                    className="inline-flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {previewLoading ? 'Loading preview...' : 'Preview helper matches'}
+                  </button>
+                </div>
+                {previewError && (
+                  <p className="mt-2 text-xs text-red-600">{previewError}</p>
+                )}
+                {previewResult.task && (
+                  <div className="mt-4 rounded-md border border-gray-200 bg-gray-50 p-3 text-xs text-gray-800 space-y-2">
+                    <div>
+                      <span className="font-semibold">Task:</span>{' '}
+                      <span className="text-gray-900">
+                        [{previewResult.task.id?.substring(0, 8) || '—'}]{' '}
+                        {previewResult.task.title}
+                      </span>
+                    </div>
+                    {typeof previewResult.task.amount === 'number' && (
+                      <div>
+                        <span className="font-semibold">Amount:</span>{' '}
+                        €{previewResult.task.amount.toFixed(2)}
+                      </div>
+                    )}
+                    {previewResult.reason && (
+                      <div className="text-yellow-800">
+                        <span className="font-semibold">Note:</span> {previewResult.reason}
+                      </div>
+                    )}
+                    <div>
+                      <span className="font-semibold">Matched helpers:</span>{' '}
+                      {previewResult.matches.length}
+                    </div>
+                    {previewResult.matches.length > 0 && (
+                      <div className="max-h-64 overflow-auto rounded border border-gray-200 bg-white">
+                        <table className="min-w-full text-[11px]">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-2 py-1 text-left font-semibold text-gray-700">Helper</th>
+                              <th className="px-2 py-1 text-left font-semibold text-gray-700">Email</th>
+                              <th className="px-2 py-1 text-left font-semibold text-gray-700">Distance (km)</th>
+                              <th className="px-2 py-1 text-left font-semibold text-gray-700">Max Dist (km)</th>
+                              <th className="px-2 py-1 text-left font-semibold text-gray-700">Email Pref</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {previewResult.matches.map((m) => (
+                              <tr key={m.id} className="border-t border-gray-100">
+                                <td className="px-2 py-1 text-gray-900">{m.name}</td>
+                                <td className="px-2 py-1 text-gray-700">{m.email}</td>
+                                <td className="px-2 py-1 text-gray-700">
+                                  {typeof m.distanceKm === 'number' ? m.distanceKm.toFixed(2) : '—'}
+                                </td>
+                                <td className="px-2 py-1 text-gray-700">
+                                  {typeof m.preferredMaxDistanceKm === 'number' ? m.preferredMaxDistanceKm.toFixed(1) : '—'}
+                                </td>
+                                <td className="px-2 py-1 text-gray-700">{m.emailPreference || 'instant'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Helper task match sending (uses feature flag) */}
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                  Helper Task Match Emails (send for selected task)
+                </h3>
+                <p className="text-xs text-gray-600 mb-3">
+                  This will send real "New task near you" emails to matched helpers for the selected task,
+                  but only if the Helper Task Match feature flag is enabled in Platform Settings.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                  <select
+                    value={previewTaskId}
+                    onChange={(e) => setPreviewTaskId(e.target.value)}
+                    className="w-full sm:w-80 px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a task…</option>
+                    {tasks
+                      .slice()
+                      .sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''))
+                      .map(task => (
+                        <option key={task.id} value={task.id}>
+                          [{task.id.substring(0, 8)}] {task.title} — {task.status}
+                          {task.is_sample_task ? ' (sample)' : ''}
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => previewTaskId && sendHelperTaskMatchEmails(previewTaskId)}
+                    disabled={!previewTaskId || sendingMatches}
+                    className="inline-flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {sendingMatches ? 'Sending emails...' : 'Send helper match emails'}
+                  </button>
+                </div>
+                {sendMatchesMessage && (
+                  <p className="mt-2 text-xs text-gray-700">{sendMatchesMessage}</p>
+                )}
+              </div>
 
               <div className="mt-6 pt-4 border-t border-gray-200 flex items-center justify-between">
                 <div>
@@ -5334,6 +5696,36 @@ export default function SuperadminDashboard() {
                     <li>Taskorilla keeps: <strong className="text-green-600">€{(taskerServiceFee + 100 * platformFeePercent / 100).toFixed(2)}</strong> (€{taskerServiceFee.toFixed(2)} + €{(100 * platformFeePercent / 100).toFixed(2)})</li>
                   </ul>
                 </div>
+              </div>
+
+              {/* Helper Task Match Feature Flag */}
+              <div className="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
+                <h3 className="text-lg font-semibold text-yellow-900 mb-2">
+                  📨 Helper Task Match Emails (Feature Flag)
+                </h3>
+                <p className="text-sm text-yellow-800 mb-3">
+                  Control whether the helper task matching system is live. When disabled, Taskorilla will not send
+                  "New task near you" notification emails to helpers, even if matching logic is configured.
+                </p>
+                <label className="inline-flex items-center gap-3 cursor-pointer">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      className="sr-only"
+                      checked={helperTaskMatchEnabled}
+                      onChange={(e) => setHelperTaskMatchEnabled(e.target.checked)}
+                    />
+                    <div className={`w-11 h-6 rounded-full transition-colors ${
+                      helperTaskMatchEnabled ? 'bg-green-500' : 'bg-gray-300'
+                    }`} />
+                    <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transform transition-transform ${
+                      helperTaskMatchEnabled ? 'translate-x-5' : ''
+                    }`} />
+                  </div>
+                  <span className="text-sm text-gray-900">
+                    {helperTaskMatchEnabled ? 'Enabled – helpers can receive task match emails' : 'Disabled – no helper task match emails will be sent'}
+                  </span>
+                </label>
               </div>
 
               {/* Save Button */}

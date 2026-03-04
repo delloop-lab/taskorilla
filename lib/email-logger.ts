@@ -9,6 +9,7 @@ export type EmailType =
   | 'task_cancelled'
   | 'admin_email'
   | 'profile_completion'
+  | 'helper_task_match'
 
 export interface EmailLogData {
   recipient_email: string

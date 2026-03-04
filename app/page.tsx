@@ -101,6 +101,9 @@ export default function Home() {
                 <p className="text-muted-foreground">
                   {t('landing.step2Text')}
                 </p>
+                <p className="text-muted-foreground">
+                  <strong>NEW:</strong>{' '}{t('landing.step2NewText')}
+                </p>
               </CardContent>
             </Card>
 

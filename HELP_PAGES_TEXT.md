@@ -180,6 +180,19 @@ This document contains all the text from the Help Center pages for easy editing.
 **FAQ 5: How should I price my bid?**
 - **Content:** Always enter your full price in euros (including time, materials, transport, and fees) and use the Price Justification box to explain what the poster gets for that amount. Once a poster accepts your bid the price is locked in, so only commit to a number you are happy to honour.
 
+**FAQ 6: How do “New task near you” emails work?**
+- **Content:** Taskorilla can email you when a new task looks like a good match for you. We decide which helpers to notify based on:
+  - **Skills and professions:** We match the task’s tags and required skills to the skills and professions listed in your profile.
+  - **Location and distance:** We use the task’s location to calculate distance.
+  - **Preferred max distance:** In your Helper Profile, you can set **Preferred max distance for task matches (km)**. The default is **100 km**. Leaving this blank is treated as **100 km**.
+  
+  You will receive at most one **"New task near you"** email per task. Your email frequency setting controls *when* that email is sent:
+  - **Instant** – as soon as the task is posted and matched.
+  - **Daily summary** – grouped into a daily email.
+  - **Weekly summary** – grouped into a weekly email.
+  
+  You can change both your preferred distance and email frequency anytime in **My Profile → Helper Profile**.
+
 ### Payment Guide Category
 
 **FAQ 1: How does payment work?**
@@ -217,7 +230,7 @@ This document contains all the text from the Help Center pages for easy editing.
 - **Content:** Click 'Forgot Password,' enter your email, and follow the link we send.
 
 **FAQ 4: Why am I not seeing certain tasks?**
-- **Content:** Tasks are shown based on location, skills, and availability. Update your profile for better matches.
+- **Content:** Tasks are shown based on location, skills, and availability. Update your skills, services, and location in your profile for better matches. If you’re a Helper, also check your **Preferred max distance for task matches (km)** and **Email frequency for new task matches** in your Helper Profile. These settings control which tasks are considered "near you" and how often you receive **"New task near you"** emails. If your distance is set very low, or your email frequency is set to weekly, you may see fewer notifications.
 
 **FAQ 5: How do I contact support?**
 - **Content:** Use the 'Contact Support' form in the Help Center. We usually reply within 24 hours.

@@ -62,7 +62,7 @@
     "category": "Posting Tasks",
     "type": "faq",
     "title": "How do I find Helpers for my task?",
-    "content": "Once posted, Helpers in your area get a notification. You can also browse profiles and invite them directly.",
+    "content": "Once posted, Helpers in your area get a notification. You can also browse profiles and invite them directly.\n\nWhen the Helper Task Match feature is enabled, suitable Helpers may also receive \"New task\" emails based on their skills and distance settings. This helps your task reach people who are genuinely a good fit.",
     "tags": ["find helpers", "hire", "invite", "notifications"]
   },
   {
@@ -105,6 +105,14 @@
     "title": "How should I price my bid?",
     "content": "Always enter your full price in euros (including time, materials, transport, and fees) and use the Price Justification box to explain what the Tasker gets for that amount. Once a poster accepts your bid the price is locked in, so only commit to a number you are happy to honour.",
     "tags": ["pricing", "bids", "helper", "payment", "quote"]
+  },
+  {
+    "id": "helper-guide-task-match-emails",
+    "category": "Helper Guide",
+    "type": "faq",
+    "title": "How do \"New task near you\" emails work?",
+    "content": "Taskorilla can email you when a new task looks like a good match for you.\n\nWe decide which helpers to notify based on your skills and professions (we match the task’s tags and required skills to the skills and professions listed in your profile), and on location and distance (we use the task’s location to calculate distance). We also take into account your Preferred max distance for task matches (km) setting in your Helper Profile. The default is 100 km, and if you leave it blank we treat it as 100 km.\n\nYou will receive at most one \"New task near you\" email per task. Your email frequency setting controls when that email is sent: Instant (as soon as the task is posted and matched), Daily summary (grouped into a daily email), or Weekly summary (grouped into a weekly email). You can change both your preferred distance and email frequency anytime in My Profile → Helper Profile.",
+    "tags": ["helper emails", "task match", "notifications", "new task near you", "distance", "email frequency"]
   },
   {
     "id": "payment-guide-1",
@@ -184,7 +192,7 @@
     "category": "Platform & Technical",
     "type": "faq",
     "title": "Why am I not seeing certain tasks?",
-    "content": "Tasks are shown based on location, skills, and availability. Update your profile for better matches.",
+    "content": "Tasks are shown based on location, skills, and availability. Update your skills, services, and location in your profile for better matches.\n\nIf you’re a Helper, also check your Preferred max distance for task matches (km) and Email frequency for new task matches in your Helper Profile. These settings control which tasks are considered \"near you\" and how often you receive \"New task near you\" emails. If your distance is set very low, or your email frequency is set to weekly, you may see fewer notifications.",
     "tags": ["no tasks", "missing tasks", "task visibility", "task matching"]
   },
   {
@@ -200,7 +208,7 @@
     "category": "Getting Started",
     "type": "guide",
     "title": "Getting Started with Taskorilla",
-    "content": "**Step 1: Sign Up**\n\nClick 'Sign Up,' enter your email, create a password, and confirm. You'll receive a confirmation email, click the link to verify your account.\n\n**Step 2: Verify Your Account (Coming Soon)**\n\nVerifying your ID helps build trust with other users and unlocks higher-value tasks. Go to 'My Profile' and upload a photo ID.\n\n**Step 3: Set Up Your Profile**\n\nAdd a profile picture, list your skills (if you plan to be a Helper), and write a short bio. A complete profile makes you more trustworthy and helps you get matched with the right tasks.\n\n**Step 4: Browse Tasks or Post a Task**\n\nDecide whether you want to post a task (if you need help) or browse tasks (if you want to earn money as a Helper). Click 'Post a Task' or 'Browse Tasks' from the main menu.\n\n**Step 5: Check Notifications**\n\nKeep track of messages, bids, and task updates through your dashboard and email notifications. Stay responsive to build a good reputation!",
+    "content": "**Step 1: Sign Up**\n\nClick 'Sign Up,' enter your email, create a password, and confirm. You'll receive a confirmation email, click the link to verify your account.\n\n**Step 2: Verify Your Account (Coming Soon)**\n\nVerifying your ID helps build trust with other users and unlocks higher-value tasks. Go to 'My Profile' and upload a photo ID.\n\n**Step 3: Set Up Your Profile**\n\nAdd a profile picture, list your skills (if you plan to be a Helper), and write a short bio. A complete profile makes you more trustworthy and helps you get matched with the right tasks.\n\n**Step 4: Browse Tasks or Post a Task**\n\nDecide whether you want to post a task (if you need help) or browse tasks (if you want to earn money as a Helper). Click 'Post a Task' or 'Browse Tasks' from the main menu.\n\n**Step 5: Set Your Task Match Preferences (Helpers)**\n\nIn your Helper Profile, you can set how far you're willing to travel (Preferred max distance for task matches (km), default 100 km) and how often you receive \"New task near you\" emails (instant, daily, or weekly). This helps us notify you only about tasks that are truly relevant to you.\n\n**Step 6: Check Notifications**\n\nKeep track of messages, bids, and task updates through your dashboard and email notifications. Stay responsive to build a good reputation!",
     "tags": ["getting started", "setup", "beginner guide", "how to start", "tutorial"]
   },
   {

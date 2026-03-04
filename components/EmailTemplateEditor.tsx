@@ -84,10 +84,13 @@ export default function EmailTemplateEditor({
         class: 'prose prose-sm max-w-none focus:outline-none p-4',
         style: `min-height: ${height}px;`,
       },
-      handleKeyDown: (view, event) => {
+      handleKeyDown: (_view, event) => {
         // Allow Shift+Enter or Ctrl+Enter for line breaks
         if (event.key === 'Enter' && (event.shiftKey || event.ctrlKey)) {
-          editor?.chain().focus().setHardBreak().run()
+          // Avoid calling focus() here because the Tiptap view may not
+          // be mounted yet, which triggers "view.hasFocus" errors.
+          if (!editor) return false
+          editor.chain().setHardBreak().run()
           return true
         }
         return false

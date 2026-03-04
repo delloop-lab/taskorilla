@@ -2,6 +2,7 @@
 name: Tasker-Level Dynamic Visibility Boost System
 overview: Implement a comprehensive task visibility boost system that allows admins to set global visibility days and per-Tasker extra visibility days, with automatic calculation and real-time updates for all tasks.
 todos: []
+isProject: false
 ---
 
 # Tasker-Level Dynamic Visibility Boost System
@@ -380,32 +381,25 @@ interface User {
 ## Implementation Order
 
 1. **Database migrations** (run in Supabase SQL Editor):
-
-   - `add_task_visibility_settings.sql`
-   - `add_tasker_visibility_boost.sql`
-   - `add_task_visibility_until.sql`
-   - `calculate_task_visibility_function.sql`
-   - `add_task_visibility_trigger.sql`
-   - `backfill_task_visibility.sql`
-
+  - `add_task_visibility_settings.sql`
+  - `add_tasker_visibility_boost.sql`
+  - `add_task_visibility_until.sql`
+  - `calculate_task_visibility_function.sql`
+  - `add_task_visibility_trigger.sql`
+  - `backfill_task_visibility.sql`
 2. **Backend API endpoints**:
-
-   - Create `app/api/admin/task-visibility-settings/route.ts`
-   - Create `app/api/admin/tasker-visibility/route.ts`
-
+  - Create `app/api/admin/task-visibility-settings/route.ts`
+  - Create `app/api/admin/tasker-visibility/route.ts`
 3. **Frontend updates**:
-
-   - Update `app/tasks/page.tsx` to filter by `visible_until`
-   - Update `app/admin/page.tsx` to add visibility management UI
-   - Update `lib/types.ts` with new fields
-
+  - Update `app/tasks/page.tsx` to filter by `visible_until`
+  - Update `app/admin/page.tsx` to add visibility management UI
+  - Update `lib/types.ts` with new fields
 4. **Testing**:
-
-   - Test task creation calculates `visible_until` correctly
-   - Test admin can update global setting
-   - Test admin can update per-Tasker settings
-   - Test existing tasks update when settings change
-   - Test task filtering excludes expired tasks
+  - Test task creation calculates `visible_until` correctly
+  - Test admin can update global setting
+  - Test admin can update per-Tasker settings
+  - Test existing tasks update when settings change
+  - Test task filtering excludes expired tasks
 
 ## Key Features
 

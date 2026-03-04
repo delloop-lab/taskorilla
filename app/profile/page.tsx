@@ -23,6 +23,8 @@ import { formatRate } from '@/lib/currency'
 // AppUser interface that extends User and includes all properties used in this component
 interface AppUser extends User {
   languages?: string[] | null
+  preferred_max_distance_km?: number | null
+  email_preference?: string | null
 }
 
 /** Base URL for shareable profile links and QR – always use live site URL from env, never localhost */
@@ -72,6 +74,8 @@ function ProfilePageContent() {
   const [professions, setProfessions] = useState<string[]>([])
   const [badges, setBadges] = useState<string[]>([])
   const [hourlyRate, setHourlyRate] = useState('')
+  const [preferredMaxDistanceKm, setPreferredMaxDistanceKm] = useState('')
+  const [emailPreference, setEmailPreference] = useState<'instant' | 'daily' | 'weekly'>('instant')
   const [languages, setLanguages] = useState<string[]>([])
   const [iban, setIban] = useState('')
   const [paypalEmail, setPaypalEmail] = useState('')
@@ -220,6 +224,14 @@ function ProfilePageContent() {
       setIsProfessional((data?.professions?.length || 0) > 0)
       setBadges(data?.badges || [])
       setHourlyRate(data?.hourly_rate?.toString() || '')
+      // Default helper match distance to 100km if not yet set
+      setPreferredMaxDistanceKm(
+        data?.preferred_max_distance_km != null ? String(data.preferred_max_distance_km) : '100'
+      )
+      const pref = (data?.email_preference || '').toLowerCase()
+      setEmailPreference(
+        pref === 'daily' || pref === 'weekly' || pref === 'instant' ? (pref as 'instant' | 'daily' | 'weekly') : 'instant'
+      )
       setLanguages(data?.languages ?? [])
       setIban(data?.iban || '')
       setPaypalEmail(data?.paypal_email || '')
@@ -561,12 +573,8 @@ function ProfilePageContent() {
         }
       }
 
-      // Validate Qualifications & Certifications are required for professionals
+      // For professionals, ensure Professional Category and Professional Offerings are set
       if (isHelper && isProfessional) {
-        if (!qualifications || qualifications.length === 0) {
-          setErrorMessage('Qualifications & Certifications are required for professionals')
-          return
-        }
         // Validate Professional Category (Professions) is required
         if (!professions || professions.length === 0) {
           setErrorMessage('Select Professional Category is required for professionals')
@@ -671,6 +679,15 @@ function ProfilePageContent() {
         }
       }
 
+      // Parse preferred max distance (km) for helper notifications
+      let preferredMaxDistanceValue: number | null = null
+      if (preferredMaxDistanceKm && preferredMaxDistanceKm.trim()) {
+        const parsed = parseFloat(preferredMaxDistanceKm.trim())
+        if (!isNaN(parsed) && parsed > 0) {
+          preferredMaxDistanceValue = Math.round(parsed * 10) / 10 // one decimal place is enough
+        }
+      }
+
       const updateData: any = { 
         full_name: fullName.trim(),
         company_name: companyName.trim() || null,
@@ -689,6 +706,8 @@ function ProfilePageContent() {
     professional_offerings: professionalOfferings.length > 0 ? professionalOfferings : [],
         badges: badges.length > 0 ? badges : [],
         hourly_rate: hourlyRateValue,
+        preferred_max_distance_km: preferredMaxDistanceValue,
+        email_preference: emailPreference || 'instant',
         profile_slug: profileSlug || null,
         languages: languages.length > 0 ? languages : [],
         iban: iban.trim() || null,
@@ -764,6 +783,15 @@ function ProfilePageContent() {
         setProfessions(updatedData.professions || [])
         setBadges(updatedData.badges || [])
         setHourlyRate(updatedData.hourly_rate?.toString() || '')
+        setPreferredMaxDistanceKm(
+          updatedData.preferred_max_distance_km != null ? String(updatedData.preferred_max_distance_km) : '100'
+        )
+        const updatedPref = (updatedData.email_preference || '').toLowerCase()
+        setEmailPreference(
+          updatedPref === 'daily' || updatedPref === 'weekly' || updatedPref === 'instant'
+            ? (updatedPref as 'instant' | 'daily' | 'weekly')
+            : 'instant'
+        )
         setIban(updatedData.iban || '')
         setPaypalEmail(updatedData.paypal_email || '')
 
@@ -2034,6 +2062,86 @@ function ProfilePageContent() {
                     )}
                   </div>
 
+                  {/* Preferred max distance for task matches (km) – helper notifications */}
+                  {isHelper && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Preferred max distance for task matches (km)
+                      </label>
+                      {editing ? (
+                        <>
+                          <input
+                            type="number"
+                            value={preferredMaxDistanceKm}
+                            onChange={(e) => setPreferredMaxDistanceKm(e.target.value)}
+                            min="0"
+                            step="1"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                            placeholder="e.g., 100"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">
+                            Default is 100 km. Leave blank to receive matching tasks from 100 km and closer.
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-gray-700">
+                          {profile.preferred_max_distance_km != null
+                            ? `${profile.preferred_max_distance_km} km`
+                            : 'No distance limit set'}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Email frequency for new task matches */}
+                  {isHelper && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email frequency for new task matches
+                      </label>
+                      {editing ? (
+                        <div className="space-y-1 text-sm text-gray-700">
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+                              checked={emailPreference === 'instant'}
+                              onChange={() => setEmailPreference('instant')}
+                            />
+                            <span>Instant (as soon as a matching task appears)</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+                              checked={emailPreference === 'daily'}
+                              onChange={() => setEmailPreference('daily')}
+                            />
+                            <span>Daily summary</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300"
+                              checked={emailPreference === 'weekly'}
+                              onChange={() => setEmailPreference('weekly')}
+                            />
+                            <span>Weekly summary</span>
+                          </label>
+                        </div>
+                      ) : (
+                        <p className="text-gray-700">
+                          {(() => {
+                            const pref = (profile.email_preference || 'instant') as string
+                            if (pref === 'daily') return 'Daily summary'
+                            if (pref === 'weekly') return 'Weekly summary'
+                            return 'Instant'
+                          })()}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   {/* Skills - Only show if user is not a professional */}
                   {isHelper && !(editing ? isProfessional : (profile.professions?.length || 0) > 0) && (
                   <div>
@@ -2405,11 +2513,11 @@ function ProfilePageContent() {
                     </div>
                   )}
 
-                  {/* Qualifications */}
+                  {/* Qualifications (optional) */}
                   {isHelper && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t('profile.qualificationsCertifications')} {isProfessional && <span className="text-red-500">*</span>}
+                        {t('profile.qualificationsCertifications')}
                       </label>
                       {editing ? (
                         <div>

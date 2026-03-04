@@ -284,26 +284,45 @@ export default function TaskDetailPage() {
       // 48-hour auto-release: only when non-admin views (task owner or helper). Skip for admins so they can inspect without triggering release.
       if (!isAdmin) {
         const cutoff = new Date(Date.now() - PAYMENT_TIMEOUT_HOURS * 60 * 60 * 1000).toISOString()
-        const { data: reverted } = await supabase
+
+        // Check if this is a one-to-one (pre-assigned) task: only 1 bid exists and it's from the assigned helper.
+        // For one-to-one tasks, keep assigned_to so the task stays private between tasker and helper.
+        const { data: pendingTask } = await supabase
           .from('tasks')
-          .update({
-            status: 'open',
-            payment_status: null,
-            payment_intent_id: null,
-            assigned_to: null,
-          })
+          .select('id, assigned_to')
           .eq('id', taskId)
           .eq('status', 'pending_payment')
           .lt('updated_at', cutoff)
-          .select('id')
           .maybeSingle()
-        if (reverted) {
-          setReleasedDueToPaymentTimeout(true)
-          await supabase
+
+        if (pendingTask) {
+          const { count: bidCount } = await supabase
             .from('bids')
-            .update({ status: 'rejected' })
+            .select('id', { count: 'exact', head: true })
             .eq('task_id', taskId)
-            .eq('status', 'accepted')
+          const isOneToOne = (bidCount ?? 0) <= 1
+
+          const { data: reverted } = await supabase
+            .from('tasks')
+            .update({
+              status: 'open',
+              payment_status: null,
+              payment_intent_id: null,
+              ...(isOneToOne ? {} : { assigned_to: null }),
+            })
+            .eq('id', taskId)
+            .eq('status', 'pending_payment')
+            .lt('updated_at', cutoff)
+            .select('id')
+            .maybeSingle()
+          if (reverted) {
+            setReleasedDueToPaymentTimeout(true)
+            await supabase
+              .from('bids')
+              .update({ status: 'rejected' })
+              .eq('task_id', taskId)
+              .eq('status', 'accepted')
+          }
         }
       }
 
@@ -921,6 +940,59 @@ export default function TaskDetailPage() {
         message: 'Error cancelling task',
       })
     }
+  }
+
+  const handleDeclineTask = () => {
+    if (!user || !task || task.assigned_to !== user.id) return
+    setModalState({
+      isOpen: true,
+      type: 'confirm',
+      title: 'Decline this task?',
+      message: 'This will remove you from the task. The task owner will be notified.',
+      onConfirm: async () => {
+        setModalState(prev => ({ ...prev, isOpen: false }))
+        try {
+          const res = await fetch(`/api/tasks/${taskId}/decline`, {
+            method: 'POST',
+            credentials: 'include',
+          })
+          const data = await res.json().catch(() => ({}))
+          if (!res.ok || !data.success) throw new Error(data.error || 'Failed to decline')
+
+          if (task.user?.email) {
+            try {
+              await fetch('/api/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  type: 'task_cancelled',
+                  taskOwnerEmail: task.user.email,
+                  taskOwnerName: task.user.full_name || task.user.email,
+                  taskerName: user.email || 'Helper',
+                  taskTitle: task.title,
+                  taskId,
+                }),
+              })
+            } catch {}
+          }
+
+          setModalState({
+            isOpen: true,
+            type: 'success',
+            title: 'Task declined',
+            message: 'You have been removed from this task.',
+          })
+          router.push('/tasks')
+        } catch {
+          setModalState({
+            isOpen: true,
+            type: 'error',
+            title: 'Error',
+            message: 'Could not decline the task. Please try again.',
+          })
+        }
+      },
+    })
   }
 
   const handleMarkCompleted = async () => {
@@ -2327,7 +2399,16 @@ export default function TaskDetailPage() {
   }, 0)
   const hasOutstandingRevisionRequest =
     latestRevisionRequestTime > 0 && latestRevisionCompletedTime < latestRevisionRequestTime
-  const visibleBids = bids.filter(b => b.status !== 'rejected')
+  // Detect payment-expired state: task is open, assigned to a helper (one-to-one), but all bids are rejected
+  // OR task is open with no assignee but has an accepted bid still lingering
+  const paymentExpiredForBid = releasedDueToPaymentTimeout
+    || (task.status === 'open' && bids.some(b => b.status === 'accepted'))
+    || (task.status === 'open' && task.assigned_to && bids.length > 0 && bids.every(b => b.status === 'rejected'))
+
+  // Show rejected bids when payment expired so the tasker/helper can see what happened
+  const visibleBids = paymentExpiredForBid
+    ? bids
+    : bids.filter(b => b.status !== 'rejected')
   
   // Helper function to check if user can see bid details
   const canSeeBidDetails = (bid: Bid) => {
@@ -2506,9 +2587,25 @@ export default function TaskDetailPage() {
               </span>
             </div>
 
-            {releasedDueToPaymentTimeout && (
+            {paymentExpiredForBid && (
               <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 sm:px-4 py-3 text-xs sm:text-sm text-amber-800">
-                This task was released because payment was not completed within {PAYMENT_TIMEOUT_HOURS} hours. It is not visible to the public; only you and the helper can see it. The helper can submit a new quote if you still want to proceed.
+                {task.assigned_to
+                  ? `Payment was not completed within ${PAYMENT_TIMEOUT_HOURS} hours. This task is not visible to the public; only you and the helper can see it. The helper can submit a new quote if you still want to proceed.`
+                  : `Payment was not completed within ${PAYMENT_TIMEOUT_HOURS} hours. This task is now open for new bids from any helper.`
+                }
+                {user && task.assigned_to === user.id && (
+                  <button
+                    onClick={handleDeclineTask}
+                    className="mt-2 text-sm font-medium px-4 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700"
+                  >
+                    Decline task
+                  </button>
+                )}
+              </div>
+            )}
+            {task.archived && isTaskOwner && paymentExpiredForBid && (
+              <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 px-3 sm:px-4 py-3 text-xs sm:text-sm text-gray-700">
+                The helper has declined this task. You can edit and repost it, or delete it.
               </div>
             )}
 
@@ -3206,7 +3303,11 @@ export default function TaskDetailPage() {
               <div
                 key={bid.id}
                 className={`border rounded-lg p-4 ${
-                  bid.status === 'accepted' ? 'border-green-500 bg-green-50' : 'border-gray-200'
+                  (bid.status === 'accepted' || bid.status === 'rejected') && paymentExpiredForBid
+                    ? 'border-amber-400 bg-amber-50'
+                    : bid.status === 'accepted'
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-gray-200'
                 }`}
               >
                 <div className="flex items-start justify-between">
@@ -3323,12 +3424,22 @@ export default function TaskDetailPage() {
                               })}
                             </button>
                           )}
-                          {bid.status === 'accepted' && (
+                          {bid.status === 'accepted' && paymentExpiredForBid && (
+                            <span className="px-2 py-1 text-xs font-medium bg-amber-500 text-white rounded">
+                              Payment expired
+                            </span>
+                          )}
+                          {bid.status === 'accepted' && !paymentExpiredForBid && (
                             <span className="px-2 py-1 text-xs font-medium bg-green-500 text-white rounded">
                               Accepted
                             </span>
                           )}
-                          {bid.status === 'rejected' && (
+                          {bid.status === 'rejected' && paymentExpiredForBid && (
+                            <span className="px-2 py-1 text-xs font-medium bg-amber-500 text-white rounded">
+                              Payment expired
+                            </span>
+                          )}
+                          {bid.status === 'rejected' && !paymentExpiredForBid && (
                             <span className="px-2 py-1 text-xs font-medium bg-red-500 text-white rounded">
                               Rejected
                             </span>
