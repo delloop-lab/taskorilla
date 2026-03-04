@@ -30,6 +30,8 @@ interface MapProps {
   tasks: Task[]
   markers?: MapMarker[]
   onTaskClick?: (task: Task) => void
+  isLoggedIn?: boolean
+  onRequireLogin?: () => void
 }
 
 // Component to handle map instance and iOS fixes
@@ -103,7 +105,13 @@ function MapCenter({ tasks }: { tasks: Task[] }) {
   return null
 }
 
-export default function TaskMap({ tasks, markers = [], onTaskClick }: MapProps) {
+export default function TaskMap({
+  tasks,
+  markers = [],
+  onTaskClick,
+  isLoggedIn = true,
+  onRequireLogin,
+}: MapProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null)
   const mapId = useId()
@@ -113,6 +121,10 @@ export default function TaskMap({ tasks, markers = [], onTaskClick }: MapProps) 
   const defaultZoom = 6
 
   const handleMarkerClick = (task: Task) => {
+    if (!isLoggedIn && onRequireLogin) {
+      onRequireLogin()
+      return
+    }
     setSelectedTask(task)
     if (onTaskClick) {
       onTaskClick(task)
@@ -155,17 +167,18 @@ export default function TaskMap({ tasks, markers = [], onTaskClick }: MapProps) 
   }, [mapInstance])
 
   return (
-    <MapContainer
-      key={mapId}
-      center={defaultCenter}
-      zoom={defaultZoom}
-      style={{ width: '100%', height: '100%' }}
-      scrollWheelZoom={true}
-      touchZoom={true}
-      doubleClickZoom={true}
-      zoomControl={true}
-      dragging={true}
-    >
+    <div className="relative w-full h-full">
+      <MapContainer
+        key={mapId}
+        center={defaultCenter}
+        zoom={defaultZoom}
+        style={{ width: '100%', height: '100%' }}
+        scrollWheelZoom={true}
+        touchZoom={true}
+        doubleClickZoom={true}
+        zoomControl={true}
+        dragging={true}
+      >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -355,11 +368,21 @@ export default function TaskMap({ tasks, markers = [], onTaskClick }: MapProps) 
               popupAnchor: [0, -18],
             })
 
+            const handleServiceClick = () => {
+              if (!isLoggedIn && onRequireLogin) {
+                onRequireLogin()
+                return
+              }
+            }
+
             return (
               <Marker
                 key={`marker-${marker.id}`}
                 position={[lat, lon]}
                 icon={icon}
+                eventHandlers={{
+                  click: handleServiceClick,
+                }}
               >
                 <Tooltip
                   direction="top"
@@ -407,6 +430,20 @@ export default function TaskMap({ tasks, markers = [], onTaskClick }: MapProps) 
 
         return extraMarkers
       })()}
-    </MapContainer>
+      </MapContainer>
+
+      {/* Simple legend: Tasks vs Services */}
+      <div className="pointer-events-none absolute bottom-3 left-3 rounded-md bg-white/90 px-3 py-2 text-xs text-gray-800 shadow-md">
+        <div className="mb-1 font-semibold text-gray-900">Legend</div>
+        <div className="flex items-center gap-2">
+          <span className="h-3 w-3 rounded-sm bg-[#2563eb]" />
+          <span>Tasks</span>
+        </div>
+        <div className="mt-1 flex items-center gap-2">
+          <span className="h-3 w-3 rounded-sm bg-[#10b981]" />
+          <span>Services / Adverts</span>
+        </div>
+      </div>
+    </div>
   )
 }

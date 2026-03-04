@@ -72,6 +72,22 @@ body {
   pointer-events: auto !important;
 }
 
+/* Subtle bounce animation for service/advert markers */
+.custom-marker-place {
+  animation: marker-bounce 1.6s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+@keyframes marker-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
 /* Ensure marker content is visible */
 .custom-marker div {
   pointer-events: auto !important;

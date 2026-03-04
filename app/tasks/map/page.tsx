@@ -20,6 +20,8 @@ export default function TasksMapPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [placeMarkers, setPlaceMarkers] = useState<any[]>([])
   const loadStartedRef = useRef(false)
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false)
+  const [showLoginModal, setShowLoginModal] = useState(false)
 
   useEffect(() => {
     // Prevent duplicate loads (React StrictMode causes double renders in dev)
@@ -33,6 +35,7 @@ export default function TasksMapPage() {
     try {
       // Check if user is admin
       const { data: { user } } = await supabase.auth.getUser()
+      setIsLoggedIn(!!user)
       let isAdmin = false
       if (user) {
         const { data: profile } = await supabase
@@ -396,7 +399,13 @@ export default function TasksMapPage() {
       </div>
 
       <div className="flex-1 relative" style={{ minHeight: 0 }}>
-        <Map tasks={tasks} markers={placeMarkers} onTaskClick={setSelectedTask} />
+        <Map
+          tasks={tasks}
+          markers={placeMarkers}
+          onTaskClick={setSelectedTask}
+          isLoggedIn={isLoggedIn}
+          onRequireLogin={() => setShowLoginModal(true)}
+        />
       </div>
 
       {selectedTask && (
@@ -419,6 +428,37 @@ export default function TasksMapPage() {
               >
                 View Details
               </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showLoginModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold mb-4">Login Required</h2>
+            <p className="text-gray-600 mb-6">
+              You need to be logged in to interact with tasks and services on the map.
+            </p>
+            <div className="flex flex-col gap-3 mt-2">
+              <Link
+                href="/login"
+                className="flex-1 bg-primary-600 text-white px-4 py-2 rounded-md text-center hover:bg-primary-700 font-medium transition-colors"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/register"
+                className="flex-1 bg-white text-primary-600 px-4 py-2 rounded-md text-center border border-primary-200 hover:border-primary-400 hover:bg-primary-50 font-medium transition-colors"
+              >
+                Sign Up Free
+              </Link>
+              <button
+                onClick={() => setShowLoginModal(false)}
+                className="px-4 py-2 text-gray-500 hover:text-gray-700 text-sm font-medium"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
