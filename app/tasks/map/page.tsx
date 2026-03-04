@@ -384,7 +384,7 @@ export default function TasksMapPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden">
       <div className="bg-white border-b px-4 py-3 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Tasks Map</h1>
@@ -408,32 +408,36 @@ export default function TasksMapPage() {
           isLoggedIn={isLoggedIn}
           onRequireLogin={() => setShowLoginModal(true)}
         />
-      </div>
 
-      {selectedTask && (
-        <div className="bg-white border-t shadow-lg">
-          <div className="p-4 max-h-64 overflow-y-auto">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-gray-900 mb-2">{selectedTask.title}</h3>
-                <p className="text-sm text-gray-600 mb-3 whitespace-pre-wrap break-words">{selectedTask.description || 'No description provided.'}</p>
-                <div className="flex items-center gap-4 flex-wrap">
-                  <span className="text-lg font-bold text-primary-600">{selectedTask.budget ? `€${selectedTask.budget}` : 'Quote'}</span>
-                  {selectedTask.postcode && (
-                    <span className="text-sm text-gray-500">📍 {selectedTask.postcode}</span>
-                  )}
+        {selectedTask && (
+          <div className="absolute inset-x-0 bottom-0 bg-white border-t shadow-lg">
+            <div className="p-4 max-h-64 overflow-y-auto">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-gray-900 mb-2">{selectedTask.title}</h3>
+                  <p className="text-sm text-gray-600 mb-3 whitespace-pre-wrap break-words">
+                    {selectedTask.description || 'No description provided.'}
+                  </p>
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <span className="text-lg font-bold text-primary-600">
+                      {selectedTask.budget ? `€${selectedTask.budget}` : 'Quote'}
+                    </span>
+                    {selectedTask.postcode && (
+                      <span className="text-sm text-gray-500">📍 {selectedTask.postcode}</span>
+                    )}
+                  </div>
                 </div>
+                <Link
+                  href={`/tasks/${selectedTask.id}`}
+                  className="flex-shrink-0 px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700 whitespace-nowrap"
+                >
+                  View Details
+                </Link>
               </div>
-              <Link
-                href={`/tasks/${selectedTask.id}`}
-                className="flex-shrink-0 px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700 whitespace-nowrap"
-              >
-                View Details
-              </Link>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {showLoginModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

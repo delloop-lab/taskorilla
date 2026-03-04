@@ -52,55 +52,71 @@ function MapInstanceHandler({ onMapReady }: { onMapReady: (map: L.Map) => void }
   return null
 }
 
-// Component to auto-center map on tasks
-function MapCenter({ tasks }: { tasks: Task[] }) {
+// Component to auto-center map on tasks + extra markers
+function MapCenter({ tasks, markers = [] }: { tasks: Task[]; markers?: MapMarker[] }) {
   const map = useMap()
   
   useEffect(() => {
     // Wait a bit for map to initialize, especially on iOS
     const timer = setTimeout(() => {
-      if (tasks.length > 0) {
-        const validTasks = tasks.filter(t => t.latitude && t.longitude && !isNaN(t.latitude) && !isNaN(t.longitude))
-        if (validTasks.length > 0) {
-          // Calculate bounds to fit all markers
-          const lats = validTasks.map(t => t.latitude!)
-          const lngs = validTasks.map(t => t.longitude!)
-          const minLat = Math.min(...lats)
-          const maxLat = Math.max(...lats)
-          const minLng = Math.min(...lngs)
-          const maxLng = Math.max(...lngs)
-          
-          // Add padding
-          const latPadding = (maxLat - minLat) * 0.1 || 0.1
-          const lngPadding = (maxLng - minLng) * 0.1 || 0.1
-          
-          const bounds = [
-            [minLat - latPadding, minLng - lngPadding],
-            [maxLat + latPadding, maxLng + lngPadding]
-          ] as [[number, number], [number, number]]
-          
-          try {
-            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 })
-            console.log(`🗺️ Map centered on bounds:`, bounds)
-          } catch (error) {
-            // Fallback to center/zoom if fitBounds fails
-            const avgLat = validTasks.reduce((sum, t) => sum + (t.latitude || 0), 0) / validTasks.length
-            const avgLng = validTasks.reduce((sum, t) => sum + (t.longitude || 0), 0) / validTasks.length
-            const zoom = validTasks.length === 1 ? 11 : validTasks.length < 5 ? 8 : 6
-            map.setView([avgLat, avgLng], zoom, { animate: false })
-            console.log(`🗺️ Map centered on point:`, { lat: avgLat, lng: avgLng, zoom })
-          }
-          
-          // Force map to invalidate size on iOS to fix rendering issues
-          setTimeout(() => {
-            map.invalidateSize()
-          }, 100)
+      // Collect all coordinates from tasks and extra markers
+      const points: Array<{ lat: number; lng: number }> = []
+
+      tasks.forEach(t => {
+        if (t.latitude != null && t.longitude != null && !isNaN(t.latitude) && !isNaN(t.longitude)) {
+          points.push({ lat: t.latitude, lng: t.longitude })
         }
+      })
+
+      markers.forEach(m => {
+        if (
+          m.latitude != null &&
+          m.longitude != null &&
+          !isNaN(Number(m.latitude)) &&
+          !isNaN(Number(m.longitude))
+        ) {
+          points.push({ lat: Number(m.latitude), lng: Number(m.longitude) })
+        }
+      })
+
+      if (points.length === 0) return
+
+      const lats = points.map(p => p.lat)
+      const lngs = points.map(p => p.lng)
+      const minLat = Math.min(...lats)
+      const maxLat = Math.max(...lats)
+      const minLng = Math.min(...lngs)
+      const maxLng = Math.max(...lngs)
+      
+      // Add padding
+      const latPadding = (maxLat - minLat) * 0.1 || 0.1
+      const lngPadding = (maxLng - minLng) * 0.1 || 0.1
+      
+      const bounds = [
+        [minLat - latPadding, minLng - lngPadding],
+        [maxLat + latPadding, maxLng + lngPadding]
+      ] as [[number, number], [number, number]]
+      
+      try {
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 })
+        console.log(`🗺️ Map centered on bounds (tasks + markers):`, bounds)
+      } catch (error) {
+        // Fallback to center/zoom if fitBounds fails
+        const avgLat = points.reduce((sum, p) => sum + p.lat, 0) / points.length
+        const avgLng = points.reduce((sum, p) => sum + p.lng, 0) / points.length
+        const zoom = points.length === 1 ? 11 : points.length < 5 ? 8 : 6
+        map.setView([avgLat, avgLng], zoom, { animate: false })
+        console.log(`🗺️ Map centered on point (fallback):`, { lat: avgLat, lng: avgLng, zoom })
       }
+      
+      // Force map to invalidate size on iOS to fix rendering issues
+      setTimeout(() => {
+        map.invalidateSize()
+      }, 100)
     }, 300) // Increased delay to ensure map is fully initialized
     
     return () => clearTimeout(timer)
-  }, [tasks, map])
+  }, [tasks, markers, map])
   
   return null
 }
@@ -185,7 +201,7 @@ export default function TaskMap({
       />
       
       <MapInstanceHandler onMapReady={setMapInstance} />
-      <MapCenter tasks={tasks} />
+      <MapCenter tasks={tasks} markers={markers} />
       
       <MarkerClusterGroup
         chunkedLoading
@@ -259,10 +275,17 @@ export default function TaskMap({
           }
 
           const budgetDisplay = task.budget ? `€${task.budget}` : 'Quote'
+
+          // Colour-code by task type:
+          // - Helper Task (no required_professions): blue
+          // - Professional Task (has required_professions): green
+          const isProfessionalTask =
+            Array.isArray(task.required_professions) && task.required_professions.length > 0
+          const backgroundColor = isProfessionalTask ? '#10b981' : '#2563eb'
           
           const customIcon = L.divIcon({
             className: 'custom-marker',
-            html: `<div style="background-color: #2563eb; color: white; padding: 6px 10px; border-radius: 6px; box-shadow: 0 3px 6px rgba(0,0,0,0.4); font-size: 13px; font-weight: 700; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; letter-spacing: 0.3px; white-space: nowrap; display: inline-block; border: 2px solid white; z-index: 1000; position: relative;">${budgetDisplay}</div>`,
+            html: `<div style="background-color: ${backgroundColor}; color: white; padding: 6px 10px; border-radius: 6px; box-shadow: 0 3px 6px rgba(0,0,0,0.4); font-size: 13px; font-weight: 700; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; letter-spacing: 0.3px; white-space: nowrap; display: inline-block; border: 2px solid white; z-index: 1000; position: relative;">${budgetDisplay}</div>`,
             iconSize: [70, 35],
             iconAnchor: [35, 17],
             popupAnchor: [0, -17],
@@ -432,16 +455,16 @@ export default function TaskMap({
       })()}
       </MapContainer>
 
-      {/* Simple legend: Tasks vs Services */}
-      <div className="pointer-events-none absolute bottom-3 right-3 z-50 rounded-md bg-white/90 px-3 py-2 text-xs text-gray-800 shadow-md">
+      {/* Simple legend: Helper task types */}
+      <div className="pointer-events-none absolute top-3 right-3 z-50 rounded-md bg-white/90 px-3 py-2 text-xs text-gray-800 shadow-md">
         <div className="mb-1 font-semibold text-gray-900">Legend</div>
         <div className="flex items-center gap-2">
           <span className="h-3 w-3 rounded-sm bg-[#2563eb]" />
-          <span>Tasks</span>
+          <span>Helper Task</span>
         </div>
         <div className="mt-1 flex items-center gap-2">
           <span className="h-3 w-3 rounded-sm bg-[#10b981]" />
-          <span>Services / Adverts</span>
+          <span>Professional Task</span>
         </div>
       </div>
     </div>
