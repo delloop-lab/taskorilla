@@ -4839,12 +4839,12 @@ export default function SuperadminDashboard() {
                             return
                           }
 
-                          // Use the same simple geocoding approach that already works for tasks
                           const result = await geocodeAddress(rawAddress)
                           if (!result) {
                             setMapMarkerError('Unable to geocode address. Please check it and try again.')
                             return
                           }
+
                           setNewMarkerPreview({
                             latitude: result.latitude,
                             longitude: result.longitude,

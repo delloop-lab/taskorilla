@@ -433,7 +433,7 @@ export default function TaskMap({
       </MapContainer>
 
       {/* Simple legend: Tasks vs Services */}
-      <div className="pointer-events-none absolute bottom-3 left-3 rounded-md bg-white/90 px-3 py-2 text-xs text-gray-800 shadow-md">
+      <div className="pointer-events-none absolute bottom-3 right-3 z-50 rounded-md bg-white/90 px-3 py-2 text-xs text-gray-800 shadow-md">
         <div className="mb-1 font-semibold text-gray-900">Legend</div>
         <div className="flex items-center gap-2">
           <span className="h-3 w-3 rounded-sm bg-[#2563eb]" />

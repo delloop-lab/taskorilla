@@ -6,6 +6,7 @@ import { Task } from '@/lib/types'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { geocodePostcode, geocodeAddress } from '@/lib/geocoding'
+import { useRouter } from 'next/navigation'
 
 // Debug logging - only in development
 const isDev = process.env.NODE_ENV === 'development'
@@ -15,6 +16,7 @@ const debugLog = (...args: any[]) => isDev && console.log(...args)
 const Map = dynamic(() => import('@/components/Map'), { ssr: false })
 
 export default function TasksMapPage() {
+  const router = useRouter()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
@@ -454,7 +456,11 @@ export default function TasksMapPage() {
                 Sign Up Free
               </Link>
               <button
-                onClick={() => setShowLoginModal(false)}
+                onClick={() => {
+                  setShowLoginModal(false)
+                  // Return the user to their previous page (e.g. public task or task list)
+                  router.back()
+                }}
                 className="px-4 py-2 text-gray-500 hover:text-gray-700 text-sm font-medium"
               >
                 Cancel

@@ -41,6 +41,7 @@ body {
   height: 100%;
   width: 100%;
   z-index: 1;
+  overflow: hidden;
   /* iOS-specific fixes */
   -webkit-tap-highlight-color: transparent;
   touch-action: pan-x pan-y;
@@ -72,10 +73,15 @@ body {
   pointer-events: auto !important;
 }
 
-/* Subtle bounce animation for service/advert markers */
+/* Service/advert markers: animate the INNER content only,
+   so Leaflet's translate3d() on the outer element still
+   controls the true map position. */
 .custom-marker-place {
-  animation: marker-bounce 1.6s ease-in-out infinite;
   transform-origin: bottom center;
+}
+
+.custom-marker-place > div {
+  animation: marker-bounce 1.6s ease-in-out infinite;
 }
 
 @keyframes marker-bounce {
