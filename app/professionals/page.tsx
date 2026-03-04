@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import type { User } from '@/lib/types'
@@ -13,6 +13,7 @@ import { User as UserIcon } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n'
 import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
 import CompactUserRatingsDisplay from '@/components/CompactUserRatingsDisplay'
+import { formatRate } from '@/lib/currency'
 
 export default function ProfessionalsPage() {
   const { t } = useLanguage()
@@ -24,6 +25,12 @@ export default function ProfessionalsPage() {
   const [availableProfessions, setAvailableProfessions] = useState<string[]>([])
   const [showFilters, setShowFilters] = useState(false)
   const { users: userRatings } = useUserRatings()
+
+  // Build a ratings map once so we can look up helper ratings quickly
+  const ratingsMap = useMemo(
+    () => new Map(userRatings.map((r: any) => [String(r.reviewee_id), r])),
+    [userRatings]
+  )
 
   useEffect(() => {
     loadProfessionals()
@@ -58,17 +65,7 @@ export default function ProfessionalsPage() {
           helper.professions && Array.isArray(helper.professions) && helper.professions.length > 0
         )
 
-        // Attach ratings from SQL function so we can show stars
-        const ratingsMap = new Map(userRatings.map((r: any) => [String(r.reviewee_id), r]))
-        const professionalsWithRatings = professionals.map((helper: any) => {
-          const userRating = getUserRatingsById(helper.id, ratingsMap)
-          return {
-            ...helper,
-            userRatings: userRating || null,
-          }
-        })
-
-        setHelpers(professionalsWithRatings as User[])
+        setHelpers(professionals as User[])
         
         // Collect available professions for dropdown
         const allProfessions = new Set<string>()
@@ -254,10 +251,19 @@ export default function ProfessionalsPage() {
           </div>
         )}
 
-        {/* Results Count */}
-        <div className="mb-4">
+        {/* Results summary */}
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <p className="text-gray-600">
-            {t('professionals.found')} <span className="font-semibold text-gray-900">{filteredHelpers.length}</span> {filteredHelpers.length !== 1 ? t('professionals.foundProfessionals') : t('professionals.foundProfessional')}
+            {t('professionals.found')}{' '}
+            <span className="font-semibold text-gray-900">
+              {filteredHelpers.length}
+            </span>{' '}
+            {filteredHelpers.length !== 1
+              ? t('professionals.foundProfessionals')
+              : t('professionals.foundProfessional')}
+          </p>
+          <p className="text-xs sm:text-sm text-gray-400">
+            {t('professionals.subtitle')}
           </p>
         </div>
 
@@ -286,47 +292,180 @@ export default function ProfessionalsPage() {
                   <h2 className="text-2xl font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200">
                     {category.name}
                   </h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {categoryHelpers.map((helper) => (
-                      <Link
-                        key={helper.id}
-                        href={`/user/${helper.profile_slug || helper.id}`}
-                        className="flex flex-col items-center p-4 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer border border-transparent hover:border-gray-200"
-                      >
-                        {/* Avatar */}
-                        <div 
-                          className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 aspect-square rounded-full bg-gray-200 overflow-hidden flex-shrink-0 mb-3 min-w-[48px] min-h-[48px] relative"
-                          style={{ aspectRatio: '1 / 1' }}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {categoryHelpers.map((helper) => {
+                      const helperRatings = ratingsMap.size
+                        ? getUserRatingsById(helper.id, ratingsMap)
+                        : null
+
+                      return (
+                        <Link
+                          key={helper.id}
+                          href={`/user/${helper.profile_slug || helper.id}`}
+                          className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
                         >
-                          {helper.avatar_url ? (
-                            <img
-                              src={helper.avatar_url}
-                              alt={helper.full_name || 'Professional'}
-                              className="w-full h-full object-cover object-center rounded-full"
-                              loading="lazy"
-                              decoding="async"
-                            />
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center">
-                              <UserIcon className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-gray-400" />
+                          <div className="p-6">
+                            {/* Avatar & Name */}
+                            <div className="flex items-center gap-4 mb-4">
+                              <div className="h-16 w-16 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                                {helper.avatar_url ? (
+                                  <img
+                                    src={helper.avatar_url}
+                                    alt={helper.full_name || 'Helper'}
+                                    className="h-full w-full object-cover rounded-full"
+                                    loading="lazy"
+                                    decoding="async"
+                                  />
+                                ) : (
+                                  <div className="h-full w-full flex items-center justify-center">
+                                    <UserIcon className="w-8 h-8 text-gray-400" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-gray-900 truncate">
+                                  {helper.full_name || 'Helper'}
+                                </h3>
+                                {helper.company_name && (
+                                  <p className="text-sm text-gray-600 truncate">{helper.company_name}</p>
+                                )}
+                                {helper.postcode && helper.country && (
+                                  <p className="text-xs text-gray-500">
+                                    📍 {helper.postcode}, {helper.country}
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                          )}
-                        </div>
-                        {/* Name */}
-                        <h3 className="font-semibold text-gray-900 text-center text-sm">
-                          {helper.full_name || 'Professional'}
-                        </h3>
-                        {/* Ratings: Tasker + Helper stars from reviews */}
-                        {helper.userRatings && (
-                          <div className="mt-1">
-                            <CompactUserRatingsDisplay 
-                              ratings={helper.userRatings} 
-                              size="sm"
-                            />
+
+                            {/* Ratings: Helper stars from reviews only */}
+                            {helperRatings && (
+                              <div className="mb-2">
+                                <CompactUserRatingsDisplay 
+                                  ratings={helperRatings} 
+                                  size="sm"
+                                  showTasker={false}
+                                  showHelper={true}
+                                />
+                              </div>
+                            )}
+
+                            {/* Badges (actual badge images, compact) */}
+                            {helper.badges && helper.badges.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mb-3">
+                                {helper.badges.slice(0, 3).map((badge, index) => {
+                                  const getBadgeImage = (badgeName: string) => {
+                                    const lowerBadge = badgeName.toLowerCase()
+                                    if (lowerBadge.includes('fast') || lowerBadge.includes('responder')) {
+                                      return '/images/fast.png'
+                                    } else if (lowerBadge.includes('top') || lowerBadge.includes('helper')) {
+                                      return '/images/top_helper.png'
+                                    } else if (lowerBadge.includes('expert') || lowerBadge.includes('skill')) {
+                                      return '/images/expert.png'
+                                    }
+                                    return null
+                                  }
+
+                                  const badgeImage = getBadgeImage(badge)
+
+                                  return (
+                                    <span key={index} title={badge}>
+                                      {badgeImage ? (
+                                        <img
+                                          src={badgeImage}
+                                          alt={badge}
+                                          className="h-8 w-8 object-contain"
+                                        />
+                                      ) : (
+                                        <span className="text-lg">🏆</span>
+                                      )}
+                                    </span>
+                                  )
+                                })}
+                                {helper.badges.length > 3 && (
+                                  <span className="px-2 py-0.5 text-gray-500 text-[10px]">
+                                    +{helper.badges.length - 3}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Hourly Rate */}
+                            {(helper.hourly_rate || (helper.professions && helper.professions.length > 0)) && (
+                              <div className="mb-3">
+                                <span className="text-lg font-semibold text-primary-600">
+                                  {helper.hourly_rate != null ? `€${formatRate(Number(helper.hourly_rate))}/hr` : 'Ask About Fees'}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Bio Preview */}
+                            {helper.bio && (
+                              <p className="text-sm text-gray-700 line-clamp-2 mb-3">
+                                {helper.bio}
+                              </p>
+                            )}
+
+                            {/* Skills */}
+                            {helper.skills && helper.skills.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mb-3">
+                                {helper.skills.slice(0, 3).map((skill, index) => (
+                                  <span
+                                    key={index}
+                                    className="px-2 py-1 bg-primary-100 text-primary-800 rounded text-xs font-medium"
+                                  >
+                                    {skill}
+                                  </span>
+                                ))}
+                                {helper.skills.length > 3 && (
+                                  <span className="px-2 py-1 text-gray-600 text-xs">
+                                    +{helper.skills.length - 3} more
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Professions */}
+                            {helper.professions && helper.professions.length > 0 && (
+                              <div className="mb-3">
+                                <p className="text-xs text-gray-600 mb-1">Professional:</p>
+                                <div className="flex flex-wrap gap-1">
+                                  {helper.professions.slice(0, 2).map((profession, index) => (
+                                    <span
+                                      key={index}
+                                      className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs border border-purple-200"
+                                    >
+                                      {profession}
+                                    </span>
+                                  ))}
+                                  {helper.professions.length > 2 && (
+                                    <span className="px-2 py-1 text-gray-600 text-xs">
+                                      +{helper.professions.length - 2}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Professional Offerings */}
+                            {helper.professional_offerings && helper.professional_offerings.length > 0 && (
+                              <div className="mb-3">
+                                <p className="text-xs text-gray-600 mb-1">Offers:</p>
+                                <div className="space-y-1 text-sm text-gray-700">
+                                  {helper.professional_offerings.slice(0, 2).map((offering, index) => (
+                                    <p key={index} className="line-clamp-1">• {offering}</p>
+                                  ))}
+                                  {helper.professional_offerings.length > 2 && (
+                                    <p className="text-xs text-gray-500">
+                                      +{helper.professional_offerings.length - 2} more
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </Link>
-                    ))}
+                        </Link>
+                      )
+                    })}
                   </div>
                 </div>
               )
