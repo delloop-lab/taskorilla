@@ -288,7 +288,7 @@
     "loginRequired": "Login Required",
     "loginRequiredCreateTask": "You need to log in to create a task. Your form data has been saved and after you log in, your task will be automatically created and you'll be taken to your new task page.",
     "loginRequiredMessage": "You must be logged in to view task details, post tasks, or access messages.",
-    "signUp": "Sign Up"
+    "signUp": "Simply Register"
   },
   "navbar": {
     "acceptedBids": "Accepted Bids",
@@ -309,7 +309,7 @@
     "postTask": "Post a Task",
     "price": "PRICING",
     "profile": "Profile",
-    "signup": "Sign Up",
+    "signup": "Sign Up Free",
     "tasks": "TASKS"
   },
   "roles": {

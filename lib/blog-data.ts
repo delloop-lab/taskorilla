@@ -41,7 +41,7 @@ export const blogs: BlogPost[] = [
       { type: "p", text: "- Easy task posting\n- Verified helpers\n- Secure payments\n- Real-time communication" }
     ],
     metaDescription: "Taskorilla connects you with skilled helpers in the Algarve. Whether a plumber, electrician etc, our platform makes it easy to find trusted professionals.",
-    ogImageUpload: "/images/blog/og/welcome-to-taskorilla.jpg",
+    ogImageUpload: "/images/blog/og/welcome-to-taskorilla.png",
     cta: "Join us today and experience the future of local services!",
   },
 
@@ -67,8 +67,106 @@ export const blogs: BlogPost[] = [
       { type: "p", text: "Finding a reliable plumber in Faro doesn't have to be stressful. Follow these steps and use Taskorilla to connect with verified professionals." }
     ],
     metaDescription: "Looking for a trusted plumber in Faro? Taskorilla helps you find verified local professionals quickly and easily, making hiring reliable plumbing stress-free.",
-    ogImageUpload: "/images/blog/og/how-to-find-a-reliable-plumber-faro.jpg",
+    ogImageUpload: "/images/blog/og/how-to-find-a-reliable-plumber-faro.png",
     cta: "Find a verified plumber in Faro on Taskorilla",
+  },
+
+  {
+    title: "How to Find a Reliable Plumber in the Algarve",
+    category: "Plumbing",
+    snippet:
+      "Need a plumber you can trust in the Algarve? Learn how to quickly connect with verified professionals on Taskorilla and avoid costly mistakes with home repairs.",
+    date: "2026-03-02",
+    location: "Algarve",
+    slug: "how-to-find-a-reliable-plumber-algarve",
+    content: [
+      {
+        type: "h2",
+        text: "Step 1: Ask for Recommendations",
+      },
+      {
+        type: "p",
+        text:
+          "Start by asking friends, neighbours, or trusted local groups for recommendations. Personal referrals help you avoid guesswork and steer you toward plumbers who have already proven themselves. On Taskorilla, you can see verified helpers with real reviews from other customers in the Algarve, so you don’t have to rely on word-of-mouth alone.",
+      },
+      {
+        type: "h2",
+        text: "Step 2: Check Credentials",
+      },
+      {
+        type: "p",
+        text:
+          "Before you hire anyone, always check their credentials. A reliable plumber should have the right licenses, insurance, and experience for the type of work you need. Taskorilla profiles clearly display key details such as qualifications, services offered, and ratings, making it easier to compare options and hire with confidence.",
+      },
+      {
+        type: "h2",
+        text: "Step 3: Compare Quotes",
+      },
+      {
+        type: "p",
+        text:
+          "Don’t accept the first price you hear. Get at least two or three quotes so you can compare what is included, how long the job will take, and what guarantees are offered. With Taskorilla, you can post your plumbing job once and receive multiple bids from verified professionals in the Algarve, then choose the offer that gives you the best balance of price, quality, and availability.",
+      },
+    ],
+    metaDescription:
+      "Looking for a trusted plumber in the Algarve? Taskorilla helps you connect with verified professionals for fast and safe home repairs, so you can hire with confidence.",
+    featuredImageUrl: "/images/blog/featured/find-a-plumber-algarve.jpg",
+    ogImageUpload: "/images/blog/og/finding-plumber-algarve.png",
+    tags: ["plumbing", "home repair", "algarve", "local services"],
+    cta: "Find a verified plumber in your area today",
+  },
+
+  {
+    title: "How to Find Reliable Childcare in the Algarve",
+    category: "Childcare",
+    snippet:
+      "Parents in the Algarve can learn how to hire trusted babysitters or nannies safely, ensuring peace of mind and quality care.",
+    date: "2026-03-02",
+    location: "Algarve",
+    slug: "how-to-find-reliable-childcare-algarve",
+    content: [
+      {
+        type: "h2",
+        text: "Step 1: Ask for Recommendations",
+      },
+      {
+        type: "p",
+        text:
+          "Talk to friends, family, and local communities to find trusted childcare providers. Personal recommendations are often the safest first step.",
+      },
+      {
+        type: "h2",
+        text: "Step 2: Verify Credentials",
+      },
+      {
+        type: "p",
+        text:
+          "Check references, certifications, and experience. Make sure the caregiver aligns with your family’s needs and values.",
+      },
+      {
+        type: "h2",
+        text: "Step 3: Conduct a Trial",
+      },
+      {
+        type: "p",
+        text:
+          "Arrange a short trial period to observe how the caregiver interacts with your child. Ensure everyone is comfortable before committing long-term.",
+      },
+      {
+        type: "h2",
+        text: "Step 4: Stay Involved",
+      },
+      {
+        type: "p",
+        text:
+          "Regular check-ins and open communication help maintain a healthy relationship and ensure your child is well cared for.",
+      },
+    ],
+    metaDescription:
+      "Looking for trusted childcare in the Algarve? Learn how to hire babysitters or nannies safely, for kids of all ages and families of all types.",
+    ogImageUpload: "/images/blog/og/how-to-find-reliable-childcare-algarve.png",
+    tags: ["childcare", "babysitter", "nanny", "Algarve", "family", "kids"],
+    cta: "Find a verified childcare helper in the Algarve today",
   },
 
   {
@@ -89,7 +187,7 @@ export const blogs: BlogPost[] = [
       { type: "p", text: "Agree on a schedule and confirm all details in writing to ensure smooth execution." }
     ],
     metaDescription: "Need an electrician in Lagos? Taskorilla will help you quickly and safely find verified local professionals, making it easy to hire reliable help today.",
-    ogImageUpload: "/images/blog/og/tips-for-hiring-an-electrician-lagos.jpg",
+    ogImageUpload: "/images/blog/og/tips-for-hiring-an-electrician-lagos.png",
     cta: "Find a verified electrician in Lagos on Taskorilla",
   },
 
@@ -109,7 +207,7 @@ export const blogs: BlogPost[] = [
       { type: "p", text: "Get 2–3 quotes to find fair pricing." }
     ],
     metaDescription: "Need a handyman in Vilamoura? Taskorilla helps you quickly find reliable local professionals for any household job, big or small, safely and easily today!",
-    ogImageUpload: "/images/blog/og/tips-for-hiring-a-handyman-vilamoura.jpg",
+    ogImageUpload: "/images/blog/og/tips-for-hiring-a-handyman-vilamoura.png",
     cta: "Find verified handymen in Vilamoura on Taskorilla",
   },
 
@@ -129,7 +227,7 @@ export const blogs: BlogPost[] = [
       { type: "p", text: "Collect 2–3 quotes to ensure fair pricing." }
     ],
     metaDescription: "Looking for a handyman in Loulé or Faro? Taskorilla connects you with reliable, verified local professionals, making it easy to get household jobs done.",
-    ogImageUpload: "/images/blog/og/handyman-services-loule.jpg",
+    ogImageUpload: "/images/blog/og/handyman-services-loule.png",
     cta: "Find verified handymen in Loulé on Taskorilla",
   },
 
@@ -149,7 +247,7 @@ export const blogs: BlogPost[] = [
       { type: "p", text: "Set clear terms for scope, materials, and pricing before starting work." }
     ],
     metaDescription: "Need carpentry services in Carvoeiro? Taskorilla helps you find verified local carpenters, making it easy to hire skilled professionals you can trust.",
-    ogImageUpload: "/images/blog/og/carpentry-services-carvoeiro.jpg",
+    ogImageUpload: "/images/blog/og/carpentry-services-carvoeiro.png",
     cta: "Find verified carpenters in Carvoeiro on Taskorilla",
   },
 
@@ -171,7 +269,7 @@ export const blogs: BlogPost[] = [
       { type: "p", text: "Set a date and confirm all details in writing to avoid miscommunication." }
     ],
     metaDescription: "Cleaning services in Portimão made easy. Learn how to choose the right cleaner and connect with reliable, verified local professionals on Taskorilla everyday!",
-    ogImageUpload: "/images/blog/og/cleaning-services-portimao-how-to-choose.jpg",
+    ogImageUpload: "/images/blog/og/cleaning-services-portimao-how-to-choose.png",
     cta: "Find professional cleaners in Portimão on Taskorilla",
   },
 
@@ -191,7 +289,7 @@ export const blogs: BlogPost[] = [
       { type: "p", text: "Make sure the services offered match your needs and agree on pricing in advance." }
     ],
     metaDescription: "Looking for professional cleaners in Olhão? Taskorilla connects you with reliable local established cleaning services making it easy to hire help you can trust.",
-    ogImageUpload: "/images/blog/og/finding-professional-cleaner-olhao.jpg",
+    ogImageUpload: "/images/blog/og/finding-professional-cleaner-olhao.png",
     cta: "Find professional cleaners in Olhão on Taskorilla",
   },
 
@@ -211,7 +309,7 @@ export const blogs: BlogPost[] = [
       { type: "p", text: "Get multiple quotes to find the best balance of price and quality." }
     ],
     metaDescription: "Looking for a reliable painter in Tavira or close by? Taskorilla helps you connect with verified local painting professionals you can trust for quality results.",
-    ogImageUpload: "/images/blog/og/finding-a-good-painter-tavira.jpg",
+    ogImageUpload: "/images/blog/og/finding-a-good-painter-tavira.png",
     cta: "Find verified painters in Tavira on Taskorilla",
   },
 
@@ -233,7 +331,7 @@ export const blogs: BlogPost[] = [
       { type: "p", text: "Find trusted helpers for all these services and more on Taskorilla!" }
     ],
     metaDescription: "Explore the most popular services requested on Taskorilla in the Algarve region. From home repairs to professional services, see what tasks are in high demand.",
-    ogImageUpload: "/images/blog/og/top-services-in-the-algarve.jpg",
+    ogImageUpload: "/images/blog/og/top-services-in-the-algarve.png",
   },
 
   {
@@ -258,7 +356,7 @@ export const blogs: BlogPost[] = [
       { type: "p", text: "We maintain high standards through clear community guidelines and support." }
     ],
     metaDescription: "Learn how Taskorilla builds trust through verified profiles, ratings, reviews and more. Discover how our community ensures quality service for everyone.",
-    ogImageUpload: "/images/blog/og/building-trust-in-the-community.jpg",
+    ogImageUpload: "/images/blog/og/building-trust-in-the-community.png",
     cta: "Join our trusted community today!",
   },
 
@@ -278,7 +376,7 @@ export const blogs: BlogPost[] = [
       { type: "p", text: "Make sure the gardener provides the services you need and agree on pricing upfront." }
     ],
     metaDescription: "Need a gardener in Silves, Albufeira or near you? Taskorilla connects you with verified professionals to keep your garden perfect evey day of the year.",
-    ogImageUpload: "/images/blog/og/hiring-a-gardener-silves.jpg",
+    ogImageUpload: "/images/blog/og/hiring-a-gardener-silves.png",
     cta: "Find verified gardeners in Silves on Taskorilla",
   },
 
@@ -298,7 +396,7 @@ export const blogs: BlogPost[] = [
       { type: "p", text: "Schedule regular cleaning to avoid long-term damage to floors, tiles, and furniture." }
     ],
     metaDescription: "Albufeira homeowners can use these tips to keep their properties in top shape. Taskorilla connects you with many local pros who know what they're doing!",
-    ogImageUpload: "/images/blog/og/home-maintenance-tips-albufeira.jpg",
+    ogImageUpload: "/images/blog/og/home-maintenance-tips-albufeira.png",
     cta: "Hire maintenance professionals in Albufeira on Taskorilla",
   },
 
@@ -324,7 +422,327 @@ export const blogs: BlogPost[] = [
       { type: "p", text: "Choose the best helper for your task and communicate directly through our platform." }
     ],
     metaDescription: "Learn how to post your first task in just a few simple steps. From describing your needs to selecting the right helper, we guide you through the process.",
-    ogImageUpload: "/images/blog/og/how-to-post-your-first-task.jpg",
+    ogImageUpload: "/images/blog/og/how-to-post-your-first-task.png",
+  },
+
+  {
+    title: "Spring Cleaning Tips for a Sparkling Home in the Algarve",
+    category: "Cleaning",
+    snippet:
+      "Spring is the perfect time to refresh your home. Discover the essential steps for a thorough spring clean in the Algarve.",
+    date: "2026-03-02",
+    location: "Algarve",
+    slug: "spring-cleaning-tips-algarve",
+    content: [
+      { type: "h2", text: "Step 1: Declutter Every Room" },
+      {
+        type: "p",
+        text: "Start with decluttering all rooms to make cleaning more efficient and less stressful.",
+      },
+      { type: "h2", text: "Step 2: Deep Clean Surfaces" },
+      {
+        type: "p",
+        text: "Focus on dusting, wiping surfaces, and tackling often-neglected areas.",
+      },
+      { type: "h2", text: "Step 3: Freshen Fabrics" },
+      {
+        type: "p",
+        text: "Wash curtains, bedding, and cushion covers to complete the spring refresh.",
+      },
+    ],
+    metaDescription:
+      "Learn practical spring cleaning tips for your Algarve home. From decluttering to deep cleaning, make your space shine this season.",
+    ogImageUpload: "/images/blog/og/spring-cleaning-tips-algarve.png",
+    tags: ["cleaning", "home maintenance", "Algarve", "spring cleaning"],
+    cta: "Find a verified cleaner in the Algarve today",
+  },
+
+  {
+    title: "How to Keep Your Car Spotless in the Algarve",
+    category: "Car Washing",
+    snippet:
+      "Learn simple tips to maintain a sparkling car in Algarve’s sunny weather, from hand washes to protective coatings.",
+    date: "2026-03-02",
+    location: "Algarve",
+    slug: "car-washing-tips-algarve",
+    content: [
+      { type: "h2", text: "Step 1: Choose the Right Products" },
+      {
+        type: "p",
+        text: "Use pH-balanced soaps and microfiber cloths to protect your paintwork.",
+      },
+      { type: "h2", text: "Step 2: Wash in the Shade" },
+      {
+        type: "p",
+        text: "Avoid direct sunlight to prevent streaks and water spots.",
+      },
+      { type: "h2", text: "Step 3: Protect Your Finish" },
+      {
+        type: "p",
+        text: "Apply wax or sealant for a long-lasting shine and UV protection.",
+      },
+    ],
+    metaDescription:
+      "Discover expert car washing tips for Algarve residents. Keep your vehicle clean and protected all year round.",
+    ogImageUpload: "/images/blog/og/car-washing-tips-algarve.png",
+    tags: ["car washing", "Algarve", "vehicle care", "tips"],
+    cta: "Book a professional car wash today",
+  },
+
+  {
+    title: "5 Essential Gardening Tips for Your Algarve Garden",
+    category: "Gardening",
+    snippet:
+      "From soil prep to watering schedules, discover 5 essential gardening tips to make your Algarve garden flourish.",
+    date: "2026-03-02",
+    location: "Algarve",
+    slug: "gardening-tips-algarve",
+    content: [
+      { type: "h2", text: "Step 1: Know Your Soil" },
+      {
+        type: "p",
+        text: "Test and amend soil to ensure optimal plant growth.",
+      },
+      { type: "h2", text: "Step 2: Water Wisely" },
+      {
+        type: "p",
+        text: "Use efficient watering techniques to conserve water and nourish plants.",
+      },
+      { type: "h2", text: "Step 3: Prune Regularly" },
+      {
+        type: "p",
+        text: "Keep plants healthy by trimming dead or overgrown branches.",
+      },
+    ],
+    metaDescription:
+      "Keep your Algarve garden thriving with these essential tips. Perfect for new and experienced gardeners alike.",
+    ogImageUpload: "/images/blog/og/gardening-tips-algarve.png",
+    tags: ["gardening", "landscaping", "Algarve", "outdoor maintenance"],
+    cta: "Hire a local gardener in the Algarve",
+  },
+
+  {
+    title: "Finding a Reliable Plumber in the Algarve",
+    category: "Plumbing",
+    snippet:
+      "Discover key steps to hiring a reliable plumber in the Algarve and avoid common pitfalls.",
+    date: "2026-03-02",
+    location: "Algarve",
+    slug: "finding-plumber-algarve",
+    content: [
+      { type: "h2", text: "Step 1: Check Credentials" },
+      {
+        type: "p",
+        text: "Ensure the plumber is licensed and has solid reviews.",
+      },
+      { type: "h2", text: "Step 2: Ask for References" },
+      {
+        type: "p",
+        text: "Speak to previous clients to gauge reliability and skill.",
+      },
+      { type: "h2", text: "Step 3: Compare Quotes" },
+      {
+        type: "p",
+        text: "Get multiple estimates to ensure fair pricing.",
+      },
+    ],
+    metaDescription:
+      "Need plumbing services in the Algarve? Learn how to find a trusted professional quickly and safely.",
+    ogImageUpload: "/images/blog/og/finding-plumber-algarve.png",
+    tags: ["plumbing", "home repair", "Algarve", "maintenance"],
+    cta: "Find a verified plumber today",
+  },
+
+  {
+    title: "How to Safely Hire an Electrician in the Algarve",
+    category: "Electrical",
+    snippet:
+      "From checking certifications to understanding project scope, learn how to hire a safe electrician in the Algarve.",
+    date: "2026-03-02",
+    location: "Algarve",
+    slug: "hiring-electrician-algarve",
+    content: [
+      { type: "h2", text: "Step 1: Verify Certifications" },
+      {
+        type: "p",
+        text: "Always ensure your electrician is certified for the job.",
+      },
+      { type: "h2", text: "Step 2: Review Past Work" },
+      {
+        type: "p",
+        text: "Ask to see previous projects or client references.",
+      },
+      { type: "h2", text: "Step 3: Clarify Pricing" },
+      {
+        type: "p",
+        text: "Confirm the scope and cost before starting work.",
+      },
+    ],
+    metaDescription:
+      "Electrical work can be risky. Follow these tips to hire a safe and experienced electrician in the Algarve.",
+    ogImageUpload: "/images/blog/og/hiring-electrician-algarve.png",
+    tags: ["electrician", "Algarve", "home safety", "electrical work"],
+    cta: "Connect with a certified electrician today",
+  },
+
+  {
+    title: "Keeping Your Dog Happy: Walking Tips in the Algarve",
+    category: "Dog Walking",
+    snippet:
+      "Learn how to keep your dog safe and active on walks around Algarve’s streets and beaches.",
+    date: "2026-03-02",
+    location: "Algarve",
+    slug: "dog-walking-tips-algarve",
+    content: [
+      { type: "h2", text: "Step 1: Schedule Regular Walks" },
+      {
+        type: "p",
+        text: "Consistency helps dogs stay healthy and happy.",
+      },
+      { type: "h2", text: "Step 2: Bring Water and Treats" },
+      {
+        type: "p",
+        text: "Keep your dog hydrated, especially in warm Algarve weather.",
+      },
+      { type: "h2", text: "Step 3: Safety First" },
+      {
+        type: "p",
+        text: "Use a secure leash and avoid busy roads.",
+      },
+    ],
+    metaDescription:
+      "Ensure your dog stays fit and happy with these walking tips. Perfect for pet owners in the Algarve.",
+    ogImageUpload: "/images/blog/og/dog-walking-tips-algarve.png",
+    tags: ["pets", "dog walking", "Algarve", "pet care"],
+    cta: "Hire a professional dog walker in the Algarve",
+  },
+
+  {
+    title: "Top Handyman Services Every Algarve Home Needs",
+    category: "Handyman",
+    snippet:
+      "Identify essential handyman tasks that keep your Algarve home functional and safe.",
+    date: "2026-03-02",
+    location: "Algarve",
+    slug: "top-handyman-services-algarve",
+    content: [
+      { type: "h2", text: "Step 1: Minor Repairs" },
+      {
+        type: "p",
+        text: "Fix leaky taps, squeaky doors, and other small issues promptly.",
+      },
+      { type: "h2", text: "Step 2: Furniture Assembly" },
+      {
+        type: "p",
+        text: "Hire a handyman to safely assemble furniture or fixtures.",
+      },
+      { type: "h2", text: "Step 3: Seasonal Maintenance" },
+      {
+        type: "p",
+        text: "Prepare your home for the changing seasons with routine checks.",
+      },
+    ],
+    metaDescription:
+      "From minor repairs to furniture assembly, discover the top handyman services for homes in the Algarve.",
+    ogImageUpload: "/images/blog/og/top-handyman-services-algarve.png",
+    tags: ["handyman", "home repair", "Algarve", "services"],
+    cta: "Book a local handyman today",
+  },
+
+  {
+    title: "Keeping Pests at Bay in the Algarve: Expert Tips",
+    category: "Pest Control",
+    snippet:
+      "From preventive measures to professional treatments, ensure your Algarve home stays pest-free.",
+    date: "2026-03-02",
+    location: "Algarve",
+    slug: "pest-control-tips-algarve",
+    content: [
+      { type: "h2", text: "Step 1: Identify the Problem" },
+      {
+        type: "p",
+        text: "Determine the type of pest before taking action.",
+      },
+      { type: "h2", text: "Step 2: Use Safe Treatments" },
+      {
+        type: "p",
+        text: "Apply chemicals or traps responsibly to protect your family and pets.",
+      },
+      { type: "h2", text: "Step 3: Prevent Recurrences" },
+      {
+        type: "p",
+        text: "Seal entry points and maintain cleanliness to avoid future infestations.",
+      },
+    ],
+    metaDescription:
+      "Learn professional pest control strategies for Algarve homes. Keep your space free from insects and rodents.",
+    ogImageUpload: "/images/blog/og/pest-control-tips-algarve.png",
+    tags: ["pest control", "Algarve", "home maintenance", "insect prevention"],
+    cta: "Hire a certified pest control expert",
+  },
+
+  {
+    title: "Stress-Free Moving in the Algarve: Tips and Services",
+    category: "Moving Help",
+    snippet:
+      "Learn how to plan and execute a smooth move in the Algarve with professional support.",
+    date: "2026-03-02",
+    location: "Algarve",
+    slug: "moving-help-tips-algarve",
+    content: [
+      { type: "h2", text: "Step 1: Plan Ahead" },
+      {
+        type: "p",
+        text: "Organize packing and schedule helpers in advance.",
+      },
+      { type: "h2", text: "Step 2: Pack Smart" },
+      {
+        type: "p",
+        text: "Label boxes and pack fragile items carefully.",
+      },
+      { type: "h2", text: "Step 3: Hire Reliable Movers" },
+      {
+        type: "p",
+        text: "Use experienced professionals to avoid damage or delays.",
+      },
+    ],
+    metaDescription:
+      "Make your move in the Algarve easier with expert tips and professional moving help.",
+    ogImageUpload: "/images/blog/og/moving-help-tips-algarve.png",
+    tags: ["moving", "relocation", "Algarve", "home services"],
+    cta: "Hire trusted movers in the Algarve",
+  },
+
+  {
+    title: "Expert Gardening Advice for Algarve Landscapes",
+    category: "Gardening Consultation",
+    snippet:
+      "Receive expert guidance on plant care, landscaping design, and seasonal maintenance in the Algarve.",
+    date: "2026-03-02",
+    location: "Algarve",
+    slug: "gardening-consultation-algarve",
+    content: [
+      { type: "h2", text: "Step 1: Assess Your Garden" },
+      {
+        type: "p",
+        text: "Identify soil, sunlight, and water conditions before planting.",
+      },
+      { type: "h2", text: "Step 2: Plan Seasonal Planting" },
+      {
+        type: "p",
+        text: "Choose plants that thrive in Algarve’s climate.",
+      },
+      { type: "h2", text: "Step 3: Maintain Year-Round" },
+      {
+        type: "p",
+        text: "Follow pruning, fertilizing, and watering schedules for best results.",
+      },
+    ],
+    metaDescription:
+      "Get professional gardening consultation in the Algarve. Learn how to make your garden thrive all year round.",
+    ogImageUpload: "/images/blog/og/gardening-consultation-algarve.png",
+    tags: ["gardening", "landscaping", "Algarve", "professional advice"],
+    cta: "Book a gardening consultation today",
   }
 ]// Helper function to get all unique categories
 export function getAllCategories(): string[] {

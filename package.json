@@ -1,6 +1,6 @@
 {
   "name": "task-marketplace",
-  "version": "0.99.984",
+  "version": "0.99.985",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -13,7 +13,7 @@
     "bump-version:minor": "node scripts/bump-version.js minor",
     "bump-version:major": "node scripts/bump-version.js major",
     "generate-icons": "node scripts/generate-icons.js",
-    "generate-blog-images": "ts-node scripts/generate-blog-og-images.ts"
+    "generate-blog-images": "node scripts/generate-blog-og-images.js"
   },
   "dependencies": {
     "@paypal/checkout-server-sdk": "^1.0.3",

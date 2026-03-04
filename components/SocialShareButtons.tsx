@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Share2, Linkedin, Facebook, Twitter } from 'lucide-react'
 
 interface SocialShareButtonsProps {
@@ -61,10 +62,19 @@ export default function SocialShareButtons({ url, title, description }: SocialSh
     }
   }
 
-  // Check if Web Share API is available (client-side only)
-  const isWebShareAvailable = typeof window !== 'undefined' && 
-                              typeof navigator !== 'undefined' && 
-                              typeof navigator.share === 'function'
+  // Check if Web Share API is available (client-side only), but do it
+  // in an effect so the first render matches the server HTML.
+  const [isWebShareAvailable, setIsWebShareAvailable] = useState(false)
+
+  useEffect(() => {
+    if (
+      typeof window !== 'undefined' &&
+      typeof navigator !== 'undefined' &&
+      typeof navigator.share === 'function'
+    ) {
+      setIsWebShareAvailable(true)
+    }
+  }, [])
 
   return (
     <div className="flex flex-wrap items-center gap-3">

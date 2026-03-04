@@ -18,6 +18,7 @@ import { User as UserIcon } from 'lucide-react'
 import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
 import CompactUserRatingsDisplay from '@/components/CompactUserRatingsDisplay'
 import { getCachedTasks, setCachedTasks, clearTasksCache } from '@/lib/tasks-cache'
+import { buildTaskSlug, deriveLocationCity } from '@/lib/task-slug'
 
 // Debug logging - only in development
 const isDev = process.env.NODE_ENV === 'development'
@@ -1730,16 +1731,19 @@ function TasksPageContent() {
             )
             const showSampleSash = task.status === 'open' && isSample
 
+            const locationCity = deriveLocationCity(typeof task.location === 'string' ? task.location : null)
+            const publicSlug = buildTaskSlug({
+              id: task.id,
+              title: task.title,
+              locationCity,
+            })
+
+            const cardHref = currentUserId ? `/tasks/${task.id}` : `/public-tasks/${publicSlug}`
+
             return (
               <Link
                 key={task.id}
-                href={currentUserId ? `/tasks/${task.id}` : '#'}
-                onClick={(e) => {
-                  if (!currentUserId) {
-                    e.preventDefault()
-                    setShowLoginModal(true)
-                  }
-                }}
+                href={cardHref}
                 data-task-id={task.id}
                 className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col relative ${
                   isAdmin && task.hidden_by_admin ? 'border-2 border-red-300 bg-red-50' : ''
@@ -2110,22 +2114,22 @@ function TasksPageContent() {
             <p className="text-gray-600 mb-6">
               {t('modal.loginRequiredMessage')}
             </p>
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 mt-2">
               <Link
                 href="/login"
-                className="flex-1 bg-primary-600 text-white px-4 py-2 rounded-md text-center hover:bg-primary-700"
+                className="flex-1 bg-primary-600 text-white px-4 py-2 rounded-md text-center hover:bg-primary-700 font-medium transition-colors"
               >
                 {t('modal.login')}
               </Link>
               <Link
                 href="/register"
-                className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-center hover:bg-gray-300"
+                className="flex-1 bg-white text-primary-600 px-4 py-2 rounded-md text-center border border-primary-200 hover:border-primary-400 hover:bg-primary-50 font-medium transition-colors"
               >
                 {t('modal.signUp')}
               </Link>
               <button
                 onClick={() => setShowLoginModal(false)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                className="px-4 py-2 text-gray-500 hover:text-gray-700 text-sm font-medium"
               >
                 {t('modal.cancel')}
               </button>

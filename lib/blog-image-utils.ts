@@ -55,6 +55,7 @@ export function getOgImageUrl(post: BlogPost): string {
  * Get the local file path for saving OG images
  */
 export function getOgImagePath(slug: string): string {
+  // Path relative to project root, used by Node script
   return `public${OG_IMAGE_BASE_PATH}/${slug}.png`
 }
 
@@ -72,53 +73,65 @@ function getCategoryVisualConcept(category: string, title: string): string {
   const categoryLower = category.toLowerCase()
   const titleLower = title.toLowerCase()
 
+  // Childcare / family
+  if (
+    categoryLower.includes('childcare') ||
+    categoryLower.includes('babysit') ||
+    categoryLower.includes('nanny') ||
+    titleLower.includes('childcare') ||
+    titleLower.includes('babysitter') ||
+    titleLower.includes('nanny')
+  ) {
+    return 'warm, family-friendly scene showing a simple, stylised parent and child together in a cozy home environment, toys or books nearby, soft lighting, no detailed faces, clean and modern illustration style'
+  }
+
   // Plumbing
   if (categoryLower.includes('plumb') || titleLower.includes('plumb')) {
-    return 'abstract geometric shapes representing pipes and water flow, modern blue and white color scheme with orange accent, clean minimalist design, no text'
+    return 'clean, professional plumbing tools such as a wrench, pipes and toolbox arranged neatly on a neutral background, hint of a kitchen or bathroom setting, realistic but minimal, no water splashes or mess'
   }
 
   // Electrical
   if (categoryLower.includes('electric') || titleLower.includes('electric')) {
-    return 'abstract electrical circuit patterns, bright yellow and orange energy waves, modern minimalist design, geometric shapes, no text'
+    return 'professional electrician tools such as cables, a voltage tester and a fuse box or socket on a tidy work surface, subtle glow effect, modern and realistic, no chaotic sparks'
   }
 
   // Cleaning
   if (categoryLower.includes('clean') || titleLower.includes('clean')) {
-    return 'abstract sparkling clean surfaces, fresh blue and white bubbles, minimalist geometric patterns, bright and airy, no text'
+    return 'bright, airy home interior with simple cleaning supplies like a spray bottle, gloves and a broom in the foreground, sunlight, tidy and minimal background, fresh and welcoming atmosphere'
   }
 
   // Handyman / Home Maintenance
   if (categoryLower.includes('handyman') || categoryLower.includes('maintenance') || titleLower.includes('handyman') || titleLower.includes('maintenance')) {
-    return 'abstract tools and home elements in geometric form, warm orange and beige tones, modern minimalist style, no text'
+    return 'neatly arranged basic tools such as hammer, screwdriver, tape measure and screws on a wooden surface, suggestion of a home interior in background, warm and practical look'
   }
 
   // Gardening
   if (categoryLower.includes('garden') || categoryLower.includes('landscap') || titleLower.includes('garden')) {
-    return 'abstract organic shapes representing plants and nature, vibrant green and orange gradient, modern minimalist botanical design, no text'
+    return 'well kept garden scene with simple plants, shrubs and gardening tools like a trowel and watering can, soft natural light, vibrant greens, calm and tidy composition'
   }
 
   // Painting / Home Improvement
   if (categoryLower.includes('paint') || categoryLower.includes('improvement') || titleLower.includes('paint')) {
-    return 'abstract color swatches and brush strokes, vibrant color palette with orange accent, modern artistic minimalist design, no text'
+    return 'painting scene with neatly arranged paint rollers or brushes, paint tray and colour swatches on a clean surface, hint of a freshly painted wall in the background, modern and tidy'
   }
 
   // Platform Updates / Getting Started
   if (categoryLower.includes('platform') || categoryLower.includes('getting started') || categoryLower.includes('welcome')) {
-    return 'abstract connection and network patterns, bright orange and blue gradient, modern tech-inspired minimalist design, no text'
+    return 'simple interface or dashboard elements on a laptop screen on a desk, representing an online platform, clean workspace with subtle Taskorilla brand colours'
   }
 
   // Community / Trust
   if (categoryLower.includes('community') || categoryLower.includes('trust') || titleLower.includes('trust')) {
-    return 'abstract interconnected shapes representing community, warm orange and yellow tones, modern minimalist design, no text'
+    return 'friendly community scene with simple, stylised people icons or silhouettes connected in a circle, warm colours, conveys trust and cooperation, clean and modern'
   }
 
   // Local Services / General
   if (categoryLower.includes('local services') || categoryLower.includes('services')) {
-    return 'abstract service icons in geometric form, vibrant orange and blue palette, modern minimalist design, no text'
+    return 'collage of simple icons representing multiple local services (tools, house, cleaning, gardening) arranged neatly on a neutral background, modern flat illustration style'
   }
 
-  // Default: abstract professional service concept
-  return 'abstract professional service concept, modern geometric shapes, vibrant orange and blue gradient, clean minimalist design, high contrast, no text'
+  // Default: professional service concept
+  return 'professional service concept with simple, clean icons on a neutral background, modern flat illustration style, calm and trustworthy atmosphere'
 }
 
 /**
@@ -128,16 +141,38 @@ function getCategoryVisualConcept(category: string, title: string): string {
 export function generateOgImagePrompt(post: BlogPost): string {
   const category = post.category || 'Service'
   const visualConcept = getCategoryVisualConcept(category, post.title)
-  const location = post.location ? `, ${post.location} theme` : ''
+  const locationText = post.location ? `, set in ${post.location}` : ''
 
-  return `Create a professional, modern blog header image. 
-Style: Abstract, symbolic, minimalist design. Bright colors, high contrast, clean composition.
-Visual concept: ${visualConcept}${location}
-Color palette: Vibrant orange (#FD9212) as accent, complementary bright colors (blues, greens, yellows), high contrast.
-Composition: Modern geometric shapes, abstract patterns, professional and visually appealing.
-Technical: 1200x630 pixels, PNG format, no text, no words, no letters, no typography.
-Quality: High resolution, sharp, professional photography style, studio quality lighting.
-Mood: Bright, energetic, trustworthy, modern, clean.`
+  return `Generate a 1200x630px Open Graph image for a blog post.
+
+Visual theme:
+- ${visualConcept}${locationText}
+- Clean, professional, modern look
+- Subtle textures only, no random lines, no scribbles, no noisy abstract patterns
+
+Layout:
+- Strong, clear focal point related to the topic
+- Good use of empty space so the composition is not busy
+- No text blocks, no headings, no labels
+
+Branding:
+- Use the Taskorilla brand accent colour #FD9212 together with neutral background tones
+- You may suggest a simple abstract brand mark, but do not draw readable letters or words
+
+Colours:
+- Use #FD9212 as the main accent colour
+- Neutral or light background so future overlays would be easy to read
+- Avoid harsh or clashing colour combinations
+
+Technical:
+- Final size: 1200x630 pixels
+- Format: PNG
+- High resolution, sharp, professional quality
+
+Important:
+- The design must directly relate to the blog topic
+- Do NOT include any text, words, letters, numbers or typography in the image
+- Avoid irrelevant abstract shapes or chaotic elements.`
 }
 
 /**

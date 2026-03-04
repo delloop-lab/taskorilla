@@ -196,9 +196,8 @@ async function main() {
   console.log(`3. Test OG tags with: https://www.opengraph.xyz/`)
 }
 
-// Run the script
-if (require.main === module) {
-  main().catch(console.error)
-}
-
-export default main
+// Run the script when executed directly
+main().catch((err) => {
+  console.error(err)
+  process.exitCode = 1
+})
