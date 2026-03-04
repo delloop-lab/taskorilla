@@ -178,11 +178,16 @@ export default function TaskMap({ tasks, markers = [], onTaskClick }: MapProps) 
         chunkedLoading
         maxClusterRadius={50}
         spiderfyOnMaxZoom={true}
-        spiderfyDistanceMultiplier={2.5}
+        spiderfyDistanceMultiplier={4}
         spiderLegPolylineOptions={{ weight: 1.5, color: '#94a3b8', opacity: 0.6 }}
         showCoverageOnHover={false}
-        zoomToBoundsOnClick={true}
+        zoomToBoundsOnClick={false}
         disableClusteringAtZoom={16}
+        eventHandlers={{
+          clusterclick: (e: any) => {
+            e.layer.spiderfy()
+          },
+        }}
         iconCreateFunction={(cluster: any) => {
           const count = cluster.getChildCount()
           let size = 'small'
@@ -210,12 +215,34 @@ export default function TaskMap({ tasks, markers = [], onTaskClick }: MapProps) 
           })
         }}
       >
-      {tasks.map((task) => {
-          const lat = typeof task.latitude === 'number' ? task.latitude : parseFloat(String(task.latitude || 0))
-          const lon = typeof task.longitude === 'number' ? task.longitude : parseFloat(String(task.longitude || 0))
+      {(() => {
+        // Pre-compute small offsets for tasks sharing the same coordinates
+        // so they don't stack perfectly on top of each other when unclustered
+        const coordCounts: Record<string, number> = {}
+        const coordIndex: Record<string, number> = {}
+        tasks.forEach(t => {
+          const key = `${t.latitude},${t.longitude}`
+          coordCounts[key] = (coordCounts[key] || 0) + 1
+        })
+
+        return tasks.map((task) => {
+          let lat = typeof task.latitude === 'number' ? task.latitude : parseFloat(String(task.latitude || 0))
+          let lon = typeof task.longitude === 'number' ? task.longitude : parseFloat(String(task.longitude || 0))
 
           if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
             return null
+          }
+
+          // Nudge tasks that share exact coordinates so they don't stack
+          const coordKey = `${lat},${lon}`
+          if (coordCounts[coordKey] > 1) {
+            if (coordIndex[coordKey] === undefined) coordIndex[coordKey] = 0
+            const idx = coordIndex[coordKey]++
+            const total = coordCounts[coordKey]
+            const angle = (2 * Math.PI * idx) / total
+            const offset = 0.0003 // ~30m spread
+            lat += Math.cos(angle) * offset
+            lon += Math.sin(angle) * offset
           }
 
           const budgetDisplay = task.budget ? `€${task.budget}` : 'Quote'
@@ -291,7 +318,8 @@ export default function TaskMap({ tasks, markers = [], onTaskClick }: MapProps) 
             </Popup>
           </Marker>
           )
-        })}
+        })
+      })()}
       </MarkerClusterGroup>
 
       {(() => {
