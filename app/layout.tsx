@@ -13,7 +13,7 @@ import GoogleAnalytics from '@/components/GoogleAnalytics'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Taskorilla - Swing Into Action',
+  title: 'Taskorilla | Post Tasks and Hire Local Help',
   description: 'A marketplace for posting and bidding on tasks',
   manifest: '/manifest.json',
   appleWebApp: {

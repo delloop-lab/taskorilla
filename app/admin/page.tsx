@@ -2028,6 +2028,12 @@ export default function SuperadminDashboard() {
           >
             Translations
           </Link>
+          <Link
+            href="/admin/posting-manager"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg font-medium bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600 transition-colors"
+          >
+            Posting Manager
+          </Link>
         </div>
 
         {/* Users Tab */}
