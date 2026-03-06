@@ -6,7 +6,12 @@
     "title": "Como crio uma conta no Taskorilla?",
     "content": "Clique em 'Registar', introduza o seu email, escolha uma palavra-passe, selecione entre Ajudante, Requisitante ou ambos, e confirme. Está pronto para publicar ou realizar tarefas.",
     "guideSlug": "primeiros-passos-com-o-taskorilla",
-    "tags": ["conta", "registo", "inscrição", "primeiros passos"]
+    "tags": [
+      "conta",
+      "registo",
+      "inscrição",
+      "primeiros passos"
+    ]
   },
   {
     "id": "getting-started-2",
@@ -14,7 +19,12 @@
     "type": "faq",
     "title": "Preciso de verificar a minha identidade para começar?",
     "content": "Não imediatamente, mas verificar a sua identidade ajuda a construir confiança com outros utilizadores e desbloqueia tarefas de maior valor.",
-    "tags": ["verificação", "identidade", "confiança", "conta"]
+    "tags": [
+      "verificação",
+      "identidade",
+      "confiança",
+      "conta"
+    ]
   },
   {
     "id": "getting-started-3",
@@ -22,7 +32,12 @@
     "type": "faq",
     "title": "Posso usar o Taskorilla no telemóvel?",
     "content": "Claro que sim. O nosso site funciona em qualquer navegador móvel, e estamos a desenvolver uma aplicação em breve.",
-    "tags": ["móvel", "aplicação", "navegador", "dispositivo"]
+    "tags": [
+      "móvel",
+      "aplicação",
+      "navegador",
+      "dispositivo"
+    ]
   },
   {
     "id": "getting-started-4",
@@ -30,7 +45,26 @@
     "type": "faq",
     "title": "Como edito o meu perfil?",
     "content": "Vá a 'O Meu Perfil', atualize as suas informações, competências ou foto de perfil, e clique em guardar.",
-    "tags": ["perfil", "editar", "definições", "atualizar"]
+    "tags": [
+      "perfil",
+      "editar",
+      "definições",
+      "atualizar"
+    ]
+  },
+  {
+    "id": "getting-started-5",
+    "category": "Primeiros Passos",
+    "type": "faq",
+    "title": "O Taskorilla é o mesmo que Task Gorilla?",
+    "content": "Sim. Muitas pessoas pesquisam por Task Gorilla ou Taskgorilla, mas o nome correto é Taskorilla. É o sítio para publicar uma tarefa e ter ajudantes locais a vir até si.",
+    "tags": [
+      "task gorilla",
+      "taskgorilla",
+      "nome",
+      "marca",
+      "primeiros passos"
+    ]
   },
   {
     "id": "posting-tasks-1",
@@ -39,7 +73,12 @@
     "title": "Como publico uma tarefa?",
     "content": "Clique em 'Publicar Tarefa', descreva o que precisa, defina a localização, hora e orçamento. Depois clique em 'Publicar'.",
     "guideSlug": "como-publicar-uma-tarefa",
-    "tags": ["publicar tarefa", "criar tarefa", "nova tarefa", "publicação de tarefa"]
+    "tags": [
+      "publicar tarefa",
+      "criar tarefa",
+      "nova tarefa",
+      "publicação de tarefa"
+    ]
   },
   {
     "id": "posting-tasks-2",
@@ -47,7 +86,12 @@
     "type": "faq",
     "title": "Posso editar uma tarefa depois de publicar?",
     "content": "Sim, pode editar a descrição, orçamento ou prazo antes de alguém aceitar.",
-    "tags": ["editar tarefa", "modificar tarefa", "atualizar tarefa", "alterar tarefa"]
+    "tags": [
+      "editar tarefa",
+      "modificar tarefa",
+      "atualizar tarefa",
+      "alterar tarefa"
+    ]
   },
   {
     "id": "posting-tasks-3",
@@ -55,7 +99,12 @@
     "type": "faq",
     "title": "Posso cancelar uma tarefa?",
     "content": "Pode, mas recomendamos que contacte primeiro qualquer Ajudante atribuído. Podem aplicar-se taxas de cancelamento para tarefas confirmadas.",
-    "tags": ["cancelar tarefa", "eliminar tarefa", "remover tarefa", "cancelamento de tarefa"]
+    "tags": [
+      "cancelar tarefa",
+      "eliminar tarefa",
+      "remover tarefa",
+      "cancelamento de tarefa"
+    ]
   },
   {
     "id": "posting-tasks-4",
@@ -63,7 +112,12 @@
     "type": "faq",
     "title": "Como encontro Ajudantes para a minha tarefa?",
     "content": "Depois de publicada, os Ajudantes na sua área recebem uma notificação. Também pode consultar perfis e convidá-los diretamente.",
-    "tags": ["encontrar ajudantes", "contratar", "convidar", "notificações"]
+    "tags": [
+      "encontrar ajudantes",
+      "contratar",
+      "convidar",
+      "notificações"
+    ]
   },
   {
     "id": "tasker-guide-1",
@@ -72,7 +126,12 @@
     "title": "Como me torno um Ajudante?",
     "content": "Registe-se, complete o seu perfil, verifique a sua identidade e está pronto para explorar tarefas.",
     "guideSlug": "trabalhar-como-ajudante",
-    "tags": ["tornar-se ajudante", "registo de ajudante", "juntar-se aos ajudantes", "começar a ajudar"]
+    "tags": [
+      "tornar-se ajudante",
+      "registo de ajudante",
+      "juntar-se aos ajudantes",
+      "começar a ajudar"
+    ]
   },
   {
     "id": "tasker-guide-2",
@@ -80,7 +139,12 @@
     "type": "faq",
     "title": "Posso aceitar várias tarefas ao mesmo tempo?",
     "content": "Sim, mas aceite apenas o que conseguir realisticamente completar a tempo.",
-    "tags": ["múltiplas tarefas", "aceitar tarefas", "limite de tarefas", "capacidade"]
+    "tags": [
+      "múltiplas tarefas",
+      "aceitar tarefas",
+      "limite de tarefas",
+      "capacidade"
+    ]
   },
   {
     "id": "tasker-guide-3",
@@ -88,7 +152,12 @@
     "type": "faq",
     "title": "Como marco uma tarefa como concluída?",
     "content": "Abra a tarefa no seu painel e clique em 'Marcar como Concluída'. O requisitante irá então confirmar.",
-    "tags": ["completar tarefa", "terminar tarefa", "marcar como feita", "conclusão de tarefa"]
+    "tags": [
+      "completar tarefa",
+      "terminar tarefa",
+      "marcar como feita",
+      "conclusão de tarefa"
+    ]
   },
   {
     "id": "tasker-guide-4",
@@ -96,7 +165,12 @@
     "type": "faq",
     "title": "E se não conseguir terminar uma tarefa?",
     "content": "Comunique imediatamente com o requisitante. Tarefas incompletas podem afetar a sua avaliação.",
-    "tags": ["tarefa incompleta", "não consigo terminar", "problemas com tarefa", "comunicação"]
+    "tags": [
+      "tarefa incompleta",
+      "não consigo terminar",
+      "problemas com tarefa",
+      "comunicação"
+    ]
   },
   {
     "id": "tasker-guide-pricing",
@@ -104,7 +178,13 @@
     "type": "faq",
     "title": "Como devo definir o preço da minha proposta?",
     "content": "Introduza sempre o seu preço total em euros (incluindo tempo, materiais, transporte e taxas) e use a caixa de Justificação de Preço para explicar o que o requisitante recebe por esse valor. Quando um requisitante aceita a sua proposta, o preço fica fixado, por isso comprometa-se apenas com um valor que está disposto a cumprir.",
-    "tags": ["preços", "propostas", "ajudante", "pagamento", "orçamento"]
+    "tags": [
+      "preços",
+      "propostas",
+      "ajudante",
+      "pagamento",
+      "orçamento"
+    ]
   },
   {
     "id": "payment-guide-1",
@@ -113,7 +193,12 @@
     "title": "Como funciona o pagamento?",
     "content": "Os requisitantes pagam através do nosso sistema seguro. Os Ajudantes recebem após a confirmação da conclusão da tarefa.",
     "guideSlug": "compreender-pagamentos-no-taskorilla",
-    "tags": ["pagamento", "como pagar", "processo de pagamento", "pagar ajudante"]
+    "tags": [
+      "pagamento",
+      "como pagar",
+      "processo de pagamento",
+      "pagar ajudante"
+    ]
   },
   {
     "id": "payment-guide-2",
@@ -121,7 +206,12 @@
     "type": "faq",
     "title": "Existem taxas?",
     "content": "Sim, o Taskorilla cobra uma pequena taxa de serviço ao requisitante, desde dezembro de 2025 é €2 e 10% do Ajudante/Profissional.",
-    "tags": ["taxas", "taxa de serviço", "comissão", "custo"]
+    "tags": [
+      "taxas",
+      "taxa de serviço",
+      "comissão",
+      "custo"
+    ]
   },
   {
     "id": "payment-guide-3",
@@ -129,7 +219,12 @@
     "type": "faq",
     "title": "Como recebo o pagamento?",
     "content": "Adicione o seu email PayPal. Após a confirmação da tarefa, transferimos os fundos automaticamente. Ainda não tem conta PayPal? Crie uma [aqui](https://www.paypal.com/signup) e fique operacional em minutos.",
-    "tags": ["receber pagamento", "receber dinheiro", "levantamento", "pagamento"]
+    "tags": [
+      "receber pagamento",
+      "receber dinheiro",
+      "levantamento",
+      "pagamento"
+    ]
   },
   {
     "id": "safety-guide-1",
@@ -137,7 +232,12 @@
     "type": "faq",
     "title": "Como me mantenho seguro ao encontrar Ajudantes ou Requisitantes?",
     "content": "Encontre-se em espaços públicos quando possível, verifique os perfis e nunca partilhe informações pessoais desnecessárias.",
-    "tags": ["segurança", "encontro", "proteção", "práticas seguras"]
+    "tags": [
+      "segurança",
+      "encontro",
+      "proteção",
+      "práticas seguras"
+    ]
   },
   {
     "id": "safety-guide-3",
@@ -145,7 +245,13 @@
     "type": "faq",
     "title": "Posso bloquear um Ajudante ou Requisitante?",
     "content": "Sim. Vá ao perfil da pessoa e clique em 'Bloquear Utilizador'. Essa pessoa não o verá nem poderá enviar-lhe mensagens.",
-    "tags": ["bloquear", "bloquear ajudante", "privacidade", "assédio", "bloquear requisitante"]
+    "tags": [
+      "bloquear",
+      "bloquear ajudante",
+      "privacidade",
+      "assédio",
+      "bloquear requisitante"
+    ]
   },
   {
     "id": "safety-guide-4",
@@ -153,7 +259,13 @@
     "type": "faq",
     "title": "E se algo for danificado durante uma tarefa?",
     "content": "Documente com fotografias, contacte a outra parte e envolva o suporte se necessário.",
-    "tags": ["danos", "danos materiais", "estragos", "seguro", "reclamação"]
+    "tags": [
+      "danos",
+      "danos materiais",
+      "estragos",
+      "seguro",
+      "reclamação"
+    ]
   },
   {
     "id": "platform-technical-1",
@@ -161,7 +273,12 @@
     "type": "faq",
     "title": "Posso eliminar a minha conta do Taskorilla?",
     "content": "Sim, mas note que o histórico de tarefas concluídas pode permanecer para efeitos de registo.",
-    "tags": ["eliminar conta", "encerrar conta", "remover conta", "desativar"]
+    "tags": [
+      "eliminar conta",
+      "encerrar conta",
+      "remover conta",
+      "desativar"
+    ]
   },
   {
     "id": "platform-technical-2",
@@ -169,7 +286,13 @@
     "type": "faq",
     "title": "Porque não consigo publicar ou aceitar uma tarefa?",
     "content": "Verifique se a sua conta está verificada e se não foi suspensa por algum motivo.",
-    "tags": ["não consigo publicar", "não consigo aceitar", "problema de conta", "suspenso", "verificação"]
+    "tags": [
+      "não consigo publicar",
+      "não consigo aceitar",
+      "problema de conta",
+      "suspenso",
+      "verificação"
+    ]
   },
   {
     "id": "platform-technical-3",
@@ -177,7 +300,12 @@
     "type": "faq",
     "title": "Como redefino a minha palavra-passe?",
     "content": "Clique em 'Esqueci a Palavra-passe', introduza o seu email e siga o link que enviamos.",
-    "tags": ["redefinir palavra-passe", "esqueci palavra-passe", "alterar palavra-passe", "recuperar palavra-passe"]
+    "tags": [
+      "redefinir palavra-passe",
+      "esqueci palavra-passe",
+      "alterar palavra-passe",
+      "recuperar palavra-passe"
+    ]
   },
   {
     "id": "platform-technical-4",
@@ -185,7 +313,12 @@
     "type": "faq",
     "title": "Porque não estou a ver certas tarefas?",
     "content": "As tarefas são mostradas com base na localização, competências e disponibilidade. Atualize o seu perfil para melhores correspondências.",
-    "tags": ["sem tarefas", "tarefas em falta", "visibilidade de tarefas", "correspondência de tarefas"]
+    "tags": [
+      "sem tarefas",
+      "tarefas em falta",
+      "visibilidade de tarefas",
+      "correspondência de tarefas"
+    ]
   },
   {
     "id": "platform-technical-5",
@@ -193,7 +326,13 @@
     "type": "faq",
     "title": "Como contacto o suporte?",
     "content": "Use o formulário 'Contactar Suporte' no Centro de Ajuda. Normalmente respondemos dentro de 24 horas.",
-    "tags": ["contacto", "suporte", "ajuda", "serviço ao cliente", "assistência"]
+    "tags": [
+      "contacto",
+      "suporte",
+      "ajuda",
+      "serviço ao cliente",
+      "assistência"
+    ]
   },
   {
     "id": "guide-getting-started",
@@ -201,7 +340,13 @@
     "type": "guide",
     "title": "Começar a Usar o Taskorilla",
     "content": "**Passo 1: Registar**\n\nClique em 'Registar', introduza o seu email, crie uma palavra-passe e confirme. Receberá um email de confirmação, clique no link para verificar a sua conta.\n\n**Passo 2: Verificar a Sua Conta (Opcional mas Recomendado)**\n\nVerificar a sua identidade ajuda a construir confiança com outros utilizadores e desbloqueia tarefas de maior valor. Vá a 'O Meu Perfil' e carregue uma foto de identificação.\n\n**Passo 3: Configurar o Seu Perfil**\n\nAdicione uma foto de perfil, liste as suas competências (se planeia ser Ajudante) e escreva uma breve biografia. Um perfil completo torna-o mais confiável e ajuda-o a ser correspondido com as tarefas certas.\n\n**Passo 4: Explorar Tarefas ou Publicar uma Tarefa**\n\nDecida se quer publicar uma tarefa (se precisa de ajuda) ou explorar tarefas (se quer ganhar dinheiro como Ajudante). Clique em 'Publicar Tarefa' ou 'Explorar Tarefas' no menu principal.\n\n**Passo 5: Verificar Notificações**\n\nAcompanhe mensagens, propostas e atualizações de tarefas através do seu painel e notificações por email. Mantenha-se responsivo para construir uma boa reputação!",
-    "tags": ["primeiros passos", "configuração", "guia para iniciantes", "como começar", "tutorial"]
+    "tags": [
+      "primeiros passos",
+      "configuração",
+      "guia para iniciantes",
+      "como começar",
+      "tutorial"
+    ]
   },
   {
     "id": "guide-posting-tasks",
@@ -209,7 +354,17 @@
     "type": "guide",
     "title": "Como Publicar uma Tarefa",
     "content": "**Passo 1: Aceder a Publicar Tarefa**\n\nClique no botão 'Publicar Nova Tarefa' na barra de navegação ou na página Explorar Tarefas. Será direcionado para o formulário de criação de tarefa.\n\n**Passo 2: Escolha o Tipo de Formulário**\n\nVerá duas opções no topo:\n\n• Formulário Rápido — Um formulário simplificado, ideal para tarefas simples. Basta responder às perguntas e será guiado automaticamente.\n\n• Formulário Completo — O formulário completo com todas as opções, ideal para tarefas detalhadas. Os passos abaixo descrevem o Formulário Completo.\n\n**Passo 3: Selecione o Tipo de Ajuda**\n\nEscolha uma das opções:\n\n• Contratar um Ajudante — Para tarefas gerais como limpeza, mudanças, recados ou trabalhos manuais.\n\n• Contratar um Profissional — Para trabalho especializado como assessoria jurídica, contabilidade, terapia ou marketing.\n\n**Passo 4: Preencha os Detalhes da Tarefa**\n\n• Título da Tarefa (obrigatório) — Um nome curto e claro, ex: 'Preciso de ajuda para mudar móveis'.\n\n• Descrição (obrigatório) — Uma explicação detalhada do que precisa ser feito.\n\n• Imagens da Tarefa (opcional) — Carregue fotos para ajudar os ajudantes a compreender a tarefa.\n\n• Orçamento (opcional) — O seu orçamento em euros. Deixe em branco e os ajudantes enviarão orçamentos.\n\n• Categoria (opcional) — Escolha a categoria mais adequada, ex: Casa & Jardim, Negócios.\n\n• Subcategoria (opcional) — Aparece após selecionar uma categoria para maior precisão.\n\n• Etiquetas (opcional) — Palavras-chave para ajudar a encontrar a sua tarefa. Prima Enter após cada etiqueta.\n\n• Competências Necessárias (opcional) — Competências específicas necessárias. Prima Enter após cada uma.\n\n• Funções Profissionais (opcional) — Apenas para tarefas Profissionais. Selecione funções como Contabilista, Advogado, etc.\n\n**Passo 5: Defina a Sua Localização**\n\n• País (obrigatório) — Selecione no menu. É preenchido automaticamente a partir do seu perfil.\n\n• Código Postal — Introduza o seu código postal e o sistema deteta automaticamente a localização.\n\n• Localização — O seu bairro ou cidade. É preenchido automaticamente pelo código postal, ou pode escrever manualmente.\n\n**Passo 6: Defina a Data Limite**\n\nEscolha quando precisa que a tarefa seja concluída. Por defeito é a data de hoje.\n\n**Passo 7: Publique a Sua Tarefa**\n\nClique em 'Publicar Tarefa'. Se não estiver ligado, será solicitado que faça login primeiro — o seu rascunho é guardado automaticamente para não perder nenhum detalhe.\n\n**O Que Acontece a Seguir?**\n\n1. A sua tarefa fica ativa e aparece em Explorar Tarefas para os ajudantes verem.\n\n2. Os ajudantes na sua área podem submeter propostas com o preço e uma mensagem.\n\n3. Será notificado quando chegarem propostas.\n\n4. Reveja as propostas, consulte os perfis e avaliações dos ajudantes, e aceite a melhor.\n\n5. Complete o pagamento — o ajudante só é informado para começar o trabalho após a confirmação do pagamento.\n\n6. Após o pagamento, o filtro de contacto é levantado na sua conversa — pode agora partilhar números de telefone, email, WhatsApp ou outros detalhes de contacto diretamente com o ajudante. Antes do pagamento, as informações de contacto são bloqueadas nas mensagens para a segurança de todos.\n\n7. Quando o ajudante concluir o trabalho, pode avaliá-lo.\n\n**Solicitar um Ajudante Específico (Um-para-Um)**\n\nSe encontrou um ajudante que gosta na página de Ajudantes ou Profissionais, vá ao perfil dele e clique em 'Solicitar Este Ajudante'. O formulário será preenchido com o nome e ofertas dele. Escolha uma competência ou oferta da lista, ou escreva a sua. Preencha os restantes detalhes e publique. A tarefa será enviada diretamente a esse ajudante.",
-    "tags": ["publicar tarefa", "criar tarefa", "guia de publicação", "como publicar", "nova tarefa", "formulário rápido", "formulário completo", "ajudante", "profissional"]
+    "tags": [
+      "publicar tarefa",
+      "criar tarefa",
+      "guia de publicação",
+      "como publicar",
+      "nova tarefa",
+      "formulário rápido",
+      "formulário completo",
+      "ajudante",
+      "profissional"
+    ]
   },
   {
     "id": "guide-one-to-one-request",
@@ -217,7 +372,14 @@
     "type": "guide",
     "title": "Como Solicitar um Ajudante Específico (Um-para-Um)",
     "content": "**O Que é um Pedido Um-para-Um?**\n\nUm pedido um-para-um permite-lhe enviar uma tarefa diretamente a um ajudante ou profissional específico. Apenas você e esse ajudante podem ver a tarefa — é privada e não é visível para outros utilizadores ou para o público.\n\n**Passo 1: Encontre o Ajudante Que Deseja**\n\nExplore a página de Ajudantes ou Profissionais, ou pesquise por nome, competência ou serviço. Também pode descobrir ajudantes através de avaliações, críticas ou perfis em destaque.\n\n**Passo 2: Visite o Perfil**\n\nClique no nome ou avatar do ajudante para abrir o perfil completo. Verá as competências, serviços oferecidos, avaliações, taxa horária e ofertas profissionais.\n\n**Passo 3: Clique em 'Enviar Pedido'**\n\nNo perfil, clique no botão 'Enviar Pedido'. Se o ajudante tem ofertas ou competências listadas, pode clicar diretamente numa delas — isso pré-seleciona essa oferta para o seu pedido.\n\n**Passo 4: O Formulário Abre Pré-Preenchido**\n\nSerá direcionado para o formulário de criação de tarefa com:\n\n• O nome e avatar do ajudante mostrados no topo numa caixa destacada.\n\n• Um campo 'Foco deste pedido' — pré-preenchido com a oferta que clicou, ou escreva o seu.\n\n• O título da tarefa gerado automaticamente (ex: 'Branding com António').\n\n• A descrição gerada automaticamente com uma mensagem personalizada sobre disponibilidade e preço.\n\n• Se o ajudante tem múltiplas ofertas, pode clicar em diferentes pílulas de competência/oferta para mudar — o título e descrição atualizam automaticamente.\n\n**Passo 5: Preencha os Restantes Detalhes**\n\n• Ajuste o título e descrição se necessário.\n\n• Defina o seu país e código postal (preenchidos automaticamente do seu perfil).\n\n• Defina uma data limite.\n\n• Opcionalmente defina um orçamento — ou deixe em branco para receber um orçamento do ajudante.\n\nNota: Imagens, categorias, etiquetas e campos de competências estão ocultos para pedidos um-para-um, pois a tarefa é personalizada para uma pessoa específica.\n\n**Passo 6: Publique a Tarefa**\n\nClique em 'Publicar Tarefa'. O seguinte acontece:\n\n1. A tarefa é criada como uma tarefa privada atribuída a esse ajudante.\n\n2. Uma conversa é criada automaticamente entre si e o ajudante.\n\n3. Uma mensagem é enviada nessa conversa com um link para a tarefa.\n\n4. O ajudante recebe uma notificação por email sobre o novo pedido.\n\n**Passo 7: Aguarde o Orçamento**\n\nSe deixou o orçamento em branco, verá uma mensagem na página da tarefa: 'A aguardar que [nome do ajudante] submeta um orçamento.' O ajudante irá submeter uma proposta com o preço e mensagem.\n\n**Passo 8: Aceite a Proposta e Pague**\n\nQuando o ajudante submeter o orçamento, pode aceitá-lo. O pagamento é necessário antes do ajudante ser informado para começar o trabalho.\n\n**Passo 9: Comunique Livremente Após o Pagamento**\n\nApós a confirmação do pagamento, o filtro de informações de contacto é levantado na sua conversa com o ajudante. Pode agora partilhar números de telefone, endereços de email, detalhes de WhatsApp ou qualquer outra informação de contacto diretamente no chat. Isto é especialmente útil para:\n\n• Marcar uma primeira sessão com um terapeuta ou coach.\n\n• Coordenar um contrato grande onde a comunicação contínua é necessária.\n\n• Pagar um depósito para um projeto maior e depois organizar os detalhes diretamente.\n\nAntes do pagamento, os detalhes de contacto são bloqueados para a segurança de todos. Após o pagamento, são livres de comunicar da forma que funcionar melhor para ambos.\n\n**Opcional: Abrir a Todos os Ajudantes**\n\nSe o ajudante não responder ou mudar de ideias, pode clicar em 'Abrir a todos os ajudantes' na página da tarefa. Isto remove a atribuição e torna a tarefa visível para todos. Será avisado que o título e descrição podem precisar de edição, pois foram escritos para uma pessoa específica.\n\n**Opcional: Remover o Ajudante**\n\nEnquanto cria a tarefa, pode clicar em 'Remover ajudante' a qualquer momento para limpar a atribuição e mudar para uma tarefa pública normal.",
-    "tags": ["um-para-um", "solicitar ajudante", "pedido direto", "ajudante específico", "enviar pedido", "tarefa privada"]
+    "tags": [
+      "um-para-um",
+      "solicitar ajudante",
+      "pedido direto",
+      "ajudante específico",
+      "enviar pedido",
+      "tarefa privada"
+    ]
   },
   {
     "id": "guide-accept-one-to-one",
@@ -225,7 +387,15 @@
     "type": "guide",
     "title": "Como Aceitar uma Oferta Um-para-Um",
     "content": "**O Que é uma Oferta Um-para-Um?**\n\nQuando um requisitante o solicita diretamente, receberá uma tarefa privada que apenas você e o requisitante podem ver. Pode aceitá-la submetendo uma proposta, ou simplesmente não responder se não estiver interessado.\n\n**Passo 1: Recebe uma Notificação**\n\nQuando alguém lhe envia um pedido um-para-um, receberá:\n\n• Uma notificação por email com detalhes sobre o novo pedido de tarefa.\n\n• Uma nova mensagem nas suas Conversas com um link para a tarefa.\n\n• A tarefa aparecerá no filtro 'As Minhas Tarefas' na página Explorar Tarefas.\n\n**Passo 2: Reveja a Tarefa**\n\nClique no link do email ou mensagem para ver os detalhes completos da tarefa. Verá:\n\n• O que o requisitante precisa (título e descrição).\n\n• A localização e data limite.\n\n• Se definiram um orçamento ou estão a pedir um orçamento seu.\n\n**Passo 3: Submeta a Sua Proposta (Orçamento)**\n\nSe o requisitante deixou o orçamento em branco, verá uma mensagem: 'Submeta o seu orçamento (valor e mensagem) para que o requisitante possa aceitar e pagar.'\n\nDesça até à secção de Propostas e:\n\n1. Introduza o seu preço — o valor que cobraria pela tarefa.\n\n2. Escreva uma mensagem — confirme a sua disponibilidade, mencione qualquer preparação necessária e forneça detalhes relevantes.\n\n3. Clique em 'Submeter Proposta'.\n\nSe o requisitante já definiu um orçamento, ainda pode submeter uma proposta com o seu próprio preço e mensagem.\n\n**Passo 4: Aguarde Aceitação e Pagamento**\n\nApós submeter a sua proposta:\n\n1. O requisitante revê o seu orçamento.\n\n2. Se aceitarem, a tarefa muda para o estado 'A Aguardar Pagamento'.\n\n3. Receberá um email: 'A sua proposta foi selecionada — a aguardar confirmação de pagamento.'\n\n4. Não comece o trabalho ainda — aguarde a confirmação do pagamento.\n\n**Passo 5: Pagamento Confirmado — Comece o Trabalho**\n\nQuando o requisitante completar o pagamento:\n\n1. A tarefa muda para o estado 'Em Progresso'.\n\n2. Recebe um segundo email: 'Pagamento confirmado — pode começar!'\n\n3. Agora pode começar a trabalhar na tarefa.\n\n4. O filtro de informações de contacto é levantado — você e o requisitante podem agora partilhar números de telefone, email, WhatsApp ou quaisquer outros detalhes de contacto diretamente na conversa. Isto é útil para coordenar sessões (ex: terapia ou coaching), organizar reuniões para contratos maiores, ou simplesmente comunicar da forma que funcionar melhor.\n\n**Passo 6: Acompanhe o Progresso e Conclua**\n\n• Adicione atualizações de progresso na página da tarefa para manter o requisitante informado.\n\n• Carregue fotos de progresso se relevante.\n\n• Quando terminar, clique em 'Marcar como Concluída'.\n\n• Carregue uma foto de conclusão se solicitado.\n\n**Passo 7: Receba o Pagamento e Avaliação**\n\nQuando o requisitante confirmar a conclusão:\n\n1. O pagamento é libertado para a sua conta PayPal (menos a taxa da plataforma).\n\n2. O requisitante pode deixar uma avaliação e classificação.\n\n3. Depois do requisitante o avaliar, pode avaliá-lo de volta.\n\n**E Se Não Quiser a Tarefa?**\n\nNão é obrigado a aceitar. Pode simplesmente:\n\n• Não submeter uma proposta — o requisitante verá que não houve resposta.\n\n• Enviar mensagem ao requisitante através da conversa para explicar ou negociar.\n\n• Após 48 horas sem atividade, o requisitante pode optar por abrir a tarefa a todos os ajudantes.",
-    "tags": ["um-para-um", "aceitar oferta", "pedido direto", "proposta ajudante", "orçamento", "tarefa privada", "responder a pedido"]
+    "tags": [
+      "um-para-um",
+      "aceitar oferta",
+      "pedido direto",
+      "proposta ajudante",
+      "orçamento",
+      "tarefa privada",
+      "responder a pedido"
+    ]
   },
   {
     "id": "guide-being-tasker",
@@ -233,7 +403,13 @@
     "type": "guide",
     "title": "Trabalhar como Ajudante",
     "content": "**Passo 1: Complete o Seu Perfil de Ajudante**\n\nApós registar-se, complete o seu perfil de Ajudante. Adicione as suas competências, experiência, disponibilidade, taxa horária e quaisquer ferramentas/equipamentos que tenha. Carregue uma foto de perfil, cria confiança!\n\n**Passo 2: Explorar Tarefas Disponíveis**\n\nVá a 'Explorar Tarefas' para ver tarefas perto de si que correspondem às suas competências. Use filtros para refinar por categoria, distância ou orçamento.\n\n**Passo 3: Submeter uma Proposta**\n\nEncontrou uma tarefa que consegue fazer? Clique em 'Submeter Proposta', explique porque é uma boa escolha e confirme a sua disponibilidade. Seja claro e profissional.\n\n**Passo 4: Comunicar com o Requisitante**\n\nSe a sua proposta for aceite, receberá uma notificação. Envie mensagem ao requisitante para confirmar detalhes, horário e quaisquer requisitos especiais.\n\nImportante: Antes da confirmação do pagamento, as informações de contacto (números de telefone, endereços de email, etc.) são bloqueadas nas mensagens para a segurança de todos. Quando o requisitante completar o pagamento, o filtro é levantado e pode partilhar livremente os detalhes de contacto na conversa.\n\n**Passo 5: Completar a Tarefa**\n\nApareça a horas, faça um bom trabalho e siga as instruções do requisitante. Tire fotografias do seu trabalho se necessário, ajuda com disputas e constrói a sua reputação.\n\n**Passo 6: Marcar como Concluída**\n\nQuando terminar, clique em 'Marcar como Concluída' no seu painel. O requisitante irá confirmar e receberá o pagamento automaticamente.\n\n**Passo 7: Construir a Sua Reputação**\n\nPeça avaliações após cada tarefa. Uma avaliação alta e feedback positivo significam mais trabalhos e melhor pagamento!",
-    "tags": ["guia do ajudante", "tornar-se ajudante", "trabalhar como ajudante", "ganhar dinheiro", "tutorial de ajudante"]
+    "tags": [
+      "guia do ajudante",
+      "tornar-se ajudante",
+      "trabalhar como ajudante",
+      "ganhar dinheiro",
+      "tutorial de ajudante"
+    ]
   },
   {
     "id": "guide-payments",
@@ -241,7 +417,14 @@
     "type": "guide",
     "title": "Compreender os Pagamentos no Taskorilla",
     "content": "**Passo 1: Adicionar o Seu Método de Pagamento**\n\nVá ao Perfil > Adicione o seu email PayPal. Isto permite-lhe receber pagamentos facilmente como Ajudante ou Profissional. Ainda não tem conta PayPal? Crie uma [aqui](https://www.paypal.com/signup) e fique operacional em minutos.\n\n**Passo 2: Compreender as Taxas**\n\nO Taskorilla cobra uma pequena taxa de serviço em cada transação. Desde dezembro de 2025, as taxas são €2 por tarefa do requisitante e 10% do Ajudante/Profissional.\n\n**Passo 3: Fazer ou Receber Pagamento**\n\n**Para Requisitantes:** Quando aceita uma proposta, será solicitado a pagar de forma segura através da nossa plataforma. Os fundos são retidos até a tarefa ser confirmada como concluída.\n\n**Para Ajudantes:** Quando uma tarefa é marcada como concluída e confirmada pelo requisitante, o pagamento é libertado automaticamente para a sua conta.\n\n**Passo 4: Acompanhar os Seus Pagamentos**\n\nConsulte o seu painel para histórico de pagamentos, pagamentos pendentes e transações concluídas. Receberá confirmações por email para cada pagamento.\n\n**Passo 5: Levantamentos (para Ajudantes e Profissionais)**\n\nOs pagamentos são transferidos automaticamente para a sua conta associada após a confirmação da tarefa.",
-    "tags": ["guia de pagamento", "como pagar", "receber pagamento", "processo de pagamento", "taxas", "levantamento"]
+    "tags": [
+      "guia de pagamento",
+      "como pagar",
+      "receber pagamento",
+      "processo de pagamento",
+      "taxas",
+      "levantamento"
+    ]
   },
   {
     "id": "guide-safety",
@@ -249,7 +432,14 @@
     "type": "guide",
     "title": "Manter-se Seguro no Taskorilla",
     "content": "**Passo 1: Verificar Perfis Antes de Trabalhar Juntos**\n\nVerifique sempre o perfil, avaliações e estado de verificação de um utilizador antes de aceitar ou atribuir uma tarefa. Utilizadores verificados com boas avaliações são mais confiáveis.\n\n**Passo 2: Encontrar-se em Espaços Públicos Quando Possível**\n\nPara tarefas que não requerem estar na casa de alguém (como entregas ou mudanças), combine encontrar-se primeiro num local público.\n\n**Passo 3: Comunicar Claramente Através da Plataforma**\n\nUse o sistema de mensagens do Taskorilla para toda a comunicação. Isto mantém um registo e ajuda a resolver disputas. Nunca partilhe informações de contacto pessoais como números de telefone ou emails no início.\n\n**Passo 4: Proteger as Suas Informações Pessoais**\n\nNão partilhe demasiado. O seu perfil deve incluir o suficiente para construir confiança, mas não detalhes sensíveis como a sua morada completa, informações bancárias ou números de identificação pessoal.\n\n**Passo 5: Documentar Tudo**\n\nTire fotografias antes e depois de completar uma tarefa. Isto protege ambas as partes em caso de reclamações de danos ou disputas sobre a qualidade do trabalho.\n\n**Passo 6: Confie nos Seus Instintos**\n\nSe algo parecer estranho, provavelmente é. Não prossiga com uma tarefa se se sentir desconfortável. Pode sempre cancelar e reportar comportamento suspeito.\n\n**Passo 7: Reportar Problemas Imediatamente**\n\nSe alguém o estiver a assediar, a agir de forma suspeita ou a violar as regras da plataforma, use o botão 'Reportar' no perfil dessa pessoa. Levamos a segurança a sério e investigaremos prontamente.\n\n**Passo 8: Rever Dicas de Segurança Regularmente**\n\nConsulte o nosso Centro de Ajuda para diretrizes de segurança atualizadas. Mantenha-se informado sobre fraudes comuns e como evitá-las.",
-    "tags": ["guia de segurança", "manter-se seguro", "proteção", "dicas de segurança", "proteger-se", "confiança"]
+    "tags": [
+      "guia de segurança",
+      "manter-se seguro",
+      "proteção",
+      "dicas de segurança",
+      "proteger-se",
+      "confiança"
+    ]
   },
   {
     "id": "guide-marketplace-safety",
@@ -257,7 +447,14 @@
     "type": "guide",
     "title": "Diretrizes de Segurança do Marketplace",
     "content": "**Última Atualização: 17 de novembro de 2025**\n\nO Taskorilla não verifica todos os utilizadores, supervisiona tarefas ou garante que cada experiência será segura. Use sempre precaução.\n\n**Dicas de Segurança**\n\n- Encontre-se em locais públicos sempre que possível.\n- Evite tarefas que pareçam arriscadas ou inseguras.\n- Confie nos seus instintos — afaste-se se algo parecer estranho.\n- Evite partilhar dados de contacto pessoais até se sentir confortável.\n- Reporte comportamento suspeito imediatamente dentro da plataforma.\n\n**Restrições da Plataforma**\n\nO Taskorilla não permite tarefas ilegais, atividades perigosas, comportamento ofensivo ou tentativas de mover conversas para fora da plataforma para evitar as nossas regras.\n\n**Situações de Emergência**\n\nSe alguma vez se sentir inseguro, contacte as autoridades locais imediatamente. O Taskorilla não é um serviço de emergência.",
-    "tags": ["segurança", "diretrizes", "marketplace", "reportar", "restrições", "emergência"]
+    "tags": [
+      "segurança",
+      "diretrizes",
+      "marketplace",
+      "reportar",
+      "restrições",
+      "emergência"
+    ]
   },
   {
     "id": "guide-disputes-refunds",
@@ -265,7 +462,14 @@
     "type": "guide",
     "title": "Disputas e Reembolsos",
     "content": "**Última Atualização: 17 de novembro de 2025**\n\nO Taskorilla não é parte nos acordos entre Requisitantes e Ajudantes. Quaisquer disputas devem ser tratadas diretamente entre esses dois utilizadores.\n\nO Taskorilla não fornece reembolsos para pagamentos de tarefas, a menos que haja um erro confirmado da plataforma, como uma cobrança duplicada causada pela própria plataforma.\n\nNão mediamos desacordos, garantimos resultados ou compensamos utilizadores por tarefas incompletas, insatisfação ou desacordos entre Requisitantes e Ajudantes.",
-    "tags": ["disputas", "reembolsos", "pagamentos", "política", "suporte", "regras da plataforma"]
+    "tags": [
+      "disputas",
+      "reembolsos",
+      "pagamentos",
+      "política",
+      "suporte",
+      "regras da plataforma"
+    ]
   },
   {
     "id": "guide-gdpr-addon",
@@ -273,8 +477,30 @@
     "type": "guide",
     "title": "Adenda de Processamento de Dados RGPD",
     "content": "**Última Atualização: 17 de novembro de 2025**\n\nEsta adenda aplica-se a utilizadores no Espaço Económico Europeu (EEE) e no Reino Unido.\n\n**Responsável pelo Tratamento de Dados**\n\nO Taskorilla é o responsável pelo tratamento das informações que fornece através da plataforma.\n\n**Os Seus Direitos ao Abrigo do RGPD**\n\nPode solicitar acesso, correção, eliminação, restrição de processamento, portabilidade de dados ou retirada de consentimento. Contacte-nos para exercer estes direitos.\n\n**Transferências de Dados**\n\nPodemos transferir dados para fora do EEE ou Reino Unido usando salvaguardas legalmente reconhecidas, como Cláusulas Contratuais-Tipo.\n\n**Obrigações**\n\nNão carregue informações sobre terceiros sem a sua permissão.",
-    "tags": ["RGPD", "dados", "privacidade", "EEE", "Reino Unido", "legal"]
+    "tags": [
+      "RGPD",
+      "dados",
+      "privacidade",
+      "EEE",
+      "Reino Unido",
+      "legal"
+    ]
+  },
+  {
+    "id": "guide-handyman-prices-portugal",
+    "category": "Publicar Tarefas",
+    "type": "guide",
+    "title": "Preços de Canalização e Bricolage em Portugal (Guia 2026)",
+    "content": "Quer saber quanto custa um canalizador ou bricolage em Portugal? Os preços variam consoante o trabalho, a localização e a experiência do ajudante. Este guia dá-lhe uma ideia realista do que pode pagar por tarefas domésticas comuns no Algarve e em Portugal.\n\n**1. Canalização e Bricolage**\n\n| Tarefa | Preço típico |\n| --- | --- |\n| Arranjar torneira a pingar | 40 € – 90 € |\n| Substituir torneira da casa de banho | 50 € – 120 € |\n| Desentupir lava-louças / ralo | 40 € – 90 € |\n| Arranjar sanita a correr | 50 € – 110 € |\n| Instalar chuveiro / mangueira de duche | 40 € – 90 € |\n| Substituir válvulas do duche | 80 € – 160 € |\n| Arranjar fuga de esquentador / caldeira | 80 € – 200 € |\n| Reparar ou substituir lava-louças | 60 € – 150 € |\n| Instalar máquina de lavar / lava-louças | 50 € – 120 € |\n| Reparar torneira do jardim / exterior | 40 € – 90 € |\n| Substituir ralo do lavatório | 30 € – 70 € |\n| Instalar nova barra para cortina de duche | 30 € – 60 € |\n| Substituir assento da sanita | 20 € – 50 € |\n| Substituir torneiras / cartuchos | 25 € – 60 € |\n| Arranjar radiador a pingar | 50 € – 120 € |\n| Instalar acessórios de casa de banho (toalheiro, suporte de papel) | 30 € – 80 € |\n| Instalar ou substituir filtro de água | 40 € – 90 € |\n| Reparar fechadura da porta | 40 € – 90 € |\n| Substituir azulejos partidos | 50 € – 150 € |\n| Pequena reparação de tubos (tubos visíveis) | 50 € – 120 € |\n| Vedar cantos da casa de banho / silicone | 40 € – 80 € |\n| Arranjar porta do duche / dobradiça | 50 € – 120 € |\n| Substituir espelho da casa de banho | 30 € – 80 € |\n| Reparar mecanismo de descarga da sanita | 40 € – 90 € |\n| Instalar pequeno móvel de lavatório | 50 € – 120 € |\n| Instalar esquentador de passagem / aquecedor | 60 € – 150 € |\n| Substituir peças do autoclismo | 50 € – 110 € |\n| Arranjar tubo a pingar sob o lava-louças | 40 € – 90 € |\n| Ajustar pressão da água / torneiras | 30 € – 80 € |\n| Instalar bidé / aspersor de bidé | 50 € – 120 € |\n| Substituir mangueiras flexíveis | 30 € – 70 € |\n| Instalar cabinete de duche | 80 € – 200 € |\n| Reparar duche entupido | 50 € – 120 € |\n| Substituir ventilador da casa de banho | 40 € – 100 € |\n\n**2. Montagem de Móveis / Instalação Interior**\n\n| Tarefa | Preço típico |\n| --- | --- |\n| Montar roupeiro IKEA | 50 € – 120 € |\n| Montar cama IKEA | 50 € – 120 € |\n| Montar secretária IKEA | 40 € – 100 € |\n| Montar armários de cozinha IKEA | 80 € – 200 € |\n| Montar prateleiras em kit | 40 € – 90 € |\n| Montar mesa de jantar | 50 € – 120 € |\n| Montar cadeiras (por cadeira) | 15 € – 40 € |\n| Instalar ferragens de móveis (puxadores, dobradiças) | 30 € – 80 € |\n| Montar cabides | 20 € – 50 € |\n| Montar suporte de TV | 40 € – 90 € |\n| Montar mesa de café | 30 € – 80 € |\n| Montar aparador / bufete | 50 € – 120 € |\n| Instalar portas corrediças | 60 € – 150 € |\n| Montar unidades de prateleiras modulares | 50 € – 120 € |\n| Instalar gavetas modulares de armário | 40 € – 100 € |\n| Montar mesas de cabeceira pequenas | 20 € – 60 € |\n| Montar unidades de arrumo de jardim | 50 € – 120 € |\n| Instalar ilha de cozinha em kit | 80 € – 200 € |\n| Montar sofá modular | 70 € – 160 € |\n| Montar beliche | 60 € – 140 € |\n| Montar portas de roupeiro | 40 € – 100 € |\n| Montar sapateira / banco de arrumo | 30 € – 80 € |\n| Montar armários de parede | 50 € – 120 € |\n| Instalar puxadores pequenos de armário | 20 € – 50 € |\n| Montar armários de escritório | 50 € – 120 € |\n| Montar estante / unidades de biblioteca | 50 € – 120 € |\n| Montar armário de casa de banho | 40 € – 90 € |\n| Instalar cama de parede / cama Murphy | 120 € – 250 € |\n| Instalar prateleiras à medida | 70 € – 160 € |\n| Montar móvel de TV / consola de media | 50 € – 120 € |\n\n**3. Elétrico / Tech**\n\n| Tarefa | Preço típico |\n| --- | --- |\n| Montar TV na parede | 40 € – 100 € |\n| Esconder cabos da TV | 50 € – 120 € |\n| Instalar ventilador de teto | 70 € – 160 € |\n| Instalar candeeiros | 40 € – 100 € |\n| Substituir tomadas / interruptores | 40 € – 90 € |\n| Instalar luzes exteriores | 60 € – 150 € |\n| Montar escritório em casa (secretária + cabos) | 50 € – 120 € |\n| Instalar dispositivos de casa inteligente (Alexa, tomadas inteligentes) | 50 € – 120 € |\n| Instalar router / extensão WiFi | 40 € – 90 € |\n| Instalar luzes com sensor de movimento | 60 € – 140 € |\n| Substituir interruptor partido | 30 € – 70 € |\n| Instalar tomada exterior | 50 € – 120 € |\n| Instalar spot de teto | 60 € – 150 € |\n| Instalar iluminação sob os armários da cozinha | 50 € – 120 € |\n| Montar projetor | 70 € – 160 € |\n| Instalar sensor de alarme / câmara de segurança | 60 € – 150 € |\n| Instalar interfone | 70 € – 160 € |\n| Configurar termóstato inteligente | 50 € – 120 € |\n| Configurar sistema WiFi mesh | 50 € – 120 € |\n| Montar colunas / home theatre | 60 € – 150 € |\n| Instalar dimmers de luz | 40 € – 90 € |\n| Substituir fusível / quadro elétrico | 80 € – 200 € |\n| Instalar campainha / campainha inteligente | 40 € – 100 € |\n| Instalar detetor de fumo / CO | 30 € – 80 € |\n| Instalar hub de domótica | 60 € – 150 € |\n| Instalar cabos de rede / tomadas ethernet | 50 € – 120 € |\n| Instalar portão elétrico / citofonia | 100 € – 250 € |\n| Substituir tubos fluorescentes / painéis LED | 30 € – 70 € |\n| Instalar holofotes exteriores | 60 € – 150 € |\n| Instalar termóstato de aquecimento por piso radiante | 80 € – 180 € |\n\n**4. Pintura / Decoração**\n\n| Tarefa | Preço típico |\n| --- | --- |\n| Pequeno trabalho de pintura (1 parede) | 60 € – 150 € |\n| Pintar divisão completa | 150 € – 350 € |\n| Pintar teto | 80 € – 200 € |\n| Pequeno reboco / remendo de parede | 50 € – 120 € |\n| Montar prateleiras / quadros | 30 € – 80 € |\n| Instalar varões de cortinas / estores | 40 € – 90 € |\n| Papel de parede em área pequena | 80 € – 180 € |\n| Papel de parede na divisão inteira | 150 € – 400 € |\n| Montar espelhos | 30 € – 70 € |\n| Pintar rodapés | 40 € – 90 € |\n| Pintar caixilhos das janelas | 50 € – 120 € |\n| Pintar portas (uma) | 40 € – 100 € |\n| Retocar paredes riscadas | 30 € – 70 € |\n| Pintar interior do armário | 40 € – 90 € |\n| Pintar vedação ou portão | 60 € – 150 € |\n| Pintar varanda / pequeno terraço | 80 € – 180 € |\n| Acabamento decorativo de parede (área pequena) | 60 € – 150 € |\n| Aplicar revestimento protetor (cozinha / casa de banho) | 50 € – 120 € |\n| Repintar radiador | 40 € – 90 € |\n| Pintar corrimãos | 50 € – 120 € |\n| Pintar caixilhos das portas interiores | 40 € – 90 € |\n| Repintar pequeno hall | 60 € – 150 € |\n| Lixar e repintar móvel | 50 € – 120 € |\n| Vernizar portas de madeira | 40 € – 100 € |\n| Pintar vigas de madeira / teto | 80 € – 180 € |\n\n**5. Mudanças / Levantamento / Trabalho Pesado**\n\n| Tarefa | Preço típico |\n| --- | --- |\n| Ajuda a mover móveis (1–2 horas) | 50 € – 120 € |\n| Carregar / descarregar carrinha | 50 € – 120 € |\n| Empacotar / desempacotar caixas | 40 € – 100 € |\n| Montar / desmontar móveis para mudança | 50 € – 120 € |\n| Transportar objetos pesados pelas escadas | 40 € – 100 € |\n| Levantar colchão / cama | 30 € – 70 € |\n| Mover estantes / armários | 50 € – 120 € |\n| Transporte de bens a curta distância | 50 € – 130 € |\n| Ajuda a limpar sótão / cave | 50 € – 120 € |\n| Levantar e instalar espelho grande | 60 € – 150 € |\n| Ajudar a organizar a garagem | 50 € – 120 € |\n| Transportar equipamento de exterior (cortador, churrasqueira) | 50 € – 120 € |\n| Mover bicicletas ou equipamento desportivo | 30 € – 80 € |\n| Ajuda em pequenas obras (demolição / remover entulho) | 60 € – 150 € |\n| Subir máquina de lavar pelas escadas | 50 € – 120 € |\n| Mover sofá / poltrona grande | 50 € – 120 € |\n| Mover pequeno eletrodoméstico (frigorífico, lava-louças) | 50 € – 120 € |\n| Empacotar / desempacotar artigos da cozinha | 40 € – 100 € |\n| Transportar caixas pelas escadas | 30 € – 80 € |\n| Ajudar a mudar móveis em kit | 50 € – 120 € |\n\n**6. Jardim / Exterior**\n\n| Tarefa | Preço típico |\n| --- | --- |\n| Cortar relva (jardim pequeno) | 40 € – 90 € |\n| Limpeza de jardim (2–3 horas) | 60 € – 140 € |\n| Cortar sebes | 50 € – 120 € |\n| Lavar com hidrolavadora patio / entrada | 80 € – 180 € |\n| Remover folhas / ancinho | 40 € – 90 € |\n| Plantar / canteiros | 50 € – 120 € |\n| Remover árvore / arbusto pequeno | 80 € – 200 € |\n| Limpar piscina (piscina pequena) | 50 € – 120 € |\n| Podar árvores pequenas | 80 € – 180 € |\n| Plantar sebes / arbustos | 50 € – 120 € |\n| Aplicar cobertura morta em canteiros | 60 € – 130 € |\n| Colocar pedras de pavimento | 80 € – 200 € |\n| Instalar pequena vedação de jardim | 60 € – 150 € |\n| Regar jardim / instalar rega | 50 € – 120 € |\n| Limpar filtro da piscina | 40 € – 100 € |\n| Arejar relva | 60 € – 150 € |\n| Remover plantas mortas / ervas daninhas | 40 € – 90 € |\n| Lavar móveis de jardim com hidrolavadora | 40 € – 100 € |\n| Pequena reparação de deck | 70 € – 160 € |\n| Instalar comedouro de pássaros / ornamentos de jardim | 30 € – 80 € |\n| Construir compostor | 50 € – 120 € |\n| Substituir lâmpadas exteriores | 30 € – 80 € |\n| Juntar folhas com ancinho | 30 € – 70 € |\n| Plantar / moldar sebes | 50 € – 130 € |\n| Instalar treliça de jardim | 50 € – 120 € |\n| Montar barracão de jardim | 80 € – 200 € |\n| Montar pequena estufa | 100 € – 250 € |\n| Montagem de móveis de exterior | 50 € – 120 € |\n| Construir canteiros elevados | 70 € – 160 € |\n| Instalar portão de jardim / trinco | 50 € – 120 € |\n\n**7. Limpeza / Ajuda Doméstica**\n\n| Tarefa | Preço típico |\n| --- | --- |\n| Limpeza profunda cozinha / casa de banho | 60 € – 150 € |\n| Limpeza de entrada / saída de casa | 80 € – 200 € |\n| Limpar janelas (só interior) | 20 € – 60 € |\n| Limpar janelas (interior + exterior, 1–2 janelas) | 30 € – 80 € |\n| Limpar alcatifa / tapete (pequeno) | 40 € – 100 € |\n| Lavar e passar roupa | 20 € – 50 € |\n| Limpar pó / móveis | 30 € – 70 € |\n| Aspirar / lavar chão | 30 € – 80 € |\n| Limpar forno / frigorífico | 30 € – 80 € |\n| Organizar arrumos / arrumar | 50 € – 120 € |\n| Mudar lençóis / fazer camas | 20 € – 50 € |\n| Limpar ventiladores de teto | 30 € – 80 € |\n| Limpar varanda pequena | 30 € – 80 € |\n| Limpar exaustor / capô da cozinha | 30 € – 80 € |\n| Limpar debaixo dos móveis | 20 € – 60 € |\n| Limpar atrás dos eletrodomésticos | 20 € – 60 € |\n| Lavar paredes / rodapés | 40 € – 100 € |\n| Limpar móveis do pátio | 30 € – 80 € |\n| Esvaziar / limpar caixotes do lixo | 15 € – 40 € |\n| Limpar pequenos eletrodomésticos | 20 € – 60 € |\n\n**8. Organização da Casa / Tarefas Diversas**\n\n| Tarefa | Preço típico |\n| --- | --- |\n| Organizar despensa / armários da cozinha | 40 € – 100 € |\n| Montar caixas de arrumo | 20 € – 50 € |\n| Arrumar roupeiro / armário | 40 € – 100 € |\n| Montar calendário / quadro branco | 15 € – 40 € |\n| Instalar cabides / suportes | 20 € – 50 € |\n| Construir sapateira / prateleiras de arrumo | 50 € – 120 € |\n| Montar secretária de escritório / gavetas | 40 € – 100 € |\n| Instalar estendais | 30 € – 80 € |\n| Reorganizar garagem / barracão | 50 € – 120 € |\n| Instalar ganchos para bicicletas / equipamento desportivo | 30 € – 80 € |\n| Instalar tiebacks de cortinas / estores | 30 € – 80 € |\n| Montar suportes de revistas / ficheiros | 20 € – 60 € |\n| Montar pequena estante | 30 € – 80 € |\n| Montar quadros / arte na parede | 20 € – 60 € |\n| Instalar prateleiras de arrumo na casa de banho | 30 € – 80 € |\n| Montar unidades de arrumo de brinquedos / crianças | 40 € – 100 € |\n| Montar pequena mesa / secretária lateral | 30 € – 80 € |\n| Montar pequenos armários de parede | 40 € – 100 € |\n| Reorganizar móveis da sala | 50 € – 120 € |\n| Etiquetar caixas / contentores de arrumo | 15 € – 40 € |\n\n**9. Diversos / Tarefas Pontuais**\n\n| Tarefa | Preço típico |\n| --- | --- |\n| Montar roupeiro IKEA para expatriados | 50 € – 120 € |\n| Montar TV de ecrã plano em apartamento alugado | 40 € – 100 € |\n| Instalar varão de cortinas temporário | 30 € – 70 € |\n| Montar quadro branco no escritório em casa | 30 € – 80 € |\n| Ajuda com pequeno projeto de bricolage | 40 € – 120 € |\n| Entregar compras / artigos localmente | 20 € – 60 € |\n| Pequeno estafeta / recado | 20 € – 50 € |\n| Recolher / entregar móveis | 30 € – 80 € |\n| Verificação / inspeção básica de bricolage | 50 € – 120 € |\n| Ajuda a recolher e montar IKEA | 50 € – 120 € |\n| Substituir puxador de porta partido | 30 € – 80 € |\n| Arranjar porta a ranger / dobradiça | 20 € – 50 € |\n| Instalar suportes de varão de cortinas | 30 € – 80 € |\n| Ajuda a pendurar espelho pesado | 50 € – 120 € |\n| Instalar portões de bebé / animais | 40 € – 100 € |\n| Remover pequenos trastes domésticos | 50 € – 120 € |\n| Instalar suporte de TV na parede | 40 € – 100 € |\n| Instalar luzes de jardim | 60 € – 150 € |\n| Pendurar vasos de exterior | 30 € – 80 € |\n| Montar pequenos móveis de jardim | 50 € – 120 € |\n| Pequenas reparações em casa (remendo / pintura) | 40 € – 120 € |\n| Pequenos trabalhos de azulejo | 50 € – 150 € |\n| Limpar caleiras (casa pequena) | 80 € – 200 € |\n| Montar pequenas prateleiras / suportes | 30 € – 80 € |\n| Ajuda a montar decorações de festas | 30 € – 80 € |\n| Reparação básica de móveis | 40 € – 120 € |\n| Montar / desmontar estrutura de cama | 40 € – 90 € |\n| Montar armário de parede na casa de banho | 50 € – 120 € |\n| Remover / substituir estores | 40 € – 90 € |\n| Montar quadro branco ou tabuleiro de afixação | 30 € – 80 € |\n\n**O que afeta o preço?**\n\nVários fatores influenciam o que vai pagar: a dimensão do trabalho, a sua localização (ex.: cidade vs. zona rural), o tempo necessário, se o ajudante precisa de trazer ferramentas ou materiais e a urgência. Pedir vários orçamentos ajuda a ter uma noção justa.\n\n**A forma mais fácil de obter um preço**\n\nEm vez de ligar a vários canalizadores ou profissionais para orçamentos, pode simplesmente publicar a sua tarefa no Taskorilla. Ajudantes locais vão responder e pode escolher a pessoa que mais lhe convier.\n\nPublique a sua tarefa em taskorilla.com e deixe os ajudantes virem até si.",
+    "tags": [
+      "canalizador",
+      "bricolage",
+      "preços",
+      "Portugal",
+      "Algarve",
+      "guia de custos",
+      "tarefas domésticas",
+      "publicar tarefa"
+    ]
   }
 ]
-
-

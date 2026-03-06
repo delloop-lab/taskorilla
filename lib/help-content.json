@@ -6,7 +6,12 @@
     "title": "How do I create a Taskorilla account?",
     "content": "Click 'Sign Up,' enter your email, pick a password, choose between Helper, Tasker, or both, and confirm. You're ready to post or do tasks.",
     "guideSlug": "getting-started-with-taskorilla",
-    "tags": ["account", "signup", "registration", "getting started"]
+    "tags": [
+      "account",
+      "signup",
+      "registration",
+      "getting started"
+    ]
   },
   {
     "id": "getting-started-2",
@@ -14,7 +19,12 @@
     "type": "faq",
     "title": "Do I need a verified ID to start?",
     "content": "Not immediately, but verifying your ID helps build trust with other users and unlocks higher-value tasks.",
-    "tags": ["verification", "ID", "trust", "account"]
+    "tags": [
+      "verification",
+      "ID",
+      "trust",
+      "account"
+    ]
   },
   {
     "id": "getting-started-3",
@@ -22,7 +32,12 @@
     "type": "faq",
     "title": "Can I use Taskorilla on mobile?",
     "content": "Yep! Taskorilla works on mobile, just open it in your browser and add it to your home screen like an app.",
-    "tags": ["mobile", "app", "browser", "device"]
+    "tags": [
+      "mobile",
+      "app",
+      "browser",
+      "device"
+    ]
   },
   {
     "id": "getting-started-4",
@@ -30,7 +45,26 @@
     "type": "faq",
     "title": "How do I edit my profile?",
     "content": "Go to 'My Profile,' update your info, skills, or profile picture, and hit save.",
-    "tags": ["profile", "edit", "settings", "update"]
+    "tags": [
+      "profile",
+      "edit",
+      "settings",
+      "update"
+    ]
+  },
+  {
+    "id": "getting-started-5",
+    "category": "Getting Started",
+    "type": "faq",
+    "title": "Is Taskorilla the same as Task Gorilla?",
+    "content": "Yes. Many people search for Task Gorilla or Taskgorilla, but the correct name is Taskorilla. It's the place to post a task and have local helpers come to you.",
+    "tags": [
+      "task gorilla",
+      "taskgorilla",
+      "name",
+      "brand",
+      "getting started"
+    ]
   },
   {
     "id": "posting-tasks-1",
@@ -39,7 +73,12 @@
     "title": "How do I post a task?",
     "content": "Click 'Post a Task,' describe what you need, set location, time, and budget. Then hit 'Post.'",
     "guideSlug": "how-to-post-a-task",
-    "tags": ["post task", "create task", "new task", "task posting"]
+    "tags": [
+      "post task",
+      "create task",
+      "new task",
+      "task posting"
+    ]
   },
   {
     "id": "posting-tasks-2",
@@ -47,7 +86,12 @@
     "type": "faq",
     "title": "Can I edit a task after posting?",
     "content": "Yes, you can edit the description, budget, or deadline before anyone accepts it.",
-    "tags": ["edit task", "modify task", "update task", "change task"]
+    "tags": [
+      "edit task",
+      "modify task",
+      "update task",
+      "change task"
+    ]
   },
   {
     "id": "posting-tasks-3",
@@ -55,7 +99,12 @@
     "type": "faq",
     "title": "Can I cancel a task?",
     "content": "You can, but we recommend messaging any assigned Helper first. Cancellation fees may apply for confirmed tasks.",
-    "tags": ["cancel task", "delete task", "remove task", "task cancellation"]
+    "tags": [
+      "cancel task",
+      "delete task",
+      "remove task",
+      "task cancellation"
+    ]
   },
   {
     "id": "posting-tasks-4",
@@ -63,7 +112,12 @@
     "type": "faq",
     "title": "How do I find Helpers for my task?",
     "content": "Once posted, Helpers in your area get a notification. You can also browse profiles and invite them directly.\n\nWhen the Helper Task Match feature is enabled, suitable Helpers may also receive \"New task\" emails based on their skills and distance settings. This helps your task reach people who are genuinely a good fit.",
-    "tags": ["find helpers", "hire", "invite", "notifications"]
+    "tags": [
+      "find helpers",
+      "hire",
+      "invite",
+      "notifications"
+    ]
   },
   {
     "id": "tasker-guide-1",
@@ -72,7 +126,12 @@
     "title": "How do I become a Helper?",
     "content": "Sign up, complete your profile, verify your ID, and you're ready to browse tasks.",
     "guideSlug": "working-as-a-helper",
-    "tags": ["become helper", "helper signup", "join helpers", "start helping"]
+    "tags": [
+      "become helper",
+      "helper signup",
+      "join helpers",
+      "start helping"
+    ]
   },
   {
     "id": "tasker-guide-2",
@@ -80,7 +139,12 @@
     "type": "faq",
     "title": "Can I accept multiple tasks at once?",
     "content": "Yes, but only take what you can realistically complete on time.",
-    "tags": ["multiple tasks", "accept tasks", "task limit", "capacity"]
+    "tags": [
+      "multiple tasks",
+      "accept tasks",
+      "task limit",
+      "capacity"
+    ]
   },
   {
     "id": "tasker-guide-3",
@@ -88,7 +152,12 @@
     "type": "faq",
     "title": "How do I mark a task as completed?",
     "content": "Open the task in your dashboard and click 'Mark as Completed.' The poster will then confirm.",
-    "tags": ["complete task", "finish task", "mark done", "task completion"]
+    "tags": [
+      "complete task",
+      "finish task",
+      "mark done",
+      "task completion"
+    ]
   },
   {
     "id": "tasker-guide-4",
@@ -96,7 +165,12 @@
     "type": "faq",
     "title": "What if I can't finish a task?",
     "content": "Communicate with the Tasker immediately. Unfinished tasks can affect your rating.",
-    "tags": ["incomplete task", "can't finish", "task problems", "communication"]
+    "tags": [
+      "incomplete task",
+      "can't finish",
+      "task problems",
+      "communication"
+    ]
   },
   {
     "id": "tasker-guide-pricing",
@@ -104,7 +178,13 @@
     "type": "faq",
     "title": "How should I price my bid?",
     "content": "Always enter your full price in euros (including time, materials, transport, and fees) and use the Price Justification box to explain what the Tasker gets for that amount. Once a poster accepts your bid the price is locked in, so only commit to a number you are happy to honour.",
-    "tags": ["pricing", "bids", "helper", "payment", "quote"]
+    "tags": [
+      "pricing",
+      "bids",
+      "helper",
+      "payment",
+      "quote"
+    ]
   },
   {
     "id": "helper-guide-task-match-emails",
@@ -112,7 +192,14 @@
     "type": "faq",
     "title": "How do \"New task near you\" emails work?",
     "content": "Taskorilla can email you when a new task looks like a good match for you.\n\nWe decide which helpers to notify based on your skills and professions (we match the task’s tags and required skills to the skills and professions listed in your profile), and on location and distance (we use the task’s location to calculate distance). We also take into account your Preferred max distance for task matches (km) setting in your Helper Profile. The default is 100 km, and if you leave it blank we treat it as 100 km.\n\nYou will receive at most one \"New task near you\" email per task. Your email frequency setting controls when that email is sent: Instant (as soon as the task is posted and matched), Daily summary (grouped into a daily email), or Weekly summary (grouped into a weekly email). You can change both your preferred distance and email frequency anytime in My Profile → Helper Profile.",
-    "tags": ["helper emails", "task match", "notifications", "new task near you", "distance", "email frequency"]
+    "tags": [
+      "helper emails",
+      "task match",
+      "notifications",
+      "new task near you",
+      "distance",
+      "email frequency"
+    ]
   },
   {
     "id": "payment-guide-1",
@@ -121,7 +208,12 @@
     "title": "How does payment work?",
     "content": "Taskers pay through our secure system. Helpers get paid after the task is confirmed as complete.",
     "guideSlug": "understanding-payments-on-taskorilla",
-    "tags": ["payment", "how to pay", "payment process", "pay helper"]
+    "tags": [
+      "payment",
+      "how to pay",
+      "payment process",
+      "pay helper"
+    ]
   },
   {
     "id": "payment-guide-2",
@@ -129,7 +221,12 @@
     "type": "faq",
     "title": "Are there fees?",
     "content": "Yes, Taskorilla takes a small service fee from the Tasker, as of December 2025 that is €2 and we charge 10% commision to the Helper.",
-    "tags": ["fees", "service fee", "commission", "cost"]
+    "tags": [
+      "fees",
+      "service fee",
+      "commission",
+      "cost"
+    ]
   },
   {
     "id": "payment-guide-3",
@@ -137,7 +234,12 @@
     "type": "faq",
     "title": "How do I get paid?",
     "content": "Add your PayPal email. Once a task is confirmed, we transfer funds automatically. Don't have a PayPal account yet? Create one [here](https://www.paypal.com/signup) and get set up in minutes.",
-    "tags": ["get paid", "receive payment", "withdrawal", "payout"]
+    "tags": [
+      "get paid",
+      "receive payment",
+      "withdrawal",
+      "payout"
+    ]
   },
   {
     "id": "safety-guide-1",
@@ -145,7 +247,12 @@
     "type": "faq",
     "title": "How do I stay safe when meeting Helpers or Taskers?",
     "content": "Meet in public spaces when possible, verify profiles, and never share unnecessary personal info.",
-    "tags": ["safety", "meeting", "security", "safe practices"]
+    "tags": [
+      "safety",
+      "meeting",
+      "security",
+      "safe practices"
+    ]
   },
   {
     "id": "safety-guide-3",
@@ -153,7 +260,13 @@
     "type": "faq",
     "title": "Can I block a Helper or Tasker?",
     "content": "Yes. Go to their profile and click 'Block User.' They won't see or message you.",
-    "tags": ["block", "block helper", "privacy", "harassment", "block tasker"]
+    "tags": [
+      "block",
+      "block helper",
+      "privacy",
+      "harassment",
+      "block tasker"
+    ]
   },
   {
     "id": "safety-guide-4",
@@ -161,7 +274,13 @@
     "type": "faq",
     "title": "What if something gets damaged during a task?",
     "content": "Always document it with photos and contact the other party.",
-    "tags": ["damage", "property damage", "broken", "insurance", "claim"]
+    "tags": [
+      "damage",
+      "property damage",
+      "broken",
+      "insurance",
+      "claim"
+    ]
   },
   {
     "id": "platform-technical-1",
@@ -169,7 +288,12 @@
     "type": "faq",
     "title": "Can I delete my Taskorilla account?",
     "content": "Yes, but note that completed task history may remain for record-keeping.",
-    "tags": ["delete account", "close account", "remove account", "deactivate"]
+    "tags": [
+      "delete account",
+      "close account",
+      "remove account",
+      "deactivate"
+    ]
   },
   {
     "id": "platform-technical-2",
@@ -177,7 +301,13 @@
     "type": "faq",
     "title": "Why can't I post a task or accept one?",
     "content": "Check if your account is verified and that you haven't been suspended for any reason.",
-    "tags": ["can't post", "can't accept", "account issue", "suspended", "verification"]
+    "tags": [
+      "can't post",
+      "can't accept",
+      "account issue",
+      "suspended",
+      "verification"
+    ]
   },
   {
     "id": "platform-technical-3",
@@ -185,7 +315,12 @@
     "type": "faq",
     "title": "How do I reset my password?",
     "content": "Click 'Forgot Password,' enter your email, and follow the link we send.",
-    "tags": ["reset password", "forgot password", "change password", "password recovery"]
+    "tags": [
+      "reset password",
+      "forgot password",
+      "change password",
+      "password recovery"
+    ]
   },
   {
     "id": "platform-technical-4",
@@ -193,7 +328,12 @@
     "type": "faq",
     "title": "Why am I not seeing certain tasks?",
     "content": "Tasks are shown based on location, skills, and availability. Update your skills, services, and location in your profile for better matches.\n\nIf you’re a Helper, also check your Preferred max distance for task matches (km) and Email frequency for new task matches in your Helper Profile. These settings control which tasks are considered \"near you\" and how often you receive \"New task near you\" emails. If your distance is set very low, or your email frequency is set to weekly, you may see fewer notifications.",
-    "tags": ["no tasks", "missing tasks", "task visibility", "task matching"]
+    "tags": [
+      "no tasks",
+      "missing tasks",
+      "task visibility",
+      "task matching"
+    ]
   },
   {
     "id": "platform-technical-5",
@@ -201,7 +341,13 @@
     "type": "faq",
     "title": "How do I contact support?",
     "content": "Use the 'Contact Support' form in the Help Center. We usually reply within 24 hours.",
-    "tags": ["contact", "support", "help", "customer service", "assistance"]
+    "tags": [
+      "contact",
+      "support",
+      "help",
+      "customer service",
+      "assistance"
+    ]
   },
   {
     "id": "guide-getting-started",
@@ -209,7 +355,13 @@
     "type": "guide",
     "title": "Getting Started with Taskorilla",
     "content": "**Step 1: Sign Up**\n\nClick 'Sign Up,' enter your email, create a password, and confirm. You'll receive a confirmation email, click the link to verify your account.\n\n**Step 2: Verify Your Account (Coming Soon)**\n\nVerifying your ID helps build trust with other users and unlocks higher-value tasks. Go to 'My Profile' and upload a photo ID.\n\n**Step 3: Set Up Your Profile**\n\nAdd a profile picture, list your skills (if you plan to be a Helper), and write a short bio. A complete profile makes you more trustworthy and helps you get matched with the right tasks.\n\n**Step 4: Browse Tasks or Post a Task**\n\nDecide whether you want to post a task (if you need help) or browse tasks (if you want to earn money as a Helper). Click 'Post a Task' or 'Browse Tasks' from the main menu.\n\n**Step 5: Set Your Task Match Preferences (Helpers)**\n\nIn your Helper Profile, you can set how far you're willing to travel (Preferred max distance for task matches (km), default 100 km) and how often you receive \"New task near you\" emails (instant, daily, or weekly). This helps us notify you only about tasks that are truly relevant to you.\n\n**Step 6: Check Notifications**\n\nKeep track of messages, bids, and task updates through your dashboard and email notifications. Stay responsive to build a good reputation!",
-    "tags": ["getting started", "setup", "beginner guide", "how to start", "tutorial"]
+    "tags": [
+      "getting started",
+      "setup",
+      "beginner guide",
+      "how to start",
+      "tutorial"
+    ]
   },
   {
     "id": "guide-posting-tasks",
@@ -217,7 +369,17 @@
     "type": "guide",
     "title": "How to Post a Task",
     "content": "**Step 1: Navigate to Post a Task**\n\nClick the 'Post New Task' button from the navigation bar or the Browse Tasks page. You'll be taken to the task creation form.\n\n**Step 2: Choose Your Form Type**\n\nYou'll see two options at the top:\n\n• Quick Form — A streamlined questionnaire-style form, great for simple tasks. Simply answer the questions and you'll be guided through the process automatically.\n\n• Full Form — The complete form with all options, best for detailed tasks. The steps below describe the Full Form.\n\n**Step 3: Select the Type of Help You Need**\n\nChoose one of:\n\n• Hire a Helper — For general tasks like cleaning, moving, errands, or handyman work.\n\n• Engage a Professional — For specialist work like legal advice, accounting, therapy, or marketing.\n\n**Step 4: Fill In the Task Details**\n\n• Task Title (required) — A short, clear name, e.g. 'Need help moving furniture'.\n\n• Description (required) — A detailed explanation of what needs to be done.\n\n• Task Images (optional) — Upload photos to help helpers understand the task.\n\n• Budget (optional) — Your budget in euros. Leave blank and helpers will submit quotes.\n\n• Category (optional) — Pick the closest category, e.g. Home & Garden, Business.\n\n• Sub-Category (optional) — Appears after selecting a category for more precision.\n\n• Tags (optional) — Keywords to help your task get found. Press Enter after each tag.\n\n• Required Skills (optional) — Specific skills needed. Press Enter after each.\n\n• Professional Roles (optional) — Only for Professional tasks. Select roles like Accountant, Lawyer, etc.\n\n**Step 5: Set Your Location**\n\n• Country (required) — Select from the dropdown. This is auto-filled from your profile.\n\n• Postcode — Enter your postcode and the system will auto-detect your location.\n\n• Location — Your neighbourhood or city name. This is auto-filled from the postcode, or you can type it manually.\n\n**Step 6: Set a Due Date**\n\nChoose when you need the task completed. This defaults to today's date.\n\n**Step 7: Post Your Task**\n\nClick 'Post Task'. If you're not logged in, you'll be prompted to log in first — your draft is automatically saved so you won't lose any details.\n\n**What Happens Next?**\n\n1. Your task goes live and appears in Browse Tasks for helpers to see.\n\n2. Helpers in your area can submit bids with their price and a message.\n\n3. You'll be notified when bids come in.\n\n4. Review bids, check helper profiles and ratings, then accept the best one.\n\n5. Complete payment — the helper is only told to start work after payment is confirmed.\n\n6. After payment, the contact filter is lifted in your conversation — you can now share phone numbers, email, WhatsApp, or other contact details directly with the helper. Before payment, contact information is blocked in messages for everyone's safety.\n\n7. Once the helper completes the work, you can rate and review them.\n\n**Requesting a Specific Helper (One-to-One)**\n\nIf you've found a helper you like from the Helpers or Professionals page, go to their profile and click 'Request This Helper'. The form will pre-fill with their name and offerings. Pick a skill or offering from their list, or type your own. Fill in the remaining details and post. The task will be sent directly to that helper.",
-    "tags": ["post task", "create task", "task posting guide", "how to post", "new task", "quick form", "full form", "helper", "professional"]
+    "tags": [
+      "post task",
+      "create task",
+      "task posting guide",
+      "how to post",
+      "new task",
+      "quick form",
+      "full form",
+      "helper",
+      "professional"
+    ]
   },
   {
     "id": "guide-one-to-one-request",
@@ -225,7 +387,14 @@
     "type": "guide",
     "title": "How to Request a Specific Helper (One-to-One)",
     "content": "**What is a One-to-One Request?**\n\nA one-to-one request lets you send a task directly to a specific helper or professional. Only you and that helper can see the task — it's private and not visible to other users or the public.\n\n**Step 1: Find the Helper You Want**\n\nBrowse the Helpers or Professionals page, or search for someone by name, skill, or service. You can also discover helpers through ratings, reviews, or featured profiles.\n\n**Step 2: Visit Their Profile**\n\nClick on the helper's name or avatar to open their full profile page. You'll see their skills, services offered, ratings, reviews, hourly rate, and professional offerings.\n\n**Step 3: Click 'Send Request'**\n\nOn their profile, click the 'Send Request' button. If the helper has listed specific offerings or skills, you can also click directly on one of those — this pre-selects that offering for your request.\n\n**Step 4: The Task Form Opens Pre-Filled**\n\nYou'll be taken to the task creation form with:\n\n• The helper's name and avatar shown at the top in a highlighted box.\n\n• A 'Focus of this request' field — pre-filled with the offering you clicked, or type your own.\n\n• The task title auto-generated (e.g. 'Branding with Antonio').\n\n• The description auto-generated with a personalised message asking about availability and pricing.\n\n• If the helper has multiple offerings, you can click different skill/offering pills to switch — the title and description update automatically.\n\n**Step 5: Fill In the Remaining Details**\n\n• Adjust the title and description if needed.\n\n• Set your country and postcode (auto-filled from your profile).\n\n• Set a due date.\n\n• Optionally set a budget — or leave it blank to receive a quote from the helper.\n\nNote: Images, categories, tags, and skills fields are hidden for one-to-one requests since the task is tailored to a specific person.\n\n**Step 6: Post the Task**\n\nClick 'Post Task'. The following happens:\n\n1. The task is created as a private task assigned to that helper.\n\n2. A conversation is automatically created between you and the helper.\n\n3. A message is sent in that conversation with a link to the task.\n\n4. The helper receives an email notification about the new request.\n\n**Step 7: Wait for Their Quote**\n\nIf you left the budget blank, you'll see a message on the task page: 'Waiting for [helper name] to submit a quote.' The helper will submit a bid with their price and message.\n\n**Step 8: Accept the Bid and Pay**\n\nOnce the helper submits their quote, you can accept it. Payment is required before the helper is told to start work.\n\n**Step 9: Communicate Freely After Payment**\n\nOnce payment is confirmed, the contact information filter is lifted in your conversation with the helper. You can now share phone numbers, email addresses, WhatsApp details, or any other contact information directly in the chat. This is especially useful for:\n\n• Booking a first session with a therapist or coach.\n\n• Coordinating a large contract where ongoing communication is needed.\n\n• Paying a deposit for a bigger project and then arranging the details directly.\n\nBefore payment, contact details are blocked for everyone's safety. After payment, you're free to communicate however works best for you both.\n\n**Optional: Open to All Helpers**\n\nIf the helper doesn't respond or you change your mind, you can click 'Open to all helpers' on the task page. This removes the assignment and makes the task visible to everyone. You'll be warned that the task title and description may need editing since they were written for a specific person.\n\n**Optional: Remove the Helper**\n\nWhile creating the task, you can click 'Remove helper' at any time to clear the assignment and switch to a normal public task.",
-    "tags": ["one-to-one", "request helper", "direct request", "specific helper", "send request", "private task"]
+    "tags": [
+      "one-to-one",
+      "request helper",
+      "direct request",
+      "specific helper",
+      "send request",
+      "private task"
+    ]
   },
   {
     "id": "guide-accept-one-to-one",
@@ -233,7 +402,15 @@
     "type": "guide",
     "title": "How to Accept a One-to-One Offer",
     "content": "**What is a One-to-One Offer?**\n\nWhen a tasker requests you directly, you'll receive a private task that only you and the tasker can see. You can accept it by submitting a bid, or simply not respond if you're not interested.\n\n**Step 1: You Receive a Notification**\n\nWhen someone sends you a one-to-one request, you'll receive:\n\n• An email notification with details about the new task request.\n\n• A new message in your Conversations with a link to the task.\n\n• The task will appear in your 'My Tasks' filter on the Browse Tasks page.\n\n**Step 2: Review the Task**\n\nClick the link from the email or message to view the full task details. You'll see:\n\n• What the tasker needs (title and description).\n\n• Their location and due date.\n\n• Whether they've set a budget or are requesting a quote from you.\n\n**Step 3: Submit Your Bid (Quote)**\n\nIf the tasker left the budget blank, you'll see a prompt: 'Submit your quote (amount and message) so the tasker can accept and pay.'\n\nScroll down to the Bids section and:\n\n1. Enter your price — the amount you'd charge for the task.\n\n2. Write a message — confirm your availability, mention any preparation needed, and provide any relevant details.\n\n3. Click 'Submit Bid'.\n\nIf the tasker already set a budget, you can still submit a bid with your own price and message.\n\n**Step 4: Wait for Acceptance and Payment**\n\nOnce you submit your bid:\n\n1. The tasker reviews your quote.\n\n2. If they accept, the task moves to 'Awaiting Payment' status.\n\n3. You'll receive an email: 'Your bid was selected — awaiting payment confirmation.'\n\n4. Do not start work yet — wait for payment confirmation.\n\n**Step 5: Payment Confirmed — Start Work**\n\nOnce the tasker completes payment:\n\n1. The task moves to 'In Progress' status.\n\n2. You receive a second email: 'Payment confirmed — you can start!'\n\n3. Now you can begin working on the task.\n\n4. The contact information filter is lifted — you and the tasker can now share phone numbers, email, WhatsApp, or any other contact details directly in the conversation. This is useful for coordinating sessions (e.g. therapy or coaching), arranging meetings for larger contracts, or simply communicating in whatever way works best.\n\n**Step 6: Track Progress and Complete**\n\n• Add progress updates on the task page to keep the tasker informed.\n\n• Upload progress photos if relevant.\n\n• When finished, click 'Mark as Complete'.\n\n• Upload a completion photo if prompted.\n\n**Step 7: Get Paid and Reviewed**\n\nOnce the tasker confirms completion:\n\n1. Payment is released to your PayPal account (minus the platform fee).\n\n2. The tasker can leave a review and rating.\n\n3. Once the tasker has reviewed you, you can review them back.\n\n**What If You Don't Want the Task?**\n\nYou're not obligated to accept. You can simply:\n\n• Not submit a bid — the tasker will see no response.\n\n• Message the tasker through the conversation to explain or negotiate.\n\n• After 48 hours with no activity, the tasker may choose to open the task to all helpers.",
-    "tags": ["one-to-one", "accept offer", "direct request", "helper bid", "quote", "private task", "respond to request"]
+    "tags": [
+      "one-to-one",
+      "accept offer",
+      "direct request",
+      "helper bid",
+      "quote",
+      "private task",
+      "respond to request"
+    ]
   },
   {
     "id": "guide-being-tasker",
@@ -241,7 +418,13 @@
     "type": "guide",
     "title": "Working as a Helper",
     "content": "**Step 1: Complete Your Helper Profile**\n\nAfter signing up, complete your Helper profile. Add your skills, experience, availability, hourly rate, and any tools/equipment you have. Upload a profile picture, it builds trust!\n\n**Step 2: Browse Available Tasks**\n\nGo to 'Browse Tasks' to see tasks near you that match your skills. Use filters to narrow down by category, distance, or budget.\n\n**Step 3: Submit a Bid**\n\nFound a task you can do? Click 'Submit Bid,' explain why you're a good fit, and confirm your availability. Be clear and professional.\n\n**Step 4: Communicate with the Tasker**\n\nIf your bid is accepted, you'll get a notification. Message the Tasker to confirm details, timing, and any special requirements.\n\nImportant: Before payment is confirmed, contact information (phone numbers, email addresses, etc.) is blocked in messages for everyone's safety. Once the tasker completes payment, the filter is lifted and you can freely share contact details in the conversation.\n\n**Step 5: Complete the Task**\n\nShow up on time, do the job well, and follow the Tasker's instructions. Take photos of your work if needed, it helps with disputes and builds your reputation.\n\n**Step 6: Mark as Completed**\n\nOnce finished, click 'Mark as Completed' in your dashboard. The Tasker will confirm, and you'll get paid automatically.\n\n**Step 7: Build Your Reputation**\n\nAsk for reviews after every task. A high rating and positive feedback mean more jobs and better pay!",
-    "tags": ["helper guide", "become helper", "working as helper", "earn money", "helper tutorial"]
+    "tags": [
+      "helper guide",
+      "become helper",
+      "working as helper",
+      "earn money",
+      "helper tutorial"
+    ]
   },
   {
     "id": "guide-payments",
@@ -249,7 +432,14 @@
     "type": "guide",
     "title": "Understanding Payments on Taskorilla",
     "content": "**Step 1: Add Your Payout Method**\n\nHead to Profile > Add your PayPal email. This lets you receive payments easily as a Helper or Professional. Don't have a PayPal account yet? Create one here and get set up in minutes.\n\n**Step 2: Understand Fees**\n\nTaskorilla takes a small service fee from each transaction. As of December 2025, fees are €2 per task from the tasker and 10% fee from the Helper/Professional.\n\n**Step 3: Make or Receive Payment**\n\n**For Taskers:** When you accept a bid, you'll be prompted to pay securely through our platform. Funds are held until the task is confirmed as complete.\n\n**For Helpers:** Once a task is marked complete and confirmed by the tasker, payment is released to your account automatically.\n\n**Step 4: Track Your Payments and Payouts**\n\nCheck your dashboard for payment history, pending payments or payouts, and completed transactions. You'll receive email confirmations for every payment or payout.\n\n**Step 5: Payouts (for Helpers and Professionals)**\n\nPayments are transferred to your linked account automatically after task confirmation.",
-    "tags": ["payment guide", "how to pay", "get paid", "payment process", "fees", "payout"]
+    "tags": [
+      "payment guide",
+      "how to pay",
+      "get paid",
+      "payment process",
+      "fees",
+      "payout"
+    ]
   },
   {
     "id": "guide-safety",
@@ -257,7 +447,14 @@
     "type": "guide",
     "title": "Staying Safe on Taskorilla",
     "content": "**Step 1: Verify Profiles Before Working Together**\n\nAlways check users' profiles, reviews, and verification status before accepting or assigning a task. Verified users with good reviews are more trustworthy.\n\n**Step 2: Meet in Public Spaces When Possible**\n\nFor tasks that don't require being at someone's home (like delivery or moving), arrange to meet in a public location first.\n\n**Step 3: Communicate Clearly Through the Platform**\n\nUse Taskorilla's messaging system for all communication. This keeps a record and helps resolve disputes. Never share personal contact info like phone numbers or emails early on.\n\n**Step 4: Protect Your Personal Information**\n\nDon't overshare. Your profile should include enough to build trust, but not sensitive details like your full address, bank info, or personal identification numbers.\n\n**Step 5: Document Everything**\n\nTake photos before and after completing a task. This protects both parties in case of damage claims or disputes about work quality.\n\n**Step 6: Trust Your Instincts**\n\nIf something feels off, it probably is. Don't proceed with a task if you're uncomfortable. You can always cancel and report suspicious behavior.\n\n**Step 7: Report Problems Immediately**\n\nIf someone is harassing you, acting suspiciously, or breaking platform rules, use the 'Report' button on their profile. We take safety seriously and will investigate promptly.\n\n**Step 8: Review Safety Tips Regularly**\n\nCheck our Help Center for updated safety guidelines. Stay informed about common scams and how to avoid them.",
-    "tags": ["safety guide", "stay safe", "security", "safety tips", "protect yourself", "trust"]
+    "tags": [
+      "safety guide",
+      "stay safe",
+      "security",
+      "safety tips",
+      "protect yourself",
+      "trust"
+    ]
   },
   {
     "id": "guide-marketplace-safety",
@@ -265,7 +462,14 @@
     "type": "guide",
     "title": "Marketplace Safety Guidelines",
     "content": "**Last Updated: February 26th, 2026**\n\nTaskorilla does not verify every user, supervise tasks, or guarantee that every experience will be safe. Always use caution.\n\n**Safety Tips**\n\n- Meet in public places whenever possible.\n\n- Avoid tasks that feel risky or unsafe.\n\n- Trust your instincts and walk away if something feels off.\n\n- Hold off on sharing personal contact details until you feel comfortable.\n\n- Report suspicious behaviour immediately within the platform.\n\n**Platform Restrictions**\n\nTaskorilla does not allow illegal tasks, dangerous activities, offensive behaviour, or attempts to move conversations off the platform to avoid our rules.\n\n**Emergency Situations**\n\nIf you ever feel unsafe, contact local authorities right away. Taskorilla is not an emergency service.",
-    "tags": ["safety", "guidelines", "marketplace", "report", "restrictions", "emergency"]
+    "tags": [
+      "safety",
+      "guidelines",
+      "marketplace",
+      "report",
+      "restrictions",
+      "emergency"
+    ]
   },
   {
     "id": "guide-disputes-refunds",
@@ -273,7 +477,14 @@
     "type": "guide",
     "title": "Disputes and Refunds",
     "content": "**Last Updated: February 26th 2026**\n\nTaskorilla is not party to agreements between Taskers and Helpers. Any disputes must be handled directly between those two users.\n\nTaskorilla does not provide refunds for task payments unless there is a confirmed platform error, such as a duplicated charge caused by the platform itself.\n\nTaskorilla does not mediate disagreements, guarantee outcomes, or compensate users for incomplete tasks, dissatisfaction, or disagreements between Taskers and Helpers.",
-    "tags": ["disputes", "refunds", "payments", "policy", "support", "platform rules"]
+    "tags": [
+      "disputes",
+      "refunds",
+      "payments",
+      "policy",
+      "support",
+      "platform rules"
+    ]
   },
   {
     "id": "guide-gdpr-addon",
@@ -281,9 +492,29 @@
     "type": "guide",
     "title": "GDPR Data Processing Add-On",
     "content": "**Last Updated: November 17, 2025**\n\nThis add-on applies to users in the European Economic Area (EEA) and the United Kingdom.\n\n**Data Controller**\n\nTaskorilla is the data controller for the information you provide through the platform.\n\n**Your Rights Under GDPR**\n\nYou may request access, correction, deletion, restriction of processing, data portability, or withdrawal of consent. Contact us to exercise these rights.\n\n**Data Transfers**\n\nWe may transfer data outside the EEA or UK using legally recognised safeguards such as Standard Contractual Clauses.\n\n**Obligations**\n\nDo not upload information about others unless you have their permission.",
-    "tags": ["GDPR", "data", "privacy", "EEA", "UK", "legal"]
+    "tags": [
+      "GDPR",
+      "data",
+      "privacy",
+      "EEA",
+      "UK",
+      "legal"
+    ]
+  },
+  {
+    "id": "guide-handyman-prices-portugal",
+    "category": "Posting Tasks",
+    "type": "guide",
+    "title": "Handyman Prices in Portugal (2026 Guide)",
+    "content": "Wondering how much a handyman costs in Portugal? Prices vary depending on the job, location, and experience of the helper. This guide gives you a realistic idea of what you might pay for common home tasks in the Algarve and across Portugal.\n\n**1. Handyman / Plumbing**\n\n| Task | Typical Price |\n| --- | --- |\n| Fix leaking tap | €40 – €90 |\n| Replace bathroom faucet | €50 – €120 |\n| Unclog sink / drain | €40 – €90 |\n| Fix running toilet | €50 – €110 |\n| Install shower head / hose | €40 – €90 |\n| Replace shower valves | €80 – €160 |\n| Fix water heater / boiler leak | €80 – €200 |\n| Repair or replace sink | €60 – €150 |\n| Install washing machine / dishwasher | €50 – €120 |\n| Repair garden tap / outdoor faucet | €40 – €90 |\n| Replace bathroom sink plug | €30 – €70 |\n| Install new shower curtain rod | €30 – €60 |\n| Replace toilet seat | €20 – €50 |\n| Replace tap washers / cartridges | €25 – €60 |\n| Fix leaking radiator | €50 – €120 |\n| Install bathroom accessories (towel rail, toilet roll holder) | €30 – €80 |\n| Install or replace water filter | €40 – €90 |\n| Repair door lock | €40 – €90 |\n| Replace broken tiles | €50 – €150 |\n| Minor pipe repair (visible pipes) | €50 – €120 |\n| Seal bathroom corners / silicone | €40 – €80 |\n| Fix shower door / hinge | €50 – €120 |\n| Replace bathroom mirror | €30 – €80 |\n| Repair toilet flush mechanism | €40 – €90 |\n| Install small sink cabinet | €50 – €120 |\n| Install hot water booster / inline heater | €60 – €150 |\n| Replace toilet cistern parts | €50 – €110 |\n| Fix leaking pipe under sink | €40 – €90 |\n| Adjust water pressure / taps | €30 – €80 |\n| Install bidet / attach bidet spray | €50 – €120 |\n| Replace flexible hoses | €30 – €70 |\n| Install shower enclosure | €80 – €200 |\n| Repair clogged shower | €50 – €120 |\n| Replace bathroom fan | €40 – €100 |\n\n**2. Furniture Assembly / Interior Install**\n\n| Task | Typical Price |\n| --- | --- |\n| Assemble IKEA wardrobe | €50 – €120 |\n| Assemble IKEA bed | €50 – €120 |\n| Assemble IKEA desk | €40 – €100 |\n| Assemble IKEA kitchen cabinets | €80 – €200 |\n| Assemble flat-pack shelving | €40 – €90 |\n| Assemble dining table | €50 – €120 |\n| Assemble chairs (per chair) | €15 – €40 |\n| Install furniture fittings (handles, hinges) | €30 – €80 |\n| Mount coat hooks | €20 – €50 |\n| Assemble TV stand | €40 – €90 |\n| Assemble coffee table | €30 – €80 |\n| Assemble sideboard / buffet | €50 – €120 |\n| Install sliding doors | €60 – €150 |\n| Assemble modular shelving units | €50 – €120 |\n| Install modular closet drawers | €40 – €100 |\n| Assemble small bedside tables | €20 – €60 |\n| Assemble garden storage units | €50 – €120 |\n| Install flat-pack kitchen island | €80 – €200 |\n| Assemble modular sofa | €70 – €160 |\n| Assemble bunk bed | €60 – €140 |\n| Assemble wardrobe doors | €40 – €100 |\n| Assemble shoe rack / storage bench | €30 – €80 |\n| Mount wall-mounted cabinets | €50 – €120 |\n| Install small cabinet handles | €20 – €50 |\n| Assemble office storage cabinets | €50 – €120 |\n| Assemble bookshelf / library units | €50 – €120 |\n| Assemble bathroom cabinet | €40 – €90 |\n| Install folding wall bed / Murphy bed | €120 – €250 |\n| Install custom shelving | €70 – €160 |\n| Assemble TV furniture / media console | €50 – €120 |\n\n**3. Electrical / Tech**\n\n| Task | Typical Price |\n| --- | --- |\n| Mount TV on wall | €40 – €100 |\n| Hide TV cables | €50 – €120 |\n| Install ceiling fan | €70 – €160 |\n| Install light fixtures | €40 – €100 |\n| Replace wall sockets / switches | €40 – €90 |\n| Install outdoor lights | €60 – €150 |\n| Set up home office (desk + cables) | €50 – €120 |\n| Install smart home devices (Alexa, smart plugs) | €50 – €120 |\n| Install router / WiFi extender | €40 – €90 |\n| Install motion sensor lights | €60 – €140 |\n| Replace broken light switch | €30 – €70 |\n| Install outdoor socket | €50 – €120 |\n| Install ceiling spotlight | €60 – €150 |\n| Install under-cabinet kitchen lighting | €50 – €120 |\n| Mount projector | €70 – €160 |\n| Install alarm sensor / security camera | €60 – €150 |\n| Install intercom system | €70 – €160 |\n| Setup smart thermostat | €50 – €120 |\n| Setup home WiFi mesh system | €50 – €120 |\n| Mount speakers / home theatre | €60 – €150 |\n| Install light dimmers | €40 – €90 |\n| Replace electrical fuse / consumer unit | €80 – €200 |\n| Install doorbell / smart bell | €40 – €100 |\n| Install smoke / CO detector | €30 – €80 |\n| Install home automation hub | €60 – €150 |\n| Install network cables / ethernet ports | €50 – €120 |\n| Install electric gate / buzzer system | €100 – €250 |\n| Replace fluorescent tubes / LED panels | €30 – €70 |\n| Install outdoor flood lights | €60 – €150 |\n| Install underfloor heating thermostat | €80 – €180 |\n\n**4. Painting / Decorating**\n\n| Task | Typical Price |\n| --- | --- |\n| Small painting job (1 wall) | €60 – €150 |\n| Full room painting | €150 – €350 |\n| Ceiling painting | €80 – €200 |\n| Minor plaster / wall patch | €50 – €120 |\n| Hang shelves / pictures | €30 – €80 |\n| Install curtain rails / blinds | €40 – €90 |\n| Wallpaper small area | €80 – €180 |\n| Wallpaper full room | €150 – €400 |\n| Mount mirrors | €30 – €70 |\n| Paint skirting boards | €40 – €90 |\n| Paint window frames | €50 – €120 |\n| Paint doors (single) | €40 – €100 |\n| Touch up scuffed walls | €30 – €70 |\n| Paint closet interior | €40 – €90 |\n| Paint fence or gate | €60 – €150 |\n| Paint balcony / small terrace | €80 – €180 |\n| Decorative wall finish (small area) | €60 – €150 |\n| Apply protective coating (kitchen / bathroom) | €50 – €120 |\n| Repaint radiator | €40 – €90 |\n| Paint stair banisters | €50 – €120 |\n| Paint interior door frames | €40 – €90 |\n| Repaint small hallway | €60 – €150 |\n| Sand and repaint furniture | €50 – €120 |\n| Stain wooden doors | €40 – €100 |\n| Paint wooden beams / ceiling | €80 – €180 |\n\n**5. Moving / Lifting / Heavy Work**\n\n| Task | Typical Price |\n| --- | --- |\n| Help moving furniture (1–2 hours) | €50 – €120 |\n| Load/unload van | €50 – €120 |\n| Pack / unpack boxes | €40 – €100 |\n| Assemble/disassemble furniture for moving | €50 – €120 |\n| Carry heavy items upstairs | €40 – €100 |\n| Lift mattress / bed | €30 – €70 |\n| Move bookcases / cabinets | €50 – €120 |\n| Short-distance transport of goods | €50 – €130 |\n| Help with attic / basement cleaning | €50 – €120 |\n| Lift and install large mirror | €60 – €150 |\n| Assist with garage organization | €50 – €120 |\n| Carry outdoor equipment (lawnmower, BBQ) | €50 – €120 |\n| Move bicycles or sports equipment | €30 – €80 |\n| Help with small renovations (demolition / lift debris) | €60 – €150 |\n| Carry washing machine upstairs | €50 – €120 |\n| Move sofa / large armchair | €50 – €120 |\n| Move small appliance (fridge, dishwasher) | €50 – €120 |\n| Pack/unpack kitchen items | €40 – €100 |\n| Carry boxes up/down stairs | €30 – €80 |\n| Assist with flat-pack furniture relocation | €50 – €120 |\n\n**6. Garden / Outdoor**\n\n| Task | Typical Price |\n| --- | --- |\n| Lawn mowing (small garden) | €40 – €90 |\n| Garden clean-up (2–3 hours) | €60 – €140 |\n| Hedge trimming | €50 – €120 |\n| Pressure wash patio / driveway | €80 – €180 |\n| Leaf removal / rake | €40 – €90 |\n| Planting / flower beds | €50 – €120 |\n| Small tree / shrub removal | €80 – €200 |\n| Pool cleaning (small pool) | €50 – €120 |\n| Trim small trees | €80 – €180 |\n| Plant hedges / shrubs | €50 – €120 |\n| Mulching garden beds | €60 – €130 |\n| Lay paving stones | €80 – €200 |\n| Install small garden fence | €60 – €150 |\n| Water garden / irrigation setup | €50 – €120 |\n| Clean pool filter | €40 – €100 |\n| Lawn aeration | €60 – €150 |\n| Remove dead plants / weeds | €40 – €90 |\n| Pressure wash garden furniture | €40 – €100 |\n| Small deck repair | €70 – €160 |\n| Install bird feeder / garden ornament | €30 – €80 |\n| Build compost bin | €50 – €120 |\n| Replace outdoor light bulbs | €30 – €80 |\n| Rake leaves | €30 – €70 |\n| Hedge planting / shaping | €50 – €130 |\n| Install garden trellis | €50 – €120 |\n| Assemble garden shed | €80 – €200 |\n| Set up small greenhouse | €100 – €250 |\n| Outdoor furniture assembly | €50 – €120 |\n| Build raised garden beds | €70 – €160 |\n| Install garden gate / latch | €50 – €120 |\n\n**7. Cleaning / Household Help**\n\n| Task | Typical Price |\n| --- | --- |\n| Deep clean kitchen / bathroom | €60 – €150 |\n| Move-in / move-out cleaning | €80 – €200 |\n| Window cleaning (inside only) | €20 – €60 |\n| Window cleaning (inside + outside, 1–2 windows) | €30 – €80 |\n| Carpet / rug cleaning (small) | €40 – €100 |\n| Laundry / ironing | €20 – €50 |\n| Dust / wipe furniture | €30 – €70 |\n| Vacuum / mop floors | €30 – €80 |\n| Clean oven / fridge | €30 – €80 |\n| Organise storage / declutter | €50 – €120 |\n| Change bed linen / make beds | €20 – €50 |\n| Clean ceiling fans | €30 – €80 |\n| Clean small balcony | €30 – €80 |\n| Clean oven hood / extractor | €30 – €80 |\n| Clean under furniture | €20 – €60 |\n| Clean behind appliances | €20 – €60 |\n| Wash walls / baseboards | €40 – €100 |\n| Clean patio furniture | €30 – €80 |\n| Empty / clean bins | €15 – €40 |\n| Clean small appliances | €20 – €60 |\n\n**8. Home Organisation / Odd Jobs**\n\n| Task | Typical Price |\n| --- | --- |\n| Organise pantry / kitchen cupboards | €40 – €100 |\n| Assemble storage boxes | €20 – €50 |\n| Declutter wardrobe / closet | €40 – €100 |\n| Hang calendar / whiteboard | €15 – €40 |\n| Install coat hooks / racks | €20 – €50 |\n| Build shoe rack / storage shelves | €50 – €120 |\n| Set up home office desk / drawers | €40 – €100 |\n| Install laundry racks | €30 – €80 |\n| Reorganise garage / shed | €50 – €120 |\n| Install hooks for bikes / sports equipment | €30 – €80 |\n| Install curtain tiebacks / blinds | €30 – €80 |\n| Assemble magazine / file racks | €20 – €60 |\n| Set up small bookshelf | €30 – €80 |\n| Hang pictures / wall art | €20 – €60 |\n| Install bathroom storage racks | €30 – €80 |\n| Assemble toy / kids storage units | €40 – €100 |\n| Set up small table / side desk | €30 – €80 |\n| Mount small wall-mounted cabinets | €40 – €100 |\n| Reorganise living room furniture | €50 – €120 |\n| Label storage boxes / bins | €15 – €40 |\n\n**9. Miscellaneous / One-off Tasks**\n\n| Task | Typical Price |\n| --- | --- |\n| Assemble IKEA wardrobe for expats | €50 – €120 |\n| Mount flat-screen TV in rental apartment | €40 – €100 |\n| Install temporary curtain rod | €30 – €70 |\n| Mount whiteboard in home office | €30 – €80 |\n| Help with small DIY project | €40 – €120 |\n| Deliver groceries / items locally | €20 – €60 |\n| Small courier / errand run | €20 – €50 |\n| Pick up / drop off furniture | €30 – €80 |\n| Basic handyman check / inspection | €50 – €120 |\n| Help with IKEA pick-up and assembly | €50 – €120 |\n| Replace broken door handle | €30 – €80 |\n| Fix squeaky door / hinge | €20 – €50 |\n| Install curtain rod brackets | €30 – €80 |\n| Help hanging heavy mirror | €50 – €120 |\n| Install baby gates / pet gates | €40 – €100 |\n| Remove small household junk | €50 – €120 |\n| Install TV wall bracket | €40 – €100 |\n| Install garden lights | €60 – €150 |\n| Hang outdoor planters | €30 – €80 |\n| Assemble small garden furniture | €50 – €120 |\n| Minor home repairs (patch / paint) | €40 – €120 |\n| Small tiling jobs | €50 – €150 |\n| Clean gutters (small house) | €80 – €200 |\n| Mount small shelves / racks | €30 – €80 |\n| Assist with holiday decoration setup | €30 – €80 |\n| Basic furniture repair | €40 – €120 |\n| Assemble / disassemble bed frame | €40 – €90 |\n| Mount wall-mounted cabinet in bathroom | €50 – €120 |\n| Remove / replace curtain blinds | €40 – €90 |\n| Mount whiteboard or pinboard | €30 – €80 |\n\n**What affects the price?**\n\nSeveral things influence what you'll pay: the size of the job, your location (e.g. city vs rural), how long it takes, whether the helper needs to bring tools or materials, and how urgent it is. Getting a few quotes helps you see a fair range.\n\n**The easier way to get a price**\n\nInstead of calling multiple handymen for quotes, you can simply post your task on Taskorilla. Local helpers will respond and you can choose the person that suits you best.\n\nPost your task now at taskorilla.com and let helpers come to you.",
+    "tags": [
+      "handyman",
+      "prices",
+      "Portugal",
+      "Algarve",
+      "cost guide",
+      "home tasks",
+      "post a task"
+    ]
   }
 ]
-
-
-

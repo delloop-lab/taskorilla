@@ -1,7 +1,8 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import FAQAccordion from '@/components/FAQAccordion'
 import GuideFeedbackButtons from '@/components/GuideFeedbackButtons'
@@ -46,6 +47,12 @@ export default function GuidePage() {
     getAllGuides(lang).find(g => g.id === guide!.id) || 
     guide
 
+  useEffect(() => {
+    if (translatedGuide?.title) {
+      document.title = `${translatedGuide.title} | Taskorilla`
+    }
+  }, [translatedGuide?.title])
+
   // Get related FAQs from the same category in the current language
   const relatedFAQs = getFAQsByCategory(translatedGuide.category, lang).slice(0, 5)
 
@@ -65,27 +72,195 @@ export default function GuidePage() {
     })
   }
 
-  const formatContent = (content: string) => {
-    return content.split('\n\n').map((section, index) => {
-      if (section.startsWith('**') && section.includes('**')) {
-        const headingText = section.match(/\*\*(.*?)\*\*/)?.[1] || section
-        const remainingText = section.replace(/\*\*(.*?)\*\*/, '').trim()
-        
-        return (
-          <div key={index} className="mb-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-3">{headingText}</h3>
-            {remainingText && <p className="text-gray-700 leading-relaxed">{renderInlineMarkdown(remainingText)}</p>}
-          </div>
-        )
-      }
-      
-      return (
-        <p key={index} className="text-gray-700 leading-relaxed mb-4">
-          {renderInlineMarkdown(section)}
-        </p>
-      )
-    })
+  const parseMarkdownTable = (section: string) => {
+    const lines = section.trim().split('\n').map((l) => l.trim()).filter(Boolean)
+    if (lines.length < 2) return null
+    const first = lines[0]
+    const second = lines[1]
+    if (!first.includes('|') || !second.includes('-')) return null
+    const sep = second.replace(/\s/g, '')
+    if (!/^\|?-+\|(-+\|)*\-*\|?$/.test(sep)) return null
+    const headerCells = first.split('|').map((c) => c.trim()).filter(Boolean)
+    const rows = lines.slice(2).map((line) => line.split('|').map((c) => c.trim()).filter(Boolean))
+    return { headerCells, rows }
   }
+
+  const renderTable = (table: { headerCells: string[]; rows: string[][] }, key: string) => (
+    <div key={key} className="overflow-x-auto">
+      <table className="min-w-full border border-gray-200 rounded-lg text-sm">
+        <thead>
+          <tr className="bg-gray-50">
+            {table.headerCells.map((cell, i) => (
+              <th key={i} className="px-4 py-2 text-left font-semibold text-gray-900 border-b border-gray-200">
+                {cell}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {table.rows.map((row, i) => (
+            <tr key={i} className="border-b border-gray-100 hover:bg-gray-50/50">
+              {row.map((cell, j) => (
+                <td key={j} className="px-4 py-2 text-gray-700">
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+
+  const isAccordionHeading = (section: string) => /^\*\*\d+\.\s+.+\*\*$/.test(section.trim())
+
+  const isCtaParagraph = (text: string) => {
+    const t = text.trim()
+    return /post your task now at taskorilla\.com and let helpers come to you/i.test(t) ||
+      /publique a sua tarefa em taskorilla\.com e deixe os ajudantes virem até si/i.test(t)
+  }
+  const ctaButtonLabel = language === 'pt'
+    ? 'Publique a sua tarefa em taskorilla.com e deixe os ajudantes virem até si'
+    : 'Post your task now at taskorilla.com and let helpers come to you'
+  const renderCtaButton = (key: string) => (
+    <div key={key} className="mt-8 mb-4 flex justify-center">
+      <Link
+        href="/tasks/new"
+        className="inline-flex items-center justify-center px-6 py-3.5 rounded-lg font-semibold text-white bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg transition-all text-center"
+      >
+        {ctaButtonLabel}
+      </Link>
+    </div>
+  )
+
+  const [openAccordionIndex, setOpenAccordionIndex] = useState<number | null>(0)
+
+  const parseContent = (content: string) => {
+    const sections = content.split('\n\n')
+    const blocks: { type: 'heading' | 'table' | 'paragraph'; value: string; tableData?: { headerCells: string[]; rows: string[][] } }[] = []
+    for (const section of sections) {
+      const table = parseMarkdownTable(section)
+      if (table) {
+        blocks.push({ type: 'table', value: section, tableData: table })
+      } else if (section.startsWith('**') && section.includes('**')) {
+        blocks.push({ type: 'heading', value: section })
+      } else {
+        blocks.push({ type: 'paragraph', value: section })
+      }
+    }
+
+    const accordionSections: { title: string; table: { headerCells: string[]; rows: string[][] } }[] = []
+    const introNodes: React.ReactNode[] = []
+    const outroNodes: React.ReactNode[] = []
+    let i = 0
+    let phase: 'intro' | 'accordion' | 'outro' = 'intro'
+
+    while (i < blocks.length) {
+      const b = blocks[i]
+      if (b.type === 'heading' && isAccordionHeading(b.value)) {
+        const title = b.value.replace(/^\*\*/, '').replace(/\*\*$/, '').trim()
+        const next = blocks[i + 1]
+        if (next?.type === 'table' && next.tableData) {
+          accordionSections.push({ title, table: next.tableData })
+          phase = 'accordion'
+          i += 2
+          continue
+        }
+      }
+
+      if (phase === 'accordion' && (b.type !== 'heading' || !isAccordionHeading(b.value))) {
+        phase = 'outro'
+      }
+
+      if (phase === 'intro') {
+        if (b.type === 'table' && b.tableData) {
+          introNodes.push(<div key={`t-${i}`} className="mb-6">{renderTable(b.tableData, `t-${i}`)}</div>)
+        } else if (b.type === 'heading') {
+          const headingText = b.value.match(/\*\*(.*?)\*\*/)?.[1] || b.value
+          const remainingText = b.value.replace(/\*\*(.*?)\*\*/, '').trim()
+          introNodes.push(
+            <div key={`h-${i}`} className="mb-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-3">{headingText}</h3>
+              {remainingText && <p className="text-gray-700 leading-relaxed">{renderInlineMarkdown(remainingText)}</p>}
+            </div>
+          )
+        } else if (b.type === 'paragraph' && b.value.trim()) {
+          if (isCtaParagraph(b.value)) {
+            introNodes.push(renderCtaButton(`cta-${i}`))
+          } else {
+            introNodes.push(
+              <p key={`p-${i}`} className="text-gray-700 leading-relaxed mb-4">
+                {renderInlineMarkdown(b.value)}
+              </p>
+            )
+          }
+        }
+      } else if (phase === 'outro') {
+        if (b.type === 'table' && b.tableData) {
+          outroNodes.push(<div key={`t-${i}`} className="mb-6">{renderTable(b.tableData, `t-${i}`)}</div>)
+        } else if (b.type === 'heading') {
+          const headingText = b.value.match(/\*\*(.*?)\*\*/)?.[1] || b.value
+          const remainingText = b.value.replace(/\*\*(.*?)\*\*/, '').trim()
+          outroNodes.push(
+            <div key={`h-${i}`} className="mb-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-3">{headingText}</h3>
+              {remainingText && <p className="text-gray-700 leading-relaxed">{renderInlineMarkdown(remainingText)}</p>}
+            </div>
+          )
+        } else if (b.type === 'paragraph' && b.value.trim()) {
+          if (isCtaParagraph(b.value)) {
+            outroNodes.push(renderCtaButton(`cta-${i}`))
+          } else {
+            outroNodes.push(
+              <p key={`p-${i}`} className="text-gray-700 leading-relaxed mb-4">
+                {renderInlineMarkdown(b.value)}
+              </p>
+            )
+          }
+        }
+      }
+      i++
+    }
+
+    return { accordionSections, introNodes, outroNodes }
+  }
+
+  const { accordionSections, introNodes, outroNodes } = parseContent(translatedGuide.content)
+
+  const formatContent = () => (
+    <>
+      {introNodes}
+      {accordionSections.length > 0 && (
+        <div className="mb-8 space-y-3">
+          {accordionSections.map((item, idx) => (
+            <div
+              key={idx}
+              className="border border-gray-200 rounded-lg overflow-hidden hover:border-primary/30 transition-colors"
+            >
+              <button
+                type="button"
+                onClick={() => setOpenAccordionIndex(openAccordionIndex === idx ? null : idx)}
+                className="w-full px-5 py-4 flex items-center justify-between bg-white hover:bg-gray-50 text-left font-semibold text-gray-900"
+              >
+                <span>{item.title}</span>
+                {openAccordionIndex === idx ? (
+                  <ChevronUp className="w-5 h-5 text-primary flex-shrink-0" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                )}
+              </button>
+              {openAccordionIndex === idx && (
+                <div className="px-5 py-4 bg-gray-50 border-t border-gray-200">
+                  {renderTable(item.table, `acc-${idx}`)}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      {outroNodes}
+    </>
+  )
 
   const backToGuidesText = language === 'pt' ? 'Voltar aos Guias' : 'Back to Guides'
   const minReadText = language === 'pt' ? '📖 5 min de leitura' : '📖 5 min read'
@@ -117,7 +292,7 @@ export default function GuidePage() {
         <div className="container mx-auto max-w-4xl">
           <div className="bg-white rounded-lg shadow-md p-8 mb-8">
             <div className="prose prose-lg max-w-none">
-              {formatContent(translatedGuide.content)}
+              {formatContent()}
             </div>
 
             {/* Was this helpful? */}
