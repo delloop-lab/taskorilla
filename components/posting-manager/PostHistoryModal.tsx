@@ -97,9 +97,21 @@ export default function PostHistoryModal({
                       href={post.post_media_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 underline"
+                      className="block focus:outline-none"
                     >
-                      View media
+                      <img
+                        src={post.post_media_url}
+                        alt="Post media"
+                        className="max-w-full max-h-48 rounded-md border border-gray-200 object-contain"
+                      />
+                    </a>
+                    <a
+                      href={post.post_media_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 inline-block text-xs text-blue-600 hover:text-blue-800 underline"
+                    >
+                      Open in new tab
                     </a>
                   </div>
                 )}

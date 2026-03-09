@@ -13,6 +13,7 @@ interface Props {
   onDeleteGroup: (group: PostingGroup) => void
   filterPlatform: string
   setFilterPlatform: (platform: string) => void
+  highlightedGroupIds?: string[]
 }
 
 export default function DashboardTable({
@@ -24,6 +25,7 @@ export default function DashboardTable({
   onDeleteGroup,
   filterPlatform,
   setFilterPlatform,
+  highlightedGroupIds = [],
 }: Props) {
   const platforms = ['All', 'Facebook', 'Instagram', 'LinkedIn', 'X', 'Threads', 'WhatsApp']
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'status'>('name')
@@ -166,8 +168,12 @@ export default function DashboardTable({
               const isCommentOnly = group.facebook_post_mode === 'Comments accepted'
               const hasPending = !!lastPost?.pending_approval
 
+              const isHighlighted = highlightedGroupIds.includes(group.id)
               return (
-                <tr key={group.id} className="hover:bg-gray-50">
+                <tr
+                  key={group.id}
+                  className={`hover:bg-gray-50 ${isHighlighted ? 'ring-2 ring-amber-400 ring-inset bg-amber-50/80' : ''}`}
+                >
                   <td className="px-2 py-2 whitespace-nowrap text-gray-500 text-right tabular-nums w-10">
                     {index + 1}
                   </td>

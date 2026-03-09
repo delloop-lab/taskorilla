@@ -6,15 +6,21 @@ interface Props {
   onClose: () => void
   onSave: (payload: Partial<PostingGroup> & { platform: PostingPlatform }) => Promise<void>
   initialGroup?: PostingGroup | null
+  existingGroups?: PostingGroup[]
+  onDuplicateDetected?: (groupIds: string[]) => void
 }
 
 const PLATFORMS: PostingPlatform[] = ['Facebook', 'Instagram', 'LinkedIn', 'X', 'Threads', 'WhatsApp']
 
-export default function GroupFormModal({ open, onClose, onSave, initialGroup }: Props) {
+function normalizeForCompare(s: string): string {
+  return s.trim().toLowerCase()
+}
+
+export default function GroupFormModal({ open, onClose, onSave, initialGroup, existingGroups = [], onDuplicateDetected }: Props) {
   const [platform, setPlatform] = useState<PostingPlatform>('Facebook')
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')
-  const [daysBetween, setDaysBetween] = useState(3)
+  const [daysBetween, setDaysBetween] = useState(5)
   const [notes, setNotes] = useState('')
   const [facebookMode, setFacebookMode] = useState<string>('')
   const [saving, setSaving] = useState(false)
@@ -32,25 +38,70 @@ export default function GroupFormModal({ open, onClose, onSave, initialGroup }: 
       setPlatform('Facebook')
       setName('')
       setUrl('')
-      setDaysBetween(3)
+      setDaysBetween(5)
       setNotes('')
       setFacebookMode('')
     }
   }, [initialGroup, open])
+
+  // Live duplicate check as user types name or URL
+  useEffect(() => {
+    if (!open) return
+    const trimmedName = name.trim()
+    const trimmedUrl = url.trim() || null
+    const nameNorm = normalizeForCompare(trimmedName)
+    const urlNorm = trimmedUrl ? normalizeForCompare(trimmedUrl) : null
+
+    const others = existingGroups.filter((g) => g.id !== initialGroup?.id)
+    const duplicateByNameGroups = nameNorm ? others.filter((g) => normalizeForCompare(g.name) === nameNorm) : []
+    const duplicateByUrlGroups = urlNorm ? others.filter((g) => g.url && normalizeForCompare(g.url) === urlNorm) : []
+    const duplicateIds = [...new Set([...duplicateByNameGroups.map((g) => g.id), ...duplicateByUrlGroups.map((g) => g.id)])]
+
+    if (duplicateIds.length > 0) {
+      const parts: string[] = []
+      if (duplicateByNameGroups.length > 0) parts.push('A group or page with this name already exists.')
+      if (duplicateByUrlGroups.length > 0) parts.push('A group or page with this URL already exists.')
+      setErrorMsg(parts.join(' '))
+      onDuplicateDetected?.(duplicateIds)
+    } else {
+      setErrorMsg(null)
+      onDuplicateDetected?.([])
+    }
+  }, [open, name, url, existingGroups, initialGroup?.id, onDuplicateDetected])
 
   if (!open) return null
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
-    setSaving(true)
     setErrorMsg(null)
+
+    const trimmedName = name.trim()
+    const trimmedUrl = url.trim() || null
+    const nameNorm = normalizeForCompare(trimmedName)
+    const urlNorm = trimmedUrl ? normalizeForCompare(trimmedUrl) : null
+
+    const others = existingGroups.filter((g) => g.id !== initialGroup?.id)
+    const duplicateByNameGroups = nameNorm ? others.filter((g) => normalizeForCompare(g.name) === nameNorm) : []
+    const duplicateByUrlGroups = urlNorm ? others.filter((g) => g.url && normalizeForCompare(g.url) === urlNorm) : []
+    const duplicateIds = [...new Set([...duplicateByNameGroups.map((g) => g.id), ...duplicateByUrlGroups.map((g) => g.id)])]
+
+    if (duplicateIds.length > 0) {
+      const parts: string[] = []
+      if (duplicateByNameGroups.length > 0) parts.push('A group or page with this name already exists.')
+      if (duplicateByUrlGroups.length > 0) parts.push('A group or page with this URL already exists.')
+      setErrorMsg(parts.join(' '))
+      onDuplicateDetected?.(duplicateIds)
+      return
+    }
+
+    setSaving(true)
     try {
       await onSave({
         id: initialGroup?.id,
         platform,
-        name: name.trim(),
-        url: url.trim() || null,
+        name: trimmedName,
+        url: trimmedUrl,
         days_between_posts: Number.isFinite(daysBetween) ? Math.max(0, daysBetween) : 0,
         notes: notes.trim() || null,
         facebook_post_mode:
@@ -158,7 +209,7 @@ export default function GroupFormModal({ open, onClose, onSave, initialGroup }: 
             />
           </div>
           {errorMsg && (
-            <div className="text-xs text-red-600">
+            <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">
               {errorMsg}
             </div>
           )}

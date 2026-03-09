@@ -44,6 +44,7 @@ export default function AdminPostingManager() {
   const [filterPlatform, setFilterPlatform] = useState<string>('All')
   const [groupModalOpen, setGroupModalOpen] = useState(false)
   const [editingGroup, setEditingGroup] = useState<PostingGroup | null>(null)
+  const [highlightedDuplicateGroupIds, setHighlightedDuplicateGroupIds] = useState<string[]>([])
   const [newPostModalOpen, setNewPostModalOpen] = useState(false)
   const [historyModalOpen, setHistoryModalOpen] = useState(false)
   const [templateModalOpen, setTemplateModalOpen] = useState(false)
@@ -334,6 +335,7 @@ export default function AdminPostingManager() {
         metaByGroupId={metaByGroupId}
         filterPlatform={filterPlatform}
         setFilterPlatform={setFilterPlatform}
+        highlightedGroupIds={highlightedDuplicateGroupIds}
         onNewPost={(group) => {
           setSelectedGroup(group)
           setNewPostModalOpen(true)
@@ -527,8 +529,13 @@ export default function AdminPostingManager() {
 
       <GroupFormModal
         open={groupModalOpen}
-        onClose={() => setGroupModalOpen(false)}
+        onClose={() => {
+          setGroupModalOpen(false)
+          setHighlightedDuplicateGroupIds([])
+        }}
         initialGroup={editingGroup}
+        existingGroups={groups}
+        onDuplicateDetected={(ids) => setHighlightedDuplicateGroupIds(ids)}
         onSave={async (payload) => {
           await handleSaveGroup(payload)
         }}
