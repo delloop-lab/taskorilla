@@ -1,6 +1,6 @@
 'use client'
 
-import { Facebook, Instagram } from 'lucide-react'
+import { FaFacebookF, FaInstagram, FaTiktok } from 'react-icons/fa6'
 import clsx from 'clsx'
 
 interface SocialBarProps {
@@ -28,7 +28,7 @@ export function SocialBar({ className }: SocialBarProps) {
           className="text-blue-600 hover:text-blue-700 transition-colors inline-flex items-center"
           aria-label="Follow Taskorilla on Facebook"
         >
-          <Facebook className="w-5 h-5 sm:w-6 sm:h-6" />
+          <FaFacebookF className="w-4 h-4 sm:w-5 sm:h-5" />
         </a>
         <a
           href="https://www.instagram.com/taskorilla"
@@ -37,7 +37,16 @@ export function SocialBar({ className }: SocialBarProps) {
           className="text-pink-600 hover:text-pink-700 transition-colors inline-flex items-center"
           aria-label="Follow Taskorilla on Instagram"
         >
-          <Instagram className="w-5 h-5 sm:w-6 sm:h-6" />
+          <FaInstagram className="w-4 h-4 sm:w-5 sm:h-5" />
+        </a>
+        <a
+          href="https://www.tiktok.com/@taskorilla"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-black hover:text-gray-800 dark:text-gray-100 dark:hover:text-white transition-colors inline-flex items-center"
+          aria-label="Follow Taskorilla on TikTok"
+        >
+          <FaTiktok className="w-4 h-4 sm:w-5 sm:h-5" />
         </a>
       </div>
     </div>

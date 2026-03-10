@@ -215,7 +215,7 @@ export default function LandingV2() {
                 🆘
               </div>
               <div className="button-text">
-                <div className="button-title">Post a Task</div>
+                <div className="button-title">Post a Task for Free</div>
                 <div className="button-subtitle">Get help to get things done locally!</div>
               </div>
             </Link>

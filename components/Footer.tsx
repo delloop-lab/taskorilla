@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Facebook, Instagram } from 'lucide-react'
+import { FaFacebookF, FaInstagram, FaTiktok } from 'react-icons/fa6'
 import { useEffect, useState } from 'react'
 import { useLanguage } from '@/lib/i18n'
 
@@ -40,7 +40,7 @@ export default function Footer({ variant = 'default' }: FooterProps) {
               className="text-blue-600 hover:text-blue-700 transition-colors inline-flex items-center"
               aria-label="Follow us on Facebook"
             >
-              <Facebook className="w-6 h-6" />
+              <FaFacebookF className="w-4 h-4 sm:w-5 sm:h-5" />
             </a>
             <a 
               href="https://www.instagram.com/taskorilla" 
@@ -49,7 +49,16 @@ export default function Footer({ variant = 'default' }: FooterProps) {
               className="text-pink-600 hover:text-pink-700 transition-colors inline-flex items-center"
               aria-label="Follow us on Instagram"
             >
-              <Instagram className="w-6 h-6" />
+              <FaInstagram className="w-4 h-4 sm:w-5 sm:h-5" />
+            </a>
+            <a 
+              href="https://www.tiktok.com/@taskorilla" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-black hover:text-gray-800 dark:text-gray-100 dark:hover:text-white transition-colors inline-flex items-center"
+              aria-label="Follow us on TikTok"
+            >
+              <FaTiktok className="w-4 h-4 sm:w-5 sm:h-5" />
             </a>
           </div>
         </div>
@@ -86,7 +95,7 @@ export default function Footer({ variant = 'default' }: FooterProps) {
             className="text-blue-600 hover:text-blue-700 transition-colors inline-flex items-center"
             aria-label="Follow us on Facebook"
           >
-            <Facebook className="w-6 h-6" />
+            <FaFacebookF className="w-4 h-4 sm:w-5 sm:h-5" />
           </a>
           <a 
             href="https://www.instagram.com/taskorilla" 
@@ -95,7 +104,16 @@ export default function Footer({ variant = 'default' }: FooterProps) {
             className="text-pink-600 hover:text-pink-700 transition-colors inline-flex items-center"
             aria-label="Follow us on Instagram"
           >
-            <Instagram className="w-6 h-6" />
+            <FaInstagram className="w-4 h-4 sm:w-5 sm:h-5" />
+          </a>
+          <a 
+            href="https://www.tiktok.com/@taskorilla" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-black hover:text-gray-800 dark:text-gray-100 dark:hover:text-white transition-colors inline-flex items-center"
+            aria-label="Follow us on TikTok"
+          >
+            <FaTiktok className="w-4 h-4 sm:w-5 sm:h-5" />
           </a>
         </div>
         <div className="flex justify-center items-center gap-2 mt-2 text-xs text-muted-foreground/70">

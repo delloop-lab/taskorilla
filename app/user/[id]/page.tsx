@@ -12,10 +12,12 @@ import { User as UserIcon, Star } from 'lucide-react'
 import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
 import UserRatingsDisplay from '@/components/UserRatingsDisplay'
 import { formatRate } from '@/lib/currency'
+import { useLanguage } from '@/lib/i18n'
 
 function UserProfileContent() {
   const params = useParams()
   const router = useRouter()
+  const { t } = useLanguage()
   const userId = params.id as string
   const { users: userRatings, loading: ratingsLoading, error: ratingsError } = useUserRatings()
   
@@ -582,7 +584,7 @@ function UserProfileContent() {
             {/* Skills */}
             {profile.skills && profile.skills.length > 0 && (
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Skills</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('profile.skills')}</h2>
                 <div className="flex flex-wrap gap-2">
                   {profile.skills.map((skill, index) => (
                     <span
@@ -599,7 +601,7 @@ function UserProfileContent() {
             {/* Services Offered */}
             {profile.services_offered && profile.services_offered.length > 0 && (
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Services Offered</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('profile.servicesOffered')}</h2>
                 <ul className="list-disc list-inside space-y-2 text-gray-700">
                   {profile.services_offered.map((service, index) => (
                     <li key={index}>{service}</li>
@@ -608,10 +610,10 @@ function UserProfileContent() {
               </div>
             )}
 
-            {/* Professional Offerings */}
+            {/* Professional Offerings & Other Services */}
             {profile.professional_offerings && profile.professional_offerings.length > 0 && (
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Professional Offerings</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('profile.professionalOfferings')}</h2>
                 <ul className="space-y-2 text-gray-700">
                   {profile.professional_offerings.map((offering, index) => (
                     <li key={index} className="flex items-center justify-between gap-3">
@@ -638,7 +640,7 @@ function UserProfileContent() {
             {/* Professions */}
             {profile.professions && profile.professions.length > 0 && (
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Professions</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('profile.professionsHeading')}</h2>
                 <div className="flex flex-wrap gap-2">
                   {profile.professions.map((profession, index) => (
                     <span
@@ -655,7 +657,7 @@ function UserProfileContent() {
             {/* Qualifications */}
             {profile.qualifications && profile.qualifications.length > 0 && (
               <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Qualifications & Certifications</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('profile.qualificationsCertifications')}</h2>
                 <div className="space-y-3">
                   {profile.qualifications.map((qualification, index) => (
                     <div key={index} className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">

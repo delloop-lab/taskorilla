@@ -18,8 +18,9 @@ const MODEL = 'text-embedding-3-small'
 const USE_AI_HELPER_CLASSIFIER = true as const
 
 // Optional: toggle use of the original lexical matcher for comparison.
-// When false, we do not call matchHelpersForTask at all.
-const USE_LEXICAL_MATCHER = false as const
+// When true, we compute lexical matches and use them as a safety net
+// when the AI classifier returns no useful candidates.
+const USE_LEXICAL_MATCHER = true as const
 
 function cosineSimilarity(a: number[], b: number[]) {
   let dot = 0

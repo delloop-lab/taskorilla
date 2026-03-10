@@ -7,7 +7,6 @@ import StandardModal from '@/components/StandardModal'
 import { Category, Tag, User } from '@/lib/types'
 import { geocodePostcode } from '@/lib/geocoding'
 import { formatPostcodeForCountry, isPortuguesePostcode } from '@/lib/postcode'
-import { PROFESSION_GROUPS } from '@/lib/profession-constants'
 import { sortCategoriesByDisplayOrder } from '@/lib/category-order'
 import { checkForContactInfo } from '@/lib/content-filter'
 import { User as UserIcon } from 'lucide-react'
@@ -53,6 +52,7 @@ export default function NewTaskClient() {
   const [geocoding, setGeocoding] = useState(false)
   const [geocodeError, setGeocodeError] = useState<string | null>(null)
   const [selectedProfessions, setSelectedProfessions] = useState<string[]>([])
+  const [selectedHelperType, setSelectedHelperType] = useState<string>('')
   const [taskType, setTaskType] = useState<'helper' | 'professional'>('helper')
   const [requestedHelper, setRequestedHelper] = useState<User | null>(null)
   const [requestedHelperLoading, setRequestedHelperLoading] = useState(false)
@@ -78,6 +78,42 @@ export default function NewTaskClient() {
     longitude: null as number | null,
     willing_to_help: false,
   })
+
+  // High-level professional types used when posting a Professional task
+  // These mirror the simple groups you want users to choose from.
+  const PROFESSIONAL_TYPE_OPTIONS: string[] = [
+    'Health professionals',
+    'Financial professionals',
+    'Legal professionals',
+    'Property professionals',
+    'Business professionals',
+    'Education and coaching',
+    'Other',
+  ]
+
+  // High-level helper types used when posting a Helper task
+  // These are what most people are actually looking for.
+  const HELPER_TYPE_OPTIONS: string[] = [
+    // Tradespeople (skilled)
+    'Electrical & Plumbing',
+    'Carpentry & Woodwork',
+    'Painting, Tiling & Flooring',
+    'Building & Renovations',
+    'HVAC & Heating/Cooling',
+    'Security & Locksmiths',
+    'Appliance & Equipment Repairs',
+    // Non-Trades / General Helpers
+    'Gardening & Outdoor Maintenance',
+    'Cleaning & Home Care',
+    'Moving & Lifting Help',
+    'Furniture Assembly & DIY',
+    'Decluttering & Organising',
+    'Errands & Deliveries',
+    'Pet & House Sitting',
+    'Event Setup & Assistance',
+    'Tech Help & Setup',
+    'Other',
+  ]
 
   useEffect(() => {
     checkUser()
@@ -666,7 +702,16 @@ export default function NewTaskClient() {
 
       // First try with all fields
       const fullTaskData: any = { ...taskDataToInsert }
-      
+
+      // Persist a human-readable category label for cards:
+      // - For helper tasks, use the selected helper type (e.g. "HVAC & Heating/Cooling")
+      // - For professional tasks, use the first selected professional type if available
+      if (taskType === 'helper' && selectedHelperType) {
+        fullTaskData.category = selectedHelperType
+      } else if (taskType === 'professional' && selectedProfessions.length > 0) {
+        fullTaskData.category = selectedProfessions[0]
+      }
+
       // Only add if we have values (don't add null/empty arrays)
       if (requiredSkills.length > 0) {
         fullTaskData.required_skills = requiredSkills
@@ -1141,28 +1186,57 @@ export default function NewTaskClient() {
                 </p>
               </div>
 
-              {/* Category - Only show for Helper tasks */}
-              <div>
-                  <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-2">
-                    Category <span className="text-gray-500 font-normal">(Optional)</span>
+              {/* Category / Professional Type */}
+              {taskType === 'professional' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    What type of professional do you need? <span className="text-gray-500 font-normal">(Optional)</span>
                   </label>
                   <select
-                    id="category_id"
+                    value=""
+                    onChange={(e) => {
+                      const value = e.target.value
+                      if (value && !selectedProfessions.includes(value)) {
+                        setSelectedProfessions([...selectedProfessions, value])
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                    value={formData.category_id}
-                    onChange={(e) => handleCategoryChange(e.target.value)}
                   >
-                    <option value="">Select a category</option>
-                    {sortCategoriesByDisplayOrder(categories).map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
+                    <option value="">Select a professional type...</option>
+                    {PROFESSIONAL_TYPE_OPTIONS
+                      .filter((heading) => !selectedProfessions.includes(heading))
+                      .map((heading) => (
+                        <option key={heading} value={heading}>
+                          {heading}
+                        </option>
+                      ))}
                   </select>
+                  {selectedProfessions.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {selectedProfessions.map((type, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800"
+                        >
+                          {type}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedProfessions(selectedProfessions.filter((_, i) => i !== index))
+                            }
+                            className="ml-2 text-purple-600 hover:text-purple-800"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <p className="mt-1 text-xs text-gray-500">
-                    Choose the category that best fits your task.
+                    Pick the type of professional you want to hire (for example, Health &amp; Beauty or Business &amp; Professional Services).
                   </p>
                 </div>
+              )}
             </div>
 
             {/* Sub-Category */}
@@ -1187,124 +1261,31 @@ export default function NewTaskClient() {
               </div>
             )}
 
-            <div>
-              <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-2">
-                Tags (Press Enter to add)
-              </label>
-              <div className="relative">
-                <div className="flex flex-wrap gap-2 mb-2 p-2 border border-gray-300 rounded-md min-h-[42px]">
-                  {selectedTags.map((tag) => (
-                    <span
-                      key={tag.id}
-                      className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-primary-100 text-primary-800"
-                    >
-                      {tag.name}
-                      <button
-                        type="button"
-                        onClick={() => removeTag(tag.id)}
-                        className="ml-1 text-primary-600 hover:text-primary-800"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                  <input
-                    ref={tagInputRef}
-                    type="text"
-                    id="tags"
-                    className="flex-1 min-w-[120px] border-0 focus:outline-none focus:ring-0"
-                    placeholder={selectedTags.length === 0 ? 'Add tags...' : ''}
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={handleTagInputKeyDown}
-                    onFocus={() => {
-                      if (tagInput.trim()) {
-                        setShowTagSuggestions(true)
-                      }
-                    }}
-                    onBlur={() => {
-                      setTimeout(() => setShowTagSuggestions(false), 200)
-                    }}
-                  />
-                </div>
-                {showTagSuggestions && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
-                    {availableTags
-                      .filter(tag =>
-                        tag.name.toLowerCase().includes(tagInput.toLowerCase()) &&
-                        !selectedTags.some(st => st.id === tag.id)
-                      )
-                      .map((tag) => (
-                        <button
-                          key={tag.id}
-                          type="button"
-                          className="w-full text-left px-4 py-2 hover:bg-gray-100"
-                          onClick={() => selectExistingTag(tag)}
-                        >
-                          {tag.name}
-                        </button>
-                      ))}
-                  </div>
-                )}
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Add keywords that describe your task. Press Enter after each tag. Tags help helpers find your task faster.
-              </p>
-            </div>
-
-            {/* Professional Roles Selection - Only show for Professional tasks */}
-            {taskType === 'professional' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Required Professional Roles (Optional)
-              </label>
-              <div className="space-y-2">
+            {/* Helper Type selection - adds to required skills for easier matching */}
+            {taskType === 'helper' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  What type of helper do you need? <span className="text-gray-500 font-normal">(Optional)</span>
+                </label>
                 <select
-                  value=""
+                  value={selectedHelperType}
                   onChange={(e) => {
-                    if (e.target.value && !selectedProfessions.includes(e.target.value)) {
-                      setSelectedProfessions([...selectedProfessions, e.target.value])
-                      e.target.value = ''
-                    }
+                    const value = e.target.value
+                    setSelectedHelperType(value)
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                 >
-                  <option value="">Select a professional role...</option>
-                  {PROFESSION_GROUPS.map((group) => {
-                    const available = group.options.filter((prof) => !selectedProfessions.includes(prof))
-                    if (available.length === 0) return null
-                    return (
-                      <optgroup key={group.heading} label={group.heading}>
-                        {available.map((prof) => (
-                          <option key={prof} value={prof}>
-                            {prof}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )
-                  })}
+                  <option value="">Select a helper type...</option>
+                  {HELPER_TYPE_OPTIONS.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
                 </select>
-                {selectedProfessions.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {selectedProfessions.map((prof, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800"
-                      >
-                        {prof}
-                        <button
-                          type="button"
-                          onClick={() => setSelectedProfessions(selectedProfessions.filter((_, i) => i !== index))}
-                          className="ml-2 text-purple-600 hover:text-purple-800"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
+                <p className="mt-1 text-xs text-gray-500">
+                  Choose the kind of helper you’re after – for example, Electrical &amp; Plumbing, Gardening, or Tech Help.
+                </p>
               </div>
-            </div>
             )}
 
             <div>
@@ -1354,6 +1335,72 @@ export default function NewTaskClient() {
             </div>
           </>
         )}
+
+        {/* Tags - moved just above Country/Postcode */}
+        <div>
+          <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-2">
+            Tags (Press Enter to add)
+          </label>
+          <div className="relative">
+            <div className="flex flex-wrap gap-2 mb-2 p-2 border border-gray-300 rounded-md min-h-[42px]">
+              {selectedTags.map((tag) => (
+                <span
+                  key={tag.id}
+                  className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-primary-100 text-primary-800"
+                >
+                  {tag.name}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(tag.id)}
+                    className="ml-1 text-primary-600 hover:text-primary-800"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              <input
+                ref={tagInputRef}
+                type="text"
+                id="tags"
+                className="flex-1 min-w-[120px] border-0 focus:outline-none focus:ring-0"
+                placeholder={selectedTags.length === 0 ? 'Add tags...' : ''}
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleTagInputKeyDown}
+                onFocus={() => {
+                  if (tagInput.trim()) {
+                    setShowTagSuggestions(true)
+                  }
+                }}
+                onBlur={() => {
+                  setTimeout(() => setShowTagSuggestions(false), 200)
+                }}
+              />
+            </div>
+            {showTagSuggestions && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                {availableTags
+                  .filter(tag =>
+                    tag.name.toLowerCase().includes(tagInput.toLowerCase()) &&
+                    !selectedTags.some(st => st.id === tag.id)
+                  )
+                  .map((tag) => (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                      onClick={() => selectExistingTag(tag)}
+                    >
+                      {tag.name}
+                    </button>
+                  ))}
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Add keywords that describe your task. Press Enter after each tag. Tags help helpers find your task faster.
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           <div>

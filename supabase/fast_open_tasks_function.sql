@@ -27,7 +27,8 @@ RETURNS TABLE (
   required_professions text[],
   hidden_by_admin boolean,
   archived boolean,
-  willing_to_help boolean
+  willing_to_help boolean,
+  category text
 )
 LANGUAGE sql
 SECURITY DEFINER
@@ -54,7 +55,8 @@ AS $$
     t.required_professions,
     t.hidden_by_admin,
     t.archived,
-    t.willing_to_help
+    t.willing_to_help,
+    t.category
   FROM tasks t
   WHERE t.status = 'open'
     AND t.hidden_by_admin = false

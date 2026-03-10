@@ -24,13 +24,10 @@ export default function HomePage() {
               <h1 className="text-5xl md:text-6xl font-bold text-foreground leading-tight">
                 {t('homepage.tagline')}
               </h1>
-              <div className="text-xl text-muted-foreground">
-                <p>
-                  {t('homepage.description1')}
-                </p>
-                <p>
-                  {t('homepage.description2')}
-                </p>
+              <div className="text-xl text-muted-foreground space-y-3">
+                <p>{t('homepage.description1')}</p>
+                <p>{t('homepage.description2')}</p>
+                <p>{t('homepage.description3')}</p>
               </div>
               <div className="flex flex-wrap gap-4 pt-[10px] mb-0">
                 <Link href="/tasks/new" className="action-button post-button">

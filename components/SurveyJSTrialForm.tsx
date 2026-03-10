@@ -2213,6 +2213,10 @@ export default function SurveyJSTrialForm() {
         budget: data.budget && data.budget.toString().trim() ? parseFloat(data.budget.toString()) : null,
         category_id: categoryId,
         sub_category_id: subCategoryId,
+        // For the quick form we also persist the human-readable category/type text
+        // so that task cards can show values like "HVAC & Heating/Cooling" even
+        // when there is no matching DB category_id.
+        category: data.category || null,
         location: data.location || null,
         postcode: data.postcode?.trim() || null,
         country: data.country?.trim() || null,

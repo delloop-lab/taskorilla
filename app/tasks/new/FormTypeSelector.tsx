@@ -35,13 +35,18 @@ export default function FormTypeSelector() {
     <div className="w-full">
       {/* Background color above Form Type box */}
       <div className="h-[10px] bg-gray-100 mb-0"></div>
-      
-      {/* Form Type Selector */}
+
+      {/* Form Type Selector - Step 1 */}
       <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-center gap-4">
-          <label className="text-sm font-medium text-gray-700 text-center md:text-left">
-            {t('formType.question')}
-          </label>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="text-center md:text-left">
+            <p className="text-sm font-semibold text-gray-800">
+              {t('formType.stepTitle')}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {t('formType.stepSubtitle')}
+            </p>
+          </div>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             {/* Quick Button */}
             <button

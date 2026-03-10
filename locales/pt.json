@@ -129,9 +129,10 @@
     "professionalToggleDescription": "Marque isto se fornecer serviços profissionais. Irá gerir Profissões e Ofertas Profissionais em vez de Competências e Serviços.",
     "selectProfessionalCategory": "Selecionar Categoria Profissional",
     "selectProfessionalCategoryHelper": "Selecione os seus papéis profissionais. Se selecionar alguma profissão, Competências e Serviços serão ocultados.",
-    "professionalOfferings": "Ofertas Profissionais",
-    "professionalOfferingsHelper": "Liste os serviços profissionais que fornece (ex: Sessões de Terapia, Produção de Podcast, Consultoria CFO).",
+    "professionalOfferings": "Ofertas Profissionais e Outros Serviços",
+    "professionalOfferingsHelper": "Liste todos os serviços profissionais e outros serviços que fornece (ex: Sessões de Terapia, Produção de Podcast, Passear Cães, Jardinagem).",
     "qualificationsCertifications": "Qualificações e Certificações",
+    "professionsHeading": "Profissões",
     "skills": "Competências",
     "noSkillsAdded": "Nenhuma competência adicionada",
     "servicesOffered": "Serviços Oferecidos",
@@ -161,8 +162,8 @@
     "selectStandardService": "Selecionar um serviço padrão...",
     "addCustomServicePlaceholder": "Ou adicione um serviço personalizado e pressione Enter",
     "noQualificationsListed": "Nenhuma qualificação listada",
-    "noProfessionalOfferingsListed": "Nenhuma oferta profissional listada",
-    "addProfessionalOfferingPlaceholder": "ex: Sessões de Terapia",
+    "noProfessionalOfferingsListed": "Nenhuma oferta profissional ou outro serviço listado",
+    "addProfessionalOfferingPlaceholder": "ex: Sessões de Terapia, Passear Cães",
     "addQualificationPlaceholder": "ex: Certificação de Carpintaria, Licença de Canalização",
     "add": "Adicionar"
   },
@@ -171,7 +172,9 @@
     "fullTooltip": "Versão detalhada com todos os campos e etiquetas",
     "question": "Como prefere preencher o formulário?",
     "quick": "Rápido",
-    "quickTooltip": "Rápido e simples, apenas o essencial."
+    "quickTooltip": "Rápido e simples, apenas o essencial.",
+    "stepTitle": "Passo 1: Escolha como quer preencher este formulário",
+    "stepSubtitle": "O modo Rápido demora menos de um minuto. Pode mudar para o formulário completo em qualquer altura."
   },
   "help": {
     "backToHelpCenter": "Voltar ao Centro de Ajuda",
@@ -241,9 +244,10 @@
   "homepage": {
     "browseTasks": "Ver Tarefas",
     "browseTasksSubtitle": "Ganhe dinheiro a realizar tarefas!",
-    "description1": "Quer seja novo em Portugal ou se considere um local, o Taskorilla ajuda a concluir tarefas localmente ou a ganhar dinheiro ajudando outros.",
-    "description2": "Tarefas grandes, pequenas ou pelo meio. Encontre ajudantes de confiança ou ofereça os seus serviços e obtenha resultados de forma rápida e segura.",
-    "postTask": "Publicar Tarefa",
+    "description1": "Tem uma tarefa? Alguém por perto pode ajudar.",
+    "description2": "Quer seja novo em Portugal ou se considere um local, o Taskorilla ajuda a concluir tarefas localmente ou a ganhar dinheiro ajudando outros.",
+    "description3": "Tarefas grandes, pequenas ou pelo meio, encontre ajudantes de confiança ou profissionais, ou ofereça os seus serviços, e obtenha resultados de forma rápida e segura.",
+    "postTask": "Publicar Tarefa Gratuitamente",
     "postTaskSubtitle": "Obtenha ajuda local para concluir o que precisa!",
     "tagline": "Brilhante. Bravo. Breve."
   },
@@ -325,7 +329,7 @@
     "budgetDescription": "Se nenhum orçamento for inserido, os visitantes verão \"Orçamento\"",
     "budgetPlaceholder": "Inserir valor (ex: 50,00)",
     "budgetQuestion": "Qual é o seu orçamento? (Opcional)",
-    "categoryQuestion": "Qual categoria melhor se adequa à sua tarefa?",
+    "categoryQuestion": "Que tipo de ajudante melhor se adequa à sua tarefa?",
     "description": "Vamos começar! Vamos guiá-lo através de cada passo.",
     "descriptionPlaceholder": "Descreva em detalhe o que precisa de fazer...",
     "descriptionQuestion": "Conte-nos mais sobre o que precisa",

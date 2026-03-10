@@ -85,7 +85,40 @@ Group items so the bar isn’t one long row and related things sit together.
 
 ---
 
-## 5. Summary
+## 5. Database backup & restore (operations)
+
+For safety, keep simple, operator-friendly scripts for backing up and restoring the Postgres database (tasks, bids, users, etc.) without relying on Supabase’s built-in backup feature.
+
+### 5.1. Backup script (run before risky changes)
+
+- A PowerShell script lives in `scripts/db-backup.ps1`.
+- It requires:
+  - `pg_dump` installed and on the PATH (PostgreSQL client tools).
+  - `DATABASE_URL` env var set to the Supabase Postgres connection string.
+- To create a backup:
+  - Open a terminal in the repo.
+  - Run: `.\scripts\db-backup.ps1` (optionally `-OutputDir .\backups`).
+  - This creates a timestamped file like `backups/helper-db-YYYYMMDD-HHMMSS.dump`.
+
+Recommended use: run this before applying DB migrations or making risky schema/data changes, and keep at least the last N dumps in a safe location (e.g. encrypted cloud storage).
+
+### 5.2. Restore script (for emergency rollback)
+
+- A PowerShell script lives in `scripts/db-restore.ps1`.
+- It requires:
+  - `pg_restore` installed and on the PATH.
+  - Either `DATABASE_URL` set to the target database, or a `-TargetDatabaseUrl` parameter.
+- To restore from a dump:
+  - **Safer approach:** create a new Supabase project / database first.
+  - Set `DATABASE_URL` for that new DB in your terminal session.
+  - Run: `.\scripts\db-restore.ps1 -DumpFile .\backups\helper-db-YYYYMMDD-HHMMSS.dump`
+  - Point the app’s environment `DATABASE_URL` at this restored database and redeploy.
+
+Only senior admins should run restores, and they should always prefer restoring into a new database instead of overwriting the live one. After verification, you can switch traffic to the restored DB.
+
+---
+
+## 6. Summary
 
 | Current | Proposed |
 |--------|-----------|
@@ -95,3 +128,4 @@ Group items so the bar isn’t one long row and related things sit together.
 | Hard to see what exists | One place (control panel) lists all admin areas and links |
 
 No code has been changed; this is a proposal only. If you want to proceed, the minimal first step is: control panel at `/admin` (menu only) + links using `?tab=...` (or hash) to the existing tab content + add “Update locations” to the menu.
+

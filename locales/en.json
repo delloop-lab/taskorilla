@@ -129,9 +129,10 @@
     "professionalToggleDescription": "Check this if you provide professional services. You'll manage Professions and Professional Offerings instead of Skills and Services.",
     "selectProfessionalCategory": "Select Professional Category",
     "selectProfessionalCategoryHelper": "Select your professional roles. If you select any profession, Skills and Services will be hidden.",
-    "professionalOfferings": "Professional Offerings",
-    "professionalOfferingsHelper": "List the professional services you provide (e.g., Therapy Sessions, Podcast Production, CFO Advisory).",
+    "professionalOfferings": "Professional Offerings & Other Services",
+    "professionalOfferingsHelper": "List all the professional services and other things you offer (e.g., Therapy Sessions, Podcast Production, Dog Walking, Gardening).",
     "qualificationsCertifications": "Qualifications & Certifications",
+    "professionsHeading": "Professions",
     "skills": "Skills",
     "noSkillsAdded": "No skills added",
     "servicesOffered": "Services Offered",
@@ -161,8 +162,8 @@
     "selectStandardService": "Select a standard service...",
     "addCustomServicePlaceholder": "Or add a custom service and press Enter",
     "noQualificationsListed": "No qualifications listed",
-    "noProfessionalOfferingsListed": "No professional offerings listed",
-    "addProfessionalOfferingPlaceholder": "e.g., Therapy Sessions",
+    "noProfessionalOfferingsListed": "No professional offerings or other services listed",
+    "addProfessionalOfferingPlaceholder": "e.g., Therapy Sessions, Dog Walking",
     "addQualificationPlaceholder": "e.g., Carpentry Certification, Plumbing License",
     "add": "Add"
   },
@@ -171,7 +172,9 @@
     "fullTooltip": "Detailed version with all fields and tags",
     "question": "How would you like to fill out the form?",
     "quick": "Quick",
-    "quickTooltip": "Fast and simple, just the essentials."
+    "quickTooltip": "Fast and simple, just the essentials.",
+    "stepTitle": "Step 1: Choose how you want to fill out this form",
+    "stepSubtitle": "Quick takes less than a minute. You can switch to the full form at any time."
   },
   "help": {
     "backToHelpCenter": "Back to Help Center",
@@ -241,9 +244,10 @@
   "homepage": {
     "browseTasks": "Look around",
     "browseTasksSubtitle": "Get paid to get things done!",
-    "description1": "Whether you're new in town or consider yourself a local, Taskorilla helps you get tasks done locally or earn cash by helping others.",
-    "description2": "Big jobs, small jobs, or anything in between, find trusted helpers or professionals, or offer your skills, and get results quickly and safely.",
-    "postTask": "Post a Task",
+    "description1": "Got a task? Someone nearby can help.",
+    "description2": "Whether you're new in town or consider yourself a local, Taskorilla helps you get tasks done locally or earn cash by helping others.",
+    "description3": "Big jobs, small jobs, or anything in between, find trusted helpers or professionals, or offer your skills, and get results quickly and safely.",
+    "postTask": "Post a Task for Free",
     "postTaskSubtitle": "Get help to get things done locally!",
     "tagline": "Brainy. Brawny. Brilliant."
   },
@@ -325,7 +329,7 @@
     "budgetDescription": "Enter your budget. If you leave it blank, visitors will see \"Quote\" instead.",
     "budgetPlaceholder": "Enter amount (e.g., 50.00)",
     "budgetQuestion": "What's your budget? (Optional)",
-    "categoryQuestion": "Which category best fits your task?",
+    "categoryQuestion": "Which type of helper best fits your task?",
     "description": "Let's get started! We'll guide you through each step.",
     "descriptionPlaceholder": "Describe what you need done in detail...",
     "descriptionQuestion": "Tell us more about what you need",

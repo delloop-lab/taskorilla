@@ -1,6 +1,4 @@
 import { Model, StylesManager } from 'survey-core'
-import { PROFESSION_GROUPS } from '@/lib/profession-constants'
-import { sortCategoriesByDisplayOrder } from '@/lib/category-order'
 
 /**
  * SurveyJS Trial Form Schema
@@ -14,23 +12,46 @@ export function getTrialFormSchema(
   translate?: (key: string) => string
 ) {
   const t = translate || ((key: string) => key) // Fallback to key if no translate function
-  const categoriesWithSlug = categories.map(c => ({
-    ...c,
-    slug: (c as { slug?: string }).slug || 'unknown'
-  }))
-  const sortedCategories = sortCategoriesByDisplayOrder(categoriesWithSlug)
-  const categoryChoices = sortedCategories.map(cat => ({
-    value: cat.id,
-    text: cat.name
+
+  // Simple helper types for the quick form – mirrors the full New Task form.
+  const HELPER_TYPE_OPTIONS: string[] = [
+    'Electrical & Plumbing',
+    'Carpentry & Woodwork',
+    'Painting, Tiling & Flooring',
+    'Building & Renovations',
+    'HVAC & Heating/Cooling',
+    'Security & Locksmiths',
+    'Appliance & Equipment Repairs',
+    'Gardening & Outdoor Maintenance',
+    'Cleaning & Home Care',
+    'Moving & Lifting Help',
+    'Furniture Assembly & DIY',
+    'Decluttering & Organising',
+    'Errands & Deliveries',
+    'Pet & House Sitting',
+    'Event Setup & Assistance',
+    'Tech Help & Setup',
+    'Other',
+  ]
+
+  const categoryChoices = HELPER_TYPE_OPTIONS.map((type) => ({
+    value: type,
+    text: type,
   }))
 
-  // Same order and contents as Full form (with visible group headings).
-  // SurveyJS dropdown doesn't render native <optgroup>, so we insert disabled "header" items
-  // and style them via the per-choice `css` field.
-  const professionChoices = PROFESSION_GROUPS.flatMap((g) => [
-    { value: `__header_${g.heading}__`, text: g.heading, css: 'profession-group-header', enableIf: 'false' },
-    ...g.options.map((prof) => ({ value: prof, text: prof, css: 'profession-group-option' })),
-  ])
+  // Helper categories (Hire a Helper) use the full category tree above.
+  //
+  // For "Engage a Professional" we want a very simple list of high-level
+  // professional types that matches the full New Task form.
+  const professionChoices = [
+    { value: 'Health professionals', text: 'Health professionals' },
+    { value: 'Financial professionals', text: 'Financial professionals' },
+    { value: 'Legal professionals', text: 'Legal professionals' },
+    { value: 'Property professionals', text: 'Property professionals' },
+    { value: 'Business professionals', text: 'Business professionals' },
+    { value: 'Education and coaching', text: 'Education and coaching' },
+    { value: 'Other', text: 'Other' },
+  ]
 
   return {
     title: t('surveyForm.title'),
