@@ -237,92 +237,95 @@ export default function AdminPostingManager() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Taskorilla Posting Manager</h1>
-          <p className="text-sm text-gray-500">
-            Plan and track social posts across platforms with frequency control and templates.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2 items-center">
-          <button
-            type="button"
-            onClick={() => {
-              setEditingGroup(null)
-              setGroupModalOpen(true)
-            }}
-            className="px-4 py-1.5 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700"
-          >
-            Add group / page
-          </button>
-          <button
-            type="button"
-            onClick={() => setTemplateModalOpen(true)}
-            className="px-3 py-1.5 rounded-md text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
-          >
-            Manage templates
-          </button>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-3 items-center justify-between">
-        <div className="flex flex-wrap gap-2 items-center text-xs text-gray-500">
-          <span>
-            Status colours: <span className="font-medium text-green-700">Ready</span> /{' '}
-            <span className="font-medium text-red-700">Waiting</span> /{' '}
-            <span className="font-medium text-amber-700">Never posted</span>
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-2 items-center text-xs">
-          <label className="font-medium text-gray-600">CSV:</label>
-          <button
-            type="button"
-            onClick={handleExportGroups}
-            className="px-2.5 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
-          >
-            Export groups
-          </button>
-          <button
-            type="button"
-            onClick={handleExportPosts}
-            className="px-2.5 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
-          >
-            Export posts
-          </button>
-          <button
-            type="button"
-            onClick={handleExportTemplates}
-            className="px-2.5 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
-          >
-            Export templates
-          </button>
-          <label className="ml-2 inline-flex items-center gap-1 text-xs text-gray-600 cursor-pointer">
-            Import CSV
-            <select
-              className="border border-gray-300 rounded-md px-1.5 py-0.5 text-xs bg-white"
-              onChange={() => {
-                // no-op, handled by file input below
+      {/* Sticky page header for Posting Manager (title, buttons, CSV controls) */}
+      <div className="sticky top-0 z-30 bg-gray-50 pb-3 space-y-3">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Taskorilla Posting Manager</h1>
+            <p className="text-sm text-gray-500">
+              Plan and track social posts across platforms with frequency control and templates.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2 items-center">
+            <button
+              type="button"
+              onClick={() => {
+                setEditingGroup(null)
+                setGroupModalOpen(true)
               }}
+              className="px-4 py-1.5 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700"
             >
-              <option value="groups">Groups</option>
-              <option value="posts">Posts</option>
-              <option value="templates">Templates</option>
-            </select>
-            <input
-              type="file"
-              accept=".csv,text/csv"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (!file) return
-                const selectEl = (e.target.previousSibling as HTMLSelectElement) || null
-                const type =
-                  (selectEl?.value as 'groups' | 'posts' | 'templates') || 'groups'
-                void handleImport(file, type)
-                e.target.value = ''
-              }}
-            />
-          </label>
+              Add group / page
+            </button>
+            <button
+              type="button"
+              onClick={() => setTemplateModalOpen(true)}
+              className="px-3 py-1.5 rounded-md text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+            >
+              Manage templates
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-3 items-center justify-between">
+          <div className="flex flex-wrap gap-2 items-center text-xs text-gray-500">
+            <span>
+              Status colours: <span className="font-medium text-green-700">Ready</span> /{' '}
+              <span className="font-medium text-red-700">Waiting</span> /{' '}
+              <span className="font-medium text-amber-700">Never posted</span>
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2 items-center text-xs">
+            <label className="font-medium text-gray-600">CSV:</label>
+            <button
+              type="button"
+              onClick={handleExportGroups}
+              className="px-2.5 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+            >
+              Export groups
+            </button>
+            <button
+              type="button"
+              onClick={handleExportPosts}
+              className="px-2.5 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+            >
+              Export posts
+            </button>
+            <button
+              type="button"
+              onClick={handleExportTemplates}
+              className="px-2.5 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+            >
+              Export templates
+            </button>
+            <label className="ml-2 inline-flex items-center gap-1 text-xs text-gray-600 cursor-pointer">
+              Import CSV
+              <select
+                className="border border-gray-300 rounded-md px-1.5 py-0.5 text-xs bg-white"
+                onChange={() => {
+                  // no-op, handled by file input below
+                }}
+              >
+                <option value="groups">Groups</option>
+                <option value="posts">Posts</option>
+                <option value="templates">Templates</option>
+              </select>
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  const selectEl = (e.target.previousSibling as HTMLSelectElement) || null
+                  const type =
+                    (selectEl?.value as 'groups' | 'posts' | 'templates') || 'groups'
+                  void handleImport(file, type)
+                  e.target.value = ''
+                }}
+              />
+            </label>
+          </div>
         </div>
       </div>
 

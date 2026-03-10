@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import Footer from '@/components/Footer'
 import { Globe2, Rocket, Users, TrendingUp } from 'lucide-react'
+import { FaLinkedinIn } from 'react-icons/fa6'
 
 export default function PartnershipsPage() {
   return (
@@ -205,12 +206,24 @@ export default function PartnershipsPage() {
               <p className="text-sm text-gray-700 max-w-lg">
                 Submit your details and we will be in touch if there is a fit.
               </p>
-              <a
-                href="mailto:tee@taskorilla.com?subject=Partnership%20Opportunity%20-%20Run%20Taskorilla%20in%20My%20Country"
-                className="inline-flex items-center justify-center px-4 py-2.5 rounded-lg border border-primary-600 bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 hover:border-primary-700 shadow-sm transition-colors"
-              >
-                Email us about partnerships
-              </a>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <a
+                  href="mailto:tee@taskorilla.com?subject=Partnership%20Opportunity%20-%20Run%20Taskorilla%20in%20My%20Country"
+                  className="inline-flex items-center justify-center px-4 py-2.5 rounded-lg border border-primary-600 bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 hover:border-primary-700 shadow-sm transition-colors"
+                >
+                  Email us about partnerships
+                </a>
+                <a
+                  href="https://www.linkedin.com/company/111965566"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center px-3.5 py-2 rounded-lg border border-sky-700 text-sky-700 hover:bg-sky-700 hover:text-white text-sm font-semibold shadow-sm transition-colors"
+                  aria-label="Follow Taskorilla on LinkedIn"
+                >
+                  <FaLinkedinIn className="w-4 h-4 mr-2" />
+                  LinkedIn
+                </a>
+              </div>
             </div>
           </div>
         </div>

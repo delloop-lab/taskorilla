@@ -33,27 +33,27 @@ export default function Footer({ variant = 'default' }: FooterProps) {
           <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-1">
             <span>{t('footer.rights')}</span>
             <span className="text-xs opacity-75 font-medium">{version}</span>
-            <a 
-              href="https://www.facebook.com/profile.php?id=61584791914940" 
-              target="_blank" 
+            <a
+              href="https://www.facebook.com/profile.php?id=61584791914940"
+              target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 hover:text-blue-700 transition-colors inline-flex items-center"
               aria-label="Follow us on Facebook"
             >
               <FaFacebookF className="w-4 h-4 sm:w-5 sm:h-5" />
             </a>
-            <a 
-              href="https://www.instagram.com/taskorilla" 
-              target="_blank" 
+            <a
+              href="https://www.instagram.com/taskorilla"
+              target="_blank"
               rel="noopener noreferrer"
               className="text-pink-600 hover:text-pink-700 transition-colors inline-flex items-center"
               aria-label="Follow us on Instagram"
             >
               <FaInstagram className="w-4 h-4 sm:w-5 sm:h-5" />
             </a>
-            <a 
-              href="https://www.tiktok.com/@taskorilla" 
-              target="_blank" 
+            <a
+              href="https://www.tiktok.com/@taskorilla"
+              target="_blank"
               rel="noopener noreferrer"
               className="text-black hover:text-gray-800 dark:text-gray-100 dark:hover:text-white transition-colors inline-flex items-center"
               aria-label="Follow us on TikTok"
@@ -88,27 +88,27 @@ export default function Footer({ variant = 'default' }: FooterProps) {
           <span className="text-muted-foreground/30">|</span>
           <Link href="/contact" className="hover:text-foreground transition-colors">{t('footer.contact')}</Link>
           <span className="text-muted-foreground/30">|</span>
-          <a 
-            href="https://www.facebook.com/profile.php?id=61584791914940" 
-            target="_blank" 
+          <a
+            href="https://www.facebook.com/profile.php?id=61584791914940"
+            target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 hover:text-blue-700 transition-colors inline-flex items-center"
             aria-label="Follow us on Facebook"
           >
             <FaFacebookF className="w-4 h-4 sm:w-5 sm:h-5" />
           </a>
-          <a 
-            href="https://www.instagram.com/taskorilla" 
-            target="_blank" 
+          <a
+            href="https://www.instagram.com/taskorilla"
+            target="_blank"
             rel="noopener noreferrer"
             className="text-pink-600 hover:text-pink-700 transition-colors inline-flex items-center"
             aria-label="Follow us on Instagram"
           >
             <FaInstagram className="w-4 h-4 sm:w-5 sm:h-5" />
           </a>
-          <a 
-            href="https://www.tiktok.com/@taskorilla" 
-            target="_blank" 
+          <a
+            href="https://www.tiktok.com/@taskorilla"
+            target="_blank"
             rel="noopener noreferrer"
             className="text-black hover:text-gray-800 dark:text-gray-100 dark:hover:text-white transition-colors inline-flex items-center"
             aria-label="Follow us on TikTok"

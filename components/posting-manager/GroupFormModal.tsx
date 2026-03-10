@@ -46,28 +46,41 @@ export default function GroupFormModal({ open, onClose, onSave, initialGroup, ex
 
   // Live duplicate check as user types name or URL
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      // When modal is closed, clear local error but avoid pinging parent to prevent loops
+      setErrorMsg(null)
+      return
+    }
+
     const trimmedName = name.trim()
     const trimmedUrl = url.trim() || null
     const nameNorm = normalizeForCompare(trimmedName)
     const urlNorm = trimmedUrl ? normalizeForCompare(trimmedUrl) : null
 
     const others = existingGroups.filter((g) => g.id !== initialGroup?.id)
-    const duplicateByNameGroups = nameNorm ? others.filter((g) => normalizeForCompare(g.name) === nameNorm) : []
-    const duplicateByUrlGroups = urlNorm ? others.filter((g) => g.url && normalizeForCompare(g.url) === urlNorm) : []
-    const duplicateIds = [...new Set([...duplicateByNameGroups.map((g) => g.id), ...duplicateByUrlGroups.map((g) => g.id)])]
+    const duplicateByNameGroups = nameNorm
+      ? others.filter((g) => normalizeForCompare(g.name) === nameNorm)
+      : []
+    const duplicateByUrlGroups = urlNorm
+      ? others.filter((g) => g.url && normalizeForCompare(g.url) === urlNorm)
+      : []
+    const duplicateIds = [
+      ...new Set([...duplicateByNameGroups.map((g) => g.id), ...duplicateByUrlGroups.map((g) => g.id)]),
+    ]
 
     if (duplicateIds.length > 0) {
       const parts: string[] = []
-      if (duplicateByNameGroups.length > 0) parts.push('A group or page with this name already exists.')
-      if (duplicateByUrlGroups.length > 0) parts.push('A group or page with this URL already exists.')
+      if (duplicateByNameGroups.length > 0)
+        parts.push('A group or page with this name already exists.')
+      if (duplicateByUrlGroups.length > 0)
+        parts.push('A group or page with this URL already exists.')
       setErrorMsg(parts.join(' '))
       onDuplicateDetected?.(duplicateIds)
     } else {
       setErrorMsg(null)
       onDuplicateDetected?.([])
     }
-  }, [open, name, url, existingGroups, initialGroup?.id, onDuplicateDetected])
+  }, [open, name, url, existingGroups, initialGroup?.id])
 
   if (!open) return null
 
