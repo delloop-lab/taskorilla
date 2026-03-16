@@ -1196,6 +1196,37 @@ export default function SuperadminDashboard() {
     }
   }
 
+  async function sendHelperTaskMatchSample(taskId: string) {
+    try {
+      setPreviewError(null)
+
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error('Not authenticated')
+      }
+
+      const response = await fetch('/api/admin/helper-task-match-sample', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ taskId }),
+      })
+
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to send sample (${response.status})`)
+      }
+
+      setPreviewError(`Sample email sent to ${data.sentTo || 'admin'}.`)
+    } catch (error: any) {
+      console.error('Error sending helper task match sample:', error)
+      setPreviewError(error.message || 'Failed to send sample email')
+    }
+  }
+
   async function sendHelperTaskMatchEmails(taskId: string) {
     try {
       setSendMatchesMessage(null)
@@ -3569,14 +3600,24 @@ export default function SuperadminDashboard() {
                         </option>
                       ))}
                   </select>
-                  <button
-                    type="button"
-                    onClick={() => previewTaskId && previewHelperTaskMatch(previewTaskId)}
-                    disabled={!previewTaskId || previewLoading}
-                    className="inline-flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {previewLoading ? 'Loading preview...' : 'Preview helper matches'}
-                  </button>
+                  <div className="flex flex-row gap-2">
+                    <button
+                      type="button"
+                      onClick={() => previewTaskId && previewHelperTaskMatch(previewTaskId)}
+                      disabled={!previewTaskId || previewLoading}
+                      className="inline-flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {previewLoading ? 'Loading preview...' : 'Preview helper matches'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => previewTaskId && sendHelperTaskMatchSample(previewTaskId)}
+                      disabled={!previewTaskId}
+                      className="inline-flex items-center px-3 py-2 bg-gray-700 hover:bg-gray-800 text-white text-xs sm:text-sm rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Send sample email to admin
+                    </button>
+                  </div>
                 </div>
                 {previewError && (
                   <p className="mt-2 text-xs text-red-600">{previewError}</p>

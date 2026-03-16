@@ -14,7 +14,7 @@ import { extractTownName, geocodePostcode, calculateDistance } from '@/lib/geoco
 import { checkForContactInfo } from '@/lib/content-filter'
 import { User as UserIcon } from 'lucide-react'
 import { compressTaskImage } from '@/lib/image-utils'
-import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
+import { useUserRatings, getUserRatingsById, type UserRatingsSummary } from '@/lib/useUserRatings'
 import CompactUserRatingsDisplay from '@/components/CompactUserRatingsDisplay'
 
 const PAYMENT_TIMEOUT_HOURS = typeof process.env.NEXT_PUBLIC_PAYMENT_TIMEOUT_HOURS !== 'undefined'
@@ -65,6 +65,7 @@ export default function TaskDetailPage() {
   const [markingWorkComplete, setMarkingWorkComplete] = useState(false)
   const [processingPayment, setProcessingPayment] = useState(false)
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null)
+  const [posterRatingsSummary, setPosterRatingsSummary] = useState<UserRatingsSummary | null>(null)
   
   // Standard modal state
   const [modalState, setModalState] = useState<{
@@ -157,37 +158,36 @@ export default function TaskDetailPage() {
     return () => { cancelled = true }
   }, [searchParams])
 
-  // Update task userRatings when userRatings finish loading
+  // Compute poster ratings summary for this task (separate from task.user object)
   useEffect(() => {
-    if (!task || !task.user || !task.created_by) return
-    
-    // Get user ratings from SQL function
+    if (!task || userRatings.length === 0) return
+
     const ratingsMap = new Map(userRatings.map((r: any) => [String(r.reviewee_id), r]))
-    const userRating = getUserRatingsById(task.created_by, ratingsMap)
-    
-    console.log('📊 Task Detail: Updating ratings for tasker:', {
-      taskerId: task.created_by,
-      userRatingsCount: userRatings.length,
-      foundRating: userRating,
-      currentRating: task.user.userRatings
-    })
-    
-    // Only update if ratings weren't set before or if they've changed
-    const currentRatings = task.user.userRatings
-    const ratingsChanged = JSON.stringify(userRating) !== JSON.stringify(currentRatings)
-    
-    if (ratingsChanged) {
-      console.log('📊 Task Detail: Updating task with ratings:', userRating)
-      setTask({
-        ...task,
-        user: {
-          ...task.user,
-          userRatings: userRating || null
-        }
-      })
+
+    const idCandidates = [
+      task.created_by,
+      (task.user as any)?.id
+    ].filter(Boolean) as string[]
+
+    let userRating: UserRatingsSummary | null = null
+    for (const id of idCandidates) {
+      const rating = getUserRatingsById(id, ratingsMap)
+      if (rating) {
+        userRating = rating
+        break
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userRatings, task?.created_by])
+
+    console.log('📊 Task Detail: Poster ratings summary:', {
+      taskerId: task.created_by,
+      profileId: (task.user as any)?.id,
+      idCandidates,
+      userRatingsCount: userRatings.length,
+      foundRating: userRating
+    })
+
+    setPosterRatingsSummary(userRating)
+  }, [userRatings, task])
 
   useEffect(() => {
     // Only redirect if we've finished loading and confirmed user is not logged in
@@ -418,9 +418,20 @@ export default function TaskDetailPage() {
         let userRating = null
         if (userRatings.length > 0) {
           const ratingsMap = new Map(userRatings.map((r: any) => [String(r.reviewee_id), r]))
+
+          // Primary lookup: use task.created_by
           userRating = getUserRatingsById(taskData.created_by, ratingsMap)
+
+          // Fallback lookup: sometimes the profile ID may differ from created_by
+          // (for example, legacy data or migrated rows). In that case, try the
+          // profile id returned from the profiles table.
+          if (!userRating && profileData?.id) {
+            userRating = getUserRatingsById(profileData.id, ratingsMap)
+          }
+
           console.log('📊 Task Detail loadTask: Found rating for tasker:', {
             taskerId: taskData.created_by,
+            profileId: profileData?.id,
             rating: userRating,
             userRatingsCount: userRatings.length
           })
@@ -430,9 +441,10 @@ export default function TaskDetailPage() {
 
         setTask({
           ...taskData,
+          // Do not overwrite ratings here; let the ratings effect
+          // attach them once the summary data is available.
           user: profileData ? {
-            ...profileData,
-            userRatings: userRating || null
+            ...profileData
           } : null,
           images: imagesData.length > 0 ? imagesData : undefined,
           completion_photos: completionPhotosData.length > 0 ? completionPhotosData : undefined,
@@ -2552,13 +2564,13 @@ export default function TaskDetailPage() {
                       )}
                       <span className="truncate">{task.user.full_name || task.user.email}</span>
                     </button>
-                    {task.user.userRatings ? (
+                    {posterRatingsSummary ? (
                       <CompactUserRatingsDisplay 
-                        ratings={task.user.userRatings} 
+                        ratings={posterRatingsSummary} 
                         size="sm"
                         className="ml-2"
                       />
-                    ) : userRatings.length > 0 && task.user.userRatings === null ? (
+                    ) : userRatings.length > 0 ? (
                       // Ratings loaded but user has no ratings
                       <span className="text-xs text-gray-400 ml-2">No ratings</span>
                     ) : null}

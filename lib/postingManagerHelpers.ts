@@ -40,7 +40,14 @@ export function calculateGroupPostingMeta(
   }
 
   const now = new Date()
-  const canPost = days === 0 || now >= nextAllowed
+
+  // If the last post is still pending approval, we should NEVER treat the group
+  // as "ready to post" – even if the cooldown window has passed. This keeps the
+  // status in a "waiting" state until the pending flag is cleared, so entries
+  // don't flip back to "Ready to post" while they're pending.
+  const hasPending = !!lastPost.pending_approval
+  const canPostBase = days === 0 || now >= nextAllowed
+  const canPost = !hasPending && canPostBase
 
   return {
     groupId: group.id,

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { PostingGroup, PostingPost, PostingTemplate } from '@/lib/postingManagerTypes'
 import { getNextTemplateForGroup } from '@/lib/postingManagerHelpers'
 import { supabase } from '@/lib/supabase'
+import { MediaPreview } from './MediaPreview'
 
 interface Props {
   open: boolean
@@ -150,11 +151,39 @@ export default function NewPostModal({
   const handleCopy = async (value: string, field: 'text' | 'media') => {
     if (!value?.trim()) return
     try {
-      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(value)
-        setCopiedField(field)
-        setTimeout(() => setCopiedField('none'), 1500)
+      const clipboard = typeof navigator !== 'undefined' ? navigator.clipboard : null
+      if (!clipboard) return
+
+      if (field === 'text') {
+        // Preserve line breaks: write both plain text (with \n) and HTML so paste
+        // into rich targets (e.g. Facebook) keeps paragraphs and linefeeds.
+        const plain = value
+        const escapeHtml = (s: string) =>
+          s
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+        const html = value
+          .split(/\r?\n/)
+          .map((line) => (line.trim() ? `<p>${escapeHtml(line)}</p>` : '<p><br></p>'))
+          .join('')
+        const htmlBlob = new Blob([`<!DOCTYPE html><html><body>${html}</body></html>`], {
+          type: 'text/html',
+        })
+        const plainBlob = new Blob([plain], { type: 'text/plain' })
+        if (clipboard.write && typeof clipboard.write === 'function') {
+          await clipboard.write([
+            new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': plainBlob }),
+          ])
+        } else {
+          await clipboard.writeText(plain)
+        }
+      } else {
+        await clipboard.writeText(value)
       }
+      setCopiedField(field)
+      setTimeout(() => setCopiedField('none'), 1500)
     } catch (err) {
       console.error('Failed to copy to clipboard', err)
     }
@@ -267,12 +296,8 @@ export default function NewPostModal({
               {mediaUrl && (
                 <div className="mt-2">
                   <div className="text-[11px] text-gray-500 mb-1">Preview</div>
-                  <div className="border border-gray-200 rounded-md bg-gray-50 p-2 flex items-center justify-center max-h-40 overflow-hidden">
-                    <img
-                      src={mediaUrl}
-                      alt="Post media preview"
-                      className="max-h-36 w-auto object-contain"
-                    />
+                  <div className="border border-gray-200 rounded-md bg-gray-50 p-2 flex items-center justify-center max-h-48 overflow-hidden min-h-[120px]">
+                    <MediaPreview url={mediaUrl} />
                   </div>
                 </div>
               )}

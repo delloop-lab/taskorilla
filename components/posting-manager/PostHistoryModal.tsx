@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import type { PostingGroup, PostingPost, PostingTemplate } from '@/lib/postingManagerTypes'
 import { formatDate } from '@/lib/postingManagerHelpers'
+import { MediaPreview } from './MediaPreview'
 
 interface Props {
   open: boolean
@@ -93,18 +94,9 @@ export default function PostHistoryModal({
                 <div className="text-sm text-gray-900 whitespace-pre-wrap">{post.post_text}</div>
                 {post.post_media_url && (
                   <div className="mt-2">
-                    <a
-                      href={post.post_media_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block focus:outline-none"
-                    >
-                      <img
-                        src={post.post_media_url}
-                        alt="Post media"
-                        className="max-w-full max-h-48 rounded-md border border-gray-200 object-contain"
-                      />
-                    </a>
+                    <div className="border border-gray-200 rounded-md bg-gray-50 p-2 flex items-center justify-center max-h-48 overflow-hidden min-h-[100px]">
+                      <MediaPreview url={post.post_media_url} alt="Post media" className="max-h-44" />
+                    </div>
                     <a
                       href={post.post_media_url}
                       target="_blank"

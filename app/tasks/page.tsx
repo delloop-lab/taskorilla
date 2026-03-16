@@ -595,12 +595,10 @@ function TasksPageContent() {
       
       // Fetch related data in parallel
       const relatedDataStart = performance.now()
-      const creatorIds = Array.from(new Set(tasksData.map(t => t.created_by)))
       const categoryIds = Array.from(new Set(tasksData.flatMap(t => [t.category_id, t.sub_category_id]).filter(Boolean)))
       const taskIds = tasksData.map(t => t.id)
       
-      const [profilesResult, categoriesResult, tagsResult, bidsResult] = await Promise.all([
-        supabase.from('profiles').select('id, email, full_name, avatar_url').in('id', creatorIds),
+      const [categoriesResult, tagsResult, bidsResult] = await Promise.all([
         categoryIds.length > 0 
           ? supabase.from('categories').select('*').in('id', categoryIds)
           : Promise.resolve({ data: [] }),
@@ -618,7 +616,6 @@ function TasksPageContent() {
         return
       }
       
-      const profilesData = profilesResult.data || []
       const categoriesData = categoriesResult.data || []
       const taskTagsData = tagsResult.data || []
       const bidsData = bidsResult.data || []
@@ -638,15 +635,9 @@ function TasksPageContent() {
       
       // Read from refs so background/setTimeout calls always get the latest data
       const processStart = performance.now()
-      const currentRatings = userRatingsRef.current
       const currentLocation = userLocationRef.current
-      const ratingsMap = new Map(
-        currentRatings.map((r: any) => [String(r.reviewee_id), r])
-      )
       
       let tasksWithProfiles = tasksData.map(task => {
-        const creator = profilesData.find(p => p.id === task.created_by)
-        const userRating = getUserRatingsById(task.created_by, ratingsMap)
         const categoryObj = task.category_id ? categoriesData.find(c => c.id === task.category_id) : null
         const subCategoryObj = task.sub_category_id ? categoriesData.find(c => c.id === task.sub_category_id) : null
         const tags = tagsByTaskId[task.id] || []
@@ -668,7 +659,6 @@ function TasksPageContent() {
         
         return {
           ...task,
-          user: creator ? { ...creator, userRatings: userRating || null } : undefined,
           category_obj: categoryObj || undefined,
           sub_category_obj: subCategoryObj || undefined,
           tags: tags,
@@ -1874,20 +1864,8 @@ function TasksPageContent() {
                       </summary>
                       {task.user && (
                         <>
-                          <div className="flex items-center gap-2 flex-wrap mt-3 pt-2 border-t border-gray-100">
-                            <button
-                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedUserId(task.user?.id || null); setIsProfileModalOpen(true) }}
-                              className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 hover:underline flex items-center gap-1.5 min-w-0"
-                            >
-                              {task.user.avatar_url ? (
-                                <img src={task.user.avatar_url} alt={task.user.full_name || task.user.email} className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover flex-shrink-0" />
-                              ) : (
-                                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0"><UserIcon className="w-3 h-3 text-gray-500" /></div>
-                              )}
-                              <span className="font-medium truncate">by {task.user.full_name || task.user.email}</span>
-                            </button>
-                            <CompactUserRatingsDisplay ratings={task.user?.userRatings || null} size="sm" className="ml-1" loading={ratingsLoading} />
-                          </div>
+                          {/* Poster avatar/name/rating removed from browse cards for performance.
+                              Full task view (/tasks/[id]) still shows full poster info. */}
                           {(task as any).assigned_helper && (
                             <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1.5">
                               <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
@@ -1989,47 +1967,9 @@ function TasksPageContent() {
                         <p className="text-gray-600 text-xs sm:text-sm line-clamp-2 break-words">{task.description || ' '}</p>
                       </div>
 
-                      {/* Poster row */}
-                      {task.user && (
-                        <div className="flex flex-col gap-1 mt-2 pt-2 border-t border-gray-100">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault()
-                                e.stopPropagation()
-                                setSelectedUserId(task.user?.id || null)
-                                setIsProfileModalOpen(true)
-                              }}
-                              className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 hover:underline flex items-center gap-1.5 sm:gap-2 min-w-0"
-                            >
-                              {task.user.avatar_url ? (
-                                <img src={task.user.avatar_url} alt={task.user.full_name || task.user.email} className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover flex-shrink-0" />
-                              ) : (
-                                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                                  <UserIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
-                                </div>
-                              )}
-                              <span className="font-medium truncate">by {task.user.full_name || task.user.email}</span>
-                            </button>
-                            <CompactUserRatingsDisplay ratings={task.user?.userRatings || null} size="sm" className="ml-1" loading={ratingsLoading} />
-                          </div>
-                          {(task as any).assigned_helper && (
-                            <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                              <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                              <span className="text-gray-400">Assigned to:</span>
-                              <button
-                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedUserId((task as any).assigned_helper.id); setIsProfileModalOpen(true) }}
-                                className="text-primary-600 hover:underline font-medium flex items-center gap-1"
-                              >
-                                {(task as any).assigned_helper.avatar_url && (
-                                  <img src={(task as any).assigned_helper.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
-                                )}
-                                {(task as any).assigned_helper.full_name || (task as any).assigned_helper.email}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      {/* Poster row (avatar/name/rating) intentionally omitted on browse cards
+                          to keep the list lightweight. Full poster details (including ratings)
+                          are shown on the individual task page (/tasks/[id]). */}
 
                       {/* Bottom metadata */}
                       <div className="mt-auto pt-3 border-t border-gray-200">
