@@ -20,8 +20,10 @@
   },
   "footer": {
     "aboutUs": "About Us",
+    "advertising": "Advertising",
     "contact": "Contact",
     "helpCenter": "Help Center",
+    "partner": "Partner",
     "privacyPolicy": "Privacy Policy",
     "rights": "© 2025 Taskorilla. All rights reserved. Swing responsibly!",
     "termsOfService": "Terms of Service"
@@ -299,7 +301,8 @@
     "bidsOnYourTasks": "Bids on your tasks",
     "browseAllHelpers": "Browse Helpers",
     "browseProfessionals": "Browse Professionals",
-  "browseTasks": "Browse Local Tasks",
+    "browseTasks": "Browse Local Tasks",
+    "blog": "Blog",
     "contactSupport": "Contact Support",
     "faqs": "FAQs",
     "guides": "Guides",

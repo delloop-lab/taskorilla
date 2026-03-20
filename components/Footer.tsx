@@ -72,18 +72,16 @@ export default function Footer({ variant = 'default' }: FooterProps) {
         <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
           <Link href="/about" className="hover:text-foreground transition-colors">{t('footer.aboutUs')}</Link>
           <span className="text-muted-foreground/30">|</span>
-          <Link href="/help" className="hover:text-foreground transition-colors">{t('footer.helpCenter')}</Link>
-          <span className="text-muted-foreground/30">|</span>
           <Link href="/privacy" className="hover:text-foreground transition-colors">{t('footer.privacyPolicy')}</Link>
           <span className="text-muted-foreground/30">|</span>
           <Link href="/terms" className="hover:text-foreground transition-colors">{t('footer.termsOfService')}</Link>
           <span className="text-muted-foreground/30">|</span>
           <Link href="/advertising-opportunities" className="hover:text-foreground transition-colors">
-            Advertising
+            {t('footer.advertising')}
           </Link>
           <span className="text-muted-foreground/30">|</span>
           <Link href="/partnerships" className="hover:text-foreground transition-colors">
-            Partner
+            {t('footer.partner')}
           </Link>
           <span className="text-muted-foreground/30">|</span>
           <Link href="/contact" className="hover:text-foreground transition-colors">{t('footer.contact')}</Link>

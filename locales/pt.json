@@ -20,8 +20,10 @@
   },
   "footer": {
     "aboutUs": "Sobre Nós",
+    "advertising": "Publicidade",
     "contact": "Contacto",
     "helpCenter": "Centro de Ajuda",
+    "partner": "Parceiro",
     "privacyPolicy": "Política de Privacidade",
     "rights": "© 2025 Taskorilla. Todos os direitos reservados. Use com responsabilidade!",
     "termsOfService": "Termos de Serviço"
@@ -299,7 +301,8 @@
     "bidsOnYourTasks": "Propostas nas suas tarefas",
     "browseAllHelpers": "Ver Ajudantes",
     "browseProfessionals": "Ver Profissionais",
-  "browseTasks": "Ver Tarefas Locais",
+    "browseTasks": "Ver Tarefas Locais",
+    "blog": "Blog",
     "contactSupport": "Contactar Suporte",
     "faqs": "Perguntas Frequentes",
     "guides": "Guias",

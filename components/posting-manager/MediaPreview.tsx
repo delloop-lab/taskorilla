@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const VIDEO_EXTENSIONS = /\.(mp4|webm|mov|ogg|ogv|m4v)(\?|$)/i
 const IMAGE_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i
@@ -48,6 +48,13 @@ export interface MediaPreviewProps {
 
 export function MediaPreview({ url, alt = 'Post media', className = '' }: MediaPreviewProps) {
   const [imgError, setImgError] = useState(false)
+
+  // Reset image error state whenever the URL changes so a previous failed load
+  // does not permanently block a new, valid image from rendering.
+  useEffect(() => {
+    setImgError(false)
+  }, [url])
+
   const kind = getMediaKind(url)
   const youtubeEmbed = kind === 'youtube' ? getYouTubeEmbedUrl(url) : null
   const vimeoEmbed = kind === 'vimeo' ? getVimeoEmbedUrl(url) : null
@@ -123,7 +130,10 @@ export function MediaPreview({ url, alt = 'Post media', className = '' }: MediaP
         src={url}
         alt={alt}
         className={`max-h-44 w-auto object-contain rounded ${className}`.trim()}
-        onError={() => setImgError(true)}
+        onError={() => {
+          console.error('MediaPreview image failed to load', { url })
+          setImgError(true)
+        }}
       />
     )
   }

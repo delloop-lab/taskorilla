@@ -658,6 +658,12 @@ export default function Navbar() {
                     >
                       {t('navbar.contactSupport')}
                     </a>
+                    <Link
+                      href="/blog"
+                      className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
+                    >
+                      {t('navbar.blog')}
+                    </Link>
                   </div>
                 </>
               )}
@@ -1010,6 +1016,13 @@ export default function Navbar() {
               >
                 {t('navbar.contactSupport')}
               </a>
+              <Link
+                href="/blog"
+                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {t('navbar.blog')}
+              </Link>
             </div>
 
             {/* Pricing Link - Mobile */}

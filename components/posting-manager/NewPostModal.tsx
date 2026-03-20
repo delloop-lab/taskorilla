@@ -55,7 +55,7 @@ export default function NewPostModal({
     if (suggestedTemplate) {
       setSelectedTemplateId(suggestedTemplate.id)
       setPostText(suggestedTemplate.post_text)
-      setMediaUrl(suggestedTemplate.post_media_url || '')
+      setMediaUrl((suggestedTemplate.post_media_url || '').trim())
       setNotes(suggestedTemplate.notes || '')
     } else {
       setSelectedTemplateId('custom')
@@ -78,7 +78,7 @@ export default function NewPostModal({
     const tpl = templates.find((t) => t.id === id)
     if (tpl) {
       setPostText(tpl.post_text)
-      setMediaUrl(tpl.post_media_url || '')
+      setMediaUrl((tpl.post_media_url || '').trim())
       setNotes(tpl.notes || '')
     }
   }
@@ -89,7 +89,7 @@ export default function NewPostModal({
       (a, b) => new Date(b.date_posted).getTime() - new Date(a.date_posted).getTime()
     )[0]
     setPostText(last.post_text)
-    setMediaUrl(last.post_media_url || '')
+    setMediaUrl((last.post_media_url || '').trim())
     setNotes(last.notes || '')
     setSelectedTemplateId(last.template_id || 'custom')
   }
@@ -196,7 +196,20 @@ export default function NewPostModal({
           <div>
             <h2 className="text-lg font-semibold text-gray-900">New Post</h2>
             <p className="text-xs text-gray-500">
-              {group.platform} – {group.name}
+              {group.platform}
+              {' '}
+              {group.url ? (
+                <a
+                  href={group.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 underline ml-1"
+                >
+                  – {group.name}
+                </a>
+              ) : (
+                <>– {group.name}</>
+              )}
             </p>
           </div>
           <button
@@ -297,7 +310,7 @@ export default function NewPostModal({
                 <div className="mt-2">
                   <div className="text-[11px] text-gray-500 mb-1">Preview</div>
                   <div className="border border-gray-200 rounded-md bg-gray-50 p-2 flex items-center justify-center max-h-48 overflow-hidden min-h-[120px]">
-                    <MediaPreview url={mediaUrl} />
+                    <MediaPreview url={mediaUrl.trim()} />
                   </div>
                 </div>
               )}
