@@ -3,7 +3,7 @@ import HomePage from '@/components/HomePage'
 
 export const metadata: Metadata = {
   alternates: {
-    canonical: 'https://www.taskorilla.com/',
+    canonical: 'https://taskorilla.com/',
   },
 }
 

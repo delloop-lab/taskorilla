@@ -3,7 +3,7 @@ import { blogs } from '@/lib/blog-data'
 import { createClient } from '@supabase/supabase-js'
 import { buildTaskSlug, deriveLocationCity } from '@/lib/task-slug'
 
-const BASE_URL = 'https://www.taskorilla.com'
+const BASE_URL = 'https://taskorilla.com'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''

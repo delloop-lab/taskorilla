@@ -1,5 +1,5 @@
 # robots.txt for Taskorilla
-# https://www.taskorilla.com
+# https://taskorilla.com
 
 User-agent: *
 Allow: /
@@ -26,4 +26,4 @@ Allow: /pricing
 Allow: /help
 
 # Sitemap location
-Sitemap: https://www.taskorilla.com/sitemap.xml
+Sitemap: https://taskorilla.com/sitemap.xml
