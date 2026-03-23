@@ -260,7 +260,8 @@ export default function SuperadminDashboard() {
   const usersChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   const tasksChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   
-  const availableBadges = ['Fast Responder', 'Top Helper', 'Expert Skills']
+  const HELPER_BADGES = ['Founding Helper', 'Fast Responder', 'Top Helper', 'Expert Skills']
+  const TASKER_BADGES = ['Founding Tasker']
 
   function toggleUserSelection(userId: string) {
     setSelectedUserIds(prev => {
@@ -1472,16 +1473,16 @@ export default function SuperadminDashboard() {
         isOpen: true,
         type: 'warning',
         title: 'Selection Required',
-        message: 'Please select exactly one helper to manage badges',
+        message: 'Please select exactly one helper or tasker to manage badges',
       })
       return
     }
-    if (!targetUser.is_helper) {
+    if (!targetUser.is_helper && !targetUser.is_tasker) {
       setModalState({
         isOpen: true,
         type: 'warning',
         title: 'Invalid Selection',
-        message: 'Selected user is not a helper',
+        message: 'Selected user is not a helper or tasker',
       })
       return
     }
@@ -2270,7 +2271,7 @@ export default function SuperadminDashboard() {
                     <span className="text-xs text-gray-500">+{selectedUserIds.size - 3} more</span>
                   )}
                   <div className="ml-auto flex gap-2 flex-wrap">
-                    {getSelectedUsers().some(u => u.is_helper) && getSelectedUsers().filter(u => u.is_helper).length === 1 && (
+                    {getSelectedUsers().filter(u => u.is_helper || u.is_tasker).length === 1 && (
                       <button
                         onClick={() => openBadgeManager()}
                         className="bg-amber-500 hover:bg-amber-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-medium"
@@ -2403,7 +2404,7 @@ export default function SuperadminDashboard() {
                       className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden md:table-cell cursor-pointer hover:bg-gray-200 select-none"
                       onClick={() => handleSort('is_helper')}
                     >
-                      Helper Badges <SortIcon column="is_helper" />
+                      User Badges <SortIcon column="is_helper" />
                     </th>
                     <th 
                       className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden lg:table-cell cursor-pointer hover:bg-gray-200 select-none"
@@ -2461,15 +2462,19 @@ export default function SuperadminDashboard() {
                         </button>
                       </td>
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden md:table-cell">
-                        {u.is_helper ? (
+                        {u.is_helper || u.is_tasker ? (
                           <div className="flex flex-wrap gap-1">
                             {u.badges && u.badges.length > 0 ? (
                               u.badges.map((badge, idx) => {
                                 const getBadgeImage = (badgeName: string) => {
                                   const lowerBadge = badgeName.toLowerCase();
-                                  if (lowerBadge.includes('fast') || lowerBadge.includes('responder')) {
+                                  if (lowerBadge.includes('founding') && lowerBadge.includes('tasker')) {
+                                    return '/images/founding_tasker_badge.png';
+                                  } else if (lowerBadge.includes('founding') && lowerBadge.includes('helper')) {
+                                    return '/images/founding_helper_badge.png';
+                                  } else if (lowerBadge.includes('fast') || lowerBadge.includes('responder')) {
                                     return '/images/fast.png';
-                                  } else if (lowerBadge.includes('top') || lowerBadge.includes('helper')) {
+                                  } else if (lowerBadge.includes('top helper') || lowerBadge === 'top helper') {
                                     return '/images/top_helper.png';
                                   } else if (lowerBadge.includes('expert') || lowerBadge.includes('skill')) {
                                     return '/images/expert.png';
@@ -2492,7 +2497,7 @@ export default function SuperadminDashboard() {
                             )}
                           </div>
                         ) : (
-                          <span className="text-xs text-gray-400">Not a helper</span>
+                          <span className="text-xs text-gray-400">Not a helper/tasker</span>
                         )}
                       </td>
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden lg:table-cell">
@@ -2540,16 +2545,23 @@ export default function SuperadminDashboard() {
               className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 className="text-xl font-semibold mb-4">
+              <h2 className="text-xl font-semibold mb-1">
                 Manage Badges for {managingBadgesFor.full_name || managingBadgesFor.email}
               </h2>
+              <p className="text-sm text-gray-500 mb-4">
+                Managing {managingBadgesFor.is_helper ? 'helper' : managingBadgesFor.is_tasker ? 'tasker' : 'user'} badges
+              </p>
               <div className="space-y-3 mb-6">
-                {availableBadges.map((badge) => {
+                {(managingBadgesFor.is_helper ? HELPER_BADGES : TASKER_BADGES).map((badge) => {
                   const getBadgeImage = (badgeName: string) => {
                     const lowerBadge = badgeName.toLowerCase();
-                    if (lowerBadge.includes('fast') || lowerBadge.includes('responder')) {
+                    if (lowerBadge.includes('founding') && lowerBadge.includes('tasker')) {
+                      return '/images/founding_tasker_badge.png';
+                    } else if (lowerBadge.includes('founding') && lowerBadge.includes('helper')) {
+                      return '/images/founding_helper_badge.png';
+                    } else if (lowerBadge.includes('fast') || lowerBadge.includes('responder')) {
                       return '/images/fast.png';
-                    } else if (lowerBadge.includes('top') || lowerBadge.includes('helper')) {
+                    } else if (lowerBadge.includes('top helper') || lowerBadge === 'top helper') {
                       return '/images/top_helper.png';
                     } else if (lowerBadge.includes('expert') || lowerBadge.includes('skill')) {
                       return '/images/expert.png';

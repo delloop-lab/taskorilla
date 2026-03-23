@@ -98,11 +98,20 @@ BEGIN
   -- This preserves manually assigned badges
   final_badges := calculated_badges;
   
-  -- Add any existing badges that are valid badge names but not in calculated badges
-  -- This preserves manually assigned badges
+  -- Add any existing manually assigned badges that should always be preserved
+  -- even when they are not auto-calculated.
   FOREACH badge_name IN ARRAY current_badges
   LOOP
-    IF badge_name = ANY(ARRAY['Fast Responder', 'Top Helper', 'Expert Skills']) 
+    IF (
+         badge_name = ANY(ARRAY[
+           'Fast Responder',
+           'Top Helper',
+           'Expert Skills',
+           'Founding Helper',
+           'Founding Tasker'
+         ])
+         OR badge_name ILIKE 'Founding %'
+       )
        AND NOT (badge_name = ANY(calculated_badges)) THEN
       -- This is a manually assigned badge that wasn't auto-calculated, preserve it
       final_badges := array_append(final_badges, badge_name);

@@ -561,9 +561,13 @@ export default function BrowseHelpersPage() {
                       {helper.badges.map((badge, index) => {
                         const getBadgeImage = (badgeName: string) => {
                           const lowerBadge = badgeName.toLowerCase();
-                          if (lowerBadge.includes('fast') || lowerBadge.includes('responder')) {
+                          if (lowerBadge.includes('founding') && lowerBadge.includes('tasker')) {
+                            return '/images/founding_tasker_badge.png';
+                          } else if (lowerBadge.includes('founding') && lowerBadge.includes('helper')) {
+                            return '/images/founding_helper_badge.png';
+                          } else if (lowerBadge.includes('fast') || lowerBadge.includes('responder')) {
                             return '/images/fast.png';
-                          } else if (lowerBadge.includes('top') || lowerBadge.includes('helper')) {
+                          } else if (lowerBadge.includes('top helper') || lowerBadge === 'top helper') {
                             return '/images/top_helper.png';
                           } else if (lowerBadge.includes('expert') || lowerBadge.includes('skill')) {
                             return '/images/expert.png';
