@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 
 function RegisterContent() {
+  const RESEND_COOLDOWN_SECONDS = 300
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -14,9 +15,80 @@ function RegisterContent() {
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showEmailPauseModal, setShowEmailPauseModal] = useState(false)
+  const [resendCountdown, setResendCountdown] = useState(0)
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectUrl = searchParams.get('redirect')
+
+  const startResendCooldown = () => {
+    setResendCountdown(RESEND_COOLDOWN_SECONDS)
+    const interval = setInterval(() => {
+      setResendCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  const attemptSignUp = async () => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
+      },
+    })
+
+    if (error) {
+      console.error('Registration error:', error)
+      const lowerMessage = (error.message || '').toLowerCase()
+      let errorMessage = error.message || 'An error occurred during registration'
+      
+      if (lowerMessage.includes('email rate limit exceeded') || lowerMessage.includes('rate limit')) {
+        setShowEmailPauseModal(true)
+        startResendCooldown()
+        return
+      } else if (error.message.includes('User already registered')) {
+        errorMessage = 'An account with this email already exists. Please sign in instead.'
+      } else if (error.message.includes('Password')) {
+        errorMessage = 'Password does not meet requirements. Please choose a stronger password.'
+      } else if (error.message.includes('Email')) {
+        errorMessage = 'Please enter a valid email address.'
+      }
+      
+      setError(errorMessage)
+      return
+    }
+
+    if (data.user) {
+      // Update profile with terms acceptance timestamp
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ terms_accepted_at: new Date().toISOString() })
+        .eq('id', data.user.id)
+
+      if (profileError) {
+        console.error('Error updating terms acceptance:', profileError)
+      }
+
+      if (data.session) {
+        router.push(redirectUrl || '/profile?setup=required')
+        router.refresh()
+      } else {
+        setTimeout(() => {
+          router.push('/auth/auth-code-error?type=confirmation')
+        }, 100)
+      }
+    } else {
+      setError('Registration failed. Please try again.')
+    }
+  }
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,60 +115,7 @@ function RegisterContent() {
     }
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-        },
-      })
-
-      if (error) {
-        console.error('Registration error:', error)
-        let errorMessage = error.message || 'An error occurred during registration'
-        
-        if (error.message.includes('User already registered')) {
-          errorMessage = 'An account with this email already exists. Please sign in instead.'
-        } else if (error.message.includes('Password')) {
-          errorMessage = 'Password does not meet requirements. Please choose a stronger password.'
-        } else if (error.message.includes('Email')) {
-          errorMessage = 'Please enter a valid email address.'
-        }
-        
-        setError(errorMessage)
-        return
-      }
-
-      if (data.user) {
-        // Update profile with terms acceptance timestamp
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ terms_accepted_at: new Date().toISOString() })
-          .eq('id', data.user.id)
-
-        if (profileError) {
-          console.error('Error updating terms acceptance:', profileError)
-          // Don't block registration if terms update fails, but log it
-        }
-
-        // Check if email confirmation is required
-        // If confirmation is disabled, user will be logged in automatically
-        if (data.session) {
-          // User is logged in (email confirmation disabled)
-          router.push(redirectUrl || '/profile?setup=required')
-          router.refresh()
-        } else {
-          // Email confirmation required - show success message and redirect
-          // The redirect will show a proper "check your email" message
-          setTimeout(() => {
-            router.push('/auth/auth-code-error?type=confirmation')
-          }, 100)
-        }
-      } else {
-        setError('Registration failed. Please try again.')
-      }
+      await attemptSignUp()
     } catch (error: any) {
       console.error('Unexpected registration error:', error)
       setError(error.message || 'An unexpected error occurred during registration')
@@ -244,6 +263,50 @@ function RegisterContent() {
           </div>
         </form>
       </div>
+      {showEmailPauseModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">Email on Pause ⏳</h3>
+            <p className="text-sm text-gray-700 mb-6">
+              Hey! We&apos;ve hit a short pause on sending confirmation emails because lots of people are signing up right now.
+              <br /><br />
+              Your verification email didn&apos;t go out this time, so you&apos;ll need to try again in a few minutes. We promise it should arrive once the pause is over.
+              <br /><br />
+              In the meantime, you can check your spam folder just in case.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setShowEmailPauseModal(false)}
+                className="px-4 py-2 rounded-md bg-gray-100 text-gray-800 hover:bg-gray-200"
+              >
+                Got it, I&apos;ll retry later
+              </button>
+              <button
+                type="button"
+                disabled={resendCountdown > 0 || loading}
+                onClick={async () => {
+                  setShowEmailPauseModal(false)
+                  setLoading(true)
+                  setError(null)
+                  try {
+                    await attemptSignUp()
+                  } catch (err: any) {
+                    setError(err.message || 'An unexpected error occurred during registration')
+                  } finally {
+                    setLoading(false)
+                  }
+                }}
+                className="px-4 py-2 rounded-md bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {resendCountdown > 0
+                  ? `Resend email (${Math.ceil(resendCountdown / 60)}m)`
+                  : 'Resend email'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
