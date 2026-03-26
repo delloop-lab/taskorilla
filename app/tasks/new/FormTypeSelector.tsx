@@ -14,6 +14,9 @@ export default function FormTypeSelector() {
 
   const [formType, setFormType] = useState<'quick' | 'full'>(() => {
     if (typeof window === 'undefined') return 'quick'
+    // URL param overrides stored preference (used by service card prefill links)
+    const urlParam = searchParams?.get('formType')
+    if (urlParam === 'quick' || urlParam === 'full') return urlParam
     const stored = localStorage.getItem(FORM_TYPE_STORAGE_KEY)
     if (stored === 'quick' || stored === 'full') return stored
     return 'quick'

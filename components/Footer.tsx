@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { FaFacebookF, FaInstagram, FaTiktok } from 'react-icons/fa6'
+import { FaFacebookF, FaInstagram, FaTiktok, FaYoutube } from 'react-icons/fa6'
 import { useEffect, useState } from 'react'
 import { useLanguage } from '@/lib/i18n'
 
@@ -60,6 +60,15 @@ export default function Footer({ variant = 'default' }: FooterProps) {
             >
               <FaTiktok className="w-4 h-4 sm:w-5 sm:h-5" />
             </a>
+            <a
+              href="https://www.youtube.com/@gettaskorilla"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-red-600 hover:text-red-700 transition-colors inline-flex items-center"
+              aria-label="Follow us on YouTube"
+            >
+              <FaYoutube className="w-4 h-4 sm:w-5 sm:h-5" />
+            </a>
           </div>
         </div>
       </footer>
@@ -112,6 +121,15 @@ export default function Footer({ variant = 'default' }: FooterProps) {
             aria-label="Follow us on TikTok"
           >
             <FaTiktok className="w-4 h-4 sm:w-5 sm:h-5" />
+          </a>
+          <a
+            href="https://www.youtube.com/@gettaskorilla"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-red-600 hover:text-red-700 transition-colors inline-flex items-center"
+            aria-label="Follow us on YouTube"
+          >
+            <FaYoutube className="w-4 h-4 sm:w-5 sm:h-5" />
           </a>
         </div>
         <div className="flex justify-center items-center gap-2 mt-2 text-xs text-muted-foreground/70">

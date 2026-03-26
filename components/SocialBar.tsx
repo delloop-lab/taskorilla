@@ -1,6 +1,6 @@
 'use client'
 
-import { FaFacebookF, FaInstagram, FaTiktok } from 'react-icons/fa6'
+import { FaFacebookF, FaInstagram, FaTiktok, FaYoutube } from 'react-icons/fa6'
 import clsx from 'clsx'
 
 interface SocialBarProps {
@@ -47,6 +47,15 @@ export function SocialBar({ className }: SocialBarProps) {
           aria-label="Follow Taskorilla on TikTok"
         >
           <FaTiktok className="w-4 h-4 sm:w-5 sm:h-5" />
+        </a>
+        <a
+          href="https://www.youtube.com/@gettaskorilla"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-red-600 hover:text-red-700 transition-colors inline-flex items-center"
+          aria-label="Follow Taskorilla on YouTube"
+        >
+          <FaYoutube className="w-4 h-4 sm:w-5 sm:h-5" />
         </a>
       </div>
     </div>

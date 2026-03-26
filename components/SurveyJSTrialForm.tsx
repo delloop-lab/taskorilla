@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Model, SurveyError, surveyLocalization } from 'survey-core'
 import { Survey } from 'survey-react'
 import { supabase } from '@/lib/supabase'
@@ -46,6 +47,8 @@ if (surveyLocalization && surveyLocalization.locales) {
 
 export default function SurveyJSTrialForm() {
   const { t, language } = useLanguage()
+  const searchParams = useSearchParams()
+  const prefillAppliedRef = useRef(false)
   const [surveyModel, setSurveyModel] = useState<Model | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [professions, setProfessions] = useState<string[]>([])
@@ -702,9 +705,10 @@ export default function SurveyJSTrialForm() {
             }
           }
           
-          // Update location question title based on taskType
+          // Update location question title and task title placeholder based on taskType
           if (options.name === 'taskType') {
             updateLocationQuestionTitle(model, options.value)
+            updateTitlePlaceholder(model, options.value)
           }
         })
         
@@ -1052,6 +1056,40 @@ export default function SurveyJSTrialForm() {
           replacePageWithQuestion()
         }, 100)
 
+        // Apply service-card prefill once, right before rendering the model
+        if (!prefillAppliedRef.current) {
+          const prefillEnabled = searchParams?.get('prefill') === '1'
+          if (prefillEnabled) {
+            const rawTaskType = searchParams?.get('prefillTaskType')
+            const rawTitle = searchParams?.get('prefillTitle')
+            const rawCategory = searchParams?.get('prefillCategory')
+            const taskTypeValue = rawTaskType === 'professional' ? 'professional' : 'helper'
+            const clean = (v: string | null, max: number) =>
+              v ? v.replace(/[\u0000-\u001F\u007F]/g, ' ').trim().slice(0, max) : ''
+            const titleValue = clean(rawTitle, 200)
+            const categoryValue = clean(rawCategory, 120)
+
+            model.setValue('taskType', taskTypeValue)
+            formDataRef.current.taskType = taskTypeValue
+
+            if (titleValue) {
+              model.setValue('title', titleValue)
+              formDataRef.current.title = titleValue
+            }
+
+            // Prefill the helper type / profession category question
+            if (categoryValue) {
+              const questionName = taskTypeValue === 'professional' ? 'requiredProfession' : 'category'
+              model.setValue(questionName, categoryValue)
+              formDataRef.current[questionName] = categoryValue
+            }
+
+            updateTitlePlaceholder(model, taskTypeValue)
+
+            prefillAppliedRef.current = true
+          }
+        }
+
         if (process.env.NODE_ENV === 'development') {
           console.log('%c[EFFECT: Create SurveyModel] Setting surveyModel state', 'background: red; color: white')
         }
@@ -1073,6 +1111,15 @@ export default function SurveyJSTrialForm() {
     if (locationQuestion) {
       const typeText = taskType === 'helper' ? 'helper' : 'professional'
       locationQuestion.title = `Where is the ${typeText} needed?`
+    }
+  }
+
+  const updateTitlePlaceholder = (model: Model, taskType: string) => {
+    const titleQuestion = model.getQuestionByName('title')
+    if (titleQuestion) {
+      titleQuestion.placeHolder = taskType === 'professional'
+        ? 'I need a professional to...'
+        : t('surveyForm.taskTitlePlaceholder')
     }
   }
 

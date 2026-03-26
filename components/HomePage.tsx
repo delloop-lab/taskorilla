@@ -9,6 +9,7 @@ import TrafficTracker from '@/components/TrafficTracker'
 import Footer from '@/components/Footer'
 import { useLanguage } from '@/lib/i18n'
 import { SocialBar } from '@/components/SocialBar'
+import { ServiceCardsGrid } from '@/components/landing/ServiceCardsGrid'
 
 export default function HomePage() {
   const { t } = useLanguage()
@@ -29,26 +30,6 @@ export default function HomePage() {
                 <p>{t('homepage.description2')}</p>
                 <p>{t('homepage.description3')}</p>
               </div>
-              <div className="flex flex-wrap gap-4 pt-[10px] mb-0">
-                <Link href="/tasks/new" className="action-button post-button">
-                  <div className="button-icon">
-                    🆘
-                  </div>
-                  <div className="button-text">
-                    <h2 className="button-title">{t('homepage.postTask')}</h2>
-                    <p className="button-subtitle">{t('homepage.postTaskSubtitle')}</p>
-                  </div>
-                </Link>
-                <Link href="/tasks" className="action-button browse-button">
-                  <div className="button-icon">
-                    💵
-                  </div>
-                  <div className="button-text">
-                    <h2 className="button-title">{t('homepage.browseTasks')}</h2>
-                    <p className="button-subtitle">{t('homepage.browseTasksSubtitle')}</p>
-                  </div>
-                </Link>
-              </div>
             </div>
             <div className="animate-fade-in">
               <TransparentGorillaImage />
@@ -57,14 +38,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Subheadline */}
-      <section className="pt-4 md:pt-6 pb-8 md:pb-12 px-4 bg-muted/30">
-        <div className="container mx-auto max-w-4xl text-center">
-          <p className="text-lg text-muted-foreground whitespace-pre-line">
-            {t('landing.heroSubtitle')}
-          </p>
-        </div>
-      </section>
+      <ServiceCardsGrid />
 
       {/* How It Works */}
       <section className="py-16 md:py-20 px-4">
@@ -354,50 +328,30 @@ export default function HomePage() {
       </section>
 
       {/* CTA */}
-      <section className="pt-12 md:pt-20 pb-8 md:pb-20 px-4 bg-gradient-to-br from-primary to-accent text-primary-foreground">
+      <section className="py-4 px-4 bg-gradient-to-br from-primary to-accent text-primary-foreground">
         <div className="container mx-auto max-w-6xl">
-          <div className="grid md:grid-cols-3 gap-4 items-center">
+          <div className="grid md:grid-cols-3 gap-2 items-center">
             <div className="flex justify-center md:justify-end order-2 md:order-1">
               <img 
                 src="/images/taskorilla-mascot.png" 
                 alt="Taskorilla mascot" 
-                className="h-56 w-56 md:h-72 md:w-72 object-contain"
+                className="h-44 w-44 md:h-52 md:w-52 object-contain"
                 style={{ backgroundColor: 'transparent' }}
               />
             </div>
-            <div className="text-center space-y-6 order-1 md:order-2">
-              <h2 className="text-4xl md:text-5xl font-bold">
+            <div className="text-center space-y-3 order-1 md:order-2 pb-4">
+              <h2 className="text-3xl md:text-4xl font-bold">
                 {t('landing.mascotTitle')}
               </h2>
-              <p className="text-xl opacity-90">
+              <p className="text-base opacity-90">
                 {t('landing.mascotText')}
               </p>
-              <div className="flex flex-col items-center gap-4">
-                <Link href="/tasks/new" className="action-button post-button">
-                  <div className="button-icon">
-                    🆘
-                  </div>
-                  <div className="button-text">
-                    <div className="button-title">{t('homepage.postTask')}</div>
-                    <div className="button-subtitle">{t('homepage.postTaskSubtitle')}</div>
-                  </div>
-                </Link>
-                <Link href="/tasks" className="action-button browse-button">
-                  <div className="button-icon">
-                    💵
-                  </div>
-                  <div className="button-text">
-                    <div className="button-title">{t('homepage.browseTasks')}</div>
-                    <div className="button-subtitle">{t('homepage.browseTasksSubtitle')}</div>
-                  </div>
-                </Link>
-              </div>
             </div>
             <div className="flex justify-center md:justify-start order-3">
               <img 
                 src="/images/tee_on_laptop.png" 
                 alt="Tee on laptop" 
-                className="h-[300px] w-[300px] object-contain"
+                className="h-[200px] w-[200px] md:h-[220px] md:w-[220px] object-contain"
                 style={{ backgroundColor: 'transparent' }}
               />
             </div>

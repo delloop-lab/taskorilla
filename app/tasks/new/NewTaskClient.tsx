@@ -61,10 +61,17 @@ export default function NewTaskClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const draftRestoredRef = useRef(false)
+  const prefillAppliedRef = useRef(false)
+  const [isDraftReady, setIsDraftReady] = useState(false)
   const isHelperRequest = Boolean(requestedHelper)
 
   const helperIdParam = searchParams?.get('helperId')
   const helperOfferingParam = searchParams?.get('offering') || ''
+  const prefillEnabled = searchParams?.get('prefill') === '1'
+  const prefillTaskTypeParam = searchParams?.get('prefillTaskType')
+  const prefillHelperTypeParam = searchParams?.get('prefillHelperType')
+  const prefillTitleParam = searchParams?.get('prefillTitle')
+  const prefillDescriptionParam = searchParams?.get('prefillDescription')
 
   const [formData, setFormData] = useState({
     title: '',
@@ -115,6 +122,11 @@ export default function NewTaskClient() {
     'Other',
   ]
 
+  const sanitizePrefillValue = (value: string | null, maxLength: number): string => {
+    if (!value) return ''
+    return value.replace(/[\u0000-\u001F\u007F]/g, ' ').trim().slice(0, maxLength)
+  }
+
   useEffect(() => {
     checkUser()
     loadCategories()
@@ -129,6 +141,7 @@ export default function NewTaskClient() {
       const rawDraft = localStorage.getItem(TASK_DRAFT_STORAGE_KEY)
       if (!rawDraft) {
         draftRestoredRef.current = true
+        setIsDraftReady(true)
         return
       }
 
@@ -175,8 +188,45 @@ export default function NewTaskClient() {
       console.error('Error restoring task draft:', restoreError)
     } finally {
       draftRestoredRef.current = true
+      setIsDraftReady(true)
     }
   }, [])
+
+  useEffect(() => {
+    if (!isDraftReady || prefillAppliedRef.current || !prefillEnabled || helperIdParam) return
+
+    const normalizedTaskType = prefillTaskTypeParam === 'professional' ? 'professional' : 'helper'
+    const nextHelperType = sanitizePrefillValue(prefillHelperTypeParam, 80)
+    const nextTitle = sanitizePrefillValue(prefillTitleParam, 120)
+    const nextDescription = sanitizePrefillValue(prefillDescriptionParam, 1200)
+
+    if (normalizedTaskType === 'professional') {
+      setTaskType('professional')
+    } else {
+      setTaskType('helper')
+      if (!selectedHelperType && nextHelperType && HELPER_TYPE_OPTIONS.includes(nextHelperType)) {
+        setSelectedHelperType(nextHelperType)
+      }
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      title: prev.title || nextTitle,
+      description: prev.description || nextDescription,
+    }))
+
+    prefillAppliedRef.current = true
+  }, [
+    HELPER_TYPE_OPTIONS,
+    helperIdParam,
+    isDraftReady,
+    prefillDescriptionParam,
+    prefillEnabled,
+    prefillHelperTypeParam,
+    prefillTaskTypeParam,
+    prefillTitleParam,
+    selectedHelperType,
+  ])
 
   useEffect(() => {
     if (typeof window === 'undefined' || !draftRestoredRef.current) return
