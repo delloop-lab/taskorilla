@@ -267,25 +267,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Fun Taglines */}
-      <section className="py-16 px-4">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
-            <div className="p-6 rounded-lg bg-muted">
-              <p className="text-xl font-bold text-foreground">"{t('landing.slogan1')}"</p>
-            </div>
-            <div className="p-6 rounded-lg bg-muted">
-              <p className="text-xl font-bold text-foreground">"{t('landing.slogan2')}"</p>
-            </div>
-            <div className="p-6 rounded-lg bg-muted">
-              <p className="text-xl font-bold text-foreground">"{t('landing.slogan3')}"</p>
-            </div>
-            <div className="p-6 rounded-lg bg-muted">
-              <p className="text-xl font-bold text-foreground">"{t('landing.slogan4')}"</p>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Post Free / Earn Money Highlight */}
       <section className="py-20 px-4 bg-gradient-to-br from-primary/5 to-secondary/5">

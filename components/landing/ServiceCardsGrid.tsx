@@ -136,7 +136,7 @@ export function ServiceCardsGrid() {
 
             {/* Helper registration card — full width, accent tint */}
             <Link
-              href="/register?role=helper"
+              href="/become-a-helper"
               className="sm:col-span-2 flex items-center gap-4 rounded-xl border border-blue-200 bg-blue-50/60 px-4 py-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 hover:border-blue-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/40 cursor-pointer"
             >
               <span className="text-4xl flex-shrink-0 w-11 text-center" role="img" aria-hidden="true">
