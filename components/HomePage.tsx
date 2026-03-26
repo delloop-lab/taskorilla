@@ -288,7 +288,7 @@ export default function HomePage() {
                 </div>
               </div>
             </Link>
-            <Link href="/tasks" className="group">
+            <Link href="/become-a-helper" className="group">
               <div className="bg-gradient-to-br from-[#FFF4E6] to-[#FFE5CC] rounded-xl p-8 shadow-lg border-2 border-[#FFD4A3] hover:shadow-xl hover:border-[#FD9212] transition-all duration-300 hover:-translate-y-1 h-full">
                 <div className="flex items-start gap-4 mb-4">
                   <div className="bg-[#FD9212] rounded-lg p-3 group-hover:scale-110 transition-transform duration-300">

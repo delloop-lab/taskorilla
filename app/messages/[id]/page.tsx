@@ -26,6 +26,8 @@ export default function ConversationPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [otherParticipant, setOtherParticipant] = useState<any>(null)
   const [task, setTask] = useState<any>(null)
+  const [currentUserPaused, setCurrentUserPaused] = useState(false)
+  const [otherUserPaused, setOtherUserPaused] = useState(false)
   const [modalState, setModalState] = useState<{
     isOpen: boolean
     type: 'success' | 'error' | 'warning' | 'info' | 'confirm'
@@ -87,6 +89,12 @@ export default function ConversationPage() {
       router.push('/login')
     } else {
       setUser(user)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_paused')
+        .eq('id', user.id)
+        .single()
+      setCurrentUserPaused(profile?.is_paused === true)
     }
   }
 
@@ -113,7 +121,7 @@ export default function ConversationPage() {
           const [participantResult, taskResult] = await Promise.all([
             supabase
               .from('profiles')
-              .select('id, email, full_name, avatar_url')
+              .select('id, email, full_name, avatar_url, is_paused')
               .eq('id', otherId)
               .single(),
             data.task_id
@@ -126,6 +134,7 @@ export default function ConversationPage() {
           ])
 
           setOtherParticipant(participantResult.data)
+          setOtherUserPaused(participantResult.data?.is_paused === true)
           setTask(taskResult.data)
         }
       }
@@ -249,6 +258,17 @@ export default function ConversationPage() {
     e.preventDefault()
     if ((!newMessage.trim() && !messageImage) || !user || !conversation || sending) return
 
+    // Block paused users from sending
+    if (currentUserPaused) {
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: 'Account Paused',
+        message: 'Your account has been paused. You cannot send messages. Please contact support.',
+      })
+      return
+    }
+
     // Before payment (or when task is missing), keep current safety behaviour.
     if (!canShareContact) {
       const contentCheck = checkForContactInfo(newMessage)
@@ -281,6 +301,15 @@ export default function ConversationPage() {
 
       if (error) throw error
 
+      // Alert admin if user sent image before bid accepted
+      if (messageImage && !canShareContact) {
+        fetch('/api/alert-admin-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conversationId, taskTitle: task?.title }),
+        }).catch(() => {})
+      }
+
       // Update conversation updated_at
       await supabase
         .from('conversations')
@@ -306,6 +335,8 @@ export default function ConversationPage() {
               senderName: senderProfile?.full_name || senderProfile?.email || 'Someone',
               messagePreview: newMessage.trim().substring(0, 100),
               conversationId: conversationId,
+              hasImage: !!messageImage,
+              bidAccepted: canShareContact,
             }),
           })
         } catch (emailError) {
@@ -547,7 +578,17 @@ export default function ConversationPage() {
       </div>
 
       {/* Message Input */}
-      <form onSubmit={handleSendMessage} className="bg-white rounded-lg shadow-md p-4">
+      {currentUserPaused && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 font-medium">
+          ⏸ Your account is paused. You cannot send messages. <Link href="/contact" className="underline">Contact support</Link>.
+        </div>
+      )}
+      {!currentUserPaused && otherUserPaused && (
+        <div className="bg-gray-100 border border-gray-200 rounded-lg p-4 text-sm text-gray-600">
+          This user's account is currently unavailable.
+        </div>
+      )}
+      <form onSubmit={handleSendMessage} className={`bg-white rounded-lg shadow-md p-4 ${currentUserPaused || otherUserPaused ? 'opacity-50 pointer-events-none' : ''}`}>
         {messageImage && (
           <div className="mb-3 relative inline-block max-w-full">
             <img

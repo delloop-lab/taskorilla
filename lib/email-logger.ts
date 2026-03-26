@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase as defaultSupabase } from './supabase'
 
 export type EmailType = 
   | 'new_bid'
@@ -27,8 +27,10 @@ export interface EmailLogData {
 /**
  * Log an email to the database
  * This function is non-blocking and won't throw errors to avoid breaking email sending
+ * Pass a server-side supabase client when calling from API routes to ensure auth context is correct
  */
-export async function logEmail(data: EmailLogData): Promise<void> {
+export async function logEmail(data: EmailLogData, client?: any): Promise<void> {
+  const supabase = client || defaultSupabase
   try {
     // Get current user if available (for admin emails)
     const { data: { user } } = await supabase.auth.getUser()

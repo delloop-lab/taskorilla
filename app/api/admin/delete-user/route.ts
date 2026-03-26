@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createClient } from '@supabase/supabase-js'
+
+const adminSupabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function POST(request: NextRequest) {
   try {
@@ -70,6 +76,16 @@ export async function POST(request: NextRequest) {
           { status: 403 }
         )
       }
+    }
+
+    // Delete user's storage files via the Storage API (direct SQL DELETE is blocked by Supabase)
+    const { data: storageFiles } = await adminSupabase.storage
+      .from('avatars')
+      .list(userId)
+
+    if (storageFiles && storageFiles.length > 0) {
+      const paths = storageFiles.map((f) => `${userId}/${f.name}`)
+      await adminSupabase.storage.from('avatars').remove(paths)
     }
 
     // Call the safe delete function

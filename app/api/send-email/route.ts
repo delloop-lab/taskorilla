@@ -165,6 +165,8 @@ export async function POST(request: NextRequest) {
             senderName: params.senderName,
             messagePreview: params.messagePreview,
             conversationId: params.conversationId,
+            hasImage: params.hasImage === true,
+            bidAccepted: params.bidAccepted === true,
             html_content: newMessageResult.htmlContent,
           },
         }

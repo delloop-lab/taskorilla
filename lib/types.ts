@@ -26,6 +26,7 @@ export interface User {
   recentReviews?: RecentReview[]
   is_tasker?: boolean
   is_helper?: boolean
+  sms_opt_out?: boolean | null
   bio?: string | null
   skills?: string[] | null
   services_offered?: string[] | null

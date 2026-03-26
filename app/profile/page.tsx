@@ -76,6 +76,7 @@ function ProfilePageContent() {
   const [hourlyRate, setHourlyRate] = useState('')
   const [preferredMaxDistanceKm, setPreferredMaxDistanceKm] = useState('')
   const [emailPreference, setEmailPreference] = useState<'instant' | 'daily' | 'weekly'>('instant')
+  const [smsOptOut, setSmsOptOut] = useState(false)
   const [languages, setLanguages] = useState<string[]>([])
   const [iban, setIban] = useState('')
   const [paypalEmail, setPaypalEmail] = useState('')
@@ -232,6 +233,7 @@ function ProfilePageContent() {
       setEmailPreference(
         pref === 'daily' || pref === 'weekly' || pref === 'instant' ? (pref as 'instant' | 'daily' | 'weekly') : 'instant'
       )
+      setSmsOptOut(data?.sms_opt_out ?? false)
       setLanguages(data?.languages ?? [])
       setIban(data?.iban || '')
       setPaypalEmail(data?.paypal_email || '')
@@ -708,6 +710,7 @@ function ProfilePageContent() {
         hourly_rate: hourlyRateValue,
         preferred_max_distance_km: preferredMaxDistanceValue,
         email_preference: emailPreference || 'instant',
+        sms_opt_out: smsOptOut,
         profile_slug: profileSlug || null,
         languages: languages.length > 0 ? languages : [],
         iban: iban.trim() || null,
@@ -792,6 +795,7 @@ function ProfilePageContent() {
             ? (updatedPref as 'instant' | 'daily' | 'weekly')
             : 'instant'
         )
+        setSmsOptOut(updatedData.sms_opt_out ?? false)
         setIban(updatedData.iban || '')
         setPaypalEmail(updatedData.paypal_email || '')
 
@@ -2137,6 +2141,34 @@ function ProfilePageContent() {
                             if (pref === 'weekly') return 'Weekly summary'
                             return 'Instant'
                           })()}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* SMS opt-out for helpers */}
+                  {isHelper && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        SMS task alerts
+                      </label>
+                      {editing ? (
+                        <label className="flex items-center gap-3 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                            checked={smsOptOut}
+                            onChange={(e) => setSmsOptOut(e.target.checked)}
+                          />
+                          <span className="text-sm text-gray-700">
+                            Opt out of SMS task alerts (we will not send you text messages about new tasks near you)
+                          </span>
+                        </label>
+                      ) : (
+                        <p className="text-gray-700 text-sm">
+                          {smsOptOut
+                            ? 'Opted out — you will not receive SMS task alerts'
+                            : 'Opted in — you may receive SMS alerts for new tasks near you'}
                         </p>
                       )}
                     </div>

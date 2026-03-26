@@ -21,6 +21,7 @@ export default function NewTaskClient() {
   const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<any>(null)
   const [authChecked, setAuthChecked] = useState(false)
+  const [userPaused, setUserPaused] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
   const [subCategories, setSubCategories] = useState<Category[]>([])
   const [availableTags, setAvailableTags] = useState<Tag[]>([])
@@ -393,6 +394,14 @@ export default function NewTaskClient() {
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     setUser(user ?? null)
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_paused')
+        .eq('id', user.id)
+        .single()
+      if (profile?.is_paused) setUserPaused(true)
+    }
     setAuthChecked(true)
   }
 
@@ -723,6 +732,18 @@ export default function NewTaskClient() {
         return
       }
 
+      // Block paused users from creating tasks
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('is_paused')
+        .eq('id', authUser.id)
+        .single()
+      if (userProfile?.is_paused) {
+        setError('Your account has been paused. You cannot post new tasks. Please contact support.')
+        setLoading(false)
+        return
+      }
+
       // Create task first
       // Build task data object with only core fields
       const taskDataToInsert: any = {
@@ -963,6 +984,23 @@ export default function NewTaskClient() {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center">Loading...</div>
+      </div>
+    )
+  }
+
+  if (userPaused) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <span className="text-2xl block mb-2">⏸</span>
+          <h2 className="text-lg font-semibold text-red-800 mb-2">Account Paused</h2>
+          <p className="text-sm text-red-700">
+            Your account has been paused. You cannot post new tasks.
+          </p>
+          <a href="/contact" className="inline-block mt-4 text-sm text-red-700 underline hover:text-red-900 font-medium">
+            Contact support
+          </a>
+        </div>
       </div>
     )
   }

@@ -36,6 +36,9 @@ const AdminMap = dynamic(() => import('@/components/Map'), { ssr: false })
 interface AppUser extends User {
   languages?: string[] | null
   role?: string // Add role field for admin page usage
+  is_paused?: boolean
+  paused_reason?: string | null
+  paused_at?: string | null
 }
 
 type Task = { 
@@ -93,7 +96,7 @@ export default function SuperadminDashboard() {
   const [traffic, setTraffic] = useState<Traffic[]>([])
   const [dailyTraffic, setDailyTraffic] = useState<DailyTraffic[]>([])
   const [trafficDays, setTrafficDays] = useState<number>(30)
-  const [tab, setTab] = useState<'users' | 'tasks' | 'awaiting_payment' | 'stats' | 'revenue' | 'email' | 'traffic' | 'settings' | 'reports' | 'maps' | 'blog'>('users')
+  const [tab, setTab] = useState<'users' | 'tasks' | 'awaiting_payment' | 'stats' | 'revenue' | 'email' | 'matching' | 'traffic' | 'settings' | 'reports' | 'maps' | 'blog'>('users')
   const [reports, setReports] = useState<any[]>([])
   const [loadingReports, setLoadingReports] = useState(false)
   const [deletingReportId, setDeletingReportId] = useState<string | null>(null)
@@ -149,6 +152,21 @@ export default function SuperadminDashboard() {
     emailType: '',
   })
   const [showEmailLogsSection, setShowEmailLogsSection] = useState(false)
+  const [smsTestPhone, setSmsTestPhone] = useState('')
+  const [smsTestLoading, setSmsTestLoading] = useState(false)
+  const [smsTestResult, setSmsTestResult] = useState<{ ok: boolean; msg: string } | null>(null)
+
+  // SMS Log
+  const [smsLogs, setSmsLogs] = useState<any[]>([])
+  const [smsLogsLoading, setSmsLogsLoading] = useState(false)
+
+  // Send Task Alert
+  const [alertTaskId, setAlertTaskId] = useState('')
+  const [alertUserId, setAlertUserId] = useState('')
+  const [alertViaEmail, setAlertViaEmail] = useState(true)
+  const [alertViaSms, setAlertViaSms] = useState(false)
+  const [alertSending, setAlertSending] = useState(false)
+  const [alertMessage, setAlertMessage] = useState<{ ok: boolean; msg: string } | null>(null)
   const [managingBadgesFor, setManagingBadgesFor] = useState<User | null>(null)
   const [selectedBadges, setSelectedBadges] = useState<string[]>([])
   const [savingBadges, setSavingBadges] = useState(false)
@@ -219,6 +237,12 @@ export default function SuperadminDashboard() {
   }>({ task: null, matches: [], reason: undefined })
   const [sendingMatches, setSendingMatches] = useState(false)
   const [sendMatchesMessage, setSendMatchesMessage] = useState<string | null>(null)
+  const [sendTaskId, setSendTaskId] = useState('')
+  const [sendTaskMatches, setSendTaskMatches] = useState<Array<{ id: string; name: string; email: string; distanceKm?: number; phoneNumber?: string | null; phoneCountryCode?: string | null; smsOptOut?: boolean }>>([])
+  const [sendTaskMatchesLoading, setSendTaskMatchesLoading] = useState(false)
+  const [selectedSendHelperIds, setSelectedSendHelperIds] = useState<Set<string>>(new Set())
+  const [sendViaEmail, setSendViaEmail] = useState(true)
+  const [sendViaSms, setSendViaSms] = useState(false)
   
   // Revenue tracking
   const [revenue, setRevenue] = useState<{
@@ -478,7 +502,7 @@ export default function SuperadminDashboard() {
   async function fetchUsers() {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, email, full_name, role, created_at, is_helper, is_tasker, badges, is_featured, languages')
+      .select('id, email, full_name, phone_number, phone_country_code, role, created_at, is_helper, is_tasker, badges, is_featured, languages, is_paused, paused_reason, paused_at')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -1228,7 +1252,31 @@ export default function SuperadminDashboard() {
     }
   }
 
-  async function sendHelperTaskMatchEmails(taskId: string) {
+  async function fetchSendTaskMatches(taskId: string) {
+    setSendTaskMatches([])
+    setSelectedSendHelperIds(new Set())
+    setSendMatchesMessage(null)
+    if (!taskId) return
+    setSendTaskMatchesLoading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Not authenticated')
+      const response = await fetch(`/api/admin/helper-task-match-preview?taskId=${encodeURIComponent(taskId)}`, {
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      })
+      const data = await response.json().catch(() => ({}))
+      if (response.ok && Array.isArray(data.matches)) {
+        setSendTaskMatches(data.matches)
+        setSelectedSendHelperIds(new Set(data.matches.map((m: any) => m.id as string)))
+      }
+    } catch (error: any) {
+      console.error('Error fetching send task matches:', error)
+    } finally {
+      setSendTaskMatchesLoading(false)
+    }
+  }
+
+  async function sendHelperTaskMatchEmails(taskId: string, helperIds: string[]) {
     try {
       setSendMatchesMessage(null)
       setSendingMatches(true)
@@ -1244,17 +1292,27 @@ export default function SuperadminDashboard() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ taskId }),
+        body: JSON.stringify({
+          taskId,
+          helperIds,
+          channels: [
+            ...(sendViaEmail ? ['email'] : []),
+            ...(sendViaSms ? ['sms'] : []),
+          ],
+        }),
       })
 
       const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
-        throw new Error(data.error || `Failed to send helper match emails (${response.status})`)
+        throw new Error(data.error || `Failed to send (${response.status})`)
       }
 
+      const parts: string[] = []
+      if (sendViaEmail) parts.push(`${data.sent || 0} email(s)`)
+      if (sendViaSms) parts.push(`${data.smsSent || 0} SMS`)
       setSendMatchesMessage(
-        `Sent ${data.sent || 0} email(s), skipped ${data.skipped || 0} (already sent or invalid).`
+        `Sent: ${parts.join(', ')}. Skipped ${data.skipped || 0} (already sent or invalid).`
       )
     } catch (error: any) {
       console.error('Error sending helper task match emails:', error)
@@ -1402,6 +1460,32 @@ export default function SuperadminDashboard() {
       })
     } finally {
       setSendingProfileEmail(null)
+    }
+  }
+
+  async function pauseUser(userId: string, currentlyPaused: boolean, reason?: string) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/admin/pause-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ userId, pause: !currentlyPaused, reason }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        alert(json.error || 'Failed to update user')
+        return
+      }
+      setUsers(prev => prev.map(u =>
+        u.id === userId
+          ? { ...u, is_paused: json.is_paused, paused_reason: reason || null }
+          : u
+      ))
+    } catch (err: any) {
+      alert(err.message || 'Failed to update user')
     }
   }
 
@@ -2041,7 +2125,7 @@ export default function SuperadminDashboard() {
 
         {/* Tabs */}
         <div className="mb-4 sm:mb-6 flex flex-wrap gap-2 items-center">
-          {(['users', 'tasks', 'awaiting_payment', 'reports', 'stats', 'revenue', 'email', 'traffic', 'settings', 'maps', 'blog'] as const).map((t: typeof tab) => (
+          {(['users', 'tasks', 'awaiting_payment', 'reports', 'stats', 'revenue', 'email', 'matching', 'traffic', 'settings', 'maps', 'blog'] as const).map((t: typeof tab) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -2051,7 +2135,7 @@ export default function SuperadminDashboard() {
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
               }`}
             >
-              {t === 'awaiting_payment' ? 'Awaiting Payment' : t.charAt(0).toUpperCase() + t.slice(1)}
+              {t === 'awaiting_payment' ? 'Awaiting Payment' : t === 'email' ? 'Comms' : t === 'matching' ? 'Matching' : t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
           ))}
           <Link
@@ -2393,6 +2477,9 @@ export default function SuperadminDashboard() {
                     >
                       Name <SortIcon column="name" />
                     </th>
+                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden lg:table-cell">
+                      Phone
+                    </th>
                     <th 
                       className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm cursor-pointer hover:bg-gray-200 select-none"
                       onClick={() => handleSort('role')}
@@ -2412,6 +2499,9 @@ export default function SuperadminDashboard() {
                     >
                       Featured <SortIcon column="is_featured" />
                     </th>
+                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">
+                      Status
+                    </th>
                     <th 
                       className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm cursor-pointer hover:bg-gray-200 select-none"
                       onClick={() => handleSort('created_at')}
@@ -2424,7 +2514,7 @@ export default function SuperadminDashboard() {
                   {sortedAndFilteredUsers.map(u => (
                     <tr 
                       key={u.id} 
-                      className={`hover:bg-gray-50 ${selectedUserIds.has(u.id) ? 'bg-blue-50' : ''}`}
+                      className={`hover:bg-gray-50 ${(u as any).is_paused ? 'bg-red-50' : selectedUserIds.has(u.id) ? 'bg-blue-50' : ''}`}
                     >
                       <td className="border px-2 sm:px-4 py-2">
                         <input
@@ -2437,7 +2527,19 @@ export default function SuperadminDashboard() {
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
                         <div className="truncate max-w-[150px] sm:max-w-none" title={u.email}>{u.email}</div>
                       </td>
-                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden sm:table-cell">{u.full_name || 'N/A'}</td>
+                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden sm:table-cell">
+                        <Link
+                          href={`/user/${u.id}`}
+                          target="_blank"
+                          className="text-blue-600 hover:underline font-medium"
+                          title="View profile"
+                        >
+                          {u.full_name || 'N/A'}
+                        </Link>
+                      </td>
+                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden lg:table-cell text-gray-600">
+                        {(u as any).phone_number ? `${(u as any).phone_country_code || ''} ${(u as any).phone_number}`.trim() : '—'}
+                      </td>
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
                         <span className={`px-2 py-1 rounded text-xs font-semibold ${
                           u.role === 'superadmin' ? 'bg-purple-100 text-purple-800' :
@@ -2515,6 +2617,34 @@ export default function SuperadminDashboard() {
                           </button>
                         ) : (
                           <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
+                        {(u as any).is_paused ? (
+                          <div className="flex flex-col gap-1">
+                            <span className="text-red-600 font-semibold text-[11px]">⏸ Paused</span>
+                            {(u as any).paused_reason && (
+                              <span className="text-gray-500 text-[10px] max-w-[120px] truncate" title={(u as any).paused_reason}>
+                                {(u as any).paused_reason}
+                              </span>
+                            )}
+                            <button
+                              onClick={() => pauseUser(u.id, true)}
+                              className="px-2 py-0.5 bg-green-500 hover:bg-green-600 text-white text-[11px] font-medium rounded"
+                            >
+                              Unpause
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              const reason = prompt('Reason for pausing (optional):') ?? undefined
+                              if (reason !== null) pauseUser(u.id, false, reason || undefined)
+                            }}
+                            className="px-2 py-1 bg-orange-400 hover:bg-orange-500 text-white text-[11px] font-medium rounded"
+                          >
+                            ⏸ Pause
+                          </button>
                         )}
                       </td>
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
@@ -2928,12 +3058,14 @@ export default function SuperadminDashboard() {
                         />
                       </td>
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
-                        <div
-                          className="truncate max-w-[260px] sm:max-w-[320px]"
+                        <Link
+                          href={`/tasks/${t.id}`}
+                          target="_blank"
+                          className="truncate max-w-[260px] sm:max-w-[320px] text-blue-600 hover:underline font-medium block"
                           title={t.title}
                         >
                           {t.title.length > 50 ? `${t.title.slice(0, 50)}…` : t.title}
-                        </div>
+                        </Link>
                       </td>
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
                         <span className={`px-2 py-1 rounded text-xs font-semibold ${
@@ -3570,6 +3702,84 @@ export default function SuperadminDashboard() {
         {/* Email Tab */}
         {tab === 'email' && (
           <div className="space-y-6">
+
+            {/* SMS Test */}
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-4xl space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">SMS Gateway Test</h3>
+                <p className="text-xs text-gray-500">
+                  Send a test SMS via SMSGate to verify your credentials and device are configured correctly.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                <input
+                  type="tel"
+                  value={smsTestPhone}
+                  onChange={(e) => { setSmsTestPhone(e.target.value); setSmsTestResult(null) }}
+                  placeholder="+351912345678 (E.164 format)"
+                  className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <button
+                  type="button"
+                  disabled={smsTestLoading || !smsTestPhone.trim()}
+                  onClick={async () => {
+                    setSmsTestLoading(true)
+                    setSmsTestResult(null)
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession()
+                      const res = await fetch('/api/admin/test-sms', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${session?.access_token}`,
+                        },
+                        body: JSON.stringify({ phone: smsTestPhone.trim() }),
+                      })
+                      const json = await res.json()
+                      if (res.ok) {
+                        setSmsTestResult({ ok: true, msg: `Sent! Message ID: ${json.messageId ?? 'n/a'}` })
+                      } else {
+                        setSmsTestResult({ ok: false, msg: json.error ?? 'Unknown error' })
+                      }
+                    } catch (err) {
+                      setSmsTestResult({ ok: false, msg: err instanceof Error ? err.message : String(err) })
+                    } finally {
+                      setSmsTestLoading(false)
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium rounded-md whitespace-nowrap"
+                >
+                  {smsTestLoading ? 'Sending…' : 'Send Test SMS'}
+                </button>
+              </div>
+              {smsTestResult && (
+                <p className={`text-sm font-medium ${smsTestResult.ok ? 'text-green-700' : 'text-red-600'}`}>
+                  {smsTestResult.ok ? '✅' : '❌'} {smsTestResult.msg}
+                </p>
+              )}
+            </div>
+
+            {/* Email Logs — shown first */}
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-4xl flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">Email Logs</h3>
+                <p className="text-xs text-gray-500">View recently sent emails and filter by recipient, subject, or type.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEmailLogsSection(prev => !prev)
+                  if (!showEmailLogsSection && emailLogs.length === 0) {
+                    fetchEmailLogs()
+                  }
+                }}
+                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-xs sm:text-sm rounded-md font-medium text-gray-800"
+              >
+                {showEmailLogsSection ? 'Hide Email Logs' : 'Show Email Logs'}
+              </button>
+            </div>
+
             <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-4xl">
               <div className="mb-6 border-b border-gray-200 pb-4">
                 <h2 className="text-xl font-semibold mb-2">Email Templates</h2>
@@ -3585,9 +3795,10 @@ export default function SuperadminDashboard() {
                 onSendFreeFormEmail={sendFreeFormEmail}
                 sendingEmail={sendingEmail}
               />
+            </div>
 
-              {/* Helper task match preview (no real emails sent) */}
-              <div className="mt-8 pt-6 border-t border-gray-200">
+            {/* REMOVED — Preview + Match sections moved to Matching tab */}
+            {false && <><div className="mt-8 pt-6 border-t border-gray-200">
                 <h3 className="text-sm font-semibold text-gray-900 mb-2">
                   Helper Task Match Preview (no emails sent)
                 </h3>
@@ -3698,13 +3909,16 @@ export default function SuperadminDashboard() {
                   Helper Task Match Emails (send for selected task)
                 </h3>
                 <p className="text-xs text-gray-600 mb-3">
-                  This will send real "New task near you" emails to matched helpers for the selected task,
-                  but only if the Helper Task Match feature flag is enabled in Platform Settings.
+                  Select a task to see matched helpers, check the ones you want to email, then send.
+                  Only checked helpers will receive the "New task near you" email.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center mb-3">
                   <select
-                    value={previewTaskId}
-                    onChange={(e) => setPreviewTaskId(e.target.value)}
+                    value={sendTaskId}
+                    onChange={(e) => {
+                      setSendTaskId(e.target.value)
+                      fetchSendTaskMatches(e.target.value)
+                    }}
                     className="w-full sm:w-80 px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select a task…</option>
@@ -3718,39 +3932,135 @@ export default function SuperadminDashboard() {
                         </option>
                       ))}
                   </select>
-                  <button
-                    type="button"
-                    onClick={() => previewTaskId && sendHelperTaskMatchEmails(previewTaskId)}
-                    disabled={!previewTaskId || sendingMatches}
-                    className="inline-flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {sendingMatches ? 'Sending emails...' : 'Send helper match emails'}
-                  </button>
                 </div>
+
+                {sendTaskMatchesLoading && (
+                  <p className="text-xs text-gray-500 mb-3">Loading matched helpers…</p>
+                )}
+
+                {!sendTaskMatchesLoading && sendTaskId && sendTaskMatches.length === 0 && (
+                  <p className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-3 py-2 mb-3">
+                    No eligible helpers matched for this task.
+                  </p>
+                )}
+
+                {sendTaskMatches.length > 0 && (
+                  <div className="mb-4">
+                    {/* Channel selection */}
+                    <div className="flex items-center gap-4 mb-3 p-2 bg-gray-50 rounded border border-gray-200">
+                      <span className="text-xs font-semibold text-gray-700">Send via:</span>
+                      <label className="flex items-center gap-1.5 cursor-pointer text-xs text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={sendViaEmail}
+                          onChange={(e) => setSendViaEmail(e.target.checked)}
+                          className="w-3.5 h-3.5"
+                        />
+                        ✉️ Email
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer text-xs text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={sendViaSms}
+                          onChange={(e) => setSendViaSms(e.target.checked)}
+                          className="w-3.5 h-3.5"
+                        />
+                        📱 SMS
+                      </label>
+                    </div>
+
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-xs font-semibold text-gray-700">
+                        {selectedSendHelperIds.size} of {sendTaskMatches.length} helper(s) selected
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSendHelperIds(new Set(sendTaskMatches.map(m => m.id)))}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        Select all
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSendHelperIds(new Set())}
+                        className="text-xs text-gray-500 hover:underline"
+                      >
+                        Deselect all
+                      </button>
+                    </div>
+                    <div className="max-h-56 overflow-auto rounded border border-gray-200 bg-white">
+                      <table className="min-w-full text-[11px]">
+                        <thead className="bg-gray-50 sticky top-0">
+                          <tr>
+                            <th className="px-2 py-1 w-8"></th>
+                            <th className="px-2 py-1 text-left font-semibold text-gray-700">Helper</th>
+                            <th className="px-2 py-1 text-left font-semibold text-gray-700">Email</th>
+                            <th className="px-2 py-1 text-left font-semibold text-gray-700">Phone</th>
+                            <th className="px-2 py-1 text-left font-semibold text-gray-700">km</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sendTaskMatches.map((m) => {
+                            const hasPhone = !!(m.phoneNumber || '').trim()
+                            const optedOut = m.smsOptOut === true
+                            return (
+                              <tr
+                                key={m.id}
+                                className={`border-t border-gray-100 cursor-pointer hover:bg-gray-50 ${selectedSendHelperIds.has(m.id) ? 'bg-green-50' : ''}`}
+                                onClick={() => {
+                                  setSelectedSendHelperIds(prev => {
+                                    const next = new Set(prev)
+                                    next.has(m.id) ? next.delete(m.id) : next.add(m.id)
+                                    return next
+                                  })
+                                }}
+                              >
+                                <td className="px-2 py-1 text-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedSendHelperIds.has(m.id)}
+                                    onChange={() => {}}
+                                    className="w-3.5 h-3.5 cursor-pointer"
+                                  />
+                                </td>
+                                <td className="px-2 py-1 text-gray-900">{m.name}</td>
+                                <td className="px-2 py-1 text-gray-700">{m.email}</td>
+                                <td className="px-2 py-1 text-gray-500">
+                                  {optedOut
+                                    ? <span title={`Opted out of SMS${m.phoneNumber ? ` · ${m.phoneCountryCode ?? ''}${m.phoneNumber}` : ''}`}>🚫</span>
+                                    : hasPhone
+                                      ? <span title={`${m.phoneCountryCode ?? ''}${m.phoneNumber}`}>📱</span>
+                                      : <span className="text-gray-400" title="No phone on file">—</span>}
+                                </td>
+                                <td className="px-2 py-1 text-gray-700">
+                                  {typeof m.distanceKm === 'number' ? m.distanceKm.toFixed(1) : '—'}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => sendTaskId && selectedSendHelperIds.size > 0 && (sendViaEmail || sendViaSms) && sendHelperTaskMatchEmails(sendTaskId, Array.from(selectedSendHelperIds))}
+                  disabled={!sendTaskId || selectedSendHelperIds.size === 0 || sendingMatches || (!sendViaEmail && !sendViaSms)}
+                  className="inline-flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {sendingMatches
+                    ? 'Sending…'
+                    : `Send to ${selectedSendHelperIds.size} helper${selectedSendHelperIds.size !== 1 ? 's' : ''}`}
+                </button>
+
                 {sendMatchesMessage && (
                   <p className="mt-2 text-xs text-gray-700">{sendMatchesMessage}</p>
                 )}
               </div>
 
-              <div className="mt-6 pt-4 border-t border-gray-200 flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-900 mb-1">Email Logs</h3>
-                  <p className="text-xs text-gray-500">View recently sent emails and filter by recipient, subject, or type.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowEmailLogsSection(prev => !prev)
-                    if (!showEmailLogsSection && emailLogs.length === 0) {
-                      fetchEmailLogs()
-                    }
-                  }}
-                  className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-xs sm:text-sm rounded-md font-medium text-gray-800"
-                >
-                  {showEmailLogsSection ? 'Hide Email Logs' : 'Show Email Logs'}
-                </button>
-              </div>
-            </div>
+            </> }
 
             {showEmailLogsSection && (() => {
               // Filter email logs based on filters
@@ -3901,8 +4211,10 @@ export default function SuperadminDashboard() {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredEmailLogs.map((log) => (
-                          <tr key={log.id} className={selectedEmailLogIds.includes(log.id) ? 'bg-blue-50' : ''}>
+                        {filteredEmailLogs.map((log) => {
+                          const isPreBidImage = log.email_type === 'new_message' && log.metadata?.hasImage === true && log.metadata?.bidAccepted !== true
+                          return (
+                          <tr key={log.id} className={`${isPreBidImage ? 'bg-red-50 border-l-4 border-red-400' : selectedEmailLogIds.includes(log.id) ? 'bg-blue-50' : ''}`}>
                             <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-500">
                               <input
                                 type="checkbox"
@@ -3930,7 +4242,12 @@ export default function SuperadminDashboard() {
                               {log.subject || '-'}
                             </td>
                             <td className="px-4 py-2 text-xs text-gray-700">
-                              {log.email_type || '-'}
+                              <span>{log.email_type || '-'}</span>
+                              {isPreBidImage && (
+                                <span className="ml-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded">
+                                  📷 IMAGE PRE-BID
+                                </span>
+                              )}
                             </td>
                             <td className="px-4 py-2 text-xs text-gray-700">
                               {log.status || '-'}
@@ -3955,13 +4272,407 @@ export default function SuperadminDashboard() {
                               </div>
                             </td>
                           </tr>
-                        ))}
+                        )})}
                       </tbody>
                     </table>
                   </div>
                 </div>
               )
             })()}
+          </div>
+        )}
+
+        {/* Matching Tab */}
+        {tab === 'matching' && (
+          <div className="space-y-6">
+
+            {/* Send Task Alert */}
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-4xl space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">Send Task Alert</h3>
+                <p className="text-xs text-gray-500">
+                  Send a task notification to any specific user via email, SMS, or both.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Task</label>
+                  <select
+                    value={alertTaskId}
+                    onChange={(e) => { setAlertTaskId(e.target.value); setAlertMessage(null) }}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="">— Select a task —</option>
+                    {tasks
+                      .filter(t => !t.is_sample_task && !t.hidden_by_admin)
+                      .map(t => (
+                        <option key={t.id} value={t.id}>
+                          {t.title} ({t.status})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">User</label>
+                  <select
+                    value={alertUserId}
+                    onChange={(e) => { setAlertUserId(e.target.value); setAlertMessage(null) }}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="">— Select a user —</option>
+                    {users.map(u => (
+                      <option key={u.id} value={u.id}>
+                        {u.full_name || '(no name)'} — {u.email}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 p-2 bg-gray-50 rounded border border-gray-200">
+                <span className="text-xs font-semibold text-gray-700">Send via:</span>
+                <label className="flex items-center gap-1.5 cursor-pointer text-xs text-gray-700">
+                  <input type="checkbox" checked={alertViaEmail} onChange={(e) => setAlertViaEmail(e.target.checked)} className="w-3.5 h-3.5" />
+                  ✉️ Email
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer text-xs text-gray-700">
+                  <input type="checkbox" checked={alertViaSms} onChange={(e) => setAlertViaSms(e.target.checked)} className="w-3.5 h-3.5" />
+                  📱 SMS
+                </label>
+              </div>
+
+              <button
+                type="button"
+                disabled={!alertTaskId || !alertUserId || (!alertViaEmail && !alertViaSms) || alertSending}
+                onClick={async () => {
+                  setAlertSending(true)
+                  setAlertMessage(null)
+                  try {
+                    const { data: { session } } = await supabase.auth.getSession()
+                    const res = await fetch('/api/admin/send-user-alert', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+                      body: JSON.stringify({
+                        taskId: alertTaskId,
+                        userId: alertUserId,
+                        channels: [...(alertViaEmail ? ['email'] : []), ...(alertViaSms ? ['sms'] : [])],
+                      }),
+                    })
+                    const json = await res.json()
+                    if (!res.ok) {
+                      setAlertMessage({ ok: false, msg: json.error ?? 'Unknown error' })
+                    } else {
+                      const parts: string[] = []
+                      if (json.emailSent) parts.push('email sent')
+                      if (json.smsSent) parts.push('SMS sent')
+                      const warnings = json.errors?.length ? ` (${json.errors.join('; ')})` : ''
+                      setAlertMessage({ ok: parts.length > 0, msg: parts.length > 0 ? `${parts.join(' & ')}${warnings}` : `Nothing sent${warnings}` })
+                    }
+                  } catch (err) {
+                    setAlertMessage({ ok: false, msg: err instanceof Error ? err.message : String(err) })
+                  } finally {
+                    setAlertSending(false)
+                  }
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium rounded-md"
+              >
+                {alertSending ? 'Sending…' : 'Send Alert'}
+              </button>
+
+              {alertMessage && (
+                <p className={`text-sm font-medium ${alertMessage.ok ? 'text-green-700' : 'text-red-600'}`}>
+                  {alertMessage.ok ? '✅' : '❌'} {alertMessage.msg}
+                </p>
+              )}
+            </div>
+
+            {/* Helper Task Match */}
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-4xl">
+
+              {/* Preview section */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                  Helper Task Match Preview (no emails sent)
+                </h3>
+                <p className="text-xs text-gray-600 mb-3">
+                  Choose a task below to see which helpers would be matched for "New task near you" emails.
+                  This endpoint never sends real emails; it only shows the current matching result.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                  <select
+                    value={previewTaskId}
+                    onChange={(e) => setPreviewTaskId(e.target.value)}
+                    className="w-full sm:w-80 px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a task…</option>
+                    {tasks
+                      .slice()
+                      .sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''))
+                      .map(task => (
+                        <option key={task.id} value={task.id}>
+                          [{task.id.substring(0, 8)}] {task.title} — {task.status}
+                          {task.is_sample_task ? ' (sample)' : ''}
+                        </option>
+                      ))}
+                  </select>
+                  <div className="flex flex-row gap-2">
+                    <button
+                      type="button"
+                      onClick={() => previewTaskId && previewHelperTaskMatch(previewTaskId)}
+                      disabled={!previewTaskId || previewLoading}
+                      className="inline-flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {previewLoading ? 'Loading preview...' : 'Preview helper matches'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => previewTaskId && sendHelperTaskMatchSample(previewTaskId)}
+                      disabled={!previewTaskId}
+                      className="inline-flex items-center px-3 py-2 bg-gray-700 hover:bg-gray-800 text-white text-xs sm:text-sm rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Send sample email to admin
+                    </button>
+                  </div>
+                </div>
+                {previewError && (
+                  <p className="mt-2 text-xs text-red-600">{previewError}</p>
+                )}
+                {previewResult.task && (
+                  <div className="mt-4 rounded-md border border-gray-200 bg-gray-50 p-3 text-xs text-gray-800 space-y-2">
+                    <div>
+                      <span className="font-semibold">Task:</span>{' '}
+                      <span className="text-gray-900">
+                        [{previewResult.task.id?.substring(0, 8) || '—'}]{' '}
+                        {previewResult.task.title}
+                      </span>
+                    </div>
+                    {typeof previewResult.task.amount === 'number' && (
+                      <div>
+                        <span className="font-semibold">Amount:</span>{' '}
+                        €{previewResult.task.amount.toFixed(2)}
+                      </div>
+                    )}
+                    {previewResult.reason && (
+                      <div className="text-yellow-800">
+                        <span className="font-semibold">Note:</span> {previewResult.reason}
+                      </div>
+                    )}
+                    <div>
+                      <span className="font-semibold">Matched helpers:</span>{' '}
+                      {previewResult.matches.length}
+                    </div>
+                    {previewResult.matches.length > 0 && (
+                      <div className="max-h-64 overflow-auto rounded border border-gray-200 bg-white">
+                        <table className="min-w-full text-[11px]">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-2 py-1 text-left font-semibold text-gray-700">Helper</th>
+                              <th className="px-2 py-1 text-left font-semibold text-gray-700">Email</th>
+                              <th className="px-2 py-1 text-left font-semibold text-gray-700">Distance (km)</th>
+                              <th className="px-2 py-1 text-left font-semibold text-gray-700">Max Dist (km)</th>
+                              <th className="px-2 py-1 text-left font-semibold text-gray-700">Email Pref</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {previewResult.matches.map((m) => (
+                              <tr key={m.id} className="border-t border-gray-100">
+                                <td className="px-2 py-1 text-gray-900">{m.name}</td>
+                                <td className="px-2 py-1 text-gray-700">{m.email}</td>
+                                <td className="px-2 py-1 text-gray-700">
+                                  {typeof m.distanceKm === 'number' ? m.distanceKm.toFixed(2) : '—'}
+                                </td>
+                                <td className="px-2 py-1 text-gray-700">
+                                  {typeof m.preferredMaxDistanceKm === 'number' ? m.preferredMaxDistanceKm.toFixed(1) : '—'}
+                                </td>
+                                <td className="px-2 py-1 text-gray-700">{m.emailPreference || 'instant'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Send section */}
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                  Helper Task Match Emails (send for selected task)
+                </h3>
+                <p className="text-xs text-gray-600 mb-3">
+                  Select a task to see matched helpers, check the ones you want to notify, then send.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center mb-3">
+                  <select
+                    value={sendTaskId}
+                    onChange={(e) => { setSendTaskId(e.target.value); fetchSendTaskMatches(e.target.value) }}
+                    className="w-full sm:w-80 px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a task…</option>
+                    {tasks
+                      .slice()
+                      .sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''))
+                      .map(task => (
+                        <option key={task.id} value={task.id}>
+                          [{task.id.substring(0, 8)}] {task.title} — {task.status}
+                          {task.is_sample_task ? ' (sample)' : ''}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                {sendTaskMatchesLoading && (
+                  <p className="text-xs text-gray-500 mb-3">Loading matched helpers…</p>
+                )}
+                {!sendTaskMatchesLoading && sendTaskId && sendTaskMatches.length === 0 && (
+                  <p className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-3 py-2 mb-3">
+                    No eligible helpers matched for this task.
+                  </p>
+                )}
+
+                {sendTaskMatches.length > 0 && (
+                  <div className="mb-4">
+                    <div className="flex items-center gap-4 mb-3 p-2 bg-gray-50 rounded border border-gray-200">
+                      <span className="text-xs font-semibold text-gray-700">Send via:</span>
+                      <label className="flex items-center gap-1.5 cursor-pointer text-xs text-gray-700">
+                        <input type="checkbox" checked={sendViaEmail} onChange={(e) => setSendViaEmail(e.target.checked)} className="w-3.5 h-3.5" />
+                        ✉️ Email
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer text-xs text-gray-700">
+                        <input type="checkbox" checked={sendViaSms} onChange={(e) => setSendViaSms(e.target.checked)} className="w-3.5 h-3.5" />
+                        📱 SMS
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-xs font-semibold text-gray-700">
+                        {selectedSendHelperIds.size} of {sendTaskMatches.length} helper(s) selected
+                      </span>
+                      <button type="button" onClick={() => setSelectedSendHelperIds(new Set(sendTaskMatches.map(m => m.id)))} className="text-xs text-blue-600 hover:underline">Select all</button>
+                      <button type="button" onClick={() => setSelectedSendHelperIds(new Set())} className="text-xs text-gray-500 hover:underline">Deselect all</button>
+                    </div>
+                    <div className="max-h-56 overflow-auto rounded border border-gray-200 bg-white">
+                      <table className="min-w-full text-[11px]">
+                        <thead className="bg-gray-50 sticky top-0">
+                          <tr>
+                            <th className="px-2 py-1 w-8"></th>
+                            <th className="px-2 py-1 text-left font-semibold text-gray-700">Helper</th>
+                            <th className="px-2 py-1 text-left font-semibold text-gray-700">Email</th>
+                            <th className="px-2 py-1 text-left font-semibold text-gray-700">Phone</th>
+                            <th className="px-2 py-1 text-left font-semibold text-gray-700">km</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sendTaskMatches.map((m) => {
+                            const hasPhone = !!(m.phoneNumber || '').trim()
+                            const optedOut = m.smsOptOut === true
+                            return (
+                              <tr
+                                key={m.id}
+                                className={`border-t border-gray-100 cursor-pointer hover:bg-gray-50 ${selectedSendHelperIds.has(m.id) ? 'bg-green-50' : ''}`}
+                                onClick={() => setSelectedSendHelperIds(prev => { const next = new Set(prev); next.has(m.id) ? next.delete(m.id) : next.add(m.id); return next })}
+                              >
+                                <td className="px-2 py-1 text-center">
+                                  <input type="checkbox" checked={selectedSendHelperIds.has(m.id)} onChange={() => {}} className="w-3.5 h-3.5 cursor-pointer" />
+                                </td>
+                                <td className="px-2 py-1 text-gray-900">{m.name}</td>
+                                <td className="px-2 py-1 text-gray-700">{m.email}</td>
+                                <td className="px-2 py-1 text-gray-500">
+                                  {optedOut
+                                    ? <span title={`Opted out of SMS${m.phoneNumber ? ` · ${m.phoneCountryCode ?? ''}${m.phoneNumber}` : ''}`}>🚫</span>
+                                    : hasPhone
+                                      ? <span title={`${m.phoneCountryCode ?? ''}${m.phoneNumber}`}>📱</span>
+                                      : <span className="text-gray-400" title="No phone on file">—</span>}
+                                </td>
+                                <td className="px-2 py-1 text-gray-700">{typeof m.distanceKm === 'number' ? m.distanceKm.toFixed(1) : '—'}</td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => sendTaskId && selectedSendHelperIds.size > 0 && (sendViaEmail || sendViaSms) && sendHelperTaskMatchEmails(sendTaskId, Array.from(selectedSendHelperIds))}
+                  disabled={!sendTaskId || selectedSendHelperIds.size === 0 || sendingMatches || (!sendViaEmail && !sendViaSms)}
+                  className="inline-flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {sendingMatches ? 'Sending…' : `Send to ${selectedSendHelperIds.size} helper${selectedSendHelperIds.size !== 1 ? 's' : ''}`}
+                </button>
+                {sendMatchesMessage && (
+                  <p className="mt-2 text-xs text-gray-700">{sendMatchesMessage}</p>
+                )}
+              </div>
+            </div>
+
+            {/* SMS Log */}
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-4xl">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">SMS Log</h3>
+                  <p className="text-xs text-gray-500">All outgoing SMS messages sent via the platform.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setSmsLogsLoading(true)
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession()
+                      const res = await fetch('/api/admin/sms-logs', {
+                        headers: { 'Authorization': `Bearer ${session?.access_token}` },
+                      })
+                      const json = await res.json()
+                      if (res.ok) setSmsLogs(json.logs ?? [])
+                    } catch {}
+                    finally { setSmsLogsLoading(false) }
+                  }}
+                  className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-xs sm:text-sm rounded-md font-medium text-gray-800"
+                >
+                  {smsLogsLoading ? 'Loading…' : 'Load SMS Logs'}
+                </button>
+              </div>
+
+              {smsLogs.length > 0 && (
+                <div className="overflow-auto max-h-96 rounded border border-gray-200">
+                  <table className="min-w-full text-xs">
+                    <thead className="bg-gray-50 sticky top-0">
+                      <tr>
+                        <th className="px-2 py-1 text-left font-semibold text-gray-700">Date</th>
+                        <th className="px-2 py-1 text-left font-semibold text-gray-700">Recipient</th>
+                        <th className="px-2 py-1 text-left font-semibold text-gray-700">Phone</th>
+                        <th className="px-2 py-1 text-left font-semibold text-gray-700">Message</th>
+                        <th className="px-2 py-1 text-left font-semibold text-gray-700">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {smsLogs.map((log: any) => (
+                        <tr key={log.id} className="border-t border-gray-100">
+                          <td className="px-2 py-1 text-gray-500 whitespace-nowrap">
+                            {new Date(log.created_at).toLocaleDateString()} {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </td>
+                          <td className="px-2 py-1 text-gray-700">{log.recipient_name || '—'}</td>
+                          <td className="px-2 py-1 text-gray-700 font-mono">{log.recipient_phone}</td>
+                          <td className="px-2 py-1 text-gray-700 max-w-xs truncate" title={log.message}>{log.message}</td>
+                          <td className="px-2 py-1">
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${log.status === 'sent' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                              {log.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {!smsLogsLoading && smsLogs.length === 0 && (
+                <p className="text-xs text-gray-400 mt-2">Click "Load SMS Logs" to view outgoing messages.</p>
+              )}
+            </div>
+
           </div>
         )}
 

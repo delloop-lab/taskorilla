@@ -687,10 +687,12 @@ export default function EmailTemplateManager({
               </button>
             )}
           </div>
+        </div>
+      )}
 
-          {/* Send Email Section */}
-          {users.length > 0 && onSendWelcomeEmail && onSendFreeFormEmail && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
+      {/* Send Email Section — always visible */}
+      {users.length > 0 && onSendWelcomeEmail && onSendFreeFormEmail && (
+        <div className="mt-6 pt-6 border-t border-gray-200">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Send Email</h3>
                 <div className="flex gap-2">
@@ -851,11 +853,11 @@ export default function EmailTemplateManager({
                   </div>
                 </div>
               )}
-            </div>
-          )}
+        </div>
+      )}
 
-          {/* Test Email Section */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+      {/* Test Email Section — always visible */}
+      <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">Send Test Email</h3>
             <div className="space-y-3">
               <div>
@@ -902,9 +904,7 @@ export default function EmailTemplateManager({
                 ? `Testing template: ${templates.find((t: EmailTemplate) => t.id === selectedTestTemplateId)?.template_type || 'selected template'}`
                 : 'Send a test email with the current template content to verify how it looks'}
             </p>
-          </div>
-        </div>
-      )}
+      </div>
 
       {/* Delete Confirmation Modal */}
       {deletingTemplateId && (

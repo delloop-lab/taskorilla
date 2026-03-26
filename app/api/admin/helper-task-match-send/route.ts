@@ -9,6 +9,9 @@ import {
 } from '@/lib/helper-matching'
 import { sendTemplateEmail } from '@/lib/email'
 import { logEmail } from '@/lib/email-logger'
+import { sendHelperAlert } from '@/lib/sms'
+import { shortenUrl } from '@/lib/url-shortener'
+import { logSms } from '@/lib/sms-logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,6 +19,10 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json().catch(() => null)
     const taskId = body?.taskId as string | undefined
+    const helperIds: string[] | undefined = Array.isArray(body?.helperIds) ? body.helperIds : undefined
+    const channels: string[] = Array.isArray(body?.channels) ? body.channels : ['email']
+    const sendEmail = channels.includes('email')
+    const sendSms = channels.includes('sms')
 
     if (!taskId) {
       return NextResponse.json({ error: 'taskId is required' }, { status: 400 })
@@ -127,7 +134,7 @@ export async function POST(request: NextRequest) {
     const { data: helpersData, error: helpersError } = await supabase
       .from('profiles')
       .select(
-        'id, full_name, email, skills, services_offered, professions, preferred_max_distance_km, email_preference, latitude, longitude, is_helper'
+        'id, full_name, email, phone_number, phone_country_code, sms_opt_out, skills, services_offered, professions, preferred_max_distance_km, email_preference, latitude, longitude, is_helper'
       )
       .eq('is_helper', true)
       .limit(500)
@@ -179,10 +186,19 @@ export async function POST(request: NextRequest) {
           email,
           emailPreference,
           preferredMaxDistanceKm,
+          phoneNumber: row.phone_number ?? null,
+          phoneCountryCode: row.phone_country_code ?? null,
+          smsOptOut: row.sms_opt_out ?? false,
         } as MatchingHelper
       }) ?? []
 
-    const matches: EligibleHelper[] = matchHelpersForTask(matchingTask, helpers)
+    let matches: EligibleHelper[] = matchHelpersForTask(matchingTask, helpers)
+
+    // If admin specified a subset of helpers, restrict to only those
+    if (helperIds && helperIds.length > 0) {
+      const allowedIds = new Set(helperIds)
+      matches = matches.filter(m => allowedIds.has(m.id))
+    }
 
     if (!matches.length) {
       return NextResponse.json({
@@ -193,18 +209,22 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Load helper_task_match template
-    const { data: template, error: templateError } = await supabase
-      .from('email_templates')
-      .select('subject, html_content')
-      .eq('template_type', 'helper_task_match')
-      .single()
+    // Load helper_task_match template (only needed for email channel)
+    let template: { subject: string; html_content: string } | null = null
+    if (sendEmail) {
+      const { data: templateData, error: templateError } = await supabase
+        .from('email_templates')
+        .select('subject, html_content')
+        .eq('template_type', 'helper_task_match')
+        .single()
 
-    if (templateError || !template) {
-      return NextResponse.json(
-        { error: 'helper_task_match template not found', details: templateError?.message },
-        { status: 500 }
-      )
+      if (templateError || !templateData) {
+        return NextResponse.json(
+          { error: 'helper_task_match template not found', details: templateError?.message },
+          { status: 500 }
+        )
+      }
+      template = templateData
     }
 
     // Build base URL for task links
@@ -220,76 +240,121 @@ export async function POST(request: NextRequest) {
 
     let sentCount = 0
     let skippedCount = 0
+    let smsSentCount = 0
+
+    const profileUrl = `${baseUrl}/profile`
+
+    // Shorten URLs once for all SMS using internal /go/[code] shortener
+    const [shortTaskUrl, shortProfileUrl] = sendSms
+      ? await Promise.all([shortenUrl(taskUrl, supabase), shortenUrl(profileUrl, supabase)])
+      : [taskUrl, profileUrl]
 
     for (const helper of matches) {
-      const recipientEmail = (helper.email || '').trim()
-      if (!recipientEmail || !recipientEmail.includes('@')) {
-        skippedCount++
-        continue
-      }
+      const helperAny = helper as any
+      let didSomething = false
 
-      // De-dupe: check if we've already sent helper_task_match for this task+helper
-      const { data: existing } = await supabase
-        .from('email_logs')
-        .select('id')
-        .eq('email_type', 'helper_task_match')
-        .eq('related_task_id', matchingTask.id)
-        .eq('related_user_id', helper.id)
-        .maybeSingle()
+      // ── Email ──────────────────────────────────────────────────────────────
+      if (sendEmail) {
+        const recipientEmail = (helper.email || '').trim()
+        if (!recipientEmail || !recipientEmail.includes('@')) {
+          skippedCount++
+        } else {
+          // De-dupe: skip if already sent for this task+helper
+          const { data: existing } = await supabase
+            .from('email_logs')
+            .select('id')
+            .eq('email_type', 'helper_task_match')
+            .eq('related_task_id', matchingTask.id)
+            .eq('related_user_id', helper.id)
+            .maybeSingle()
 
-      if (existing) {
-        skippedCount++
-        continue
-      }
+          if (existing) {
+            skippedCount++
+          } else {
+            const distanceLabel =
+              typeof helper.distanceKm === 'number'
+                ? `${helper.distanceKm.toFixed(1)} km`
+                : 'N/A'
+            const hasAmount = typeof matchingTask.amount === 'number' && matchingTask.amount > 0
+            const amountLabel = hasAmount ? `€${matchingTask.amount!.toFixed(2)}` : 'Quote needed'
+            const locationLabel = taskRow.location || 'Unknown'
+            const renderedSubject = template!.subject.replace(/\{\{task_title\}\}/g, matchingTask.title)
 
-      const distanceLabel =
-        typeof helper.distanceKm === 'number'
-          ? `${helper.distanceKm.toFixed(1)} km`
-          : 'N/A'
+            await sendTemplateEmail(
+              recipientEmail,
+              helper.name || 'Helper',
+              renderedSubject,
+              template!.html_content,
+              {
+                task_title: matchingTask.title,
+                amount_label: amountLabel,
+                location_label: locationLabel,
+                distance_label: distanceLabel,
+                task_url: taskUrl,
+              }
+            )
 
-      const hasAmount = typeof matchingTask.amount === 'number' && matchingTask.amount > 0
-      const amountLabel = hasAmount ? `€${matchingTask.amount!.toFixed(2)}` : 'Quote needed'
+            await logEmail({
+              recipient_email: recipientEmail,
+              recipient_name: helper.name || undefined,
+              subject: renderedSubject,
+              email_type: 'helper_task_match',
+              status: 'sent',
+              related_task_id: matchingTask.id,
+              related_user_id: helper.id,
+              metadata: {
+                template_type: 'helper_task_match',
+                task_url: taskUrl,
+                distance_km: helper.distanceKm ?? null,
+                amount: matchingTask.amount ?? null,
+              },
+            }, supabase)
 
-      const locationLabel = taskRow.location || 'Unknown'
-
-      // Send email using helper_task_match template
-      await sendTemplateEmail(
-        recipientEmail,
-        helper.name || 'Helper',
-        template.subject,
-        template.html_content,
-        {
-          task_title: matchingTask.title,
-          amount_label: amountLabel,
-          location_label: locationLabel,
-          distance_label: distanceLabel,
-          task_url: taskUrl,
+            didSomething = true
+          }
         }
-      )
+      }
 
-      // Log email
-      await logEmail({
-        recipient_email: recipientEmail,
-        recipient_name: helper.name || undefined,
-        subject: template.subject.replace('{{task_title}}', matchingTask.title),
-        email_type: 'helper_task_match',
-        status: 'sent',
-        related_task_id: matchingTask.id,
-        related_user_id: helper.id,
-        metadata: {
-          template_type: 'helper_task_match',
-          task_url: taskUrl,
-          distance_km: helper.distanceKm ?? null,
-          amount: matchingTask.amount ?? null,
-        },
-      })
+      // ── SMS ────────────────────────────────────────────────────────────────
+      if (sendSms) {
+        const phone = (helperAny.phoneNumber || '').trim()
+        const optedOut = helperAny.smsOptOut === true
 
-      sentCount++
+        if (!phone || optedOut) {
+          // silently skip — no phone or helper opted out
+        } else {
+          const countryCode = (helperAny.phoneCountryCode || '').trim()
+          const fullPhone = countryCode && !phone.startsWith('+')
+            ? `${countryCode}${phone}`
+            : phone
+
+          const smsText =
+            `New task near you on Taskorilla: ${matchingTask.title} – View it: ${shortTaskUrl} | To opt out visit your profile: ${shortProfileUrl}`
+
+          const smsResult = await sendHelperAlert(fullPhone, smsText)
+          if (smsResult.success) {
+            smsSentCount++
+            didSomething = true
+            await logSms({
+              recipient_phone: fullPhone,
+              recipient_name: helper.name || undefined,
+              message: smsText,
+              status: 'sent',
+              related_task_id: matchingTask.id,
+              related_user_id: helper.id,
+              metadata: { channel: 'helper_task_match' },
+            }, supabase)
+          }
+        }
+      }
+
+      if (didSomething) sentCount++
     }
 
     return NextResponse.json({
       task: matchingTask,
       sent: sentCount,
+      smsSent: smsSentCount,
       skipped: skippedCount,
     })
   } catch (error: any) {

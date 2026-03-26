@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
     const { data: helpersData, error: helpersError } = await supabase
       .from('profiles')
       .select(
-        'id, full_name, email, skills, services_offered, professions, preferred_max_distance_km, email_preference, latitude, longitude, is_helper'
+        'id, full_name, email, phone_number, phone_country_code, sms_opt_out, skills, services_offered, professions, preferred_max_distance_km, email_preference, latitude, longitude, is_helper'
       )
       .eq('is_helper', true)
       .limit(500)
@@ -171,6 +171,9 @@ export async function GET(request: NextRequest) {
           email,
           emailPreference,
           preferredMaxDistanceKm,
+          phoneNumber: row.phone_number ?? null,
+          phoneCountryCode: row.phone_country_code ?? null,
+          smsOptOut: row.sms_opt_out ?? false,
         } as MatchingHelper
       }) ?? []
 

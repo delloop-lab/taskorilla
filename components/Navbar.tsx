@@ -19,6 +19,8 @@ export default function Navbar() {
   const [profileName, setProfileName] = useState<string | null>(null)
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null)
   const [userRole, setUserRole] = useState<string | null>(null)
+  const [userPaused, setUserPaused] = useState(false)
+  const [showPausedModal, setShowPausedModal] = useState(false)
   const [unreadCount, setUnreadCount] = useState<number>(0)
   const [pendingBidsCount, setPendingBidsCount] = useState<number>(0)
   const [hasPendingBids, setHasPendingBids] = useState<boolean>(false) // Track if user has ANY pending bids
@@ -56,17 +58,19 @@ export default function Navbar() {
       if (user?.id) {
         const { data } = await supabase
           .from('profiles')
-          .select('full_name, avatar_url, role')
+          .select('full_name, avatar_url, role, is_paused')
           .eq('id', user.id)
           .single()
 
         setProfileName(data?.full_name || null)
         setProfileAvatar(data?.avatar_url || null)
         setUserRole(data?.role || 'user')
+        setUserPaused(data?.is_paused === true)
       } else {
         setProfileName(null)
         setProfileAvatar(null)
         setUserRole(null)
+        setUserPaused(false)
         setUnreadCount(0)
       }
     }
@@ -512,12 +516,21 @@ export default function Navbar() {
                       setTasksMenuTimeout(timeout)
                     }}
                   >
+                    {userPaused ? (
+                    <button
+                      onClick={() => { setTasksMenuOpen(false); setShowPausedModal(true) }}
+                      className="block w-full text-left px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
+                    >
+                      {t('navbar.postTask')}
+                    </button>
+                    ) : (
                     <Link
                       href="/tasks/new"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
                       {t('navbar.postTask')}
                     </Link>
+                    )}
                     <Link
                       href="/tasks"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
@@ -579,18 +592,36 @@ export default function Navbar() {
                       setHelpersMenuTimeout(timeout)
                     }}
                   >
+                    {userPaused ? (
+                    <button
+                      onClick={() => { setHelpersMenuOpen(false); setShowPausedModal(true) }}
+                      className="block w-full text-left px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
+                    >
+                      {t('navbar.browseAllHelpers')}
+                    </button>
+                    ) : (
                     <Link
                       href="/helpers"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
                       {t('navbar.browseAllHelpers')}
                     </Link>
+                    )}
+                    {userPaused ? (
+                    <button
+                      onClick={() => { setHelpersMenuOpen(false); setShowPausedModal(true) }}
+                      className="block w-full text-left px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
+                    >
+                      {t('navbar.browseProfessionals')}
+                    </button>
+                    ) : (
                     <Link
                       href="/professionals"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
                       {t('navbar.browseProfessionals')}
                     </Link>
+                    )}
                   </div>
                 </>
               )}
@@ -731,6 +762,7 @@ export default function Navbar() {
                   onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
+                    if (userPaused) { setShowPausedModal(true); return }
                     console.log('🔍 Bids button clicked, navigating to /tasks?filter=my_bids')
                     window.dispatchEvent(new Event('bids-viewed'))
                     router.push('/tasks?filter=my_bids')
@@ -790,12 +822,21 @@ export default function Navbar() {
                     Admin
                   </Link>
                 )}
+                {userPaused ? (
+                <button
+                  onClick={() => setShowPausedModal(true)}
+                  className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Profile
+                </button>
+                ) : (
                 <Link
                   href="/profile"
                   className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium"
                 >
                   Profile
                 </Link>
+                )}
                 {user && (
                   <div className="flex items-center">
                     <div 
@@ -950,6 +991,14 @@ export default function Navbar() {
             {/* TASKS Section */}
             <div className="px-4 py-2">
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('navbar.tasks')}</h3>
+              {userPaused ? (
+              <button
+                onClick={() => { setMobileMenuOpen(false); setShowPausedModal(true) }}
+                className="block w-full text-left text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+              >
+                {t('navbar.postTask')}
+              </button>
+              ) : (
               <Link
                 href="/tasks/new"
                 className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
@@ -957,6 +1006,7 @@ export default function Navbar() {
               >
                 {t('navbar.postTask')}
               </Link>
+              )}
               <Link
                 href="/tasks"
                 className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
@@ -969,6 +1019,14 @@ export default function Navbar() {
             {/* HELPERS Section */}
             <div className="px-4 py-2">
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('navbar.helpers')}</h3>
+              {userPaused ? (
+              <button
+                onClick={() => { setMobileMenuOpen(false); setShowPausedModal(true) }}
+                className="block w-full text-left text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+              >
+                {t('navbar.browseAllHelpers')}
+              </button>
+              ) : (
               <Link
                 href="/helpers"
                 className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
@@ -976,6 +1034,15 @@ export default function Navbar() {
               >
                 {t('navbar.browseAllHelpers')}
               </Link>
+              )}
+              {userPaused ? (
+              <button
+                onClick={() => { setMobileMenuOpen(false); setShowPausedModal(true) }}
+                className="block w-full text-left text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+              >
+                {t('navbar.browseProfessionals')}
+              </button>
+              ) : (
               <Link
                 href="/professionals"
                 className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
@@ -983,6 +1050,7 @@ export default function Navbar() {
               >
                 {t('navbar.browseProfessionals')}
               </Link>
+              )}
             </div>
 
             {/* HELP Section */}
@@ -1038,6 +1106,14 @@ export default function Navbar() {
 
             {user ? (
               <>
+                {userPaused ? (
+                <button
+                  onClick={() => { setMobileMenuOpen(false); setShowPausedModal(true) }}
+                  className="block w-full text-left text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  Bids
+                </button>
+                ) : (
                 <Link
                   href="/tasks?filter=my_bids"
                   className={`block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium ${hasPendingBids && pendingBidsCount > 0 && !bidsViewed ? 'bg-orange-50' : ''}`}
@@ -1057,6 +1133,7 @@ export default function Navbar() {
                     )}
                   </span>
                 </Link>
+                )}
                 {acceptedBidsCount > 0 && firstAcceptedTaskId && (
                   <Link
                     href={`/tasks/${firstAcceptedTaskId}`}
@@ -1094,6 +1171,14 @@ export default function Navbar() {
                     Admin
                   </Link>
                 )}
+                {userPaused ? (
+                <button
+                  onClick={() => { setMobileMenuOpen(false); setShowPausedModal(true) }}
+                  className="block w-full text-left text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  {t('navbar.profile')}
+                </button>
+                ) : (
                 <Link
                   href="/profile"
                   className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
@@ -1101,6 +1186,7 @@ export default function Navbar() {
                 >
                   {t('navbar.profile')}
                 </Link>
+                )}
                 <button
                   onClick={() => {
                     handleLogout()
@@ -1133,6 +1219,33 @@ export default function Navbar() {
         )}
       </div>
     </nav>
+
+    {showPausedModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999]" onClick={() => setShowPausedModal(false)}>
+        <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 text-center" onClick={(e) => e.stopPropagation()}>
+          <span className="text-4xl block mb-3">⏸</span>
+          <h2 className="text-lg font-bold text-gray-900 mb-2">Account Paused</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Your account has been paused. You cannot access this feature right now.
+          </p>
+          <div className="flex flex-col gap-2">
+            <Link
+              href="/contact"
+              onClick={() => setShowPausedModal(false)}
+              className="inline-block px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700"
+            >
+              Contact support
+            </Link>
+            <button
+              onClick={() => setShowPausedModal(false)}
+              className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 font-medium"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   )
 }

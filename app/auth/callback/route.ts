@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (!error) {
-      return NextResponse.redirect(new URL('/login?confirmed=true', requestUrl.origin))
+      return NextResponse.redirect(new URL('/profile?setup=required', requestUrl.origin))
     } else {
       console.error('Email confirmation error:', error)
       return NextResponse.redirect(
@@ -96,11 +96,15 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.verifyOtp({
       // For token_hash flows we only support email-based OTP right now
       // Supabase expects an EmailOtpType here (e.g. 'magiclink' or 'signup')
-      type: type as 'magiclink' | 'signup',
+      type: type as 'magiclink' | 'signup' | 'email',
       token_hash,
     })
 
     if (!error) {
+      // New signup confirmations should go to profile setup
+      if (type === 'signup' || type === 'email') {
+        return NextResponse.redirect(new URL('/profile?setup=required', requestUrl.origin))
+      }
       return NextResponse.redirect(new URL(next, requestUrl.origin))
     } else {
       console.error('OTP verification error:', error)

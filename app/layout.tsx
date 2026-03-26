@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import Navbar from '@/components/Navbar'
+import PausedBanner from '@/components/PausedBanner'
 import PWAHead from '@/components/PWAHead'
 import InstallPromptModal from '@/components/InstallPromptModal'
 import PreLaunchModal from '@/components/PreLaunchModal'
@@ -126,6 +127,7 @@ export default function RootLayout({
           <PreLaunchModal />
           <InstallPromptModal />
           <Navbar />
+          <PausedBanner />
           <main className="min-h-screen bg-gray-50">
             {children}
           </main>

@@ -108,7 +108,8 @@ export default function BrowseHelpersPage() {
         const onlyHelpers = helpersData.filter((helper: any) => {
           return helper.is_helper === true && 
                  helper.role !== 'admin' && 
-                 helper.role !== 'superadmin'
+                 helper.role !== 'superadmin' &&
+                 helper.is_paused !== true
         })
 
         // Sort helpers by profile completion score, then badges, featured status, rating, and date

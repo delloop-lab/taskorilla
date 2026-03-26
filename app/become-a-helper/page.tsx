@@ -65,7 +65,10 @@ export default function HelperOnboardingPage() {
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: {
+        data: { full_name: fullName },
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/profile?setup=required`,
+      },
     })
 
     if (signUpError) {
@@ -191,7 +194,7 @@ export default function HelperOnboardingPage() {
           {/* Benefits */}
           <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-6 md:p-8">
             <h2 className="text-xl md:text-2xl font-bold text-blue-900 mb-5">Why become a Helper?</h2>
-            <ul className="space-y-3">
+            <ul className="space-y-3 mb-5">
               {BENEFITS.map((benefit) => (
                 <li key={benefit} className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
@@ -199,6 +202,12 @@ export default function HelperOnboardingPage() {
                 </li>
               ))}
             </ul>
+            <Link
+              href="/help/category/helper-guide"
+              className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+            >
+              📖 Read the full Helper Guide →
+            </Link>
           </div>
 
           {/* Registration Form */}

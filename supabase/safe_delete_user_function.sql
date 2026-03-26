@@ -55,12 +55,10 @@ BEGIN
     WHERE created_by = user_id_to_delete
        OR assigned_to = user_id_to_delete;
 
-    -- 6. Delete storage files (avatars) for the user
-    DELETE FROM storage.objects
-    WHERE bucket_id = 'avatars'
-      AND split_part(name, '/', 1) = user_id_to_delete::text;
+    -- Note: Storage files are deleted via the Storage API in the API route
+    -- before this function is called (direct DELETE on storage.objects is blocked by Supabase)
 
-    -- 7. Delete the profile
+    -- 6. Delete the profile
     DELETE FROM profiles
     WHERE id = user_id_to_delete;
 

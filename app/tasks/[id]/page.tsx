@@ -258,7 +258,7 @@ export default function TaskDetailPage() {
     if (user) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('is_helper, postcode, country')
+        .select('is_helper, is_paused, postcode, country')
         .eq('id', user.id)
         .single()
       setUserProfile(profile)
@@ -591,6 +591,17 @@ export default function TaskDetailPage() {
       return
     }
 
+    // Block paused users from bidding
+    if ((userProfile as any)?.is_paused) {
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: 'Account Paused',
+        message: 'Your account has been paused. You cannot submit bids. Please contact support.',
+      })
+      return
+    }
+
     // Check if user is a helper - REQUIRED to bid
     if (!userProfile?.is_helper) {
       setModalState({
@@ -611,6 +622,58 @@ export default function TaskDetailPage() {
           type: 'warning',
           title: 'Contact Information Detected',
           message: contentCheck.message,
+        })
+        return
+      }
+    }
+
+    // Minimum bid message length
+    if (!bidMessage || bidMessage.trim().length < 50) {
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: 'Message Too Short',
+        message: 'Please provide a more detailed message for the client. (Minimum 50 characters)',
+      })
+      return
+    }
+
+    // Active bid cap — max 5 pending bids at a time
+    const { count: pendingBidCount } = await supabase
+      .from('bids')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('status', 'pending')
+
+    if (pendingBidCount !== null && pendingBidCount >= 5) {
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: 'Too Many Active Bids',
+        message: 'You have too many active bids. Please wait for some to be accepted or declined.',
+      })
+      return
+    }
+
+    // Rate limiting — 2-minute cooldown between bids
+    const { data: lastBid } = await supabase
+      .from('bids')
+      .select('created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (lastBid) {
+      const elapsed = Date.now() - new Date(lastBid.created_at).getTime()
+      const cooldownMs = 2 * 60 * 1000
+      if (elapsed < cooldownMs) {
+        const minsLeft = Math.ceil((cooldownMs - elapsed) / 60000)
+        setModalState({
+          isOpen: true,
+          type: 'warning',
+          title: 'Please Wait',
+          message: `You can submit another bid in ${minsLeft} minute${minsLeft !== 1 ? 's' : ''}. This helps ensure quality bids for taskers.`,
         })
         return
       }
@@ -2546,10 +2609,11 @@ export default function TaskDetailPage() {
                       onClick={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
+                        if ((userProfile as any)?.is_paused) return
                         setSelectedUserId(task.created_by)
                         setIsProfileModalOpen(true)
                       }}
-                      className="text-primary-600 hover:text-primary-700 hover:underline flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm min-w-0"
+                      className={`flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm min-w-0 ${(userProfile as any)?.is_paused ? 'text-gray-500 cursor-default' : 'text-primary-600 hover:text-primary-700 hover:underline'}`}
                     >
                       {task.user.avatar_url ? (
                         <img
@@ -3243,7 +3307,15 @@ export default function TaskDetailPage() {
           Submit your quote (amount and message) so the tasker can accept and pay.
         </p>
       )}
-      {canBid && (
+      {canBid && (userProfile as any)?.is_paused && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6 text-center">
+          <span className="text-2xl block mb-2">⏸</span>
+          <h2 className="text-lg font-semibold text-red-800 mb-2">Account Paused</h2>
+          <p className="text-sm text-red-700">Your account has been paused. You cannot submit bids.</p>
+          <a href="/contact" className="inline-block mt-3 text-sm text-red-700 underline hover:text-red-900 font-medium">Contact support</a>
+        </div>
+      )}
+      {canBid && !(userProfile as any)?.is_paused && (
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Submit a Bid</h2>
           <form onSubmit={handleSubmitBid} className="space-y-4">

@@ -131,6 +131,7 @@ function TasksPageContent() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterType>('open') // Default to Open Tasks
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [currentUserPaused, setCurrentUserPaused] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>('all')
@@ -923,13 +924,14 @@ function TasksPageContent() {
         // Check profile completeness and admin status in one query
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name, country, phone_country_code, phone_number, skills, role')
+          .select('full_name, country, phone_country_code, phone_number, skills, role, is_paused')
           .eq('id', authUser.id)
           .single()
 
         // Check admin status once and cache it
         const userIsAdmin = profile?.role === 'admin' || profile?.role === 'superadmin'
         setIsAdmin(userIsAdmin)
+        setCurrentUserPaused(profile?.is_paused === true)
 
         if (!isProfileComplete(profile)) {
           router.push('/profile?setup=required')
@@ -1871,8 +1873,8 @@ function TasksPageContent() {
                               <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                               <span className="text-gray-400">Assigned to:</span>
                               <button
-                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedUserId((task as any).assigned_helper.id); setIsProfileModalOpen(true) }}
-                                className="text-primary-600 hover:underline font-medium flex items-center gap-1"
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (currentUserPaused) return; setSelectedUserId((task as any).assigned_helper.id); setIsProfileModalOpen(true) }}
+                                className={`font-medium flex items-center gap-1 ${currentUserPaused ? 'text-gray-500 cursor-default' : 'text-primary-600 hover:underline'}`}
                               >
                                 {(task as any).assigned_helper.avatar_url && (
                                   <img src={(task as any).assigned_helper.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
