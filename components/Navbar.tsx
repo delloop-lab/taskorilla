@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { getPendingReviews } from '@/lib/review-utils'
 import { useLanguage } from '@/lib/i18n'
 import { User as UserIcon } from 'lucide-react'
+import { getDisplayName } from '@/lib/name-privacy'
 
 // Debug logging - only in development
 const isDev = process.env.NODE_ENV === 'development'
@@ -984,7 +985,7 @@ export default function Navbar() {
                   )}
                 </div>
                 <span className="text-sm font-semibold text-blue-600">
-                  {profileName || user.email}
+                  {getDisplayName({ fullName: profileName, email: user?.email, revealFull: false })}
                 </span>
               </div>
             )}

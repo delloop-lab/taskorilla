@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { CheckCircle, MessageSquare, Star, ClipboardList, Wallet, Sparkles } from 'lucide-react'
 import { TransparentGorillaImage } from '@/components/TransparentGorillaImage'
-import TrafficTracker from '@/components/TrafficTracker'
 import Footer from '@/components/Footer'
 import { useLanguage } from '@/lib/i18n'
 import { SocialBar } from '@/components/SocialBar'
@@ -15,7 +14,6 @@ export default function HomePage() {
   const { t } = useLanguage()
   return (
     <div className="min-h-screen bg-background">
-      <TrafficTracker pageName="home" />
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-secondary/10 pt-14 md:pt-20 pb-8 md:pb-12 px-4">
         <div className="container mx-auto max-w-6xl relative">
@@ -32,7 +30,9 @@ export default function HomePage() {
               </div>
             </div>
             <div className="animate-fade-in">
-              <TransparentGorillaImage />
+              <Link href="/about" aria-label="Learn more about TEE on About Us" className="inline-block cursor-pointer">
+                <TransparentGorillaImage />
+              </Link>
             </div>
           </div>
         </div>
@@ -195,74 +195,86 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-16 md:py-20 px-4 bg-muted/30">
+      <section className="py-10 md:py-14 px-4 bg-muted/30">
         <div className="container mx-auto max-w-6xl">
-          <h2 className="text-4xl font-bold text-center mb-12 md:mb-16 text-foreground">
-            What Our Users Say
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="rounded-3xl bg-[#EAF1F6] border border-[#DDE8F0] shadow-sm px-6 md:px-8 py-8 md:py-10 relative overflow-hidden">
+            <div className="pointer-events-none absolute right-0 top-0 h-full w-1/3 opacity-30 hidden md:block">
+              <div className="absolute top-8 right-6 w-44 h-44 bg-cyan-200/40 rotate-12 rounded-2xl" />
+              <div className="absolute bottom-4 right-16 w-52 h-52 bg-teal-200/35 -rotate-12 rounded-2xl" />
+            </div>
+            <h2 className="text-4xl font-bold text-center mb-8 md:mb-10 text-foreground relative z-10">
+              What Our Users Say
+            </h2>
+            <div className="grid md:grid-cols-3 gap-4 md:gap-5 relative z-10">
             {/* Testimonial 1 */}
-            <Card className="hover-scale">
-              <CardContent className="p-6 space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden flex-shrink-0">
+              <Card className="bg-white/95 border border-gray-300 shadow-md hover:shadow-lg transition-shadow">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-[4.5rem] h-[4.5rem] rounded-full overflow-hidden flex-shrink-0 border border-gray-300">
                     <img
                       src="/images/sue-brimacombe.png"
                       alt="Sue Brimacombe"
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">Sue B.</h3>
+                    <div>
+                      <h3 className="font-semibold text-foreground text-base leading-tight">Sue B.</h3>
+                      <p className="text-[11px] leading-tight text-muted-foreground">Local Resident,</p>
+                      <p className="text-[11px] leading-tight text-muted-foreground">Taskorilla Community</p>
+                    </div>
                   </div>
-                </div>
-                <p className="text-muted-foreground italic">
-                  "I was very impressed with how thorough this guy was. He measured everything precisely. Many would have just shoved it up. It was easy to find help for any task on this site. He responded to my enquiry very quickly and arrived promptly."
-                </p>
-              </CardContent>
-            </Card>
+                  <p className="text-sm text-foreground/90 leading-relaxed">
+                    "I was very impressed with how thorough this guy was. He measured everything precisely. Many would have just shoved it up. It was easy to find help for any task on this site. He responded to my enquiry very quickly and arrived promptly."
+                  </p>
+                </CardContent>
+              </Card>
 
             {/* Testimonial 2 */}
-            <Card className="hover-scale">
-              <CardContent className="p-6 space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden flex-shrink-0">
+              <Card className="bg-white/95 border border-gray-300 shadow-md hover:shadow-lg transition-shadow">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-[4.5rem] h-[4.5rem] rounded-full overflow-hidden flex-shrink-0 border border-gray-300">
                     <img
                       src="/images/victoria-bradley.png"
                       alt="Victoria Bradley"
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">Victoria B.</h3>
+                    <div>
+                      <h3 className="font-semibold text-foreground text-base leading-tight">Victoria B.</h3>
+                      <p className="text-[11px] leading-tight text-muted-foreground">Local Resident,</p>
+                      <p className="text-[11px] leading-tight text-muted-foreground">Taskorilla Community</p>
+                    </div>
                   </div>
-                </div>
-                <p className="text-muted-foreground italic">
-                  "It was super simple to create the task and find help. The person who came to help did an excellent job and was able to complete the task quickly. Just what I needed."
-                </p>
-              </CardContent>
-            </Card>
+                  <p className="text-sm text-foreground/90 leading-relaxed">
+                    "It was super simple to create the task and find help. The person who came to help did an excellent job and was able to complete the task quickly. Just what I needed."
+                  </p>
+                </CardContent>
+              </Card>
 
             {/* Testimonial 3 */}
-            <Card className="hover-scale">
-              <CardContent className="p-6 space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden flex-shrink-0">
+              <Card className="bg-white/95 border border-gray-300 shadow-md hover:shadow-lg transition-shadow">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-[4.5rem] h-[4.5rem] rounded-full overflow-hidden flex-shrink-0 border border-gray-300">
                     <img
                       src="/images/gail-smith.png"
                       alt="Gail Smith"
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">Gail S.</h3>
+                    <div>
+                      <h3 className="font-semibold text-foreground text-base leading-tight">Gail S.</h3>
+                      <p className="text-[11px] leading-tight text-muted-foreground">Local Resident,</p>
+                      <p className="text-[11px] leading-tight text-muted-foreground">Taskorilla Community</p>
+                    </div>
                   </div>
-                </div>
-                <p className="text-muted-foreground italic">
-                  "Taskorilla made it incredibly easy to find help when I needed it. Posting the task was simple, I got responses quickly, and the help I received was spot on. I would definitely use it again."
-                </p>
-              </CardContent>
-            </Card>
+                  <p className="text-sm text-foreground/90 leading-relaxed">
+                    "Taskorilla made it incredibly easy to find help when I needed it. Posting the task was simple, I got responses quickly, and the help I received was spot on. I would definitely use it again."
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </section>
@@ -313,12 +325,14 @@ export default function HomePage() {
         <div className="container mx-auto max-w-6xl">
           <div className="grid md:grid-cols-3 gap-2 items-center">
             <div className="flex justify-center md:justify-end order-2 md:order-1">
-              <img 
-                src="/images/taskorilla-mascot.png" 
-                alt="Taskorilla mascot" 
-                className="h-44 w-44 md:h-52 md:w-52 object-contain"
-                style={{ backgroundColor: 'transparent' }}
-              />
+              <Link href="/about" aria-label="Learn more about TEE on About Us" className="inline-block cursor-pointer">
+                <img 
+                  src="/images/tee_wave.png" 
+                  alt="Taskorilla mascot" 
+                  className="h-56 w-56 md:h-64 md:w-64 object-contain"
+                  style={{ backgroundColor: 'transparent' }}
+                />
+              </Link>
             </div>
             <div className="text-center space-y-3 order-1 md:order-2 pb-4">
               <h2 className="text-3xl md:text-4xl font-bold">
@@ -329,12 +343,14 @@ export default function HomePage() {
               </p>
             </div>
             <div className="flex justify-center md:justify-start order-3">
-              <img 
-                src="/images/tee_on_laptop.png" 
-                alt="Tee on laptop" 
-                className="h-[200px] w-[200px] md:h-[220px] md:w-[220px] object-contain"
-                style={{ backgroundColor: 'transparent' }}
-              />
+              <Link href="/about" aria-label="Learn more about TEE on About Us" className="inline-block cursor-pointer">
+                <img 
+                  src="/images/tee_bum.png" 
+                  alt="Tee on laptop" 
+                  className="h-[200px] w-[200px] md:h-[220px] md:w-[220px] object-contain"
+                  style={{ backgroundColor: 'transparent' }}
+                />
+              </Link>
             </div>
           </div>
         </div>

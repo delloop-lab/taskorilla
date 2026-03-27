@@ -35,6 +35,16 @@ function getProfileBaseUrl(): string {
   return ''
 }
 
+const FOUNDING_TASKER_BADGE = 'Founding Tasker'
+const FOUNDING_HELPER_BADGE = 'Founding Helper'
+
+function withFoundingBadges(currentBadges: string[] | null | undefined, tasker: boolean, helper: boolean): string[] {
+  const next = Array.isArray(currentBadges) ? [...currentBadges] : []
+  if (tasker && !next.includes(FOUNDING_TASKER_BADGE)) next.push(FOUNDING_TASKER_BADGE)
+  if (helper && !next.includes(FOUNDING_HELPER_BADGE)) next.push(FOUNDING_HELPER_BADGE)
+  return next
+}
+
 function ProfilePageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -485,6 +495,12 @@ function ProfilePageContent() {
         is_tasker: role === 'tasker' ? value : isTasker,
         is_helper: role === 'helper' ? value : isHelper,
       }
+      const nextBadges = withFoundingBadges(
+        badges,
+        updateData.is_tasker === true,
+        updateData.is_helper === true,
+      )
+      updateData.badges = nextBadges
 
       const { error } = await supabase
         .from('profiles')
@@ -516,8 +532,10 @@ function ProfilePageContent() {
           ...profile,
           is_tasker: updateData.is_tasker,
           is_helper: updateData.is_helper,
+          badges: nextBadges,
         })
       }
+      setBadges(nextBadges)
 
       // Show success message briefly
       setStatusMessage(`${role === 'tasker' ? 'Tasker' : 'Helper'} role ${value ? 'enabled' : 'disabled'} successfully.`)
@@ -706,7 +724,7 @@ function ProfilePageContent() {
         skills: isProfessional ? [] : (skills.length > 0 ? skills : []),
         services_offered: isProfessional ? [] : (servicesOffered.length > 0 ? servicesOffered : []),
     professional_offerings: professionalOfferings.length > 0 ? professionalOfferings : [],
-        badges: badges.length > 0 ? badges : [],
+        badges: withFoundingBadges(badges, isTasker, isHelper),
         hourly_rate: hourlyRateValue,
         preferred_max_distance_km: preferredMaxDistanceValue,
         email_preference: emailPreference || 'instant',

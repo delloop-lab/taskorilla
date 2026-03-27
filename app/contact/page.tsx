@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import Footer from '@/components/Footer'
 import { MapPin, Mail, Phone, Facebook, Instagram, Loader2 } from 'lucide-react'
+import { FaTiktok, FaYoutube } from 'react-icons/fa6'
 import { supabase } from '@/lib/supabase'
 
 const TILE_COUNT = 5
@@ -547,6 +548,24 @@ export default function ContactPage() {
                       aria-label="Taskorilla on Instagram"
                     >
                       <Instagram className="w-5 h-5" />
+                    </a>
+                    <a
+                      href="https://www.tiktok.com/@taskorilla"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-gray-100 text-gray-900 hover:bg-gray-200"
+                      aria-label="Taskorilla on TikTok"
+                    >
+                      <FaTiktok className="w-4 h-4" />
+                    </a>
+                    <a
+                      href="https://www.youtube.com/@gettaskorilla"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-red-50 text-red-600 hover:bg-red-100"
+                      aria-label="Taskorilla on YouTube"
+                    >
+                      <FaYoutube className="w-4 h-4" />
                     </a>
                   </div>
                 </div>

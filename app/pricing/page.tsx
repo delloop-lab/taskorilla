@@ -312,7 +312,7 @@ export default function PricingPage() {
         </div>
 
         {/* Taskorilla vs Competitors Table */}
-        <div className="mb-16">
+        <div id="comparison-table" className="mb-16">
           <h2 className="text-3xl font-bold text-gray-900 text-center mb-4">
             {t.compareTitle}
           </h2>
@@ -321,7 +321,7 @@ export default function PricingPage() {
           </p>
 
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse bg-white shadow-lg rounded-lg overflow-hidden comparison-table">
+            <table id="comparison-table-table" className="w-full border-collapse bg-white shadow-lg rounded-lg overflow-hidden comparison-table">
               <thead>
                 <tr className="bg-gray-100">
                   <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900">{t.tableHeaders.platform}</th>

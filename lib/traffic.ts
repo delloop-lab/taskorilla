@@ -1,6 +1,44 @@
 import { supabase } from './supabase'
 
 /**
+ * Normalize route pathname into a stable traffic key.
+ * Examples:
+ *   / -> home
+ *   /tasks/abc -> tasks/[id]
+ *   /tasks/abc/edit -> tasks/[id]/edit
+ */
+export function normalizePageName(pathname: string): string {
+  if (!pathname || pathname === '/') return 'home'
+
+  const cleanPath = pathname.split('?')[0].split('#')[0]
+  const seg = cleanPath.split('/').filter(Boolean)
+  if (seg.length === 0) return 'home'
+
+  const isUuid = (value: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+  const isIdLike = (value: string) => isUuid(value) || /^\d+$/.test(value)
+
+  // Common dynamic routes used in the app router
+  if (seg[0] === 'tasks' && seg[1] && !['new', 'map'].includes(seg[1])) {
+    if (seg[2] === 'edit') return 'tasks/[id]/edit'
+    if (seg[2] === 'review') return 'tasks/[id]/review'
+    return 'tasks/[id]'
+  }
+  if (seg[0] === 'checkout' && seg[1]) return 'checkout/[intentId]'
+  if (seg[0] === 'user' && seg[1]) return 'user/[id]'
+  if (seg[0] === 'helper' && seg[1]) return 'helper/[id]'
+  if (seg[0] === 'blog' && seg[1]) return 'blog/[slug]'
+  if (seg[0] === 'go' && seg[1]) return 'go/[code]'
+  if (seg[0] === 'public-tasks' && seg[1]) return 'public-tasks/[slug]'
+  if (seg[0] === 'help' && seg[1] === 'category' && seg[2]) return 'help/category/[slug]'
+  if (seg[0] === 'help' && seg[1] === 'guides' && seg[2]) return 'help/guides/[slug]'
+
+  // Generic fallback for ids in unknown paths
+  const normalized = seg.map((part) => (isIdLike(part) ? '[id]' : part)).join('/')
+  return normalized || 'home'
+}
+
+/**
  * Track a page visit
  * @param pageName - The name/identifier of the page (e.g., 'home', 'tasks', 'profile')
  */
@@ -9,15 +47,21 @@ export async function trackPageVisit(pageName: string) {
     // Only track on client side
     if (typeof window === 'undefined') return
 
-    // Check if user is admin - don't count admin traffic
+    // Check if user is admin/superadmin - never count admin traffic
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single()
-      
+
+      // Fail-safe: if role cannot be resolved for an authenticated user,
+      // skip tracking to avoid accidentally counting admin/superadmin activity.
+      if (profileError) {
+        return
+      }
+
       // Skip tracking if user is admin or superadmin
       if (profile?.role === 'admin' || profile?.role === 'superadmin') {
         return

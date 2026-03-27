@@ -69,14 +69,32 @@ function RegisterContent() {
 
     if (data.user) {
       // Update profile with terms acceptance timestamp
+      const foundingBadges = ['Founding Tasker']
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ terms_accepted_at: new Date().toISOString() })
+        .update({
+          terms_accepted_at: new Date().toISOString(),
+          badges: foundingBadges,
+          is_tasker: true,
+        })
         .eq('id', data.user.id)
 
       if (profileError) {
         console.error('Error updating terms acceptance:', profileError)
       }
+
+      // Send role-based welcome template email (skip silently if template does not exist)
+      fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'template_email',
+          recipientEmail: email,
+          recipientName: fullName,
+          templateType: 'tasker_welcome',
+          relatedUserId: data.user.id,
+        }),
+      }).catch(() => {})
 
       if (data.session) {
         router.push(redirectUrl || '/profile?setup=required')

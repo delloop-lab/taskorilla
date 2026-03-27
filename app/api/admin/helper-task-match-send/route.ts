@@ -7,6 +7,7 @@ import {
   MatchingTask,
   matchHelpersForTask,
 } from '@/lib/helper-matching'
+import { scoreHelpersForTask } from '@/lib/ai-matching'
 import { sendTemplateEmail } from '@/lib/email'
 import { logEmail } from '@/lib/email-logger'
 import { sendHelperAlert } from '@/lib/sms'
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
     const { data: taskRow, error: taskError } = await supabase
       .from('tasks')
       .select(
-        'id, title, budget, required_skills, latitude, longitude, created_by, location, is_sample_task, status, hidden_by_admin, hidden_reason, hidden_at'
+        'id, title, description, budget, required_skills, required_professions, latitude, longitude, created_by, location, is_sample_task, status, hidden_by_admin, hidden_reason, hidden_at'
       )
       .eq('id', taskId)
       .single()
@@ -120,6 +121,8 @@ export async function POST(request: NextRequest) {
         ? taskRow.budget
         : undefined
 
+    const reqProfessions = Array.isArray(taskRow.required_professions) ? taskRow.required_professions : []
+
     const matchingTask: MatchingTask = {
       id: taskRow.id,
       title: taskRow.title ?? '(no title)',
@@ -128,13 +131,15 @@ export async function POST(request: NextRequest) {
       lon: typeof taskRow.longitude === 'number' ? taskRow.longitude : undefined,
       amount,
       createdBy: taskRow.created_by ?? undefined,
+      description: (taskRow.description ?? '') as string,
+      requiredProfessions: reqProfessions,
     }
 
     // Load all helpers eligible for matching
     const { data: helpersData, error: helpersError } = await supabase
       .from('profiles')
       .select(
-        'id, full_name, email, phone_number, phone_country_code, sms_opt_out, skills, services_offered, professions, preferred_max_distance_km, email_preference, latitude, longitude, is_helper'
+        'id, full_name, email, role, bio, phone_number, phone_country_code, sms_opt_out, skills, services_offered, professions, preferred_max_distance_km, email_preference, latitude, longitude, is_helper'
       )
       .eq('is_helper', true)
       .limit(500)
@@ -144,7 +149,10 @@ export async function POST(request: NextRequest) {
     }
 
     const helpers: MatchingHelper[] =
-      (helpersData as any[] | null)?.map(row => {
+      (helpersData as any[] | null)?.filter(row => {
+        const role = (row.role ?? '').toString().toLowerCase()
+        return role !== 'admin' && role !== 'superadmin'
+      }).map(row => {
         const helperLat =
           row.latitude !== null && row.latitude !== undefined
             ? Number(row.latitude)
@@ -186,13 +194,22 @@ export async function POST(request: NextRequest) {
           email,
           emailPreference,
           preferredMaxDistanceKm,
+          bio: (row.bio ?? '') as string,
+          professions: Array.isArray(row.professions) ? row.professions : [],
           phoneNumber: row.phone_number ?? null,
           phoneCountryCode: row.phone_country_code ?? null,
           smsOptOut: row.sms_opt_out ?? false,
         } as MatchingHelper
       }) ?? []
 
-    let matches: EligibleHelper[] = matchHelpersForTask(matchingTask, helpers)
+    let matches: EligibleHelper[]
+    try {
+      const scoreResult = await scoreHelpersForTask(matchingTask, helpers)
+      matches = scoreResult.helpers
+    } catch (aiError: any) {
+      console.error('[helper-task-match-send] AI scoring failed, falling back to lexical:', aiError.message)
+      matches = matchHelpersForTask(matchingTask, helpers)
+    }
 
     // If admin specified a subset of helpers, restrict to only those
     if (helperIds && helperIds.length > 0) {

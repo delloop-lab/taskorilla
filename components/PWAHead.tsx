@@ -4,8 +4,23 @@ import { useEffect } from 'react'
 
 export default function PWAHead() {
   useEffect(() => {
-    // Only run in production - PWA is disabled in development
+    // In development, proactively unregister any previously installed service workers
+    // to avoid stale chunk/CSS cache issues during HMR.
     if (process.env.NODE_ENV !== 'production') {
+      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          registrations.forEach((registration) => {
+            registration.unregister().catch(() => {})
+          })
+        })
+        if ('caches' in window) {
+          caches.keys().then((keys) => {
+            keys.forEach((key) => {
+              caches.delete(key).catch(() => {})
+            })
+          })
+        }
+      }
       return
     }
 

@@ -11,6 +11,7 @@ import { STANDARD_PROFESSIONS, helperMatchesProfession } from '@/lib/profession-
 import { PROFESSION_CATEGORIES } from '@/lib/profession-categories'
 import { User as UserIcon } from 'lucide-react'
 import { useLanguage } from '@/lib/i18n'
+import { getDisplayName } from '@/lib/name-privacy'
 import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
 import CompactUserRatingsDisplay from '@/components/CompactUserRatingsDisplay'
 import { formatRate } from '@/lib/currency'
@@ -311,7 +312,7 @@ export default function ProfessionalsPage() {
                                 {helper.avatar_url ? (
                                   <img
                                     src={helper.avatar_url}
-                                    alt={helper.full_name || 'Helper'}
+                                    alt={getDisplayName({ fullName: helper.full_name, email: helper.email, revealFull: false })}
                                     className="h-full w-full object-cover rounded-full"
                                     loading="lazy"
                                     decoding="async"
@@ -324,10 +325,12 @@ export default function ProfessionalsPage() {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <h3 className="font-semibold text-gray-900 truncate">
-                                  {helper.full_name || 'Helper'}
+                                  {getDisplayName({ fullName: helper.full_name, email: helper.email, revealFull: false })}
                                 </h3>
                                 {helper.company_name && (
-                                  <p className="text-sm text-gray-600 truncate">{helper.company_name}</p>
+                                  <p className="text-sm text-gray-600 truncate blur-sm select-none" title="Company name unlocks after succesful bid">
+                                    {helper.company_name}
+                                  </p>
                                 )}
                                 {helper.postcode && helper.country && (
                                   <p className="text-xs text-gray-500">

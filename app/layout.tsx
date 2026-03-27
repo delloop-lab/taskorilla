@@ -10,6 +10,7 @@ import LanguageProviderWrapper from '@/components/LanguageProviderWrapper'
 import SupabasePrewarm from '@/components/SupabasePrewarm'
 import FacebookAppIdMeta from '@/components/FacebookAppIdMeta'
 import GoogleAnalytics from '@/components/GoogleAnalytics'
+import RouteTrafficTracker from '@/components/RouteTrafficTracker'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -122,6 +123,7 @@ export default function RootLayout({
         )}
         <FacebookAppIdMeta />
         <LanguageProviderWrapper>
+          <RouteTrafficTracker />
           <PWAHead />
           <SupabasePrewarm />
           <PreLaunchModal />

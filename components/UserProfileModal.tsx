@@ -7,6 +7,7 @@ import ReportModal from "./ReportModal";
 import { User as UserIcon } from "lucide-react";
 import { useUserRatings, getUserRatingsById } from "@/lib/useUserRatings";
 import CompactUserRatingsDisplay from "@/components/CompactUserRatingsDisplay";
+import { getDisplayName } from "@/lib/name-privacy";
 
 interface UserProfileModalProps {
   userId: string | null;
@@ -16,6 +17,7 @@ interface UserProfileModalProps {
 
 interface Profile {
   full_name: string | null;
+  email?: string | null;
   avatar_url: string | null;
   company_name: string | null;
   postcode: string | null;
@@ -36,6 +38,7 @@ export default function UserProfileModal({
   const [error, setError] = useState<string | null>(null);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [canViewCompanyName, setCanViewCompanyName] = useState(false);
   const [userRatingsSummary, setUserRatingsSummary] = useState<any>(null);
 
   useEffect(() => {
@@ -46,7 +49,7 @@ export default function UserProfileModal({
       setError(null);
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name, avatar_url, company_name, postcode, country, is_helper, profile_slug")
+        .select("full_name, email, avatar_url, company_name, postcode, country, is_helper, profile_slug")
         .eq("id", userId)
         .single();
 
@@ -76,6 +79,40 @@ export default function UserProfileModal({
     };
     getCurrentUser();
   }, []);
+
+  useEffect(() => {
+    const checkCompanyVisibility = async () => {
+      if (!currentUserId || !userId || currentUserId === userId) {
+        setCanViewCompanyName(currentUserId === userId);
+        return;
+      }
+
+      const acceptedStatuses = ['pending_payment', 'assigned', 'in_progress', 'completed'];
+      const [forward, reverse] = await Promise.all([
+        supabase
+          .from('tasks')
+          .select('id')
+          .eq('created_by', currentUserId)
+          .eq('assigned_to', userId)
+          .in('status', acceptedStatuses)
+          .limit(1),
+        supabase
+          .from('tasks')
+          .select('id')
+          .eq('created_by', userId)
+          .eq('assigned_to', currentUserId)
+          .in('status', acceptedStatuses)
+          .limit(1),
+      ]);
+
+      const hasAcceptedRelation =
+        (forward.data && forward.data.length > 0) ||
+        (reverse.data && reverse.data.length > 0);
+      setCanViewCompanyName(!!hasAcceptedRelation);
+    };
+
+    checkCompanyVisibility();
+  }, [currentUserId, userId]);
 
   // Update ratings summary when userRatings or userId changes
   useEffect(() => {
@@ -124,7 +161,7 @@ export default function UserProfileModal({
                 {profile.avatar_url ? (
                   <img
                     src={profile.avatar_url}
-                    alt={profile.full_name || "Tasker avatar"}
+                    alt={getDisplayName({ fullName: profile.full_name, email: profile.email, revealFull: false })}
                     className="w-full h-full object-cover object-center"
                     loading="lazy"
                     decoding="async"
@@ -141,10 +178,15 @@ export default function UserProfileModal({
                   onClick={onClose}
                   className="text-lg font-semibold text-primary-600 hover:text-primary-700 hover:underline"
                 >
-                  {profile.full_name || "Unnamed Tasker"}
+                  {getDisplayName({ fullName: profile.full_name, email: profile.email, revealFull: false }) || "Unnamed Tasker"}
                 </Link>
                 {profile.company_name && (
-                  <p className="text-sm text-gray-500">{profile.company_name}</p>
+                  <p
+                    className={`text-sm text-gray-500 ${canViewCompanyName ? '' : 'blur-sm select-none'}`}
+                    title={canViewCompanyName ? undefined : 'Company name unlocks after succesful bid'}
+                  >
+                    {profile.company_name}
+                  </p>
                 )}
                 {(profile.postcode || profile.country) && (
                   <p className="text-sm text-gray-500">
@@ -202,7 +244,7 @@ export default function UserProfileModal({
         onClose={() => setReportModalOpen(false)}
         reportType="user"
         targetId={userId || ''}
-        targetName={profile?.full_name || undefined}
+        targetName={profile ? getDisplayName({ fullName: profile.full_name, email: profile.email, revealFull: false }) : undefined}
         onReportSubmitted={() => {
           setReportModalOpen(false);
         }}

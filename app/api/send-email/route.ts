@@ -18,6 +18,7 @@ import {
 } from '@/lib/email'
 import { logEmail } from '@/lib/email-logger'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   let emailLogData: any = null
@@ -168,6 +169,24 @@ export async function POST(request: NextRequest) {
             hasImage: params.hasImage === true,
             bidAccepted: params.bidAccepted === true,
             html_content: newMessageResult.htmlContent,
+          },
+        }
+        break
+
+      case 'message_blocked_pre_bid':
+        emailLogData = {
+          recipient_email: params.recipientEmail || 'blocked@system.local',
+          recipient_name: params.recipientName || 'Blocked Message Target',
+          subject: `Blocked pre-bid message from ${params.senderName || 'User'}`,
+          email_type: 'message_blocked_pre_bid',
+          related_task_id: params.taskId || null,
+          metadata: {
+            senderName: params.senderName || 'User',
+            messagePreview: params.messagePreview || '',
+            conversationId: params.conversationId || null,
+            blockedReason: params.blockedReason || 'policy_violation',
+            hasImage: params.hasImage === true,
+            bidAccepted: false,
           },
         }
         break
@@ -387,11 +406,32 @@ export async function POST(request: NextRequest) {
           emailHtmlContent = params.htmlContent
         } else {
           // Regular template email - get template from database
-          const { data: template, error: templateError } = await supabase
-            .from('email_templates')
-            .select('*')
-            .eq('template_type', params.templateType)
-            .single()
+          const templateType = String(params.templateType || '')
+          const isWelcomeTemplate = templateType === 'helper_welcome' || templateType === 'tasker_welcome'
+          let template: any = null
+          let templateError: any = null
+
+          if (isWelcomeTemplate) {
+            const supabaseAdmin = createClient(
+              process.env.NEXT_PUBLIC_SUPABASE_URL!,
+              process.env.SUPABASE_SERVICE_ROLE_KEY!
+            )
+            const { data, error } = await supabaseAdmin
+              .from('email_templates')
+              .select('*')
+              .eq('template_type', templateType)
+              .maybeSingle()
+            template = data
+            templateError = error
+          } else {
+            const { data, error } = await supabase
+              .from('email_templates')
+              .select('*')
+              .eq('template_type', templateType)
+              .maybeSingle()
+            template = data
+            templateError = error
+          }
 
           if (templateError) {
             console.error('Error fetching template:', templateError)

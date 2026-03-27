@@ -15,17 +15,63 @@ const debugLog = (...args: any[]) => isDev && console.log(...args)
 // Dynamically import Map component to avoid SSR issues
 const Map = dynamic(() => import('@/components/Map'), { ssr: false })
 
+function MapLoadingSkeleton() {
+  return (
+    <div className="h-screen flex flex-col overflow-hidden bg-gray-100">
+      <div className="bg-white border-b px-4 py-3 flex items-center justify-between animate-pulse">
+        <div>
+          <div className="h-6 w-32 rounded bg-gray-200 mb-2" />
+          <div className="h-3 w-40 rounded bg-gray-200" />
+        </div>
+        <div className="h-5 w-28 rounded bg-gray-200" />
+      </div>
+
+      <div className="flex-1 relative overflow-hidden">
+        {/* Map canvas */}
+        <div className="absolute inset-0 bg-[#eef1f5]" />
+
+        {/* Road-like shapes */}
+        <div className="absolute -left-20 top-16 h-16 w-[45%] rounded-full bg-white/60 rotate-6" />
+        <div className="absolute right-[-120px] top-28 h-14 w-[55%] rounded-full bg-white/55 -rotate-3" />
+        <div className="absolute left-[18%] top-[38%] h-12 w-[62%] rounded-full bg-white/55 rotate-2" />
+        <div className="absolute left-[-80px] bottom-24 h-16 w-[50%] rounded-full bg-white/60 -rotate-6" />
+        <div className="absolute right-[8%] bottom-[18%] h-14 w-[38%] rounded-full bg-white/55 rotate-12" />
+
+        {/* Marker pulses */}
+        <div className="absolute left-[22%] top-[35%]">
+          <span className="absolute inline-flex h-6 w-6 rounded-full bg-primary-400/40 animate-ping" />
+          <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-primary-500" />
+        </div>
+        <div className="absolute left-[54%] top-[48%]">
+          <span className="absolute inline-flex h-6 w-6 rounded-full bg-primary-400/40 animate-ping" />
+          <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-primary-500" />
+        </div>
+        <div className="absolute left-[72%] top-[30%]">
+          <span className="absolute inline-flex h-6 w-6 rounded-full bg-primary-400/40 animate-ping" />
+          <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-primary-500" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function TasksMapPage() {
   const router = useRouter()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [placeMarkers, setPlaceMarkers] = useState<any[]>([])
+  const [showAdverts, setShowAdverts] = useState(true)
   const loadStartedRef = useRef(false)
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false)
   const [showLoginModal, setShowLoginModal] = useState(false)
 
   useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('tasksMapShowAdverts')
+      if (saved === 'false') setShowAdverts(false)
+    } catch {}
+
     // Prevent duplicate loads (React StrictMode causes double renders in dev)
     if (loadStartedRef.current) return
     loadStartedRef.current = true
@@ -376,11 +422,7 @@ export default function TasksMapPage() {
   }
 
   if (loading) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center">Loading map...</div>
-      </div>
-    )
+    return <MapLoadingSkeleton />
   }
 
   return (
@@ -392,18 +434,35 @@ export default function TasksMapPage() {
             {tasks.length} tasks on map{placeMarkers.length ? ` • ${placeMarkers.length} places` : ''}
           </p> */}
         </div>
-        <Link
-          href="/tasks"
-          className="text-primary-600 hover:text-primary-700 text-sm font-medium"
-        >
-          ← Back to List
-        </Link>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={showAdverts}
+              onChange={(e) => {
+                const next = e.target.checked
+                setShowAdverts(next)
+                try {
+                  sessionStorage.setItem('tasksMapShowAdverts', String(next))
+                } catch {}
+              }}
+              className="h-4 w-4"
+            />
+            Show adverts
+          </label>
+          <Link
+            href="/tasks"
+            className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+          >
+            ← Back to List
+          </Link>
+        </div>
       </div>
 
       <div className="flex-1 relative" style={{ minHeight: 0 }}>
         <Map
           tasks={tasks}
-          markers={placeMarkers}
+          markers={showAdverts ? placeMarkers : []}
           onTaskClick={setSelectedTask}
           isLoggedIn={isLoggedIn}
           onRequireLogin={() => setShowLoginModal(true)}

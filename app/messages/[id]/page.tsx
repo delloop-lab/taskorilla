@@ -10,6 +10,7 @@ import { ArrowLeft, Send, User as UserIcon } from 'lucide-react'
 import StandardModal from '@/components/StandardModal'
 import { checkForContactInfo } from '@/lib/content-filter'
 import { compressTaskImage } from '@/lib/image-utils'
+import { canRevealFullNameForTask, getDisplayName } from '@/lib/name-privacy'
 
 export default function ConversationPage() {
   const params = useParams()
@@ -253,6 +254,14 @@ export default function ConversationPage() {
     task.payment_status === 'paid' &&
     (task.status === 'assigned' || task.status === 'in_progress' || task.status === 'completed') &&
     (user.id === task.created_by || user.id === task.assigned_to)
+  const revealFullNameForTask = canRevealFullNameForTask({
+    viewerId: user?.id,
+    taskCreatorId: task?.created_by,
+    acceptedBidUserIds:
+      task?.assigned_to && ['pending_payment', 'assigned', 'in_progress', 'completed'].includes(task?.status)
+        ? [task.assigned_to]
+        : [],
+  })
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -273,6 +282,23 @@ export default function ConversationPage() {
     if (!canShareContact) {
       const contentCheck = checkForContactInfo(newMessage)
       if (!contentCheck.isClean) {
+        // Log blocked pre-bid message attempt for admin visibility
+        fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'message_blocked_pre_bid',
+            recipientEmail: otherParticipant?.email || null,
+            recipientName: otherParticipant?.full_name || otherParticipant?.email || 'User',
+            senderName: user?.email || 'Someone',
+            messagePreview: newMessage.trim().substring(0, 160),
+            conversationId: conversationId,
+            taskId: task?.id || null,
+            blockedReason: contentCheck.detectedReason || 'policy_violation',
+            hasImage: !!messageImage,
+          }),
+        }).catch(() => {})
+
         setModalState({
           isOpen: true,
           type: 'warning',
@@ -399,7 +425,11 @@ export default function ConversationPage() {
               {otherParticipant?.avatar_url ? (
                 <img
                   src={otherParticipant.avatar_url}
-                  alt={otherParticipant.full_name || otherParticipant.email}
+                  alt={getDisplayName({
+                    fullName: otherParticipant.full_name,
+                    email: otherParticipant.email,
+                    revealFull: revealFullNameForTask,
+                  })}
                   className="w-10 h-10 aspect-square rounded-full object-cover object-center flex-shrink-0"
                 />
               ) : (
@@ -409,7 +439,11 @@ export default function ConversationPage() {
               )}
               <div>
                 <h1 className="text-xl font-semibold text-gray-900">
-                  {otherParticipant?.full_name || otherParticipant?.email || 'Unknown User'}
+                  {getDisplayName({
+                    fullName: otherParticipant?.full_name,
+                    email: otherParticipant?.email,
+                    revealFull: revealFullNameForTask,
+                  }) || 'Unknown User'}
                 </h1>
                 {task && (
                   <Link
@@ -464,7 +498,11 @@ export default function ConversationPage() {
                   >
                     {!isOwnMessage && message.sender && (
                       <p className="text-xs font-semibold mb-1 opacity-75 break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                        {message.sender.full_name || message.sender.email}
+                        {getDisplayName({
+                          fullName: message.sender.full_name,
+                          email: message.sender.email,
+                          revealFull: revealFullNameForTask,
+                        })}
                       </p>
                     )}
                     {message.image_url && (

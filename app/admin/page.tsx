@@ -30,6 +30,10 @@ import { geocodeAddress } from '@/lib/geocoding'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend, Filler)
 
+const EXCLUDED_REVENUE_TASK_IDS = new Set([
+  'a8c3c4e2-e594-47b8-89d0-55f6e2cbadd6',
+])
+
 const AdminMap = dynamic(() => import('@/components/Map'), { ssr: false })
 
 // AppUser extends User and includes languages and other custom fields
@@ -55,6 +59,7 @@ type Task = {
   hidden_reason?: string | null
   payment_status?: string | null
   updated_at?: string
+  location?: string | null
 }
 
 type Bid = {
@@ -68,6 +73,7 @@ type Bid = {
 
 type Review = {
   id: string
+  task_id: string
   rating: number
   created_at: string
 }
@@ -111,6 +117,9 @@ export default function SuperadminDashboard() {
   // Use a ref to track modal state to avoid closure issues
   const showDeleteConfirmModalRef = useRef(false)
   const reportToDeleteRef = useRef<string | null>(null)
+  const emailLogsTopScrollRef = useRef<HTMLDivElement | null>(null)
+  const emailLogsTableScrollRef = useRef<HTMLDivElement | null>(null)
+  const [emailLogsScrollWidth, setEmailLogsScrollWidth] = useState(1)
   
   // Sync refs with state
   useEffect(() => {
@@ -118,6 +127,48 @@ export default function SuperadminDashboard() {
     reportToDeleteRef.current = reportToDelete
     console.log('🔴 [STATE SYNC] Updated refs - showDeleteConfirmModal:', showDeleteConfirmModal, 'reportToDelete:', reportToDelete)
   }, [showDeleteConfirmModal, reportToDelete])
+
+  useEffect(() => {
+    const top = emailLogsTopScrollRef.current
+    const bottom = emailLogsTableScrollRef.current
+    if (!top || !bottom) return
+
+    const updateWidth = () => {
+      setEmailLogsScrollWidth(Math.max(bottom.scrollWidth, 1))
+    }
+
+    let syncingFromTop = false
+    let syncingFromBottom = false
+
+    const handleTopScroll = () => {
+      if (syncingFromBottom) return
+      syncingFromTop = true
+      bottom.scrollLeft = top.scrollLeft
+      syncingFromTop = false
+    }
+
+    const handleBottomScroll = () => {
+      if (syncingFromTop) return
+      syncingFromBottom = true
+      top.scrollLeft = bottom.scrollLeft
+      syncingFromBottom = false
+    }
+
+    const resizeObserver = new ResizeObserver(() => updateWidth())
+    resizeObserver.observe(bottom)
+
+    updateWidth()
+    top.addEventListener('scroll', handleTopScroll)
+    bottom.addEventListener('scroll', handleBottomScroll)
+    window.addEventListener('resize', updateWidth)
+
+    return () => {
+      resizeObserver.disconnect()
+      top.removeEventListener('scroll', handleTopScroll)
+      bottom.removeEventListener('scroll', handleBottomScroll)
+      window.removeEventListener('resize', updateWidth)
+    }
+  })
 
   // Debug logging for modal state
   useEffect(() => {
@@ -152,6 +203,12 @@ export default function SuperadminDashboard() {
     emailType: '',
   })
   const [showEmailLogsSection, setShowEmailLogsSection] = useState(false)
+  const [emailLogsPage, setEmailLogsPage] = useState(1)
+  const EMAIL_LOGS_PAGE_SIZE = 25
+
+  useEffect(() => {
+    setEmailLogsPage(1)
+  }, [emailLogFilters.recipient, emailLogFilters.subject, emailLogFilters.emailType, showEmailLogsSection])
   const [smsTestPhone, setSmsTestPhone] = useState('')
   const [smsTestLoading, setSmsTestLoading] = useState(false)
   const [smsTestResult, setSmsTestResult] = useState<{ ok: boolean; msg: string } | null>(null)
@@ -163,6 +220,7 @@ export default function SuperadminDashboard() {
   // Send Task Alert
   const [alertTaskId, setAlertTaskId] = useState('')
   const [alertUserId, setAlertUserId] = useState('')
+  const [alertUserSortMode, setAlertUserSortMode] = useState<'latest' | 'alpha'>('latest')
   const [alertViaEmail, setAlertViaEmail] = useState(true)
   const [alertViaSms, setAlertViaSms] = useState(false)
   const [alertSending, setAlertSending] = useState(false)
@@ -234,15 +292,28 @@ export default function SuperadminDashboard() {
     task: any | null
     matches: any[]
     reason?: string
+    aiClassification?: { skills: string[]; professions: string[] }
+    matchMode?: string
   }>({ task: null, matches: [], reason: undefined })
   const [sendingMatches, setSendingMatches] = useState(false)
   const [sendMatchesMessage, setSendMatchesMessage] = useState<string | null>(null)
   const [sendTaskId, setSendTaskId] = useState('')
-  const [sendTaskMatches, setSendTaskMatches] = useState<Array<{ id: string; name: string; email: string; distanceKm?: number; phoneNumber?: string | null; phoneCountryCode?: string | null; smsOptOut?: boolean }>>([])
+  const [sendTaskMatches, setSendTaskMatches] = useState<Array<{ id: string; name: string; email: string; distanceKm?: number; phoneNumber?: string | null; phoneCountryCode?: string | null; smsOptOut?: boolean; compositeScore?: number; semanticScore?: number; distanceScore?: number; professionScore?: number; skillScore?: number; profileScore?: number }>>([])
   const [sendTaskMatchesLoading, setSendTaskMatchesLoading] = useState(false)
   const [selectedSendHelperIds, setSelectedSendHelperIds] = useState<Set<string>>(new Set())
   const [sendViaEmail, setSendViaEmail] = useState(true)
   const [sendViaSms, setSendViaSms] = useState(false)
+  const [lockMatchTaskSelection, setLockMatchTaskSelection] = useState(true)
+  const [scoreBreakdownDetails, setScoreBreakdownDetails] = useState<{
+    source: 'preview' | 'send'
+    helperName: string
+    compositeScore: number | null
+    semanticScore: number
+    distanceScore: number
+    professionScore: number
+    skillScore: number
+    profileScore: number
+  } | null>(null)
   
   // Revenue tracking
   const [revenue, setRevenue] = useState<{
@@ -923,15 +994,19 @@ export default function SuperadminDashboard() {
       return
     }
 
-    if (!paidTasks || paidTasks.length === 0) {
+    const includedPaidTasks = (paidTasks || []).filter(
+      (task) => !EXCLUDED_REVENUE_TASK_IDS.has(task.id)
+    )
+
+    if (includedPaidTasks.length === 0) {
       setRevenue({ tasks: [], totalRevenue: 0, totalServiceFees: 0, totalPlatformFees: 0, totalTasks: 0, dailyRevenue: [] })
       return
     }
 
     // Get user emails
     const userIds = Array.from(new Set([
-      ...paidTasks.map(t => t.created_by).filter(Boolean),
-      ...paidTasks.map(t => t.assigned_to).filter(Boolean)
+      ...includedPaidTasks.map(t => t.created_by).filter(Boolean),
+      ...includedPaidTasks.map(t => t.assigned_to).filter(Boolean)
     ]))
     
     let userEmails: Record<string, string> = {}
@@ -952,7 +1027,7 @@ export default function SuperadminDashboard() {
     const SERVICE_FEE = 2 // €2 service fee per task
     const PLATFORM_FEE_PERCENT = 10 // 10% platform fee
 
-    const tasksWithRevenue = paidTasks
+    const tasksWithRevenue = includedPaidTasks
       .filter(task => task.budget != null && task.budget > 0)
       .map(task => {
         const budget = task.budget || 0
@@ -1029,7 +1104,7 @@ export default function SuperadminDashboard() {
   async function fetchReviews() {
     const { data, error } = await supabase
       .from('reviews')
-      .select('id, rating, created_at')
+      .select('id, task_id, rating, created_at')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -1069,13 +1144,64 @@ export default function SuperadminDashboard() {
       .from('email_logs')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(100) // Limit to last 100 emails
+      .limit(1000) // Allow browsing beyond 100 in admin table
 
     if (error) {
       console.error('Error fetching email logs:', error)
     } else if (data) {
       setEmailLogs(data)
     }
+  }
+
+  function getEmailLogSenderName(log: any): string {
+    const metadata = log?.metadata || {}
+    const senderName =
+      metadata.senderName ||
+      metadata.bidderName ||
+      metadata.taskerName ||
+      metadata.helperName ||
+      metadata.sender ||
+      null
+
+    if (senderName) return senderName
+
+    if (log?.sent_by) {
+      const senderUser = users.find((u) => u.id === log.sent_by)
+      if (senderUser?.full_name) return senderUser.full_name
+      if (senderUser?.email) return senderUser.email
+    }
+
+    return 'System'
+  }
+
+  function getUserIdByEmailOrName(email?: string | null, name?: string | null): string | null {
+    if (email) {
+      const matchByEmail = users.find((u) => u.email?.toLowerCase() === email.toLowerCase())
+      if (matchByEmail?.id) return matchByEmail.id
+    }
+    if (name) {
+      const matchByName = users.find((u) => u.full_name?.toLowerCase() === name.toLowerCase())
+      if (matchByName?.id) return matchByName.id
+    }
+    return null
+  }
+
+  function getEmailLogRecipientProfileId(log: any): string | null {
+    return (
+      log?.related_user_id ||
+      getUserIdByEmailOrName(log?.recipient_email, log?.recipient_name)
+    )
+  }
+
+  function getEmailLogSenderProfileId(log: any): string | null {
+    const metadata = log?.metadata || {}
+    return (
+      log?.sent_by ||
+      getUserIdByEmailOrName(
+        metadata.senderEmail || metadata.bidderEmail || metadata.taskerEmail || metadata.helperEmail || null,
+        metadata.senderName || metadata.bidderName || metadata.taskerName || metadata.helperName || null,
+      )
+    )
   }
 
   async function fetchEmailTemplates() {
@@ -1212,7 +1338,10 @@ export default function SuperadminDashboard() {
         task: data.task || null,
         matches: data.matches || [],
         reason: data.reason,
+        aiClassification: data.aiClassification || undefined,
+        matchMode: data.matchMode || undefined,
       })
+      setSelectedSendHelperIds(new Set((data.matches || []).map((m: any) => m.id as string)))
     } catch (error: any) {
       console.error('Error fetching helper task match preview:', error)
       setPreviewError(error.message || 'Failed to load preview')
@@ -1274,6 +1403,20 @@ export default function SuperadminDashboard() {
     } finally {
       setSendTaskMatchesLoading(false)
     }
+  }
+
+  function openScoreBreakdown(source: 'preview' | 'send', helper: any) {
+    const compositeScore = typeof helper?.compositeScore === 'number' ? helper.compositeScore : null
+    setScoreBreakdownDetails({
+      source,
+      helperName: helper?.name || 'Helper',
+      compositeScore,
+      semanticScore: Number(helper?.semanticScore ?? 0),
+      distanceScore: Number(helper?.distanceScore ?? 0),
+      professionScore: Number(helper?.professionScore ?? 0),
+      skillScore: Number(helper?.skillScore ?? 0),
+      profileScore: Number(helper?.profileScore ?? 0),
+    })
   }
 
   async function sendHelperTaskMatchEmails(taskId: string, helperIds: string[]) {
@@ -1898,12 +2041,17 @@ export default function SuperadminDashboard() {
   }
 
   // Calculate stats data
+  const realTasks = tasks.filter(t => t.is_sample_task !== true)
+  const realTaskIdSet = new Set(realTasks.map(t => t.id))
+  const realBids = bids.filter(b => realTaskIdSet.has(b.task_id))
+  const realReviews = reviews.filter(r => realTaskIdSet.has(r.task_id))
+
   const taskStatusCounts = {
-    open: tasks.filter(t => t.status === 'open').length,
-    pending_payment: tasks.filter(t => t.status === 'pending_payment').length,
-    in_progress: tasks.filter(t => t.status === 'in_progress').length,
-    completed: tasks.filter(t => t.status === 'completed').length,
-    cancelled: tasks.filter(t => t.status === 'cancelled').length,
+    open: realTasks.filter(t => t.status === 'open').length,
+    pending_payment: realTasks.filter(t => t.status === 'pending_payment').length,
+    in_progress: realTasks.filter(t => t.status === 'in_progress').length,
+    completed: realTasks.filter(t => t.status === 'completed').length,
+    cancelled: realTasks.filter(t => t.status === 'cancelled').length,
   }
 
   const userRoleCounts = {
@@ -1912,34 +2060,34 @@ export default function SuperadminDashboard() {
     superadmin: users.filter(u => u.role === 'superadmin').length,
   }
 
-  const totalBudget = tasks.reduce((sum, t) => sum + (t.budget || 0), 0)
-  const avgBudget = tasks.length > 0 ? totalBudget / tasks.length : 0
-  const completedTasksWithBudget = tasks.filter(t => t.status === 'completed' && t.budget)
+  const totalBudget = realTasks.reduce((sum, t) => sum + (t.budget || 0), 0)
+  const avgBudget = realTasks.length > 0 ? totalBudget / realTasks.length : 0
+  const completedTasksWithBudget = realTasks.filter(t => t.status === 'completed' && t.budget)
   const totalSpent = completedTasksWithBudget.reduce((sum, t) => sum + (t.budget || 0), 0)
-  const acceptedBids = bids.filter(b => b.status === 'accepted')
+  const acceptedBids = realBids.filter(b => b.status === 'accepted')
   const totalAcceptedBidAmount = acceptedBids.reduce((sum, b) => sum + (b.amount || 0), 0)
 
   const bidStatusCounts = {
-    pending: bids.filter(b => b.status === 'pending').length,
-    accepted: bids.filter(b => b.status === 'accepted').length,
-    rejected: bids.filter(b => b.status === 'rejected').length,
+    pending: realBids.filter(b => b.status === 'pending').length,
+    accepted: realBids.filter(b => b.status === 'accepted').length,
+    rejected: realBids.filter(b => b.status === 'rejected').length,
   }
-  const avgBidAmount = bids.length > 0 
-    ? bids.reduce((sum, b) => sum + (b.amount || 0), 0) / bids.length 
+  const avgBidAmount = realBids.length > 0
+    ? realBids.reduce((sum, b) => sum + (b.amount || 0), 0) / realBids.length
     : 0
   const avgAcceptedBidAmount = acceptedBids.length > 0
     ? totalAcceptedBidAmount / acceptedBids.length
     : 0
 
-  const avgRating = reviews.length > 0
-    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+  const avgRating = realReviews.length > 0
+    ? realReviews.reduce((sum, r) => sum + r.rating, 0) / realReviews.length
     : 0
   const ratingDistribution = {
-    5: reviews.filter(r => r.rating === 5).length,
-    4: reviews.filter(r => r.rating === 4).length,
-    3: reviews.filter(r => r.rating === 3).length,
-    2: reviews.filter(r => r.rating === 2).length,
-    1: reviews.filter(r => r.rating === 1).length,
+    5: realReviews.filter(r => r.rating === 5).length,
+    4: realReviews.filter(r => r.rating === 4).length,
+    3: realReviews.filter(r => r.rating === 3).length,
+    2: realReviews.filter(r => r.rating === 2).length,
+    1: realReviews.filter(r => r.rating === 1).length,
   }
 
   // Calculate language statistics
@@ -1969,15 +2117,59 @@ export default function SuperadminDashboard() {
 
   const taskCreationData = last30Days.map(date => ({
     date,
-    count: tasks.filter(t => t.created_at.split('T')[0] === date).length
+    count: realTasks.filter(t => t.created_at.split('T')[0] === date).length
   }))
 
-  const budgetData = last30Days.map(date => ({
-    date,
-    total: tasks
-      .filter(t => t.created_at.split('T')[0] === date)
-      .reduce((sum, t) => sum + (t.budget || 0), 0)
-  }))
+  const bidsByTaskId = realBids.reduce((acc, bid) => {
+    if (!acc.has(bid.task_id)) acc.set(bid.task_id, [])
+    acc.get(bid.task_id)!.push(bid)
+    return acc
+  }, new Map<string, typeof realBids>())
+
+  const last30StartDate = new Date(`${last30Days[0]}T00:00:00`)
+  const recentRealTasks = realTasks.filter(t => new Date(t.created_at) >= last30StartDate)
+
+  const taskFunnelData = {
+    created: recentRealTasks.length,
+    withBid: recentRealTasks.filter(t => (bidsByTaskId.get(t.id) || []).length > 0).length,
+    acceptedOrPendingPayment: recentRealTasks.filter(t =>
+      t.status === 'pending_payment' ||
+      t.status === 'in_progress' ||
+      t.status === 'completed' ||
+      (bidsByTaskId.get(t.id) || []).some(b => b.status === 'accepted')
+    ).length,
+    paid: recentRealTasks.filter(t => t.payment_status === 'paid').length,
+    completed: recentRealTasks.filter(t => t.status === 'completed').length,
+  }
+
+  const getMedian = (values: number[]): number | null => {
+    if (values.length === 0) return null
+    const sorted = [...values].sort((a, b) => a - b)
+    const mid = Math.floor(sorted.length / 2)
+    if (sorted.length % 2 === 0) return (sorted[mid - 1] + sorted[mid]) / 2
+    return sorted[mid]
+  }
+
+  const medianFirstBidMinutesData = last30Days.map(date => {
+    const dayTasks = realTasks.filter(t => t.created_at.split('T')[0] === date)
+    const firstBidMinutes = dayTasks
+      .map(task => {
+        const taskBids = bidsByTaskId.get(task.id) || []
+        if (taskBids.length === 0) return null
+        const firstBid = taskBids.reduce((earliest, bid) =>
+          new Date(bid.created_at) < new Date(earliest.created_at) ? bid : earliest
+        )
+        const diffMs = new Date(firstBid.created_at).getTime() - new Date(task.created_at).getTime()
+        const diffMinutes = diffMs / (1000 * 60)
+        return diffMinutes >= 0 ? diffMinutes : null
+      })
+      .filter((v): v is number => typeof v === 'number')
+
+    return {
+      date,
+      medianMinutes: getMedian(firstBidMinutes),
+    }
+  })
 
   const getRevenueRangeStart = (range: RevenueRange, now: Date): Date | null => {
     const start = new Date(now)
@@ -3204,7 +3396,7 @@ export default function SuperadminDashboard() {
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                   <p className="text-sm text-gray-600 mb-1">Total Tasks</p>
-                  <p className="text-3xl font-bold text-green-600">{tasks.length}</p>
+                  <p className="text-3xl font-bold text-green-600">{realTasks.length}</p>
                   <p className="text-xs text-gray-500 mt-1">
                     {taskStatusCounts.completed} completed
                   </p>
@@ -3218,9 +3410,9 @@ export default function SuperadminDashboard() {
                 </div>
                 <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                   <p className="text-sm text-gray-600 mb-1">Total Bids</p>
-                  <p className="text-3xl font-bold text-orange-600">{bids.length}</p>
+                  <p className="text-3xl font-bold text-orange-600">{realBids.length}</p>
                   <p className="text-xs text-gray-500 mt-1">
-                    {bidStatusCounts.accepted} accepted ({bids.length > 0 ? ((bidStatusCounts.accepted / bids.length) * 100).toFixed(1) : 0}%)
+                    {bidStatusCounts.accepted} accepted ({realBids.length > 0 ? ((bidStatusCounts.accepted / realBids.length) * 100).toFixed(1) : 0}%)
                   </p>
                 </div>
             </div>
@@ -3436,41 +3628,79 @@ export default function SuperadminDashboard() {
                 </div>
             </div>
 
-            {/* Budget Over Time */}
-            <div className="bg-gray-50 p-4 rounded-lg mb-8">
-                <h3 className="text-lg font-semibold mb-4">Daily Budget Posted (Last 30 Days)</h3>
+            {/* Task Funnel + Time-to-First-Bid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold mb-4">Task Funnel Conversion (Last 30 Days)</h3>
                 <div style={{ height: '300px' }}>
                   <Bar
                     data={{
-                      labels: budgetData.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+                      labels: ['Created', 'With Bid', 'Accepted/Pending', 'Paid', 'Completed'],
                       datasets: [{
-                        label: 'Budget ($)',
-                        data: budgetData.map(d => d.total),
-                        backgroundColor: '#8b5cf6',
+                        label: 'Tasks',
+                        data: [
+                          taskFunnelData.created,
+                          taskFunnelData.withBid,
+                          taskFunnelData.acceptedOrPendingPayment,
+                          taskFunnelData.paid,
+                          taskFunnelData.completed,
+                        ],
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#14b8a6'],
                       }],
-                      }}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                          legend: { display: false },
-                          tooltip: {
-                            callbacks: {
-                              label: (context: any) => `$${context.parsed.y.toLocaleString()}`
-                            }
-                          }
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { display: false },
+                      },
+                      scales: {
+                        y: { beginAtZero: true },
+                      },
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold mb-4">Median Time to First Bid (Last 30 Days)</h3>
+                <div style={{ height: '300px' }}>
+                  <Line
+                    data={{
+                      labels: medianFirstBidMinutesData.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+                      datasets: [{
+                        label: 'Median Minutes',
+                        data: medianFirstBidMinutesData.map(d => d.medianMinutes),
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.12)',
+                        tension: 0.35,
+                      }],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                          callbacks: {
+                            label: (context: any) => {
+                              const value = context.parsed.y
+                              if (value == null) return 'No bids yet'
+                              return `${Math.round(value)} min`
+                            },
+                          },
                         },
-                        scales: {
-                          y: {
-                            beginAtZero: true,
-                            ticks: {
-                              callback: (value: any) => `$${value.toLocaleString()}`
-                            }
-                          }
-                        }
-                      }}
-                    />
-                  </div>
+                      },
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                          title: { display: true, text: 'Minutes' },
+                        },
+                      },
+                    }}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Additional Stats */}
@@ -3481,7 +3711,7 @@ export default function SuperadminDashboard() {
                 </div>
                 <div className="bg-pink-50 p-4 rounded-lg border border-pink-200">
                   <p className="text-sm text-gray-600 mb-1">Total Reviews</p>
-                  <p className="text-2xl font-bold text-pink-600">{reviews.length}</p>
+                  <p className="text-2xl font-bold text-pink-600">{realReviews.length}</p>
                   <p className="text-xs text-gray-500 mt-1">Avg: {avgRating.toFixed(2)}/5</p>
                 </div>
                 <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
@@ -3704,7 +3934,7 @@ export default function SuperadminDashboard() {
           <div className="space-y-6">
 
             {/* SMS Test */}
-            <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-4xl space-y-4">
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6 w-full space-y-4">
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-1">SMS Gateway Test</h3>
                 <p className="text-xs text-gray-500">
@@ -3761,7 +3991,7 @@ export default function SuperadminDashboard() {
             </div>
 
             {/* Email Logs — shown first */}
-            <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-4xl flex items-center justify-between">
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6 w-full flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-1">Email Logs</h3>
                 <p className="text-xs text-gray-500">View recently sent emails and filter by recipient, subject, or type.</p>
@@ -3780,7 +4010,7 @@ export default function SuperadminDashboard() {
               </button>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-4xl">
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6 w-full">
               <div className="mb-6 border-b border-gray-200 pb-4">
                 <h2 className="text-xl font-semibold mb-2">Email Templates</h2>
                 <p className="text-sm text-gray-600">Manage welcome email templates for Helpers and Taskers</p>
@@ -3806,10 +4036,25 @@ export default function SuperadminDashboard() {
                   Choose a task below to see which helpers would be matched for "New task near you" emails.
                   This endpoint never sends real emails; it only shows the current matching result.
                 </p>
+                <label className="mb-2 inline-flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={lockMatchTaskSelection}
+                    onChange={(e) => setLockMatchTaskSelection(e.target.checked)}
+                    className="w-3.5 h-3.5"
+                  />
+                  Keep Preview and Send task selection synced
+                </label>
                 <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
                   <select
                     value={previewTaskId}
-                    onChange={(e) => setPreviewTaskId(e.target.value)}
+                    onChange={(e) => {
+                      const nextTaskId = e.target.value
+                      setPreviewTaskId(nextTaskId)
+                      if (lockMatchTaskSelection) {
+                        setSendTaskId(nextTaskId)
+                      }
+                    }}
                     className="w-full sm:w-80 px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select a task…</option>
@@ -3849,10 +4094,17 @@ export default function SuperadminDashboard() {
                   <div className="mt-4 rounded-md border border-gray-200 bg-gray-50 p-3 text-xs text-gray-800 space-y-2">
                     <div>
                       <span className="font-semibold">Task:</span>{' '}
-                      <span className="text-gray-900">
+                      <Link
+                        href={previewResult.task?.id ? `/tasks/${previewResult.task.id}` : '#'}
+                        className="text-blue-700 hover:underline"
+                      >
                         [{previewResult.task.id?.substring(0, 8) || '—'}]{' '}
                         {previewResult.task.title}
-                      </span>
+                      </Link>
+                    </div>
+                    <div className="text-gray-600">
+                      <span className="font-semibold text-gray-700">Task details:</span>{' '}
+                      ID: {previewResult.task.id || '—'} | Location: {previewResult.task.location || tasks.find(t => t.id === previewTaskId)?.location || '—'}
                     </div>
                     {typeof previewResult.task.amount === 'number' && (
                       <div>
@@ -4074,12 +4326,41 @@ export default function SuperadminDashboard() {
                   log.email_type === emailLogFilters.emailType
                 return recipientMatch && subjectMatch && typeMatch
               })
+              const totalPages = Math.max(1, Math.ceil(filteredEmailLogs.length / EMAIL_LOGS_PAGE_SIZE))
+              const currentPage = Math.min(emailLogsPage, totalPages)
+              const startIdx = (currentPage - 1) * EMAIL_LOGS_PAGE_SIZE
+              const endIdx = startIdx + EMAIL_LOGS_PAGE_SIZE
+              const paginatedEmailLogs = filteredEmailLogs.slice(startIdx, endIdx)
 
               return (
                 <div className="bg-white rounded-lg shadow p-4 sm:p-6">
                   <h2 className="text-xl font-semibold mb-4">
                     Email Logs ({filteredEmailLogs.length}{filteredEmailLogs.length !== emailLogs.length ? ` of ${emailLogs.length}` : ''})
                   </h2>
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+                    <span className="text-gray-600">
+                      Showing {filteredEmailLogs.length === 0 ? 0 : startIdx + 1}-{Math.min(endIdx, filteredEmailLogs.length)} of {filteredEmailLogs.length}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEmailLogsPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage <= 1}
+                        className="px-3 py-1.5 border border-gray-300 rounded-md text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous 25
+                      </button>
+                      <span className="text-gray-600">Page {currentPage} / {totalPages}</span>
+                      <button
+                        type="button"
+                        onClick={() => setEmailLogsPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage >= totalPages}
+                        className="px-3 py-1.5 border border-gray-300 rounded-md text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next 25
+                      </button>
+                    </div>
+                  </div>
                   
                   {/* Filter Section */}
                   <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -4128,6 +4409,7 @@ export default function SuperadminDashboard() {
                           <option value="bid_accepted">Bid Accepted</option>
                           <option value="bid_rejected">Bid Rejected</option>
                           <option value="new_message">New Message</option>
+                          <option value="message_blocked_pre_bid">Message Blocked (Pre-bid)</option>
                           <option value="task_completed">Task Completed</option>
                           <option value="task_cancelled">Task Cancelled</option>
                           <option value="admin_email">Admin Email</option>
@@ -4170,20 +4452,25 @@ export default function SuperadminDashboard() {
                     </div>
                   )}
 
+                  {/* Top horizontal scrollbar */}
+                  <div ref={emailLogsTopScrollRef} className="overflow-x-auto overflow-y-hidden mb-2">
+                    <div style={{ width: `${emailLogsScrollWidth}px`, height: '1px' }} />
+                  </div>
+
                   {/* Logs Table */}
-                  <div className="overflow-x-auto">
+                  <div ref={emailLogsTableScrollRef} className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 text-sm">
                       <thead className="bg-gray-50">
                         <tr>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-10">
                             <input
                               type="checkbox"
-                              checked={filteredEmailLogs.length > 0 && selectedEmailLogIds.length === filteredEmailLogs.length}
+                              checked={paginatedEmailLogs.length > 0 && paginatedEmailLogs.every((log) => selectedEmailLogIds.includes(log.id))}
                               onChange={(e) => {
                                 if (e.target.checked) {
-                                  setSelectedEmailLogIds(filteredEmailLogs.map((log) => log.id))
+                                  setSelectedEmailLogIds(Array.from(new Set([...selectedEmailLogIds, ...paginatedEmailLogs.map((log) => log.id)])))
                                 } else {
-                                  setSelectedEmailLogIds([])
+                                  setSelectedEmailLogIds(selectedEmailLogIds.filter((id) => !paginatedEmailLogs.some((log) => log.id === id)))
                                 }
                               }}
                               className="cursor-pointer"
@@ -4197,13 +4484,13 @@ export default function SuperadminDashboard() {
                             Recipient
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Sender
+                          </th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[240px]">
                             Subject
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Type
-                          </th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
                           </th>
                           <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Actions
@@ -4211,8 +4498,14 @@ export default function SuperadminDashboard() {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredEmailLogs.map((log) => {
+                        {paginatedEmailLogs.map((log) => {
                           const isPreBidImage = log.email_type === 'new_message' && log.metadata?.hasImage === true && log.metadata?.bidAccepted !== true
+                          const blockedReason = log.email_type === 'message_blocked_pre_bid'
+                            ? (log.metadata?.blockedReason || null)
+                            : null
+                          const senderName = getEmailLogSenderName(log)
+                          const senderProfileId = getEmailLogSenderProfileId(log)
+                          const recipientProfileId = getEmailLogRecipientProfileId(log)
                           return (
                           <tr key={log.id} className={`${isPreBidImage ? 'bg-red-50 border-l-4 border-red-400' : selectedEmailLogIds.includes(log.id) ? 'bg-blue-50' : ''}`}>
                             <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-500">
@@ -4230,27 +4523,65 @@ export default function SuperadminDashboard() {
                               />
                             </td>
                             <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-500">
-                              {log.created_at ? new Date(log.created_at).toLocaleString() : '-'}
+                              {log.created_at ? (
+                                <div className="flex flex-col">
+                                  <span>{new Date(log.created_at).toLocaleDateString()}</span>
+                                  <span className="text-gray-400">{new Date(log.created_at).toLocaleTimeString()}</span>
+                                </div>
+                              ) : '-'}
                             </td>
-                            <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-700">
-                              <div className="flex flex-col">
-                                <span>{log.recipient_name || '-'}</span>
-                                <span className="text-gray-500">{log.recipient_email || '-'}</span>
-                              </div>
+                            <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-700 max-w-[22ch]">
+                              {recipientProfileId ? (
+                                <Link
+                                  href={`/user/${recipientProfileId}`}
+                                  className="text-primary-600 hover:underline block truncate"
+                                  title={log.recipient_name || 'Unknown Recipient'}
+                                >
+                                  {log.recipient_name || 'Unknown Recipient'}
+                                </Link>
+                              ) : (
+                                <span className="block truncate" title={log.recipient_name || 'Unknown Recipient'}>
+                                  {log.recipient_name || 'Unknown Recipient'}
+                                </span>
+                              )}
                             </td>
-                            <td className="px-4 py-2 text-xs text-gray-700">
-                              {log.subject || '-'}
+                            <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-700 max-w-[22ch]">
+                              {senderProfileId ? (
+                                <Link
+                                  href={`/user/${senderProfileId}`}
+                                  className="text-primary-600 hover:underline block truncate"
+                                  title={senderName}
+                                >
+                                  {senderName}
+                                </Link>
+                              ) : (
+                                <span className="block truncate" title={senderName}>{senderName}</span>
+                              )}
                             </td>
-                            <td className="px-4 py-2 text-xs text-gray-700">
-                              <span>{log.email_type || '-'}</span>
+                            <td className="px-4 py-2 text-xs text-gray-700 min-w-[240px]">
+                              <div className="break-words">{log.subject || '-'}</div>
+                              {blockedReason && (
+                                <div className="mt-1">
+                                  <span className="inline-flex items-center px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-semibold rounded">
+                                    BLOCK REASON: {blockedReason}
+                                  </span>
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-2 text-xs text-gray-700 max-w-[22ch]">
+                              <span className="inline-block max-w-[22ch] truncate align-bottom" title={log.email_type || '-'}>
+                                {log.email_type || '-'}
+                              </span>
                               {isPreBidImage && (
                                 <span className="ml-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded">
                                   📷 IMAGE PRE-BID
                                 </span>
                               )}
-                            </td>
-                            <td className="px-4 py-2 text-xs text-gray-700">
-                              {log.status || '-'}
+                              {blockedReason && (
+                                <span className="ml-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded">
+                                  🚫 PRE-BID BLOCKED
+                                </span>
+                              )}
                             </td>
                             <td className="px-4 py-2 text-right text-xs text-gray-700">
                               <div className="flex items-center justify-end gap-2">
@@ -4287,7 +4618,7 @@ export default function SuperadminDashboard() {
           <div className="space-y-6">
 
             {/* Send Task Alert */}
-            <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-4xl space-y-4">
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6 w-full space-y-4">
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-1">Send Task Alert</h3>
                 <p className="text-xs text-gray-500">
@@ -4314,14 +4645,34 @@ export default function SuperadminDashboard() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">User</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-medium text-gray-700">User</label>
+                    <button
+                      type="button"
+                      onClick={() => setAlertUserSortMode(prev => prev === 'latest' ? 'alpha' : 'latest')}
+                      className="text-[11px] px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
+                      title="Toggle user sort mode"
+                    >
+                      Sort: {alertUserSortMode === 'latest' ? 'Latest' : 'A-Z'}
+                    </button>
+                  </div>
                   <select
                     value={alertUserId}
                     onChange={(e) => { setAlertUserId(e.target.value); setAlertMessage(null) }}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="">— Select a user —</option>
-                    {users.map(u => (
+                    {users
+                      .slice()
+                      .sort((a, b) => {
+                        if (alertUserSortMode === 'latest') {
+                          return (b.created_at || '').localeCompare(a.created_at || '')
+                        }
+                        const aName = (a.full_name || a.email || '').toLowerCase()
+                        const bName = (b.full_name || b.email || '').toLowerCase()
+                        return aName.localeCompare(bName)
+                      })
+                      .map(u => (
                       <option key={u.id} value={u.id}>
                         {u.full_name || '(no name)'} — {u.email}
                       </option>
@@ -4388,7 +4739,7 @@ export default function SuperadminDashboard() {
             </div>
 
             {/* Helper Task Match */}
-            <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-4xl">
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6 w-full">
 
               {/* Preview section */}
               <div>
@@ -4458,36 +4809,157 @@ export default function SuperadminDashboard() {
                         <span className="font-semibold">Note:</span> {previewResult.reason}
                       </div>
                     )}
+                    {previewResult.aiClassification && (previewResult.aiClassification.skills.length > 0 || previewResult.aiClassification.professions.length > 0) && (
+                      <div className="rounded-md bg-blue-50 border border-blue-200 px-3 py-2">
+                        <span className="font-semibold text-blue-800">AI detected:</span>{' '}
+                        {previewResult.aiClassification.skills.length > 0 && (
+                          <span className="text-blue-700">
+                            Skills: {previewResult.aiClassification.skills.join(', ')}
+                          </span>
+                        )}
+                        {previewResult.aiClassification.skills.length > 0 && previewResult.aiClassification.professions.length > 0 && (
+                          <span className="text-blue-400 mx-1">|</span>
+                        )}
+                        {previewResult.aiClassification.professions.length > 0 && (
+                          <span className="text-blue-700">
+                            Professions: {previewResult.aiClassification.professions.join(', ')}
+                          </span>
+                        )}
+                        {previewResult.matchMode && (
+                          <span className="ml-2 text-[10px] text-blue-500">({previewResult.matchMode} matching)</span>
+                        )}
+                      </div>
+                    )}
                     <div>
                       <span className="font-semibold">Matched helpers:</span>{' '}
                       {previewResult.matches.length}
                     </div>
                     {previewResult.matches.length > 0 && (
-                      <div className="max-h-64 overflow-auto rounded border border-gray-200 bg-white">
+                      <div className="flex items-center gap-3">
+                        <span className="text-[11px] font-semibold text-gray-700">
+                          {selectedSendHelperIds.size} of {previewResult.matches.length} selected
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedSendHelperIds(new Set(previewResult.matches.map((m: any) => m.id)))}
+                          className="text-[11px] text-blue-600 hover:underline"
+                        >
+                          Select all
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedSendHelperIds(new Set())}
+                          className="text-[11px] text-gray-500 hover:underline"
+                        >
+                          Deselect all
+                        </button>
+                      </div>
+                    )}
+                    {previewResult.matches.length > 0 && (
+                      <div className="max-h-80 overflow-auto rounded border border-gray-200 bg-white">
                         <table className="min-w-full text-[11px]">
-                          <thead className="bg-gray-50">
+                          <thead className="bg-gray-50 sticky top-0">
                             <tr>
+                              <th className="px-2 py-1 w-8">
+                                <input
+                                  type="checkbox"
+                                  checked={previewResult.matches.length > 0 && selectedSendHelperIds.size === previewResult.matches.length}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedSendHelperIds(new Set(previewResult.matches.map((m: any) => m.id)))
+                                    } else {
+                                      setSelectedSendHelperIds(new Set())
+                                    }
+                                  }}
+                                  className="w-3.5 h-3.5 cursor-pointer"
+                                  title="Select or deselect all helpers"
+                                />
+                              </th>
+                              <th className="px-2 py-1 text-left font-semibold text-gray-700">Score</th>
                               <th className="px-2 py-1 text-left font-semibold text-gray-700">Helper</th>
                               <th className="px-2 py-1 text-left font-semibold text-gray-700">Email</th>
-                              <th className="px-2 py-1 text-left font-semibold text-gray-700">Distance (km)</th>
-                              <th className="px-2 py-1 text-left font-semibold text-gray-700">Max Dist (km)</th>
+                              <th className="px-2 py-1 text-left font-semibold text-gray-700">Phone</th>
+                              <th className="px-2 py-1 text-left font-semibold text-gray-700">km</th>
+                              <th className="px-2 py-1 text-left font-semibold text-gray-700">Max km</th>
                               <th className="px-2 py-1 text-left font-semibold text-gray-700">Email Pref</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {previewResult.matches.map((m) => (
-                              <tr key={m.id} className="border-t border-gray-100">
-                                <td className="px-2 py-1 text-gray-900">{m.name}</td>
-                                <td className="px-2 py-1 text-gray-700">{m.email}</td>
-                                <td className="px-2 py-1 text-gray-700">
-                                  {typeof m.distanceKm === 'number' ? m.distanceKm.toFixed(2) : '—'}
-                                </td>
-                                <td className="px-2 py-1 text-gray-700">
-                                  {typeof m.preferredMaxDistanceKm === 'number' ? m.preferredMaxDistanceKm.toFixed(1) : '—'}
-                                </td>
-                                <td className="px-2 py-1 text-gray-700">{m.emailPreference || 'instant'}</td>
-                              </tr>
-                            ))}
+                            {previewResult.matches.map((m: any) => {
+                              const hasPhone = !!(m.phoneNumber || '').trim()
+                              const optedOut = m.smsOptOut === true
+                              const score = typeof m.compositeScore === 'number' ? m.compositeScore : null
+                              const badgeColor = score === null ? 'bg-gray-100 text-gray-500'
+                                : score >= 70 ? 'bg-green-100 text-green-800'
+                                : score >= 40 ? 'bg-amber-100 text-amber-800'
+                                : 'bg-red-100 text-red-800'
+                              const breakdown = score !== null
+                                ? `Semantic: ${Math.round((m.semanticScore ?? 0) * 100)}%\nDistance: ${Math.round((m.distanceScore ?? 0) * 100)}%\nProfession: ${Math.round((m.professionScore ?? 0) * 100)}%\nSkill: ${Math.round((m.skillScore ?? 0) * 100)}%\nProfile: ${Math.round((m.profileScore ?? 0) * 100)}%`
+                                : 'Lexical match (no AI scores)'
+                              return (
+                                <tr
+                                  key={m.id}
+                                  className={`border-t border-gray-100 cursor-pointer hover:bg-gray-50 ${selectedSendHelperIds.has(m.id) ? 'bg-green-50' : ''}`}
+                                  onClick={() => setSelectedSendHelperIds(prev => { const next = new Set(prev); next.has(m.id) ? next.delete(m.id) : next.add(m.id); return next })}
+                                >
+                                  <td className="px-2 py-1 text-center">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedSendHelperIds.has(m.id)}
+                                      onClick={(e) => e.stopPropagation()}
+                                      onChange={(e) => {
+                                        setSelectedSendHelperIds(prev => {
+                                          const next = new Set(prev)
+                                          if (e.target.checked) {
+                                            next.add(m.id)
+                                          } else {
+                                            next.delete(m.id)
+                                          }
+                                          return next
+                                        })
+                                      }}
+                                      className="w-3.5 h-3.5 cursor-pointer"
+                                    />
+                                  </td>
+                                  <td className="px-2 py-1">
+                                    <span
+                                      className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer ${badgeColor}`}
+                                      title={breakdown}
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        openScoreBreakdown('preview', m)
+                                      }}
+                                    >
+                                      {score !== null ? score : '—'}
+                                    </span>
+                                  </td>
+                                  <td className="px-2 py-1 text-gray-900">
+                                    <Link
+                                      href={m?.id ? `/user/${m.id}` : '#'}
+                                      className="text-blue-700 hover:underline"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {m.name}
+                                    </Link>
+                                  </td>
+                                  <td className="px-2 py-1 text-gray-700">{m.email}</td>
+                                  <td className="px-2 py-1 text-gray-500">
+                                    {optedOut
+                                      ? <span title={`Opted out of SMS${m.phoneNumber ? ` · ${m.phoneCountryCode ?? ''}${m.phoneNumber}` : ''}`}>🚫</span>
+                                      : hasPhone
+                                        ? <span title={`${m.phoneCountryCode ?? ''}${m.phoneNumber}`}>📱</span>
+                                        : <span className="text-gray-400" title="No phone on file">—</span>}
+                                  </td>
+                                  <td className="px-2 py-1 text-gray-700">
+                                    {typeof m.distanceKm === 'number' ? m.distanceKm.toFixed(1) : '—'}
+                                  </td>
+                                  <td className="px-2 py-1 text-gray-700">
+                                    {typeof m.preferredMaxDistanceKm === 'number' ? m.preferredMaxDistanceKm.toFixed(1) : '—'}
+                                  </td>
+                                  <td className="px-2 py-1 text-gray-700">{m.emailPreference || 'instant'}</td>
+                                </tr>
+                              )
+                            })}
                           </tbody>
                         </table>
                       </div>
@@ -4499,40 +4971,23 @@ export default function SuperadminDashboard() {
               {/* Send section */}
               <div className="mt-6 pt-4 border-t border-gray-200">
                 <h3 className="text-sm font-semibold text-gray-900 mb-2">
-                  Helper Task Match Emails (send for selected task)
+                  Send Matches
                 </h3>
                 <p className="text-xs text-gray-600 mb-3">
-                  Select a task to see matched helpers, check the ones you want to notify, then send.
+                  After previewing a task above, review selected helpers below and send.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center mb-3">
-                  <select
-                    value={sendTaskId}
-                    onChange={(e) => { setSendTaskId(e.target.value); fetchSendTaskMatches(e.target.value) }}
-                    className="w-full sm:w-80 px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select a task…</option>
-                    {tasks
-                      .slice()
-                      .sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''))
-                      .map(task => (
-                        <option key={task.id} value={task.id}>
-                          [{task.id.substring(0, 8)}] {task.title} — {task.status}
-                          {task.is_sample_task ? ' (sample)' : ''}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-
-                {sendTaskMatchesLoading && (
-                  <p className="text-xs text-gray-500 mb-3">Loading matched helpers…</p>
-                )}
-                {!sendTaskMatchesLoading && sendTaskId && sendTaskMatches.length === 0 && (
+                {!previewTaskId && (
                   <p className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-3 py-2 mb-3">
-                    No eligible helpers matched for this task.
+                    Select a task above and click "Preview helper matches" first.
+                  </p>
+                )}
+                {previewTaskId && previewResult.matches.length === 0 && (
+                  <p className="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-3 py-2 mb-3">
+                    No eligible helpers matched for the currently previewed task.
                   </p>
                 )}
 
-                {sendTaskMatches.length > 0 && (
+                {previewResult.matches.length > 0 && (
                   <div className="mb-4">
                     <div className="flex items-center gap-4 mb-3 p-2 bg-gray-50 rounded border border-gray-200">
                       <span className="text-xs font-semibold text-gray-700">Send via:</span>
@@ -4547,58 +5002,21 @@ export default function SuperadminDashboard() {
                     </div>
                     <div className="flex items-center gap-3 mb-2">
                       <span className="text-xs font-semibold text-gray-700">
-                        {selectedSendHelperIds.size} of {sendTaskMatches.length} helper(s) selected
+                        {selectedSendHelperIds.size} of {previewResult.matches.length} helper(s) selected
                       </span>
-                      <button type="button" onClick={() => setSelectedSendHelperIds(new Set(sendTaskMatches.map(m => m.id)))} className="text-xs text-blue-600 hover:underline">Select all</button>
+                      <button type="button" onClick={() => setSelectedSendHelperIds(new Set(previewResult.matches.map((m: any) => m.id)))} className="text-xs text-blue-600 hover:underline">Select all</button>
                       <button type="button" onClick={() => setSelectedSendHelperIds(new Set())} className="text-xs text-gray-500 hover:underline">Deselect all</button>
                     </div>
-                    <div className="max-h-56 overflow-auto rounded border border-gray-200 bg-white">
-                      <table className="min-w-full text-[11px]">
-                        <thead className="bg-gray-50 sticky top-0">
-                          <tr>
-                            <th className="px-2 py-1 w-8"></th>
-                            <th className="px-2 py-1 text-left font-semibold text-gray-700">Helper</th>
-                            <th className="px-2 py-1 text-left font-semibold text-gray-700">Email</th>
-                            <th className="px-2 py-1 text-left font-semibold text-gray-700">Phone</th>
-                            <th className="px-2 py-1 text-left font-semibold text-gray-700">km</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {sendTaskMatches.map((m) => {
-                            const hasPhone = !!(m.phoneNumber || '').trim()
-                            const optedOut = m.smsOptOut === true
-                            return (
-                              <tr
-                                key={m.id}
-                                className={`border-t border-gray-100 cursor-pointer hover:bg-gray-50 ${selectedSendHelperIds.has(m.id) ? 'bg-green-50' : ''}`}
-                                onClick={() => setSelectedSendHelperIds(prev => { const next = new Set(prev); next.has(m.id) ? next.delete(m.id) : next.add(m.id); return next })}
-                              >
-                                <td className="px-2 py-1 text-center">
-                                  <input type="checkbox" checked={selectedSendHelperIds.has(m.id)} onChange={() => {}} className="w-3.5 h-3.5 cursor-pointer" />
-                                </td>
-                                <td className="px-2 py-1 text-gray-900">{m.name}</td>
-                                <td className="px-2 py-1 text-gray-700">{m.email}</td>
-                                <td className="px-2 py-1 text-gray-500">
-                                  {optedOut
-                                    ? <span title={`Opted out of SMS${m.phoneNumber ? ` · ${m.phoneCountryCode ?? ''}${m.phoneNumber}` : ''}`}>🚫</span>
-                                    : hasPhone
-                                      ? <span title={`${m.phoneCountryCode ?? ''}${m.phoneNumber}`}>📱</span>
-                                      : <span className="text-gray-400" title="No phone on file">—</span>}
-                                </td>
-                                <td className="px-2 py-1 text-gray-700">{typeof m.distanceKm === 'number' ? m.distanceKm.toFixed(1) : '—'}</td>
-                              </tr>
-                            )
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
+                    <p className="text-[11px] text-gray-600">
+                      Use the single table above to review scores and select helpers to send.
+                    </p>
                   </div>
                 )}
 
                 <button
                   type="button"
-                  onClick={() => sendTaskId && selectedSendHelperIds.size > 0 && (sendViaEmail || sendViaSms) && sendHelperTaskMatchEmails(sendTaskId, Array.from(selectedSendHelperIds))}
-                  disabled={!sendTaskId || selectedSendHelperIds.size === 0 || sendingMatches || (!sendViaEmail && !sendViaSms)}
+                  onClick={() => previewTaskId && selectedSendHelperIds.size > 0 && (sendViaEmail || sendViaSms) && sendHelperTaskMatchEmails(previewTaskId, Array.from(selectedSendHelperIds))}
+                  disabled={!previewTaskId || selectedSendHelperIds.size === 0 || sendingMatches || (!sendViaEmail && !sendViaSms)}
                   className="inline-flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {sendingMatches ? 'Sending…' : `Send to ${selectedSendHelperIds.size} helper${selectedSendHelperIds.size !== 1 ? 's' : ''}`}
@@ -4607,10 +5025,54 @@ export default function SuperadminDashboard() {
                   <p className="mt-2 text-xs text-gray-700">{sendMatchesMessage}</p>
                 )}
               </div>
+
+              {scoreBreakdownDetails && (
+                <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <p className="font-semibold">
+                      Score breakdown ({scoreBreakdownDetails.source}) - {scoreBreakdownDetails.helperName}
+                      {scoreBreakdownDetails.compositeScore !== null ? ` (Total: ${scoreBreakdownDetails.compositeScore})` : ''}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setScoreBreakdownDetails(null)}
+                      className="px-2 py-1 rounded bg-white border border-blue-200 hover:bg-blue-100 text-[11px]"
+                    >
+                      Close
+                    </button>
+                  </div>
+                  {scoreBreakdownDetails.compositeScore === null ? (
+                    <p>Lexical fallback result (no AI scoring breakdown available).</p>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                      <div className="rounded bg-white border border-blue-100 px-2 py-1">
+                        <div className="font-semibold">Semantic</div>
+                        <div>{Math.round(scoreBreakdownDetails.semanticScore * 100)}%</div>
+                      </div>
+                      <div className="rounded bg-white border border-blue-100 px-2 py-1">
+                        <div className="font-semibold">Distance</div>
+                        <div>{Math.round(scoreBreakdownDetails.distanceScore * 100)}%</div>
+                      </div>
+                      <div className="rounded bg-white border border-blue-100 px-2 py-1">
+                        <div className="font-semibold">Profession</div>
+                        <div>{Math.round(scoreBreakdownDetails.professionScore * 100)}%</div>
+                      </div>
+                      <div className="rounded bg-white border border-blue-100 px-2 py-1">
+                        <div className="font-semibold">Skill</div>
+                        <div>{Math.round(scoreBreakdownDetails.skillScore * 100)}%</div>
+                      </div>
+                      <div className="rounded bg-white border border-blue-100 px-2 py-1">
+                        <div className="font-semibold">Profile</div>
+                        <div>{Math.round(scoreBreakdownDetails.profileScore * 100)}%</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* SMS Log */}
-            <div className="bg-white rounded-lg shadow p-4 sm:p-6 max-w-4xl">
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6 w-full">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900 mb-1">SMS Log</h3>
@@ -5132,6 +5594,7 @@ export default function SuperadminDashboard() {
                     <option value="bid_accepted">Bid Accepted</option>
                     <option value="bid_rejected">Bid Rejected</option>
                     <option value="new_message">New Message</option>
+                    <option value="message_blocked_pre_bid">Message Blocked (Pre-bid)</option>
                     <option value="task_completed">Task Completed</option>
                     <option value="task_cancelled">Task Cancelled</option>
                     <option value="admin_email">Admin Email</option>
@@ -5194,16 +5657,19 @@ export default function SuperadminDashboard() {
                       </th>
                       <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm whitespace-nowrap">Date</th>
                       <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden md:table-cell whitespace-nowrap">Recipient</th>
-                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm whitespace-nowrap">Subject</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden lg:table-cell whitespace-nowrap">Sender</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm min-w-[224px]">Subject</th>
                       <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden lg:table-cell whitespace-nowrap">Type</th>
-                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm whitespace-nowrap">Status</th>
                       <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden xl:table-cell whitespace-nowrap">Error</th>
                       <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm whitespace-nowrap sticky right-[80px] bg-gray-100 z-10">View</th>
                       <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm whitespace-nowrap sticky right-0 bg-gray-100 z-10">Delete</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredEmailLogs.map((log) => (
+                    {filteredEmailLogs.map((log) => {
+                      const recipientProfileId = getEmailLogRecipientProfileId(log)
+                      const senderProfileId = getEmailLogSenderProfileId(log)
+                      return (
                       <tr key={log.id} className={`hover:bg-gray-50 ${selectedEmailLogIds.includes(log.id) ? 'bg-blue-50' : ''}`}>
                         <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
                           <input
@@ -5226,29 +5692,36 @@ export default function SuperadminDashboard() {
                             <span className="text-xs text-gray-500">{new Date(log.created_at).toLocaleTimeString()}</span>
                           </div>
                         </td>
-                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden md:table-cell">
-                          <div>
-                            <div className="font-medium truncate max-w-[150px]" title={log.recipient_email}>{log.recipient_email}</div>
-                            {log.recipient_name && (
-                              <div className="text-xs text-gray-500 truncate max-w-[150px]" title={log.recipient_name}>{log.recipient_name}</div>
+                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden md:table-cell max-w-[22ch]">
+                          <div className="font-medium truncate max-w-[22ch]" title={log.recipient_name || 'Unknown Recipient'}>
+                            {recipientProfileId ? (
+                              <Link href={`/user/${recipientProfileId}`} className="text-primary-600 hover:underline block truncate">
+                                {log.recipient_name || 'Unknown Recipient'}
+                              </Link>
+                            ) : (
+                              <span>{log.recipient_name || 'Unknown Recipient'}</span>
                             )}
                           </div>
                         </td>
-                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
-                          <div className="truncate max-w-[200px] sm:max-w-[300px]" title={log.subject}>{log.subject}</div>
+                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden lg:table-cell max-w-[22ch]">
+                          <div className="font-medium truncate max-w-[22ch]" title={getEmailLogSenderName(log)}>
+                            {senderProfileId ? (
+                              <Link href={`/user/${senderProfileId}`} className="text-primary-600 hover:underline block truncate">
+                                {getEmailLogSenderName(log)}
+                              </Link>
+                            ) : (
+                              <span>{getEmailLogSenderName(log)}</span>
+                            )}
+                          </div>
                         </td>
-                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden lg:table-cell">
+                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm min-w-[224px]">
+                          <div className="break-words" title={log.subject}>{log.subject}</div>
+                        </td>
+                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden lg:table-cell max-w-[22ch]">
                           <span className="px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-800 whitespace-nowrap">
-                            {log.email_type}
-                          </span>
-                        </td>
-                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
-                          <span className={`px-2 py-1 rounded text-xs font-semibold whitespace-nowrap ${
-                            log.status === 'sent' ? 'bg-green-100 text-green-800' :
-                            log.status === 'failed' ? 'bg-red-100 text-red-800' :
-                            'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {log.status}
+                            <span className="inline-block max-w-[22ch] truncate align-bottom" title={log.email_type}>
+                              {log.email_type}
+                            </span>
                           </span>
                         </td>
                         <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm text-red-600 hidden xl:table-cell">
@@ -5280,7 +5753,7 @@ export default function SuperadminDashboard() {
                           </button>
                         </td>
                       </tr>
-                    ))}
+                    )})}
                   </tbody>
                 </table>
               </div>

@@ -91,10 +91,29 @@ export default function HelperOnboardingPage() {
     }
 
     if (data.user) {
+      const foundingBadges = ['Founding Tasker', 'Founding Helper']
       await supabase
         .from('profiles')
-        .update({ terms_accepted_at: new Date().toISOString() })
+        .update({
+          terms_accepted_at: new Date().toISOString(),
+          is_tasker: true,
+          is_helper: true,
+          badges: foundingBadges,
+        })
         .eq('id', data.user.id)
+
+      // Send role-based welcome template email (skip silently if template does not exist)
+      fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'template_email',
+          recipientEmail: email,
+          recipientName: fullName,
+          templateType: 'helper_welcome',
+          relatedUserId: data.user.id,
+        }),
+      }).catch(() => {})
 
       if (data.session) {
         router.push('/profile?setup=required')

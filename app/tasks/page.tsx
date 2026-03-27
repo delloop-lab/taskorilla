@@ -9,7 +9,6 @@ import { format } from 'date-fns'
 import { calculateDistance, geocodePostcode } from '@/lib/geocoding'
 import { isProfileComplete } from '@/lib/profile-utils'
 import UserProfileModal from '@/components/UserProfileModal'
-import TrafficTracker from '@/components/TrafficTracker'
 import { getPendingReviews } from '@/lib/review-utils'
 import { STANDARD_PROFESSIONS } from '@/lib/profession-constants'
 import ReportModal from '@/components/ReportModal'
@@ -19,6 +18,7 @@ import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
 import CompactUserRatingsDisplay from '@/components/CompactUserRatingsDisplay'
 import { getCachedTasks, setCachedTasks, clearTasksCache } from '@/lib/tasks-cache'
 import { buildTaskSlug, deriveLocationCity } from '@/lib/task-slug'
+import { getDisplayName } from '@/lib/name-privacy'
 
 // Debug logging - only in development
 const isDev = process.env.NODE_ENV === 'development'
@@ -26,6 +26,17 @@ const debugLog = (...args: any[]) => isDev && console.log(...args)
 const debugWarn = (...args: any[]) => isDev && console.warn(...args)
 
 type FilterType = 'all' | 'open' | 'my_tasks' | 'new' | 'my_bids'
+
+function getSkeletonCardCount() {
+  if (typeof window === 'undefined') return 8
+  const viewportHeight = window.innerHeight
+  const viewportWidth = window.innerWidth
+  const columns = viewportWidth >= 768 ? 2 : 1
+  const reservedHeight = 260 // header, tabs, spacing
+  const cardHeight = 280 // approximate card height incl. gap
+  const visibleRows = Math.max(2, Math.ceil((viewportHeight - reservedHeight) / cardHeight))
+  return visibleRows * columns + columns
+}
 
 // Skeleton card component for loading state — mirrors full view card layout
 function TaskSkeletonCard() {
@@ -82,6 +93,25 @@ function TaskSkeletonCard() {
   )
 }
 
+function TaskSkeletonGrid() {
+  const [skeletonCount, setSkeletonCount] = useState(8)
+
+  useEffect(() => {
+    const updateCount = () => setSkeletonCount(getSkeletonCardCount())
+    updateCount()
+    window.addEventListener('resize', updateCount)
+    return () => window.removeEventListener('resize', updateCount)
+  }, [])
+
+  return (
+    <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-2">
+      {Array.from({ length: skeletonCount }).map((_, i) => (
+        <TaskSkeletonCard key={i} />
+      ))}
+    </div>
+  )
+}
+
 // Loading fallback for Suspense - show immediately with realistic skeleton
 function TasksPageLoading() {
   return (
@@ -103,11 +133,7 @@ function TasksPageLoading() {
       </div>
       
       {/* Task cards skeleton */}
-      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-2">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <TaskSkeletonCard key={i} />
-        ))}
-      </div>
+      <TaskSkeletonGrid />
     </div>
   )
 }
@@ -1214,18 +1240,13 @@ function TasksPageContent() {
         </div>
         
         {/* Task cards skeleton */}
-        <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-2">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <TaskSkeletonCard key={i} />
-          ))}
-        </div>
+        <TaskSkeletonGrid />
       </div>
     )
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <TrafficTracker pageName="tasks" />
       
       {/* Pending Reviews Banner */}
       {pendingReviews.length > 0 && !showPendingReviews && (
@@ -1745,7 +1766,7 @@ function TasksPageContent() {
                 {viewMode === 'compact' ? (
                   <div className="p-4">
                     {/* Title - first line */}
-                    <h3 className="text-base font-semibold text-gray-900 mb-1 line-clamp-2">{task.title}</h3>
+                    <h3 className="text-base font-semibold text-gray-900 mb-1 line-clamp-1">{task.title}</h3>
                     
                     {/* Short description */}
                     {task.description && (
@@ -1816,7 +1837,13 @@ function TasksPageContent() {
                         {(task as any).assigned_helper.avatar_url && (
                           <img src={(task as any).assigned_helper.avatar_url} alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
                         )}
-                        <span className="truncate font-medium text-gray-600">{(task as any).assigned_helper.full_name || (task as any).assigned_helper.email}</span>
+                        <span className="truncate font-medium text-gray-600">
+                          {getDisplayName({
+                            fullName: (task as any).assigned_helper.full_name,
+                            email: (task as any).assigned_helper.email,
+                            revealFull: false,
+                          })}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -1842,7 +1869,7 @@ function TasksPageContent() {
                         <img src={task.image_url || (task.required_professions && task.required_professions.length > 0 ? '/default_task_image_pro.png' : '/default_task_image.png')} alt={task.title} className="w-full h-full object-cover" />
                       </div>
                       <div className="min-w-0">
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-0.5 break-words line-clamp-2">{task.title}</h3>
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-0.5 break-words line-clamp-1">{task.title}</h3>
                         <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                           <p className="text-xl sm:text-2xl font-bold text-primary-600">{task.budget ? `€${task.budget}` : t('tasks.quote')}</p>
                           <div className="flex items-center gap-1.5 flex-wrap justify-end">
@@ -1879,7 +1906,11 @@ function TasksPageContent() {
                                 {(task as any).assigned_helper.avatar_url && (
                                   <img src={(task as any).assigned_helper.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
                                 )}
-                                {(task as any).assigned_helper.full_name || (task as any).assigned_helper.email}
+                                {getDisplayName({
+                                  fullName: (task as any).assigned_helper.full_name,
+                                  email: (task as any).assigned_helper.email,
+                                  revealFull: false,
+                                })}
                               </button>
                             </div>
                           )}
@@ -1943,7 +1974,7 @@ function TasksPageContent() {
                         </div>
                         {/* Title, price, badges */}
                         <div className="min-w-0">
-                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-0.5 break-words line-clamp-2">{task.title}</h3>
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-0.5 break-words line-clamp-1">{task.title}</h3>
                           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                             <p className="text-xl sm:text-2xl font-bold text-primary-600">{task.budget ? `€${task.budget}` : t('tasks.quote')}</p>
                             <div className="flex items-center gap-1.5 flex-wrap justify-end">

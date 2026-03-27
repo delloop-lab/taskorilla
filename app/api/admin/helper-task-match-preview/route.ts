@@ -7,6 +7,7 @@ import {
   MatchingTask,
   matchHelpersForTask,
 } from '@/lib/helper-matching'
+import { scoreHelpersForTask } from '@/lib/ai-matching'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
     const { data: taskRow, error: taskError } = await supabase
       .from('tasks')
       .select(
-        'id, title, budget, required_skills, latitude, longitude, created_by, location, is_sample_task, status, hidden_by_admin, hidden_reason, hidden_at'
+        'id, title, description, budget, required_skills, required_professions, latitude, longitude, created_by, location, is_sample_task, status, hidden_by_admin, hidden_reason, hidden_at'
       )
       .eq('id', taskId)
       .single()
@@ -105,6 +106,8 @@ export async function GET(request: NextRequest) {
         ? taskRow.budget
         : undefined
 
+    const reqProfessions = Array.isArray(taskRow.required_professions) ? taskRow.required_professions : []
+
     const matchingTask: MatchingTask = {
       id: taskRow.id,
       title: taskRow.title ?? '(no title)',
@@ -113,13 +116,15 @@ export async function GET(request: NextRequest) {
       lon: typeof taskRow.longitude === 'number' ? taskRow.longitude : undefined,
       amount,
       createdBy: taskRow.created_by ?? undefined,
+      description: (taskRow.description ?? '') as string,
+      requiredProfessions: reqProfessions,
     }
 
     // Load all helpers eligible for matching
     const { data: helpersData, error: helpersError } = await supabase
       .from('profiles')
       .select(
-        'id, full_name, email, phone_number, phone_country_code, sms_opt_out, skills, services_offered, professions, preferred_max_distance_km, email_preference, latitude, longitude, is_helper'
+        'id, full_name, email, role, bio, phone_number, phone_country_code, sms_opt_out, skills, services_offered, professions, preferred_max_distance_km, email_preference, latitude, longitude, is_helper'
       )
       .eq('is_helper', true)
       .limit(500)
@@ -129,7 +134,10 @@ export async function GET(request: NextRequest) {
     }
 
     const helpers: MatchingHelper[] =
-      (helpersData as any[] | null)?.map(row => {
+      (helpersData as any[] | null)?.filter(row => {
+        const role = (row.role ?? '').toString().toLowerCase()
+        return role !== 'admin' && role !== 'superadmin'
+      }).map(row => {
         const helperLat =
           row.latitude !== null && row.latitude !== undefined
             ? Number(row.latitude)
@@ -171,18 +179,32 @@ export async function GET(request: NextRequest) {
           email,
           emailPreference,
           preferredMaxDistanceKm,
+          bio: (row.bio ?? '') as string,
+          professions: Array.isArray(row.professions) ? row.professions : [],
           phoneNumber: row.phone_number ?? null,
           phoneCountryCode: row.phone_country_code ?? null,
           smsOptOut: row.sms_opt_out ?? false,
         } as MatchingHelper
       }) ?? []
 
-    const matches: EligibleHelper[] = matchHelpersForTask(matchingTask, helpers)
-
-    return NextResponse.json({
-      task: matchingTask,
-      matches,
-    })
+    // Try AI-powered scoring; fall back to lexical matching if it fails
+    try {
+      const scoreResult = await scoreHelpersForTask(matchingTask, helpers)
+      return NextResponse.json({
+        task: matchingTask,
+        matches: scoreResult.helpers,
+        aiClassification: scoreResult.aiClassification,
+        matchMode: 'ai',
+      })
+    } catch (aiError: any) {
+      console.error('[helper-task-match-preview] AI scoring failed, falling back to lexical:', aiError.message)
+      const matches: EligibleHelper[] = matchHelpersForTask(matchingTask, helpers)
+      return NextResponse.json({
+        task: matchingTask,
+        matches,
+        matchMode: 'lexical',
+      })
+    }
   } catch (error: any) {
     console.error('Error in helper-task-match-preview API:', error)
     return NextResponse.json(

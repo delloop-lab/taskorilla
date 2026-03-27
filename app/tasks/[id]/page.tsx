@@ -16,6 +16,7 @@ import { User as UserIcon } from 'lucide-react'
 import { compressTaskImage } from '@/lib/image-utils'
 import { useUserRatings, getUserRatingsById, type UserRatingsSummary } from '@/lib/useUserRatings'
 import CompactUserRatingsDisplay from '@/components/CompactUserRatingsDisplay'
+import { canRevealFullNameForTask, getDisplayName, toFirstNameInitial } from '@/lib/name-privacy'
 
 const PAYMENT_TIMEOUT_HOURS = typeof process.env.NEXT_PUBLIC_PAYMENT_TIMEOUT_HOURS !== 'undefined'
   ? parseInt(process.env.NEXT_PUBLIC_PAYMENT_TIMEOUT_HOURS, 10) || 48
@@ -2449,6 +2450,12 @@ export default function TaskDetailPage() {
   const hasBid = user && bids.some(bid => bid.user_id === user.id)
   const userHasHelperRole = userProfile?.is_helper === true
   const canBid = user && userHasHelperRole && !isTaskOwner && task.status === 'open' && !hasBid
+  const acceptedBidUserIds = bids.filter(b => b.status === 'accepted').map(b => b.user_id)
+  const revealFullNameForTask = canRevealFullNameForTask({
+    viewerId: user?.id,
+    taskCreatorId: task?.created_by,
+    acceptedBidUserIds,
+  })
   const helperHasMarkedComplete =
     Boolean(user && task.assigned_to === user.id) &&
     progressUpdates.some((update: any) =>
@@ -2618,7 +2625,11 @@ export default function TaskDetailPage() {
                       {task.user.avatar_url ? (
                         <img
                           src={task.user.avatar_url}
-                          alt={task.user.full_name || task.user.email}
+                          alt={getDisplayName({
+                            fullName: task.user.full_name,
+                            email: task.user.email,
+                            revealFull: revealFullNameForTask,
+                          })}
                           className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover flex-shrink-0"
                         />
                       ) : (
@@ -2626,7 +2637,13 @@ export default function TaskDetailPage() {
                           <UserIcon className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
                         </div>
                       )}
-                      <span className="truncate">{task.user.full_name || task.user.email}</span>
+                      <span className="truncate">
+                        {getDisplayName({
+                          fullName: task.user.full_name,
+                          email: task.user.email,
+                          revealFull: revealFullNameForTask,
+                        })}
+                      </span>
                     </button>
                     {posterRatingsSummary ? (
                       <CompactUserRatingsDisplay 
@@ -2768,13 +2785,27 @@ export default function TaskDetailPage() {
             {assignedHelper ? (
               <div className="flex items-center gap-2 mt-0.5">
                 {assignedHelper.avatar_url ? (
-                  <img src={assignedHelper.avatar_url} alt={assignedHelper.full_name || ''} className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+                  <img
+                    src={assignedHelper.avatar_url}
+                    alt={getDisplayName({
+                      fullName: assignedHelper.full_name,
+                      email: assignedHelper.email,
+                      revealFull: revealFullNameForTask,
+                    })}
+                    className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                  />
                 ) : (
                   <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
                     <svg className="w-3.5 h-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                   </div>
                 )}
-                <p className="text-base sm:text-lg font-medium">{assignedHelper.full_name || assignedHelper.email}</p>
+                <p className="text-base sm:text-lg font-medium">
+                  {getDisplayName({
+                    fullName: assignedHelper.full_name,
+                    email: assignedHelper.email,
+                    revealFull: revealFullNameForTask,
+                  })}
+                </p>
               </div>
             ) : (
               <p className="text-base sm:text-lg font-medium text-gray-400">Not assigned</p>
@@ -2911,7 +2942,11 @@ export default function TaskDetailPage() {
 
         {isTaskOwner && task.assigned_to && task.status === 'open' && (task.budget == null || task.budget === 0) && !bids.some(b => b.user_id === task.assigned_to) && (
           <div className="mb-4 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-            Waiting for {task.assigned_to_user?.full_name || 'the helper'} to submit a quote. You&apos;ll be able to accept and pay once they do.
+            Waiting for {getDisplayName({
+              fullName: task.assigned_to_user?.full_name,
+              email: task.assigned_to_user?.email,
+              revealFull: revealFullNameForTask,
+            }) || 'the helper'} to submit a quote. You&apos;ll be able to accept and pay once they do.
           </div>
         )}
         {isTaskOwner && (
@@ -3102,14 +3137,22 @@ export default function TaskDetailPage() {
                         {update.user?.avatar_url && (
                           <img
                             src={update.user.avatar_url}
-                            alt={update.user.full_name || 'User'}
+                            alt={getDisplayName({
+                              fullName: update.user.full_name,
+                              email: update.user.email,
+                              revealFull: revealFullNameForTask,
+                            })}
                             className="w-8 h-8 rounded-full object-cover"
                           />
                         )}
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-medium text-gray-900">
-                              {update.user?.full_name || 'Helper'}
+                              {getDisplayName({
+                                fullName: update.user?.full_name,
+                                email: update.user?.email,
+                                revealFull: revealFullNameForTask,
+                              }) || 'Helper'}
                             </span>
                             {isRevisionRequested && (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-800 border border-amber-200">
@@ -3415,11 +3458,19 @@ export default function TaskDetailPage() {
                                     {bid.user?.avatar_url && (
                                       <img
                                         src={bid.user.avatar_url}
-                                        alt={bid.user.full_name || bid.user.email}
+                                        alt={getDisplayName({
+                                          fullName: bid.user.full_name,
+                                          email: bid.user.email,
+                                          revealFull: revealFullNameForTask,
+                                        })}
                                         className="w-6 h-6 rounded-full object-cover"
                                       />
                                     )}
-                                    <span>{bid.user?.full_name || bid.user?.email}</span>
+                                    <span>{getDisplayName({
+                                      fullName: bid.user?.full_name,
+                                      email: bid.user?.email,
+                                      revealFull: revealFullNameForTask,
+                                    })}</span>
                                   </Link>
                                   <span className={`text-xs px-2 py-0.5 rounded ${
                                     bid.user?.professions && bid.user.professions.length > 0 
@@ -3442,17 +3493,29 @@ export default function TaskDetailPage() {
                                   {bid.user?.avatar_url && (
                                     <img
                                       src={bid.user.avatar_url}
-                                      alt={bid.user.full_name || bid.user.email}
+                                      alt={getDisplayName({
+                                        fullName: bid.user.full_name,
+                                        email: bid.user.email,
+                                        revealFull: revealFullNameForTask,
+                                      })}
                                       className="w-6 h-6 rounded-full object-cover"
                                     />
                                   )}
-                                  <span>{bid.user?.full_name || bid.user?.email}</span>
+                                  <span>{getDisplayName({
+                                    fullName: bid.user?.full_name,
+                                    email: bid.user?.email,
+                                    revealFull: revealFullNameForTask,
+                                  })}</span>
                                 </button>
                               )}
                             </div>
                           ) : (
                             <p className="font-semibold text-gray-900">
-                              {bid.user?.full_name || bid.user?.email}
+                              {getDisplayName({
+                                fullName: bid.user?.full_name,
+                                email: bid.user?.email,
+                                revealFull: revealFullNameForTask,
+                              })}
                             </p>
                           )}
                           {bid.user?.rating && (
@@ -3546,7 +3609,7 @@ export default function TaskDetailPage() {
                           <div className="mt-3 border-t border-gray-100 pt-3">
                             <div className="flex items-center justify-between mb-3">
                               <span className="text-sm font-medium text-gray-700">
-                                Reviews for {bid.user?.full_name?.split(' ')[0] || 'this helper'}
+                                Reviews for {toFirstNameInitial(bid.user?.full_name, bid.user?.email) || 'this helper'}
                               </span>
                               <button
                                 onClick={(e) => {
@@ -3577,7 +3640,12 @@ export default function TaskDetailPage() {
                                     </div>
                                     <p className="text-gray-700 text-sm">{review.comment}</p>
                                     {review.reviewer?.full_name && (
-                                      <p className="text-xs text-gray-400 mt-1">— {review.reviewer.full_name}</p>
+                                      <p className="text-xs text-gray-400 mt-1">
+                                        — {getDisplayName({
+                                          fullName: review.reviewer.full_name,
+                                          revealFull: revealFullNameForTask,
+                                        })}
+                                      </p>
                                     )}
                                   </div>
                                 ))}
@@ -3615,7 +3683,7 @@ export default function TaskDetailPage() {
                           <div className="mt-3 border-t border-gray-100 pt-3">
                             <div className="flex items-center justify-between mb-3">
                               <span className="text-sm font-medium text-gray-700">
-                                Badges earned by {bid.user?.full_name?.split(' ')[0] || 'this helper'}
+                                Badges earned by {toFirstNameInitial(bid.user?.full_name, bid.user?.email) || 'this helper'}
                               </span>
                               <button
                                 onClick={(e) => {
@@ -3794,8 +3862,16 @@ export default function TaskDetailPage() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-1">Leave a Review</h3>
                 <p className="text-sm text-gray-600 mb-4">
                   Help others by sharing your experience with {isTasker
-                    ? (task.assigned_to_user?.full_name || 'the helper')
-                    : (task.user?.full_name || 'the tasker')}. Your feedback helps build trust in the community.
+                    ? (getDisplayName({
+                        fullName: task.assigned_to_user?.full_name,
+                        email: task.assigned_to_user?.email,
+                        revealFull: revealFullNameForTask,
+                      }) || 'the helper')
+                    : (getDisplayName({
+                        fullName: task.user?.full_name,
+                        email: task.user?.email,
+                        revealFull: revealFullNameForTask,
+                      }) || 'the tasker')}. Your feedback helps build trust in the community.
                 </p>
               </div>
             </div>
@@ -3853,7 +3929,11 @@ export default function TaskDetailPage() {
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <p className="text-sm font-semibold text-gray-900">
-                      {review.reviewer?.full_name || review.reviewer?.email || 'Anonymous'}
+                      {getDisplayName({
+                        fullName: review.reviewer?.full_name,
+                        email: review.reviewer?.email,
+                        revealFull: revealFullNameForTask,
+                      }) || 'Anonymous'}
                     </p>
                     <p className="text-xs text-gray-500">
                       {format(new Date(review.created_at), 'MMM d, yyyy')}
@@ -3868,7 +3948,11 @@ export default function TaskDetailPage() {
                 </div>
                 {review.comment && <p className="text-gray-700">{review.comment}</p>}
                 <p className="text-xs text-gray-500 mt-2">
-                  Review for {review.reviewee?.full_name || review.reviewee?.email || 'user'}
+                  Review for {getDisplayName({
+                    fullName: review.reviewee?.full_name,
+                    email: review.reviewee?.email,
+                    revealFull: revealFullNameForTask,
+                  }) || 'user'}
                 </p>
               </div>
             ))}

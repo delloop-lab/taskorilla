@@ -10,6 +10,7 @@ import { formatRate } from '@/lib/currency'
 import { User as UserIcon, Star } from 'lucide-react'
 import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
 import CompactUserRatingsDisplay from '@/components/CompactUserRatingsDisplay'
+import { getDisplayName } from '@/lib/name-privacy'
 
 interface FeaturedHelpersProps {
   searchTerm?: string
@@ -203,7 +204,7 @@ export default function FeaturedHelpers({ searchTerm = '', selectedSkill = null,
                     {helper.avatar_url ? (
                       <img
                         src={helper.avatar_url}
-                        alt={helper.full_name || 'Helper'}
+                        alt={getDisplayName({ fullName: helper.full_name, email: helper.email, revealFull: false })}
                         className="h-full w-full object-cover rounded-full"
                         loading="lazy"
                         decoding="async"
@@ -217,7 +218,7 @@ export default function FeaturedHelpers({ searchTerm = '', selectedSkill = null,
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-semibold text-gray-900 truncate">
-                        {helper.full_name || 'Helper'}
+                        {getDisplayName({ fullName: helper.full_name, email: helper.email, revealFull: false })}
                       </h3>
                       {helper.is_featured && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold whitespace-nowrap">

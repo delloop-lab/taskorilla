@@ -96,6 +96,19 @@ const OFF_PLATFORM_PHRASES = [
   'talk on whats', 'chat on whats',
   'write me on', 'write to me on',
   'ring me', 'buzz me', 'ping me on',
+  // Portuguese equivalents
+  'manda mensagem', 'manda-me mensagem', 'envia mensagem',
+  'liga me', 'liga-me', 'liga para mim', 'liga para me',
+  'fala comigo', 'fala comigo no', 'fala comigo em',
+  'contacta me', 'contacta-me', 'entra em contacto',
+  'entra em contato', 'fale comigo', 'fala no',
+  'encontra me', 'encontra-me', 'procura me', 'procura-me',
+  'adiciona me', 'adiciona-me', 'segue me', 'segue-me',
+  'o meu numero', 'meu numero', 'o meu telemovel', 'meu telemovel',
+  'o meu contacto', 'meu contacto', 'meu contato',
+  'fora da app', 'fora do app', 'fora da plataforma', 'fora da taskorilla',
+  'offplatforma', 'off plataforma',
+  'vamos falar no', 'vamos falar em', 'vamos conversar no', 'vamos conversar em',
 ]
 
 // ─── Payment / currency (kept from original) ────────────────────────────────
@@ -121,6 +134,86 @@ const PAYMENT_WORDS = [
   'direct payment', 'pay directly', 'pay direct',
   'cent', 'cents', 'pence', 'quid', 'buck', 'bucks',
   'mbway', 'mb way', 'multibanco',
+  // Portuguese equivalents
+  'pagamento', 'pagar', 'paga me', 'paga-me', 'paga te', 'paga-te',
+  'dinheiro', 'numerario', 'numerário',
+  'transferencia', 'transferência', 'transferir',
+  'conta bancaria', 'conta bancária', 'dados bancarios', 'dados bancários',
+  'nib', 'iban', 'swift',
+  'cartao', 'cartão', 'cartao de credito', 'cartão de crédito', 'cartao de debito', 'cartão de débito',
+  'fatura', 'factura', 'faturacao', 'faturação',
+  'pagar por fora', 'pagamento por fora', 'pagamento direto', 'pagamento directo',
+  'euro', 'euros', 'centimo', 'cêntimo', 'centimos', 'cêntimos',
+]
+
+// ─── Addresses / location sharing ────────────────────────────────────────────
+const ADDRESS_PATTERNS = [
+  // Portuguese street formats: "Rua X", "Avenida Y", "Travessa Z", etc.
+  /\b(rua|r\.|avenida|av\.|travessa|tv\.|largo|praça|praca|estrada|estr\.|urbanizacao|urbanização|quint[aao]|beco|alameda|rotunda)\s+[a-zA-ZÀ-ÿ0-9'.,\-\s]{2,60}\b/gi,
+  // e.g. "123 Main Street", "45B King Rd", "12-14 High Avenue"
+  /\b\d{1,5}[a-zA-Z]?\s*(?:[-/]\s*\d{1,5}[a-zA-Z]?)?\s+[a-zA-Z0-9'.,\-\s]{2,40}\b(street|st|road|rd|avenue|ave|lane|ln|drive|dr|court|ct|crescent|close|way|place|pl|boulevard|blvd|terrace|ter|square|sq|parkway|pkwy)\b/gi,
+  // Apartment / unit style
+  /\b(?:apt|apartment|unit|suite|flat)\s*#?\s*[a-zA-Z0-9\-]{1,10}\b/gi,
+  // Portuguese apartment/floor notation
+  /\b(?:andar|dto|esq|frac[cç][aã]o|fra[cç][aã]o|lote|bloco)\s*[a-zA-Z0-9\-]{0,12}\b/gi,
+  // Eircode-like (Ireland): A65 F4E2
+  /\b[a-zA-Z]\d{2}\s?[a-zA-Z0-9]{4}\b/g,
+  // UK postcode style: SW1A 1AA
+  /\b[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}\b/gi,
+  // Portuguese postal code: 1234-567
+  /\b\d{4}-\d{3}\b/g,
+]
+
+const ADDRESS_INTENT_PHRASES = [
+  'my address is',
+  'address is',
+  'come to my house',
+  'come to my home',
+  'meet me at',
+  'pick me up at',
+  'drop it at',
+  'send it to',
+  'post it to',
+  'deliver to my address',
+  'morada',
+  'a minha morada',
+  'minha morada',
+  'endereço',
+  'meu endereço',
+  'a minha casa',
+  'vem ter comigo',
+  'encontra-me em',
+  'encontramo-nos em',
+  'passa em',
+  'entrego em',
+  'leva a',
+  'rua',
+  'avenida',
+  'travessa',
+  'estrada',
+]
+
+const OFF_PLATFORM_ESCALATION_PHRASES = [
+  'i will see you',
+  'see you there',
+  'see you soon',
+  'look me up',
+  'look us up',
+  'check facebook',
+  'check my facebook',
+  'check instagram',
+  'check my instagram',
+  'check whatsapp',
+  'find me on facebook',
+  'find me on instagram',
+  'find me on whatsapp',
+  'procura-me',
+  've no facebook',
+  'vê no facebook',
+  'vê no insta',
+  've no insta',
+  'fala comigo no',
+  'manda mensagem no',
 ]
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -173,6 +266,7 @@ export interface ContentCheckResult {
   containsEmail: boolean
   containsPhone: boolean
   containsPaymentInfo: boolean
+  containsAddress: boolean
   containsUrl: boolean
   containsSocialHandle: boolean
   containsMessagingApp: boolean
@@ -186,6 +280,7 @@ const CLEAN: ContentCheckResult = {
   containsEmail: false,
   containsPhone: false,
   containsPaymentInfo: false,
+  containsAddress: false,
   containsUrl: false,
   containsSocialHandle: false,
   containsMessagingApp: false,
@@ -262,6 +357,14 @@ export function checkForContactInfo(content: string): ContentCheckResult {
   if (collapsedIntent) {
     return blocked({ containsOffPlatformIntent: true }, `obfuscated off-platform intent: ${collapsedIntent}`)
   }
+  const escalationIntent = containsPhrase(lower, OFF_PLATFORM_ESCALATION_PHRASES)
+  if (escalationIntent) {
+    return blocked({ containsOffPlatformIntent: true }, `off-platform escalation: ${escalationIntent}`)
+  }
+  const collapsedEscalationIntent = containsPhrase(collapsed, OFF_PLATFORM_ESCALATION_PHRASES)
+  if (collapsedEscalationIntent) {
+    return blocked({ containsOffPlatformIntent: true }, `obfuscated off-platform escalation: ${collapsedEscalationIntent}`)
+  }
 
   // ── 8. Payment / currency ──────────────────────────────────────────────
   const hasCurrencySymbol = CURRENCY_SYMBOLS.some(s => raw.includes(s))
@@ -272,6 +375,19 @@ export function checkForContactInfo(content: string): ContentCheckResult {
       { containsPaymentInfo: true },
       paymentWord ? `payment: ${paymentWord}` : 'currency reference',
     )
+  }
+
+  // ── 9. Address sharing ─────────────────────────────────────────────────
+  if (matchesAny(raw, ADDRESS_PATTERNS)) {
+    return blocked({ containsAddress: true }, 'address pattern')
+  }
+  const addressIntent = containsPhrase(lower, ADDRESS_INTENT_PHRASES)
+  if (addressIntent) {
+    return blocked({ containsAddress: true }, `address intent: ${addressIntent}`)
+  }
+  const collapsedAddressIntent = containsPhrase(collapsed, ADDRESS_INTENT_PHRASES)
+  if (collapsedAddressIntent) {
+    return blocked({ containsAddress: true }, `obfuscated address intent: ${collapsedAddressIntent}`)
   }
 
   return CLEAN

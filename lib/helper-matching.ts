@@ -8,6 +8,8 @@ export interface MatchingTask {
   lon?: number
   amount?: number
   createdBy?: string
+  description?: string
+  requiredProfessions?: string[]
 }
 
 export interface MatchingHelper {
@@ -20,13 +22,24 @@ export interface MatchingHelper {
   email: string
   emailPreference: EmailPreference
   preferredMaxDistanceKm?: number | null
+  bio?: string
+  professions?: string[]
 }
 
 export interface EligibleHelper extends MatchingHelper {
   distanceKm?: number
 }
 
-const haversineKm = (
+export interface ScoredHelper extends EligibleHelper {
+  compositeScore: number
+  semanticScore: number
+  distanceScore: number
+  professionScore: number
+  skillScore: number
+  profileScore: number
+}
+
+export const haversineKm = (
   lat1: number,
   lon1: number,
   lat2: number,

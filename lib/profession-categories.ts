@@ -78,6 +78,17 @@ export const PROFESSION_CATEGORIES: ProfessionCategory[] = [
     ],
   },
   {
+    name: 'Designer',
+    subs: [
+      'Graphic Designer',
+      'UI/UX Designer',
+      'Web Designer',
+      'Product Designer',
+      'Brand Designer',
+      'Interior Designer',
+    ],
+  },
+  {
     name: 'Business & Professional Services',
     subs: [
       'Virtual Assistant',

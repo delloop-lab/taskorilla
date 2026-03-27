@@ -14,8 +14,9 @@ export default function Footer({ variant = 'default' }: FooterProps) {
   const [version, setVersion] = useState<string>('Beta V0.0.0')
 
   useEffect(() => {
+    const versionUrl = `/api/version?v=${Date.now()}`
     // Fetch version dynamically from API to avoid caching issues
-    fetch('/api/version', { cache: 'no-store' })
+    fetch(versionUrl, { cache: 'no-store' })
       .then(res => res.json())
       .then(data => setVersion(`Beta V${data.version}`))
       .catch(() => {

@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { Conversation } from '@/lib/types'
 import { format } from 'date-fns'
 import Link from 'next/link'
+import { canRevealFullNameForTask, getDisplayName } from '@/lib/name-privacy'
 
 export default function MessagesPage() {
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -78,7 +79,7 @@ export default function MessagesPage() {
 
       const [tasksResult, profilesResult] = await Promise.all([
         taskIds.length > 0
-          ? supabase.from('tasks').select('id, title').in('id', taskIds)
+          ? supabase.from('tasks').select('id, title, created_by, assigned_to, status, payment_status').in('id', taskIds)
           : Promise.resolve({ data: [] }),
         supabase.from('profiles').select('id, email, full_name, avatar_url').in('id', participantIds)
       ])
@@ -149,6 +150,17 @@ export default function MessagesPage() {
           {conversations.map((conv) => {
             const otherParticipant =
               conv.participant1_id === user?.id ? conv.participant2 : conv.participant1
+            const taskForConversation = conv.task as any
+            const acceptedBidUserIds =
+              taskForConversation?.assigned_to &&
+              ['pending_payment', 'in_progress', 'completed'].includes(taskForConversation?.status)
+                ? [taskForConversation.assigned_to]
+                : []
+            const revealFullName = canRevealFullNameForTask({
+              viewerId: user?.id,
+              taskCreatorId: taskForConversation?.created_by,
+              acceptedBidUserIds,
+            })
 
             const hasUnread = (conv as any).unread_count > 0
 
@@ -167,7 +179,11 @@ export default function MessagesPage() {
                   <div className="flex-1 min-w-0" style={{ overflow: 'hidden' }}>
                     <div className="flex items-center space-x-3 mb-2 flex-wrap" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                       <h3 className={`text-lg font-semibold ${hasUnread ? 'text-blue-900' : 'text-gray-900'}`} style={{ wordBreak: 'break-word' }}>
-                        {otherParticipant?.full_name || otherParticipant?.email}
+                        {getDisplayName({
+                          fullName: otherParticipant?.full_name,
+                          email: otherParticipant?.email,
+                          revealFull: revealFullName,
+                        })}
                       </h3>
                       {hasUnread && (
                         <span className="bg-blue-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center min-w-[20px] px-1 flex-shrink-0">

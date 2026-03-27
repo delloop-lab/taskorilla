@@ -13,6 +13,7 @@ import { useUserRatings, getUserRatingsById } from '@/lib/useUserRatings'
 import UserRatingsDisplay from '@/components/UserRatingsDisplay'
 import { formatRate } from '@/lib/currency'
 import { useLanguage } from '@/lib/i18n'
+import { getDisplayName } from '@/lib/name-privacy'
 
 function UserProfileContent() {
   const params = useParams()
@@ -33,6 +34,7 @@ function UserProfileContent() {
   const [showQrCode, setShowQrCode] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [canMessageUser, setCanMessageUser] = useState(false)
+  const [canViewCompanyName, setCanViewCompanyName] = useState(false)
   const [reportModalOpen, setReportModalOpen] = useState(false)
   const [modalState, setModalState] = useState<{
     isOpen: boolean
@@ -127,6 +129,47 @@ function UserProfileContent() {
     if (profile) {
       checkPermission()
     }
+  }, [currentUserId, profile])
+
+  useEffect(() => {
+    const checkCompanyVisibility = async () => {
+      if (!profile) {
+        setCanViewCompanyName(false)
+        return
+      }
+      if (!currentUserId) {
+        setCanViewCompanyName(false)
+        return
+      }
+      if (currentUserId === profile.id) {
+        setCanViewCompanyName(true)
+        return
+      }
+
+      const acceptedStatuses = ['pending_payment', 'assigned', 'in_progress', 'completed']
+      const [forward, reverse] = await Promise.all([
+        supabase
+          .from('tasks')
+          .select('id')
+          .eq('created_by', currentUserId)
+          .eq('assigned_to', profile.id)
+          .in('status', acceptedStatuses)
+          .limit(1),
+        supabase
+          .from('tasks')
+          .select('id')
+          .eq('created_by', profile.id)
+          .eq('assigned_to', currentUserId)
+          .in('status', acceptedStatuses)
+          .limit(1),
+      ])
+
+      setCanViewCompanyName(
+        !!((forward.data && forward.data.length > 0) || (reverse.data && reverse.data.length > 0))
+      )
+    }
+
+    checkCompanyVisibility()
   }, [currentUserId, profile])
 
   const loadUserProfile = async () => {
@@ -457,7 +500,7 @@ function UserProfileContent() {
                 {profile.avatar_url ? (
                   <img
                     src={profile.avatar_url}
-                    alt={profile.full_name || 'User'}
+                    alt={getDisplayName({ fullName: profile.full_name, email: profile.email, revealFull: false })}
                     className="w-full h-full object-cover object-center"
                     loading="lazy"
                     decoding="async"
@@ -474,7 +517,7 @@ function UserProfileContent() {
                 <div>
                   <div className="flex items-center gap-2 flex-wrap mb-2">
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                      {profile.full_name || 'User'}
+                      {getDisplayName({ fullName: profile.full_name, email: profile.email, revealFull: false })}
                     </h1>
                     {profile.is_featured && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold whitespace-nowrap">
@@ -484,7 +527,12 @@ function UserProfileContent() {
                     )}
                   </div>
                   {profile.company_name && (
-                    <p className="text-lg text-gray-600 mb-2">{profile.company_name}</p>
+                    <p
+                      className={`text-lg text-gray-600 mb-2 ${canViewCompanyName ? '' : 'blur-sm select-none'}`}
+                      title={canViewCompanyName ? undefined : 'Company name unlocks after succesful bid'}
+                    >
+                      {profile.company_name}
+                    </p>
                   )}
                   {profile.postcode && profile.country && (
                     <p className="text-sm text-gray-500 mb-4">
@@ -750,7 +798,7 @@ function UserProfileContent() {
                           {review.reviewer?.avatar_url ? (
                             <img
                               src={review.reviewer.avatar_url}
-                              alt={review.reviewer.full_name || 'Reviewer'}
+                              alt={getDisplayName({ fullName: review.reviewer.full_name, email: review.reviewer.email, revealFull: false })}
                               className="h-10 w-10 rounded-full"
                             />
                           ) : (
@@ -760,7 +808,7 @@ function UserProfileContent() {
                           )}
                           <div>
                             <p className="font-semibold text-gray-900">
-                              {review.reviewer?.full_name || review.reviewer?.email || 'Anonymous'}
+                              {getDisplayName({ fullName: review.reviewer?.full_name, email: review.reviewer?.email, revealFull: false }) || 'Anonymous'}
                             </p>
                             {review.task && 'title' in review.task && (
                               <p className="text-sm text-gray-500">Task: {review.task.title}</p>
@@ -897,7 +945,7 @@ function UserProfileContent() {
         onClose={() => setReportModalOpen(false)}
         reportType="user"
         targetId={profile.id}
-        targetName={profile?.full_name || undefined}
+        targetName={profile ? getDisplayName({ fullName: profile.full_name, email: profile.email, revealFull: false }) : undefined}
         onReportSubmitted={() => {
           setReportModalOpen(false);
         }}
