@@ -17,7 +17,7 @@ interface EmailTemplate {
 interface EmailTemplateManagerProps {
   onTemplateSent?: () => void
   onTemplateChange?: () => void
-  users?: Array<{ id: string; full_name?: string | null; email: string; is_helper?: boolean }>
+  users?: Array<{ id: string; full_name?: string | null; email: string; is_helper?: boolean; created_at?: string | null }>
   emailTemplates?: Array<{ id: string; template_type: string; subject: string }>
   onSendWelcomeEmail?: (userId: string, templateType: string) => Promise<void>
   onSendFreeFormEmail?: (recipientId: string, subject: string, content: string) => Promise<void>
@@ -33,6 +33,18 @@ export default function EmailTemplateManager({
   onSendFreeFormEmail,
   sendingEmail = false,
 }: EmailTemplateManagerProps) {
+  const [emailUserSortMode, setEmailUserSortMode] = useState<'latest' | 'alpha'>('latest')
+  const usersBySelectedSort = users
+    .slice()
+    .sort((a, b) => {
+      if (emailUserSortMode === 'latest') {
+        return (b.created_at || '').localeCompare(a.created_at || '')
+      }
+      const nameA = (a.full_name || a.email || '').toLowerCase()
+      const nameB = (b.full_name || b.email || '').toLowerCase()
+      return nameA.localeCompare(nameB)
+    })
+
   const [templates, setTemplates] = useState<EmailTemplate[]>([])
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
   const [newTemplateName, setNewTemplateName] = useState('')
@@ -723,21 +735,26 @@ export default function EmailTemplateManager({
                 // Template-based email section
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Select User
-                    </label>
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Select User
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setEmailUserSortMode(prev => prev === 'latest' ? 'alpha' : 'latest')}
+                        className="text-[11px] px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
+                        title="Toggle user sort mode"
+                      >
+                        Sort: {emailUserSortMode === 'latest' ? 'Latest' : 'A-Z'}
+                      </button>
+                    </div>
                     <select
                       className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       value={selectedUserForEmail}
                       onChange={(e) => setSelectedUserForEmail(e.target.value)}
                     >
                       <option value="">-- Select a user --</option>
-                      {users
-                        .sort((a, b) => {
-                          const nameA = (a.full_name || a.email || '').toLowerCase()
-                          const nameB = (b.full_name || b.email || '').toLowerCase()
-                          return nameA.localeCompare(nameB)
-                        })
+                      {usersBySelectedSort
                         .map((user) => (
                           <option key={user.id} value={user.id}>
                             {user.full_name || user.email} ({user.email}) {user.is_helper ? '[Helper]' : '[Tasker]'}
@@ -782,21 +799,26 @@ export default function EmailTemplateManager({
                 // Free-form email section
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Select Recipient
-                    </label>
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Select Recipient
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setEmailUserSortMode(prev => prev === 'latest' ? 'alpha' : 'latest')}
+                        className="text-[11px] px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
+                        title="Toggle user sort mode"
+                      >
+                        Sort: {emailUserSortMode === 'latest' ? 'Latest' : 'A-Z'}
+                      </button>
+                    </div>
                     <select
                       className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       value={freeFormRecipient}
                       onChange={(e) => setFreeFormRecipient(e.target.value)}
                     >
                       <option value="">-- Select a user --</option>
-                      {users
-                        .sort((a, b) => {
-                          const nameA = (a.full_name || a.email || '').toLowerCase()
-                          const nameB = (b.full_name || b.email || '').toLowerCase()
-                          return nameA.localeCompare(nameB)
-                        })
+                      {usersBySelectedSort
                         .map((user) => (
                           <option key={user.id} value={user.id}>
                             {user.full_name || user.email} ({user.email}) {user.is_helper ? '[Helper]' : '[Tasker]'}
@@ -856,7 +878,7 @@ export default function EmailTemplateManager({
         </div>
       )}
 
-      {/* Test Email Section — always visible */}
+      {/* Test Email Section — temporarily hidden
       <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">Send Test Email</h3>
             <div className="space-y-3">
@@ -905,6 +927,7 @@ export default function EmailTemplateManager({
                 : 'Send a test email with the current template content to verify how it looks'}
             </p>
       </div>
+      */}
 
       {/* Delete Confirmation Modal */}
       {deletingTemplateId && (

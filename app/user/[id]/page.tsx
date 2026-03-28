@@ -261,6 +261,12 @@ function UserProfileContent() {
         return
       }
 
+      if (profileData.archived_at) {
+        setError(t('user.accountNoLongerActive'))
+        setLoading(false)
+        return
+      }
+
       // Verify all expected fields are present
       const expectedFields = ['bio', 'skills', 'services_offered', 'professional_offerings', 'professions', 'qualifications', 'badges']
       const missingFields = expectedFields.filter(field => !(field in profileData))
@@ -748,7 +754,7 @@ function UserProfileContent() {
                           <h3 className="font-semibold text-gray-900 mb-1">{task.title}</h3>
                           <p className="text-sm text-gray-600 mb-2 line-clamp-2">{task.description}</p>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-semibold text-primary-600">{task.budget ? `€${task.budget}` : 'Quote'}</span>
+                            <span className="text-sm font-semibold text-primary-600">{task.budget ? `€${task.budget}` : 'Quote Needed'}</span>
                             <span className="text-xs text-gray-500">
                               {format(new Date(task.updated_at), 'MMM yyyy')}
                             </span>

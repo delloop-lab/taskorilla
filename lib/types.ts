@@ -40,6 +40,9 @@ export interface User {
   iban?: string | null
   paypal_email?: string | null
   languages?: string[] | null // Languages the user speaks (e.g., ["English", "Portuguese"])
+  conduct_guide_viewed_at?: string | null
+  pause_warning_sent_at?: string | null
+  archived_at?: string | null
   completedTasks?: number
   userRatings?: {
     reviewee_id: string
@@ -119,6 +122,8 @@ export interface Task {
   hidden_reason?: string | null // Reason why task was hidden
   hidden_at?: string | null // Timestamp when task was hidden
   hidden_by?: string | null // Admin user ID who hid the task
+  /** Set when assigned helper confirms final price; required before checkout while pending_payment */
+  helper_confirmed_final_price_at?: string | null
   // Payment tracking fields
   payment_status?: 'pending' | 'paid' | 'failed' | 'refunded' | null
   payment_intent_id?: string | null
@@ -134,7 +139,7 @@ export interface Bid {
   user_id: string
   amount: number
   message: string
-  status: 'pending' | 'accepted' | 'rejected'
+  status: 'pending' | 'accepted' | 'rejected' | 'withdrawn'
   created_at: string
   updated_at: string
   user?: User
@@ -150,6 +155,8 @@ export interface Message {
   image_url?: string | null // Optional image attachment
   created_at: string
   is_read?: boolean
+  /** Sender soft-deleted; both sides see a placeholder */
+  deleted_at?: string | null
   sender?: User
   receiver?: User
 }

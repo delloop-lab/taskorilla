@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import {
   sendNewBidNotification,
+  sendBidUpdatedNotification,
   sendBidSelectedPendingPayment,
   sendBidAcceptedNotification,
   sendBidRejectedNotification,
@@ -78,6 +79,31 @@ export async function POST(request: NextRequest) {
           },
         }
         break
+
+      case 'bid_updated': {
+        const bidUpdatedResult = await sendBidUpdatedNotification(
+          params.taskOwnerEmail,
+          params.taskOwnerName,
+          params.taskTitle,
+          params.bidderName,
+          params.bidAmount,
+          params.taskId
+        )
+        emailLogData = {
+          recipient_email: params.taskOwnerEmail,
+          recipient_name: params.taskOwnerName,
+          subject: `Updated bid on "${params.taskTitle}"`,
+          email_type: 'bid_updated',
+          related_task_id: params.taskId,
+          metadata: {
+            taskTitle: params.taskTitle,
+            bidderName: params.bidderName,
+            bidAmount: params.bidAmount,
+            html_content: bidUpdatedResult.htmlContent,
+          },
+        }
+        break
+      }
 
       case 'bid_selected_pending_payment': {
         const bidSelectedResult = await sendBidSelectedPendingPayment(

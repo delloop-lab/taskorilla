@@ -84,15 +84,27 @@ export default function Navbar() {
 
     const loadUnreadCount = async () => {
       try {
-        const { count, error } = await supabase
+        // Load hidden conversation IDs to exclude from count
+        const { data: hiddenRows } = await supabase
+          .from('user_hidden_conversations')
+          .select('conversation_id')
+          .eq('user_id', user.id)
+        const hiddenConvIds = hiddenRows?.map((r) => r.conversation_id) || []
+
+        let query = supabase
           .from('messages')
           .select('id', { count: 'exact', head: true })
           .eq('receiver_id', user.id)
           .eq('is_read', false)
 
+        if (hiddenConvIds.length > 0) {
+          query = query.not('conversation_id', 'in', `(${hiddenConvIds.join(',')})`)
+        }
+
+        const { count, error } = await query
+
         if (error) {
           console.error('Error loading unread count:', error)
-          // If is_read column doesn't exist, set count to 0
           if (error.message?.includes('column') && error.message?.includes('does not exist')) {
             console.error('⚠️ The is_read column does not exist. Please run the SQL script: supabase/add_message_read_status.sql')
             setUnreadCount(0)
@@ -791,17 +803,17 @@ export default function Navbar() {
                     </span>
                   </button>
                 )}
-                {unreadCount > 0 && (
-                  <Link
-                    href="/messages"
-                    className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium relative"
-                  >
-                    Messages
+                <Link
+                  href="/messages"
+                  className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium relative"
+                >
+                  {t('navbar.inbox')}
+                  {unreadCount > 0 && (
                     <span className="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center min-w-[20px] px-1 transform translate-x-1/2 -translate-y-1/2">
                       {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
-                  </Link>
-                )}
+                  )}
+                </Link>
                 {pendingReviewsCount > 0 && (
                   <Link
                     href={firstPendingReviewTaskId ? `/tasks/${firstPendingReviewTaskId}` : '/tasks?filter=my_tasks&pending_reviews=true'}
@@ -932,17 +944,20 @@ export default function Navbar() {
                 </svg>
               </button>
             </div>
-            {user && unreadCount > 0 && (
+            {user && (
               <Link
                 href="/messages"
                 className="text-gray-700 hover:text-primary-600 p-2 rounded-md relative"
+                aria-label={t('navbar.inbox')}
               >
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                <span className="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center min-w-[20px] px-1 transform translate-x-1/2 -translate-y-1/2">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
+                {unreadCount > 0 && (
+                  <span className="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center min-w-[20px] px-1 transform translate-x-1/2 -translate-y-1/2">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </Link>
             )}
             <button
@@ -1144,15 +1159,15 @@ export default function Navbar() {
                     Bid WON ({acceptedBidsCount > 99 ? '99+' : acceptedBidsCount}) - View your task!
                   </Link>
                 )}
-                {unreadCount > 0 && (
-                  <Link
-                    href="/messages"
-                    className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium bg-red-50"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    📩 Messages ({unreadCount > 99 ? '99+' : unreadCount})
-                  </Link>
-                )}
+                <Link
+                  href="/messages"
+                  className={`block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium ${unreadCount > 0 ? 'bg-red-50' : ''}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {unreadCount > 0
+                    ? `📩 ${t('navbar.inbox')} (${unreadCount > 99 ? '99+' : unreadCount})`
+                    : `📩 ${t('navbar.inbox')}`}
+                </Link>
                 {pendingReviewsCount > 0 && (
                   <Link
                     href={firstPendingReviewTaskId ? `/tasks/${firstPendingReviewTaskId}` : '/tasks?filter=my_tasks&pending_reviews=true'}

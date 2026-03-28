@@ -114,6 +114,8 @@ export async function POST(request: NextRequest) {
         'id, full_name, email, skills, services_offered, professions, preferred_max_distance_km, email_preference, latitude, longitude, is_helper'
       )
       .eq('is_helper', true)
+      .neq('is_paused', true)
+      .is('archived_at', null)
       .limit(500)
 
     if (helpersError) {

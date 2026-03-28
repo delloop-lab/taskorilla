@@ -950,6 +950,13 @@ export default function NewTaskClient() {
           content: messageContent,
         })
 
+      // Un-hide conversation for receiver in case they previously removed it
+      await supabase
+        .from('user_hidden_conversations')
+        .delete()
+        .eq('user_id', helper.id)
+        .eq('conversation_id', conversationId)
+
       await supabase
         .from('conversations')
         .update({ updated_at: new Date().toISOString() })

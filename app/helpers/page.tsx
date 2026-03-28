@@ -100,6 +100,7 @@ export default function BrowseHelpersPage() {
         .eq('is_helper', true)
         .neq('role', 'admin')
         .neq('role', 'superadmin')
+        .is('archived_at', null)
 
       if (error) throw error
 

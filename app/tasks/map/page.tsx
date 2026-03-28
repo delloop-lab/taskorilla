@@ -479,7 +479,7 @@ export default function TasksMapPage() {
                   </p>
                   <div className="flex items-center gap-4 flex-wrap">
                     <span className="text-lg font-bold text-primary-600">
-                      {selectedTask.budget ? `€${selectedTask.budget}` : 'Quote'}
+                      {selectedTask.budget ? `€${selectedTask.budget}` : 'Quote Needed'}
                     </span>
                     {selectedTask.postcode && (
                       <span className="text-sm text-gray-500">📍 {selectedTask.postcode}</span>

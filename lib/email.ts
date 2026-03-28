@@ -123,6 +123,48 @@ export async function sendNewBidNotification(
   }
 }
 
+export async function sendBidUpdatedNotification(
+  taskOwnerEmail: string,
+  taskOwnerName: string,
+  taskTitle: string,
+  bidderName: string,
+  bidAmount: number,
+  taskId: string
+): Promise<{ result: any; htmlContent: string }> {
+  try {
+    const mailTransporter = ensureTransporter()
+    const safeTaskOwnerName = safeName(taskOwnerName, 'Task Owner')
+    const safeBidderName = safeName(bidderName, 'Helper')
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2563eb;">Bid updated</h2>
+        <p>Hi ${safeTaskOwnerName},</p>
+        <p><strong>${safeBidderName}</strong> has updated their bid to <strong>€${bidAmount}</strong> on your task:</p>
+        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0;">${taskTitle}</h3>
+        </div>
+        <p>Review the latest amount and message on the task before you accept.</p>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/tasks/${taskId}" 
+           style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
+          View Task & Bids
+        </a>
+      </div>
+    `
+
+    const result = await mailTransporter.sendMail({
+      from: getFromAddress(),
+      to: taskOwnerEmail,
+      subject: `Updated bid on "${taskTitle}"`,
+      html: htmlContent,
+    })
+
+    return { result, htmlContent }
+  } catch (error: any) {
+    console.error('Error sending bid updated notification:', error)
+    throw new Error(`Failed to send bid updated notification: ${error.message || 'Unknown error'}`)
+  }
+}
+
 export async function sendBidSelectedPendingPayment(
   bidderEmail: string,
   bidderName: string,
@@ -241,6 +283,48 @@ export async function sendBidRejectedNotification(
   } catch (error: any) {
     console.error('Error sending bid rejected notification:', error)
     throw new Error(`Failed to send bid rejected notification: ${error.message || 'Unknown error'}`)
+  }
+}
+
+export async function sendBidWithdrawnByHelperNotification(
+  taskOwnerEmail: string,
+  taskOwnerName: string,
+  taskTitle: string,
+  helperName: string,
+  bidAmount: number,
+  taskId: string
+): Promise<{ result: any; htmlContent: string }> {
+  try {
+    const mailTransporter = ensureTransporter()
+    const safeOwner = safeName(taskOwnerName, 'there')
+    const safeHelper = safeName(helperName, 'A helper')
+    const amountLabel =
+      Number.isFinite(bidAmount) && bidAmount >= 0 ? `€${bidAmount.toFixed(2)}` : 'their offer'
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #047857;">Bid update</h2>
+        <p>Hi ${safeOwner},</p>
+        <p><strong>${safeHelper}</strong> has withdrawn their bid (${amountLabel}) on <strong>"${taskTitle}"</strong>.</p>
+        <p style="color: #374151;">The task stays open. You can keep the conversation going or wait for other offers.</p>
+        <a href="${baseUrl}/tasks/${taskId}"
+           style="display: inline-block; background-color: #047857; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px;">
+          View task
+        </a>
+      </div>
+    `
+
+    const result = await mailTransporter.sendMail({
+      from: getFromAddress(),
+      to: taskOwnerEmail,
+      subject: `Bid withdrawn on "${taskTitle}"`,
+      html: htmlContent,
+    })
+
+    return { result, htmlContent }
+  } catch (error: any) {
+    console.error('Error sending bid withdrawn notification:', error)
+    throw new Error(`Failed to send bid withdrawn notification: ${error.message || 'Unknown error'}`)
   }
 }
 
@@ -772,10 +856,18 @@ export function renderEmailTemplate(
   teeImagePatterns.forEach((re) => { rendered = rendered.replace(re, mascotImageHtml) })
   mascotPatterns.forEach((re) => { rendered = rendered.replace(re, mascotImageHtml) })
   
+  // Decode encoded curly braces BEFORE variable replacement so {{key}} regex
+  // catches all variants produced by TipTap / rich text editors:
+  //   HTML entities:  &#123; &#125;  /  &#x7b; &#x7d;
+  //   URL encoding:   %7B %7D
+  rendered = rendered
+    .replace(/&#123;/g, '{').replace(/&#125;/g, '}')
+    .replace(/&#x7[bB];/g, '{').replace(/&#x7[dD];/g, '}')
+    .replace(/%7B/gi, '{').replace(/%7D/gi, '}')
+
   // Replace regular variables BEFORE normalization
   for (const [key, value] of Object.entries(variables)) {
-    const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g')
-    rendered = rendered.replace(regex, value || '')
+    rendered = rendered.replace(new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g'), value || '')
   }
   
   // Normalize the HTML AFTER variable replacement to clean up whitespace/linefeeds
@@ -1002,6 +1094,54 @@ export async function sendTemplateEmail(
   } catch (error: any) {
     console.error('Error sending template email:', error)
     throw new Error(`Failed to send template email: ${error.message || 'Unknown error'}`)
+  }
+}
+
+export async function sendUserPausedNotification(
+  recipientEmail: string,
+  recipientName: string,
+  reason?: string | null
+): Promise<{ result: any; htmlContent: string }> {
+  try {
+    const mailTransporter = ensureTransporter()
+    const safeName2 = safeName(recipientName, 'there')
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const conductUrl = `${baseUrl}/conduct`
+    const reasonBlock = reason
+      ? `<p style="color: #374151;"><strong>Reason:</strong> ${reason}</p>`
+      : ''
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #dc2626;">Your account has been paused</h2>
+        <p>Hi ${safeName2},</p>
+        <p>Your Taskorilla account has been temporarily paused following a review of recent activity.</p>
+        ${reasonBlock}
+        <p>While your account is paused you will not be able to bid on tasks or receive new work.</p>
+        <div style="background-color: #fef3c7; padding: 16px; border-radius: 8px; margin: 24px 0; border: 1px solid #fcd34d;">
+          <p style="margin: 0 0 8px 0; font-weight: bold; color: #92400e;">What to do next</p>
+          <p style="margin: 0; color: #78350f;">Please read our <strong>Professional Conduct Guide</strong> carefully. It explains the standards we expect from every Helper and Tasker on the platform.</p>
+        </div>
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="${conductUrl}"
+             style="display: inline-block; background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            Read the Professional Conduct Guide
+          </a>
+        </div>
+        <p style="color: #6b7280; font-size: 14px;">If you believe this pause was made in error, reply to this email and we will review your account.</p>
+      </div>
+    `
+
+    const result = await mailTransporter.sendMail({
+      from: getFromAddress(),
+      to: recipientEmail,
+      subject: 'Your Taskorilla account has been paused',
+      html: htmlContent,
+    })
+
+    return { result, htmlContent }
+  } catch (error: any) {
+    console.error('Error sending user paused notification:', error)
+    throw new Error(`Failed to send user paused notification: ${error.message || 'Unknown error'}`)
   }
 }
 

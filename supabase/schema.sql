@@ -286,6 +286,27 @@ CREATE POLICY "Task creators can update bids on their tasks"
     EXISTS (SELECT 1 FROM tasks WHERE tasks.id = bids.task_id AND tasks.created_by = auth.uid())
   );
 
+CREATE POLICY "Bidders can update own pending bids on open tasks"
+  ON bids FOR UPDATE
+  USING (
+    user_id = auth.uid()
+    AND status = 'pending'
+    AND EXISTS (
+      SELECT 1 FROM tasks
+      WHERE tasks.id = bids.task_id
+      AND tasks.status = 'open'
+    )
+  )
+  WITH CHECK (
+    user_id = auth.uid()
+    AND status = 'pending'
+    AND EXISTS (
+      SELECT 1 FROM tasks
+      WHERE tasks.id = bids.task_id
+      AND tasks.status = 'open'
+    )
+  );
+
 -- Conversations policies
 CREATE POLICY "Users can view their own conversations"
   ON conversations FOR SELECT
@@ -342,4 +363,7 @@ CREATE POLICY "Task participants can create reviews"
         )
     )
   );
+
+-- helper_confirmed_final_price_at (TIMESTAMPTZ NULL) on tasks:
+-- Double-handshake before payment; run add_helper_confirmed_final_price_at.sql on existing DBs.
 

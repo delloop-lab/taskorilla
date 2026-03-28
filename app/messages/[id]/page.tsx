@@ -6,13 +6,16 @@ import { supabase } from '@/lib/supabase'
 import { Message, Conversation } from '@/lib/types'
 import { format } from 'date-fns'
 import Link from 'next/link'
-import { ArrowLeft, Send, User as UserIcon } from 'lucide-react'
+import { ArrowLeft, Send, Trash2, User as UserIcon } from 'lucide-react'
 import StandardModal from '@/components/StandardModal'
 import { checkForContactInfo } from '@/lib/content-filter'
 import { compressTaskImage } from '@/lib/image-utils'
 import { canRevealFullNameForTask, getDisplayName } from '@/lib/name-privacy'
+import { isBidUpdateSystemMessage, isBidWithdrawnSystemMessage } from '@/lib/bid-chat-message'
+import { useLanguage } from '@/lib/i18n'
 
 export default function ConversationPage() {
+  const { t } = useLanguage()
   const params = useParams()
   const router = useRouter()
   const conversationId = params.id as string
@@ -29,6 +32,8 @@ export default function ConversationPage() {
   const [task, setTask] = useState<any>(null)
   const [currentUserPaused, setCurrentUserPaused] = useState(false)
   const [otherUserPaused, setOtherUserPaused] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
   const [modalState, setModalState] = useState<{
     isOpen: boolean
     type: 'success' | 'error' | 'warning' | 'info' | 'confirm'
@@ -201,6 +206,63 @@ export default function ConversationPage() {
     }
   }
 
+  const removeThisChatFromInbox = async () => {
+    if (!user) return
+    if (!confirm(t('messages.removeInboxConfirmDetail'))) {
+      return
+    }
+    await supabase
+      .from('messages')
+      .update({ is_read: true })
+      .eq('conversation_id', conversationId)
+      .eq('receiver_id', user.id)
+
+    const { error } = await supabase.from('user_hidden_conversations').insert({
+      user_id: user.id,
+      conversation_id: conversationId,
+    })
+    if (error) {
+      if (error.code === '23505') {
+        window.dispatchEvent(new Event('messages-read'))
+        router.push('/messages')
+        return
+      }
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: t('messages.error'),
+        message: error.message || t('messages.couldNotRemoveChat'),
+      })
+      return
+    }
+    window.dispatchEvent(new Event('messages-read'))
+    router.push('/messages')
+  }
+
+  const softDeleteMessage = async (messageId: string) => {
+    if (!confirm(t('messages.removeMessageEveryone'))) return
+    setDeletingId(messageId)
+    try {
+      const { data, error } = await supabase.rpc('soft_delete_own_message', {
+        p_message_id: messageId,
+      })
+      if (error) throw error
+      if (data && typeof data === 'object' && 'success' in data && !(data as { success: boolean }).success) {
+        throw new Error((data as { error?: string }).error || t('messages.couldNotDeleteMessage'))
+      }
+      await loadMessages()
+    } catch (err: any) {
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: t('messages.error'),
+        message: err?.message || t('messages.couldNotDeleteMessage'),
+      })
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file || !user) return
@@ -235,8 +297,8 @@ export default function ConversationPage() {
       setModalState({
         isOpen: true,
         type: 'error',
-        title: 'Error',
-        message: error.message || 'Error uploading image',
+        title: t('messages.error'),
+        message: error.message || t('messages.errorUploadingImage'),
       })
     } finally {
       setUploadingImage(false)
@@ -272,8 +334,8 @@ export default function ConversationPage() {
       setModalState({
         isOpen: true,
         type: 'warning',
-        title: 'Account Paused',
-        message: 'Your account has been paused. You cannot send messages. Please contact support.',
+        title: t('messages.accountPausedTitle'),
+        message: t('messages.accountPausedMessage'),
       })
       return
     }
@@ -302,7 +364,7 @@ export default function ConversationPage() {
         setModalState({
           isOpen: true,
           type: 'warning',
-          title: 'Contact Information Detected',
+          title: t('messages.contactInfoDetectedTitle'),
           message: contentCheck.message,
         })
         return
@@ -327,13 +389,25 @@ export default function ConversationPage() {
 
       if (error) throw error
 
-      // Alert admin if user sent image before bid accepted
+      // Un-hide conversation for the receiver so the message appears in their inbox
+      await supabase
+        .from('user_hidden_conversations')
+        .delete()
+        .eq('user_id', receiverId)
+        .eq('conversation_id', conversationId)
+
       if (messageImage && !canShareContact) {
-        fetch('/api/alert-admin-image', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ conversationId, taskTitle: task?.title }),
-        }).catch(() => {})
+        supabase.auth.getSession().then(({ data }) => {
+          const token = data?.session?.access_token
+          fetch('/api/alert-admin-image', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ conversationId, taskTitle: task?.title }),
+          }).catch(() => {})
+        })
       }
 
       // Update conversation updated_at
@@ -378,8 +452,8 @@ export default function ConversationPage() {
       setModalState({
         isOpen: true,
         type: 'error',
-        title: 'Error',
-        message: 'Error sending message: ' + (error.message || 'Unknown error'),
+        title: t('messages.error'),
+        message: t('messages.errorSendingMessagePrefix') + (error.message || t('messages.unknownError')),
       })
     } finally {
       setSending(false)
@@ -389,7 +463,7 @@ export default function ConversationPage() {
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center">Loading conversation...</div>
+        <div className="text-center">{t('messages.loadingConversation')}</div>
       </div>
     )
   }
@@ -398,9 +472,9 @@ export default function ConversationPage() {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center">
-          <p className="text-gray-500 mb-4">Conversation not found.</p>
+          <p className="text-gray-500 mb-4">{t('messages.conversationNotFound')}</p>
           <Link href="/messages" className="text-primary-600 hover:text-primary-700">
-            ← Back to Messages
+            ← {t('messages.backToMessages')}
           </Link>
         </div>
       </div>
@@ -417,11 +491,11 @@ export default function ConversationPage() {
           className="inline-flex items-center text-primary-600 hover:text-primary-700 mb-4"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Messages
+          {t('messages.backToMessages')}
         </Link>
         <div className="bg-white rounded-lg shadow-md p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center space-x-3 min-w-0">
               {otherParticipant?.avatar_url ? (
                 <img
                   src={otherParticipant.avatar_url}
@@ -443,7 +517,7 @@ export default function ConversationPage() {
                     fullName: otherParticipant?.full_name,
                     email: otherParticipant?.email,
                     revealFull: revealFullNameForTask,
-                  }) || 'Unknown User'}
+                  }) || t('messages.unknownUser')}
                 </h1>
                 {task && (
                   <Link
@@ -455,13 +529,21 @@ export default function ConversationPage() {
                 )}
               </div>
             </div>
+            <button
+              type="button"
+              onClick={removeThisChatFromInbox}
+              className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              {t('messages.removeFromInboxButton')}
+            </button>
           </div>
         </div>
       </div>
 
       {canShareContact && (
         <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
-          Payment for this task is confirmed. You can now share your contact details, but for safety and clarity, it's best to keep all communication here on Taskorilla.
+          {t('messages.paymentConfirmedShareContact')}
         </div>
       )}
 
@@ -469,19 +551,59 @@ export default function ConversationPage() {
       <div className="bg-white rounded-lg shadow-md p-6 mb-6 min-h-[400px] max-h-[600px] overflow-y-auto">
         {messages.length === 0 ? (
           <div className="text-center text-gray-500 py-12">
-            <p>No messages yet. Start the conversation!</p>
+            <p>{t('messages.noMessagesYet')}</p>
           </div>
         ) : (
           <div className="space-y-4">
             {messages.map((message) => {
+              if (message.deleted_at) {
+                return (
+                  <div key={message.id} className="flex justify-center w-full min-w-0">
+                    <p className="text-sm text-gray-400 italic px-3 py-1">{t('messages.messageRemoved')}</p>
+                  </div>
+                )
+              }
+
+              if (message.content && isBidUpdateSystemMessage(message.content)) {
+                return (
+                  <div key={message.id} className="flex justify-center w-full min-w-0">
+                    <div
+                      className="max-w-[95%] rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-center text-sm text-primary-900"
+                      style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                    >
+                      {message.content}
+                    </div>
+                  </div>
+                )
+              }
+
+              if (message.content && isBidWithdrawnSystemMessage(message.content)) {
+                return (
+                  <div key={message.id} className="flex justify-center w-full min-w-0">
+                    <div
+                      className="max-w-[95%] rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-900"
+                      style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                    >
+                      {message.content}
+                    </div>
+                  </div>
+                )
+              }
+
               const isOwnMessage = message.sender_id === user?.id
+              const canDeleteThisMessage =
+                isOwnMessage &&
+                !!(message.content || message.image_url) &&
+                !isBidUpdateSystemMessage(message.content || '') &&
+                !isBidWithdrawnSystemMessage(message.content || '')
+
               return (
                 <div
                   key={message.id}
-                  className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} min-w-0 w-full`}
+                  className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} min-w-0 w-full group/msg`}
                 >
                   <div
-                    className={`max-w-[85%] sm:max-w-[70%] rounded-lg p-3 ${
+                    className={`relative max-w-[85%] sm:max-w-[70%] rounded-lg p-3 ${canDeleteThisMessage ? 'pr-9 pt-8 sm:pt-3' : ''} ${
                       isOwnMessage
                         ? 'bg-primary-600 text-white'
                         : 'bg-gray-100 text-gray-900'
@@ -496,6 +618,18 @@ export default function ConversationPage() {
                       boxSizing: 'border-box'
                     }}
                   >
+                    {canDeleteThisMessage && (
+                      <button
+                        type="button"
+                        onClick={() => softDeleteMessage(message.id)}
+                        disabled={deletingId === message.id}
+                        className="absolute top-1 right-1 p-1 rounded opacity-70 hover:opacity-100 hover:bg-black/10 text-current disabled:opacity-40"
+                        title={t('messages.removeMessageTitle')}
+                        aria-label={t('messages.removeMessageAria')}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                     {!isOwnMessage && message.sender && (
                       <p className="text-xs font-semibold mb-1 opacity-75 break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                         {getDisplayName({
@@ -509,7 +643,7 @@ export default function ConversationPage() {
                       <div className="mb-2">
                         <img
                           src={message.image_url}
-                          alt="Message attachment"
+                          alt={t('messages.messageAttachmentAlt')}
                           className="max-w-full max-h-48 rounded-lg object-contain"
                         />
                       </div>
@@ -618,12 +752,13 @@ export default function ConversationPage() {
       {/* Message Input */}
       {currentUserPaused && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 font-medium">
-          ⏸ Your account is paused. You cannot send messages. <Link href="/contact" className="underline">Contact support</Link>.
+          {t('messages.pausedBanner')}{' '}
+          <Link href="/contact" className="underline">{t('messages.contactSupportLink')}</Link>.
         </div>
       )}
       {!currentUserPaused && otherUserPaused && (
         <div className="bg-gray-100 border border-gray-200 rounded-lg p-4 text-sm text-gray-600">
-          This user's account is currently unavailable.
+          {t('messages.otherUserUnavailable')}
         </div>
       )}
       <form onSubmit={handleSendMessage} className={`bg-white rounded-lg shadow-md p-4 ${currentUserPaused || otherUserPaused ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -631,7 +766,7 @@ export default function ConversationPage() {
           <div className="mb-3 relative inline-block max-w-full">
             <img
               src={messageImage}
-              alt="Preview"
+              alt={t('messages.previewAlt')}
               className="max-w-xs max-h-32 rounded-lg object-contain"
             />
             <button
@@ -648,7 +783,7 @@ export default function ConversationPage() {
             <textarea
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type your message..."
+              placeholder={t('messages.typeMessagePlaceholder')}
               rows={3}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 resize-none"
               onKeyDown={(e) => {
@@ -669,7 +804,7 @@ export default function ConversationPage() {
               <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              {uploadingImage ? 'Uploading...' : 'Attach photo'}
+              {uploadingImage ? t('messages.uploading') : t('messages.attachPhoto')}
             </label>
           </div>
           <button
@@ -678,7 +813,7 @@ export default function ConversationPage() {
             className="bg-primary-600 text-white px-6 py-2 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
             <Send className="w-4 h-4" />
-            <span>{sending ? 'Sending...' : 'Send'}</span>
+            <span>{sending ? t('messages.sending') : t('messages.send')}</span>
           </button>
         </div>
       </form>

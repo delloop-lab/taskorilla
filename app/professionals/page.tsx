@@ -53,6 +53,7 @@ export default function ProfessionalsPage() {
         .from('profiles')
         .select('*')
         .eq('is_helper', true)
+        .is('archived_at', null)
         .order('created_at', { ascending: false })
 
       if (error) {

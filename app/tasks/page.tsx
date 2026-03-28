@@ -406,57 +406,55 @@ function TasksPageContent() {
           return
         }
         
-        // Query 1: Get OPEN tasks where user placed active bids (with task status join)
-        let placedBidsQuery = supabase
+        // Query 1: Get ALL active bids by this user (no task join)
+        const { data: myBidsRaw, error: myBidsError } = await supabase
           .from('bids')
-          .select('task_id, tasks!inner(id, status, archived)')
+          .select('task_id')
           .eq('user_id', user.id)
-          .neq('status', 'rejected')
-          .eq('tasks.status', 'open')
-        
-        // Filter archived if showArchived is false
-        if (!showArchived) {
-          placedBidsQuery = placedBidsQuery.eq('tasks.archived', false)
+          .not('status', 'in', '("rejected","withdrawn")')
+
+        if (myBidsError) console.error('Error fetching my bids:', myBidsError)
+
+        const bidTaskIds = [...new Set((myBidsRaw || []).map(b => b.task_id).filter(Boolean))]
+
+        // Query 2: Check which of those tasks are open or pending_payment
+        let validBidTasks: string[] = []
+        if (bidTaskIds.length > 0) {
+          const { data: validTasks, error: validErr } = await supabase
+            .from('tasks')
+            .select('id')
+            .in('id', bidTaskIds)
+            .or('status.eq.open,status.eq.pending_payment')
+
+          if (validErr) console.error('Error checking bid task statuses:', validErr)
+          validBidTasks = (validTasks || []).map(t => t.id)
         }
-        
-        const { data: myPlacedBids, error: placedBidsError } = await placedBidsQuery
-        
-        if (placedBidsError) {
-          console.error('Error fetching placed bids:', placedBidsError)
-        }
-        
-        const tasksIBidOn = [...new Set((myPlacedBids || []).map(b => b.task_id).filter(Boolean))]
-        tasksIBidOn.forEach(id => tasksUserBidOn.add(id))
-        
-        // Query 2: Get user's OPEN tasks that have bids on them
-        let myTasksQuery = supabase
+
+        validBidTasks.forEach(id => tasksUserBidOn.add(id))
+        const tasksIBidOn = validBidTasks
+
+        // Query 3: Get user's own tasks (open or pending_payment) that have bids
+        const { data: myOwnTasks, error: myOwnErr } = await supabase
           .from('tasks')
-          .select('id')
+          .select('id, status, archived')
           .eq('created_by', user.id)
-          .eq('status', 'open') // Only open tasks
-        
-        // Filter archived if showArchived is false
-        if (!showArchived) {
-          myTasksQuery = myTasksQuery.eq('archived', false)
-        }
-        
-        const { data: myOpenTasks, error: myTasksError } = await myTasksQuery
-        
-        if (myTasksError) {
-          console.error('Error fetching my tasks:', myTasksError)
-        }
+          .or('status.eq.open,status.eq.pending_payment')
+
+        if (myOwnErr) console.error('Error fetching my own tasks:', myOwnErr)
+
+        let myOpenTasks = (myOwnTasks || []).filter(t => !showArchived ? !t.archived : true)
         
         let tasksWithBidsOnThem: string[] = []
         if (myOpenTasks && myOpenTasks.length > 0) {
           const myTaskIds = myOpenTasks.map(t => t.id)
           
-          // Get active bids on my open tasks (from others, excluding rejected)
+          // Get active bids on my open tasks (from others, excluding rejected/withdrawn)
           const { data: bidsOnMyTasks, error: bidsOnMyTasksError } = await supabase
             .from('bids')
             .select('task_id')
             .in('task_id', myTaskIds)
             .neq('user_id', user.id)
-            .neq('status', 'rejected')
+            .not('status', 'in', '("rejected","withdrawn")')
           
           if (bidsOnMyTasksError) {
             console.error('Error fetching bids on my tasks:', bidsOnMyTasksError)
@@ -553,7 +551,7 @@ function TasksPageContent() {
             break
           case 'my_bids':
             if (taskIdsWithBids.length > 0) {
-              query = query.in('id', taskIdsWithBids).eq('status', 'open')
+              query = query.in('id', taskIdsWithBids)
             }
             break
         }
@@ -647,10 +645,10 @@ function TasksPageContent() {
       const taskTagsData = tagsResult.data || []
       const bidsData = bidsResult.data || []
       
-      // Process data — only count active bids (not rejected)
+      // Process data — only count active bids (not rejected or withdrawn)
       const bidsByTaskId: Record<string, number> = {}
       bidsData.forEach((bid: any) => {
-        if (bid.status === 'rejected') return
+        if (bid.status === 'rejected' || bid.status === 'withdrawn') return
         bidsByTaskId[bid.task_id] = (bidsByTaskId[bid.task_id] || 0) + 1
       })
       
@@ -868,13 +866,11 @@ function TasksPageContent() {
           return isOpen && createdAt >= sevenDaysAgo
         })
       } else if (activeFilter === 'my_bids') {
-        // Only show open tasks in Bids filter (safety check)
-        // Also respect the showArchived setting
         tasksWithProfiles = tasksWithProfiles.filter(task => {
-          const isOpen = task.status === 'open'
+          const isRelevant = task.status === 'open' || task.status === 'pending_payment'
           const isArchived = task.archived === true
           if (!showArchived && isArchived) return false
-          return isOpen
+          return isRelevant
         })
       }
       

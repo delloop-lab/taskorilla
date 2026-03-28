@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { createServerClient } from '@supabase/ssr'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -27,16 +27,7 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Server configuration error' }, { status: 500 })
     }
 
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-      {
-        cookies: {
-          getAll() { return request.cookies.getAll() },
-          setAll() {},
-        },
-      }
-    )
+    const supabase = createServerSupabaseClient(request)
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {

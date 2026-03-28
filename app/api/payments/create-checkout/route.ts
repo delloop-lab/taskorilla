@@ -27,7 +27,9 @@ export async function POST(request: NextRequest) {
 
     const { data: task, error: taskError } = await supabase
       .from('tasks')
-      .select('id, title, budget, status, created_by, assigned_to, payment_status')
+      .select(
+        'id, title, budget, status, created_by, assigned_to, payment_status, helper_confirmed_final_price_at'
+      )
       .eq('id', taskId)
       .single()
 
@@ -48,6 +50,20 @@ export async function POST(request: NextRequest) {
 
     if (task.payment_status === 'paid') {
       return NextResponse.json({ error: 'Task is already paid' }, { status: 400 })
+    }
+
+    if (
+      task.status === 'pending_payment' &&
+      !(task as { helper_confirmed_final_price_at?: string | null }).helper_confirmed_final_price_at
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            'The helper must confirm the final agreed price before you can pay. They will see a prompt on the task page.',
+          code: 'HELPER_PRICE_NOT_CONFIRMED',
+        },
+        { status: 403 }
+      )
     }
 
     if (task.budget == null || task.budget <= 0) {

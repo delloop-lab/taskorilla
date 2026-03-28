@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Task, Bid, Review } from '@/lib/types'
@@ -12,21 +12,31 @@ import UserProfileModal from '@/components/UserProfileModal'
 import StandardModal from '@/components/StandardModal'
 import { extractTownName, geocodePostcode, calculateDistance } from '@/lib/geocoding'
 import { checkForContactInfo } from '@/lib/content-filter'
+import HowBidsWorkModal from '@/components/HowBidsWorkModal'
 import { User as UserIcon } from 'lucide-react'
 import { compressTaskImage } from '@/lib/image-utils'
 import { useUserRatings, getUserRatingsById, type UserRatingsSummary } from '@/lib/useUserRatings'
 import CompactUserRatingsDisplay from '@/components/CompactUserRatingsDisplay'
 import { canRevealFullNameForTask, getDisplayName, toFirstNameInitial } from '@/lib/name-privacy'
+import { getOrCreateTaskConversation } from '@/lib/task-conversations'
+import { useLanguage } from '@/lib/i18n'
 
 const PAYMENT_TIMEOUT_HOURS = typeof process.env.NEXT_PUBLIC_PAYMENT_TIMEOUT_HOURS !== 'undefined'
   ? parseInt(process.env.NEXT_PUBLIC_PAYMENT_TIMEOUT_HOURS, 10) || 48
   : 48
+
+async function getAuthHeaders(): Promise<HeadersInit> {
+  const { data } = await supabase.auth.getSession()
+  const token = data?.session?.access_token
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
 
 export default function TaskDetailPage() {
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
   const taskId = params.id as string
+  const { t, language } = useLanguage()
   const { users: userRatings } = useUserRatings()
 
   const [task, setTask] = useState<Task | null>(null)
@@ -38,6 +48,13 @@ export default function TaskDetailPage() {
   const [bidMessage, setBidMessage] = useState('')
   const [submittingBid, setSubmittingBid] = useState(false)
   const [bidSubmitStatus, setBidSubmitStatus] = useState<string | null>(null)
+  const [editBidAmount, setEditBidAmount] = useState('')
+  const [editBidMessage, setEditBidMessage] = useState('')
+  const [submittingBidUpdate, setSubmittingBidUpdate] = useState(false)
+  const [bidUpdateStatus, setBidUpdateStatus] = useState<string | null>(null)
+  const [showAdjustBidModal, setShowAdjustBidModal] = useState(false)
+  const [showHowBidsWork, setShowHowBidsWork] = useState(false)
+  const lastPendingBidUpdatedAtRef = useRef<string | null>(null)
   const [acceptingBidId, setAcceptingBidId] = useState<string | null>(null)
   const [acceptBidStatus, setAcceptBidStatus] = useState<string | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
@@ -65,6 +82,9 @@ export default function TaskDetailPage() {
   const [submittingRevisionComplete, setSubmittingRevisionComplete] = useState(false)
   const [markingWorkComplete, setMarkingWorkComplete] = useState(false)
   const [processingPayment, setProcessingPayment] = useState(false)
+  const [confirmingHelperPrice, setConfirmingHelperPrice] = useState(false)
+  const [withdrawingBid, setWithdrawingBid] = useState(false)
+  const [releasingBid, setReleasingBid] = useState(false)
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null)
   const [posterRatingsSummary, setPosterRatingsSummary] = useState<UserRatingsSummary | null>(null)
   
@@ -244,12 +264,41 @@ export default function TaskDetailPage() {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'bids',
+          filter: `task_id=eq.${taskId}`,
+        },
+        () => {
+          loadBids()
+        }
+      )
       .subscribe()
 
     return () => {
       supabase.removeChannel(channel)
     }
   }, [taskId, task, user])
+
+  // Keep "update bid" form in sync when the pending bid row changes (e.g. after save or realtime)
+  useEffect(() => {
+    const pending = bids.find((b) => b.user_id === user?.id && b.status === 'pending')
+    if (!pending || task?.status !== 'open') {
+      lastPendingBidUpdatedAtRef.current = null
+      setEditBidAmount('')
+      setEditBidMessage('')
+      return
+    }
+    const ts = pending.updated_at || pending.created_at
+    if (lastPendingBidUpdatedAtRef.current !== ts) {
+      setEditBidAmount(String(pending.amount))
+      setEditBidMessage(pending.message || '')
+      lastPendingBidUpdatedAtRef.current = ts
+    }
+  }, [bids, user?.id, task?.status, task?.id])
 
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -597,8 +646,8 @@ export default function TaskDetailPage() {
       setModalState({
         isOpen: true,
         type: 'warning',
-        title: 'Account Paused',
-        message: 'Your account has been paused. You cannot submit bids. Please contact support.',
+        title: t('taskDetail.bidSubmitPausedTitle'),
+        message: t('taskDetail.bidSubmitPausedMessage'),
       })
       return
     }
@@ -608,8 +657,8 @@ export default function TaskDetailPage() {
       setModalState({
         isOpen: true,
         type: 'warning',
-        title: 'Helper Role Required',
-        message: 'You must enable the Helper role in your profile to bid on tasks. Go to your Profile page and enable the Helper role to start bidding.',
+        title: t('taskDetail.bidHelperRoleTitle'),
+        message: t('taskDetail.bidHelperRoleMessage'),
       })
       return
     }
@@ -621,7 +670,7 @@ export default function TaskDetailPage() {
         setModalState({
           isOpen: true,
           type: 'warning',
-          title: 'Contact Information Detected',
+          title: t('messages.contactInfoDetectedTitle'),
           message: contentCheck.message,
         })
         return
@@ -633,8 +682,8 @@ export default function TaskDetailPage() {
       setModalState({
         isOpen: true,
         type: 'warning',
-        title: 'Message Too Short',
-        message: 'Please provide a more detailed message for the client. (Minimum 50 characters)',
+        title: t('taskDetail.messageTooShortTitle'),
+        message: t('taskDetail.messageTooShortMessage'),
       })
       return
     }
@@ -650,8 +699,8 @@ export default function TaskDetailPage() {
       setModalState({
         isOpen: true,
         type: 'warning',
-        title: 'Too Many Active Bids',
-        message: 'You have too many active bids. Please wait for some to be accepted or declined.',
+        title: t('taskDetail.tooManyActiveBidsTitle'),
+        message: t('taskDetail.tooManyActiveBidsMessage'),
       })
       return
     }
@@ -673,30 +722,50 @@ export default function TaskDetailPage() {
         setModalState({
           isOpen: true,
           type: 'warning',
-          title: 'Please Wait',
-          message: `You can submit another bid in ${minsLeft} minute${minsLeft !== 1 ? 's' : ''}. This helps ensure quality bids for taskers.`,
+          title: t('taskDetail.bidCooldownTitle'),
+          message: t('taskDetail.bidCooldownMessage').replace('{minutes}', String(minsLeft)),
         })
         return
       }
     }
 
     setSubmittingBid(true)
-    setBidSubmitStatus('Submitting your bid...')
+    setBidSubmitStatus(t('taskDetail.submittingYourBid'))
     try {
-      const { error } = await supabase.from('bids').insert({
-        task_id: taskId,
-        user_id: user.id,
-        amount: parseFloat(bidAmount),
-        message: bidMessage,
-        status: 'pending',
-      })
+      const { data: existingWithdrawn } = await supabase
+        .from('bids')
+        .select('id')
+        .eq('task_id', taskId)
+        .eq('user_id', user.id)
+        .eq('status', 'withdrawn')
+        .maybeSingle()
 
-      if (error) throw error
+      if (existingWithdrawn) {
+        const { error } = await supabase
+          .from('bids')
+          .update({
+            amount: parseFloat(bidAmount),
+            message: bidMessage,
+            status: 'pending',
+            created_at: new Date().toISOString(),
+          })
+          .eq('id', existingWithdrawn.id)
+        if (error) throw error
+      } else {
+        const { error } = await supabase.from('bids').insert({
+          task_id: taskId,
+          user_id: user.id,
+          amount: parseFloat(bidAmount),
+          message: bidMessage,
+          status: 'pending',
+        })
+        if (error) throw error
+      }
 
       // Send email notification to task owner
       if (task && task.user) {
         try {
-          setBidSubmitStatus('Bid submitted. Sending notification...')
+          setBidSubmitStatus(t('taskDetail.bidSubmitSendingNotification'))
           console.log('📧 Preparing to send new bid email notification...')
           
           // Get bidder's full name
@@ -745,7 +814,7 @@ export default function TaskDetailPage() {
 
       setBidAmount('')
       setBidMessage('')
-      setBidSubmitStatus('Bid submitted successfully.')
+      setBidSubmitStatus(t('taskDetail.bidSubmitSuccess'))
       loadBids()
       setTimeout(() => setBidSubmitStatus(null), 4000)
     } catch (error: any) {
@@ -753,19 +822,200 @@ export default function TaskDetailPage() {
       setModalState({
         isOpen: true,
         type: 'error',
-        title: 'Error',
-        message: error.message || 'Error submitting bid',
+        title: t('messages.error'),
+        message: error.message || t('taskDetail.bidSubmitError'),
       })
     } finally {
       setSubmittingBid(false)
     }
   }
 
+  const handleUpdateBid = async (e?: React.FormEvent) => {
+    e?.preventDefault()
+    if (!user || !task) {
+      router.push('/login')
+      return
+    }
+
+    const myPendingBid = bids.find((b) => b.user_id === user.id && b.status === 'pending')
+    if (!myPendingBid || task.status !== 'open') {
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: t('taskDetail.cannotUpdateBidTitle'),
+        message: t('taskDetail.cannotUpdateBidMessage'),
+      })
+      return
+    }
+
+    if ((userProfile as any)?.is_paused) {
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: t('taskDetail.bidSubmitPausedTitle'),
+        message: t('taskDetail.bidUpdatePausedMessage'),
+      })
+      return
+    }
+
+    if (!userProfile?.is_helper) {
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: t('taskDetail.bidHelperRoleTitle'),
+        message: t('taskDetail.bidHelperRoleUpdateMessage'),
+      })
+      return
+    }
+
+    if (editBidMessage) {
+      const contentCheck = checkForContactInfo(editBidMessage)
+      if (!contentCheck.isClean) {
+        setModalState({
+          isOpen: true,
+          type: 'warning',
+          title: t('messages.contactInfoDetectedTitle'),
+          message: contentCheck.message,
+        })
+        return
+      }
+    }
+
+    if (!editBidMessage || editBidMessage.trim().length < 50) {
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: t('taskDetail.messageTooShortTitle'),
+        message: t('taskDetail.messageTooShortMessage'),
+      })
+      return
+    }
+
+    const nextAmount = parseFloat(editBidAmount)
+    if (!Number.isFinite(nextAmount) || nextAmount < 0) {
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: t('taskDetail.invalidBidAmountTitle'),
+        message: t('taskDetail.invalidBidAmountMessage'),
+      })
+      return
+    }
+
+    setSubmittingBidUpdate(true)
+    setBidUpdateStatus(t('taskDetail.savingChanges'))
+    try {
+      const authHeaders = await getAuthHeaders()
+      const res = await fetch(`/api/tasks/${encodeURIComponent(taskId)}/my-bid`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        credentials: 'include',
+        body: JSON.stringify({
+          amount: nextAmount,
+          message: editBidMessage.trim(),
+          locale: language,
+        }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(typeof json.error === 'string' ? json.error : t('taskDetail.couldNotUpdateBid'))
+      }
+
+      setBidUpdateStatus(t('taskDetail.bidUpdatedSuccess'))
+      setShowAdjustBidModal(false)
+      await loadBids()
+      setTimeout(() => setBidUpdateStatus(null), 4000)
+    } catch (err: any) {
+      setBidUpdateStatus(null)
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: t('messages.error'),
+        message: err.message || t('taskDetail.couldNotUpdateBid'),
+      })
+    } finally {
+      setSubmittingBidUpdate(false)
+    }
+  }
+
+  const handleWithdrawBid = async () => {
+    if (!user || !task || withdrawingBid) return
+
+    // Path 1: pending bid on open task
+    const myPendingOnOpen =
+      task.status === 'open'
+        ? bids.find((b) => b.user_id === user.id && b.status === 'pending')
+        : undefined
+    // Path 2: accepted bid on pending_payment before helper confirms (final say)
+    const myAcceptedPreConfirm =
+      task.status === 'pending_payment' &&
+      task.assigned_to === user.id &&
+      !task.helper_confirmed_final_price_at &&
+      task.payment_status !== 'paid'
+        ? bids.find((b) => b.user_id === user.id && b.status === 'accepted')
+        : undefined
+
+    const myBid = myPendingOnOpen || myAcceptedPreConfirm
+    if (!myBid) return
+
+    const isPendingPayment = Boolean(myAcceptedPreConfirm)
+    const amt = formatEuro(myBid.amount)
+    const confirmMessage = isPendingPayment
+      ? t('taskDetail.withdrawConfirmPending').replace('{amount}', amt)
+      : t('taskDetail.withdrawConfirmOpen').replace('{amount}', amt)
+
+    setModalState({
+      isOpen: true,
+      type: 'confirm',
+      title: t('taskDetail.withdrawBidTitle'),
+      message: confirmMessage,
+      onConfirm: async () => {
+        setWithdrawingBid(true)
+        try {
+          const authHeaders = await getAuthHeaders()
+          const res = await fetch(
+            `/api/tasks/${encodeURIComponent(task.id)}/my-bid?locale=${encodeURIComponent(language)}`,
+            {
+              method: 'DELETE',
+              headers: { ...authHeaders },
+              credentials: 'include',
+            }
+          )
+          const json = await res.json().catch(() => ({}))
+          if (!res.ok) {
+            throw new Error(typeof json.error === 'string' ? json.error : t('taskDetail.couldNotWithdrawBid'))
+          }
+          if (json.reverted) {
+            await loadTask()
+          }
+          await loadBids()
+          setModalState({
+            isOpen: true,
+            type: 'success',
+            title: t('taskDetail.bidWithdrawnTitle'),
+            message: isPendingPayment
+              ? t('taskDetail.bidWithdrawnReopened')
+              : t('taskDetail.bidWithdrawnNotified'),
+          })
+        } catch (err: any) {
+          setModalState({
+            isOpen: true,
+            type: 'error',
+            title: t('messages.error'),
+            message: err.message || t('taskDetail.couldNotWithdrawBid'),
+          })
+        } finally {
+          setWithdrawingBid(false)
+        }
+      },
+    })
+  }
+
   const handleAcceptBid = async (bidId: string) => {
     if (!user || !task || task.created_by !== user.id || acceptingBidId) return
 
     setAcceptingBidId(bidId)
-    setAcceptBidStatus('Accepting bid and updating task...')
+    setAcceptBidStatus(t('taskDetail.acceptingBidUpdating'))
     try {
       // Update bid status
       await supabase
@@ -796,7 +1046,10 @@ export default function TaskDetailPage() {
         try {
           const helperName = acceptedBid.user?.full_name?.split(' ')[0] || 'Helper'
           const taskerName = task?.user?.full_name?.split(' ')[0] || 'Task owner'
-          const progressMessage = `${taskerName} has selected ${helperName}'s bid of €${acceptedBid.amount.toFixed(2)}. Awaiting payment confirmation before work begins.`
+          const progressMessage = t('taskDetail.progressBidSelected')
+            .replace('{tasker}', taskerName)
+            .replace(/\{helper\}/g, helperName)
+            .replace('{amount}', formatEuro(acceptedBid.amount, true))
           
           // Try with update_type first, fall back without it
           const { error: err1 } = await supabase
@@ -824,7 +1077,7 @@ export default function TaskDetailPage() {
 
         // Send email notifications
         try {
-          setAcceptBidStatus('Bid selected. Notifying helpers...')
+          setAcceptBidStatus(t('taskDetail.bidSelectedNotifying'))
           // Email to selected bidder — payment pending, don't start work yet
           await fetch('/api/send-email', {
             method: 'POST',
@@ -859,55 +1112,11 @@ export default function TaskDetailPage() {
           console.error('Error sending email notifications:', emailError)
           // Don't fail the bid acceptance if email fails
         }
-
-        // Restore previous behavior: immediately prompt task owner to pay after accepting a bid.
-        // This keeps the "accept -> pay" flow instead of waiting until completion time.
-        try {
-          setAcceptBidStatus('Bid selected. Redirecting to payment...')
-          const { data: { session } } = await supabase.auth.getSession()
-          const checkoutResponse = await fetch('/api/payments/create-checkout', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
-            },
-            body: JSON.stringify({
-              taskId,
-              returnUrl: `${window.location.origin}/tasks/${taskId}?payment=success`,
-              cancelUrl: `${window.location.origin}/tasks/${taskId}?payment=cancelled`,
-            }),
-          })
-
-          const checkoutData = await checkoutResponse.json()
-          if (checkoutResponse.ok) {
-            const redirectUrl = checkoutData.redirectUrl || checkoutData.checkoutUrl || checkoutData.next_action?.url
-            const intentId = checkoutData.id || checkoutData.paymentIntentId || checkoutData.sessionId
-            if (redirectUrl) {
-              window.location.href = redirectUrl
-              return
-            }
-            if (intentId) {
-              const params = new URLSearchParams()
-              params.set('taskId', taskId)
-              params.set('amount', String(checkoutData.amount ?? ''))
-              if (checkoutData.clientSecret) {
-                params.set('clientSecret', checkoutData.clientSecret)
-              }
-              window.location.href = `/checkout/${intentId}?${params.toString()}`
-              return
-            }
-          } else {
-            console.error('Auto checkout failed after bid acceptance:', checkoutData)
-          }
-        } catch (checkoutError) {
-          console.error('Error starting checkout after bid acceptance:', checkoutError)
-          // Keep bid acceptance successful; user can still click Pay button manually.
-        }
       }
 
       loadTask()
       loadBids()
-      setAcceptBidStatus('Bid selected — complete payment to start the task.')
+      setAcceptBidStatus(t('taskDetail.bidSelectedMustConfirm'))
       setTimeout(() => setAcceptBidStatus(null), 4000)
     } catch (error) {
       console.error('Error accepting bid:', error)
@@ -915,12 +1124,98 @@ export default function TaskDetailPage() {
       setModalState({
         isOpen: true,
         type: 'error',
-        title: 'Error',
-        message: 'Failed to accept bid. Please try again.',
+        title: t('messages.error'),
+        message: t('taskDetail.failedAcceptBid'),
       })
     } finally {
       setAcceptingBidId(null)
     }
+  }
+
+  const handleReleaseBid = async () => {
+    if (!user || !task || !isTaskOwner || releasingBid) return
+    if (task.status !== 'pending_payment' || task.payment_status === 'paid') return
+
+    const acceptedBid = bids.find((b) => b.status === 'accepted')
+    if (!acceptedBid) return
+
+    const helperName = acceptedBid.user?.full_name?.split(' ')[0] || 'the helper'
+
+    setModalState({
+      isOpen: true,
+      type: 'confirm',
+      title: t('taskDetail.releaseBidTitle'),
+      message: t('taskDetail.releaseBidConfirm')
+        .replace('{helper}', helperName)
+        .replace('{amount}', formatEuro(acceptedBid.amount)),
+      onConfirm: async () => {
+        setReleasingBid(true)
+        try {
+          const { error: taskErr } = await supabase
+            .from('tasks')
+            .update({
+              status: 'open',
+              assigned_to: null,
+              helper_confirmed_final_price_at: null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', taskId)
+          if (taskErr) throw taskErr
+
+          const { error: bidErr } = await supabase
+            .from('bids')
+            .update({ status: 'rejected' })
+            .eq('id', acceptedBid.id)
+          if (bidErr) throw bidErr
+
+          const { error: restoreErr } = await supabase
+            .from('bids')
+            .update({ status: 'pending' })
+            .eq('task_id', taskId)
+            .eq('status', 'rejected')
+            .neq('id', acceptedBid.id)
+          if (restoreErr) {
+            console.error('Error restoring other bids:', restoreErr)
+          }
+
+          if (acceptedBid.user?.email) {
+            try {
+              await fetch('/api/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  type: 'bid_rejected',
+                  bidderEmail: acceptedBid.user.email,
+                  bidderName: acceptedBid.user.full_name || acceptedBid.user.email,
+                  taskTitle: task.title,
+                  taskId: taskId,
+                }),
+              })
+            } catch (emailErr) {
+              console.error('Error sending release notification:', emailErr)
+            }
+          }
+
+          await loadTask()
+          await loadBids()
+          setModalState({
+            isOpen: true,
+            type: 'success',
+            title: t('taskDetail.releaseBidSuccessTitle'),
+            message: t('taskDetail.releaseBidSuccessMessage'),
+          })
+        } catch (err: any) {
+          setModalState({
+            isOpen: true,
+            type: 'error',
+            title: t('messages.error'),
+            message: err.message || t('taskDetail.releaseBidError'),
+          })
+        } finally {
+          setReleasingBid(false)
+        }
+      },
+    })
   }
 
   const handleCancelTask = async () => {
@@ -1028,8 +1323,10 @@ export default function TaskDetailPage() {
       onConfirm: async () => {
         setModalState(prev => ({ ...prev, isOpen: false }))
         try {
+          const authHeaders = await getAuthHeaders()
           const res = await fetch(`/api/tasks/${taskId}/decline`, {
             method: 'POST',
+            headers: { ...authHeaders },
             credentials: 'include',
           })
           const data = await res.json().catch(() => ({}))
@@ -1760,6 +2057,40 @@ export default function TaskDetailPage() {
     }
   }
 
+  const handleConfirmFinalPrice = async () => {
+    if (!user || !task || task.assigned_to !== user.id) return
+    setConfirmingHelperPrice(true)
+    try {
+      const authHeaders = await getAuthHeaders()
+      const res = await fetch(`/api/tasks/${encodeURIComponent(task.id)}/confirm-final-price`, {
+        method: 'POST',
+        headers: { ...authHeaders },
+        credentials: 'include',
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(typeof json.error === 'string' ? json.error : 'Could not confirm')
+      }
+      await loadTask()
+      setModalState({
+        isOpen: true,
+        type: 'success',
+        title: 'Thank you',
+        message: 'The tasker can now complete payment when they are ready.',
+      })
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Something went wrong'
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Could not confirm',
+        message: msg,
+      })
+    } finally {
+      setConfirmingHelperPrice(false)
+    }
+  }
+
   const handlePayTask = async () => {
     if (!user || !task || task.created_by !== user.id) {
       setModalState({
@@ -1767,6 +2098,20 @@ export default function TaskDetailPage() {
         type: 'warning',
         title: 'Permission Denied',
         message: 'You can only pay for tasks you created.',
+      })
+      return
+    }
+
+    if (
+      task.status === 'pending_payment' &&
+      !(task as { helper_confirmed_final_price_at?: string | null }).helper_confirmed_final_price_at
+    ) {
+      setModalState({
+        isOpen: true,
+        type: 'info',
+        title: 'Waiting for helper',
+        message:
+          'The helper must confirm the final agreed price on this task before you can pay.',
       })
       return
     }
@@ -2252,77 +2597,19 @@ export default function TaskDetailPage() {
     }
 
     try {
-      // Check if conversation already exists
-      const { data: existing1 } = await supabase
-        .from('conversations')
-        .select('id')
-        .eq('task_id', taskId)
-        .eq('participant1_id', user.id)
-        .eq('participant2_id', otherUserId)
-        .single()
-
-      const { data: existing2 } = await supabase
-        .from('conversations')
-        .select('id')
-        .eq('task_id', taskId)
-        .eq('participant1_id', otherUserId)
-        .eq('participant2_id', user.id)
-        .single()
-
-      const existing = existing1 || existing2
-      if (existing) {
-        router.push(`/messages/${existing.id}`)
-        return
-      }
-
-      // Create new conversation
-      const participant1 = user.id < otherUserId ? user.id : otherUserId
-      const participant2 = user.id < otherUserId ? otherUserId : user.id
-
-      const { data, error } = await supabase
-        .from('conversations')
-        .insert({
-          task_id: taskId,
-          participant1_id: participant1,
-          participant2_id: participant2,
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-
-      router.push(`/messages/${data.id}`)
+      const { id } = await getOrCreateTaskConversation(supabase, {
+        taskId,
+        userId: user.id,
+        otherUserId,
+      })
+      router.push(`/messages/${id}`)
     } catch (error: any) {
-      // If conversation already exists, find it
-      if (error.code === '23505') {
-        const { data: existing1 } = await supabase
-          .from('conversations')
-          .select('id')
-          .eq('task_id', taskId)
-          .eq('participant1_id', user.id)
-          .eq('participant2_id', otherUserId)
-          .single()
-
-        const { data: existing2 } = await supabase
-          .from('conversations')
-          .select('id')
-          .eq('task_id', taskId)
-          .eq('participant1_id', otherUserId)
-          .eq('participant2_id', user.id)
-          .single()
-
-        const existing = existing1 || existing2
-        if (existing) {
-          router.push(`/messages/${existing.id}`)
-        }
-      } else {
-        setModalState({
-          isOpen: true,
-          type: 'error',
-          title: 'Error',
-          message: error.message || 'Error starting conversation',
-        })
-      }
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: error.message || 'Error starting conversation',
+      })
     }
   }
 
@@ -2447,9 +2734,19 @@ export default function TaskDetailPage() {
   }
 
   const isTaskOwner = user && task.created_by === user.id
-  const hasBid = user && bids.some(bid => bid.user_id === user.id)
+  const hasBid = user && bids.some(bid => bid.user_id === user.id && bid.status !== 'withdrawn')
   const userHasHelperRole = userProfile?.is_helper === true
+  const myPendingBid = user
+    ? bids.find((bid) => bid.user_id === user.id && bid.status === 'pending')
+    : undefined
   const canBid = user && userHasHelperRole && !isTaskOwner && task.status === 'open' && !hasBid
+  const canEditBid =
+    Boolean(user) &&
+    userHasHelperRole &&
+    !isTaskOwner &&
+    task.status === 'open' &&
+    !!myPendingBid &&
+    !(userProfile as any)?.is_paused
   const acceptedBidUserIds = bids.filter(b => b.status === 'accepted').map(b => b.user_id)
   const revealFullNameForTask = canRevealFullNameForTask({
     viewerId: user?.id,
@@ -2488,9 +2785,11 @@ export default function TaskDetailPage() {
     || (task.status === 'open' && task.assigned_to && bids.length > 0 && bids.every(b => b.status === 'rejected'))
 
   // Show rejected bids when payment expired so the tasker/helper can see what happened
-  const visibleBids = paymentExpiredForBid
+  // Always show withdrawn bids to their owner so they can see the status
+  const visibleBids = (paymentExpiredForBid
     ? bids
     : bids.filter(b => b.status !== 'rejected')
+  ).filter(b => b.status !== 'withdrawn' || b.user_id === user?.id)
   
   // Helper function to check if user can see bid details
   const canSeeBidDetails = (bid: Bid) => {
@@ -2725,21 +3024,42 @@ export default function TaskDetailPage() {
           </div>
         </div>
 
+        {/* Helpers must bid before messaging the tasker; other non-owners keep the previous behaviour. */}
         {user && task.user && task.created_by !== user.id && (
           <div className="mt-2 mb-6">
-            <button
-              onClick={() => handleStartConversation(task.created_by)}
-              className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
-            >
-              Message Tasker
-            </button>
+            {userHasHelperRole ? (
+              hasBid ? (
+                <button
+                  type="button"
+                  onClick={() => handleStartConversation(task.created_by)}
+                  className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
+                >
+                  {t('taskDetail.messageTasker')}
+                </button>
+              ) : (
+                <div className="rounded-lg border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-900 shadow-sm">
+                  <p className="font-medium text-primary-950 mb-1">{t('taskDetail.readyToTalkTitle')}</p>
+                  <p className="text-primary-900/90 leading-relaxed">
+                    {t('taskDetail.readyToTalkBody')}
+                  </p>
+                </div>
+              )
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleStartConversation(task.created_by)}
+                className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
+              >
+                {t('taskDetail.messageTasker')}
+              </button>
+            )}
           </div>
         )}
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
           <div>
             <p className="text-xs sm:text-sm text-gray-500">Budget</p>
-            <p className="text-xl sm:text-2xl font-bold text-primary-600">{task.budget ? formatEuro(task.budget, false) : 'Quote'}</p>
+            <p className="text-xl sm:text-2xl font-bold text-primary-600">{task.budget ? formatEuro(task.budget, false) : 'Quote Needed'}</p>
             {/* Payment Status Badge */}
             {task.payment_status && task.payment_status !== 'pending' && (
               <span className={`inline-block mt-1 px-2 py-1 text-xs font-medium rounded ${
@@ -2834,31 +3154,118 @@ export default function TaskDetailPage() {
         </div>
 
         {/* Pending Payment Banner */}
-        {task.status === 'pending_payment' && (
-          <div className="mb-6 border rounded-lg p-4 bg-amber-50 border-amber-300">
-            {isTaskOwner ? (
+        {task.status === 'pending_payment' && (() => {
+          const helperConfirmed = Boolean(task.helper_confirmed_final_price_at)
+          const awaitingHelperConfirm =
+            isTaskOwner && task.payment_status !== 'paid' && !helperConfirmed
+          return (
+          <div className="mb-6 border rounded-lg p-4 bg-amber-50 border-amber-200">
+            {isTaskOwner && awaitingHelperConfirm ? (
               <>
-                <h3 className="text-lg font-semibold text-amber-900 mb-1">Payment Required</h3>
+                <h3 className="text-lg font-semibold text-amber-900 mb-1">{t('taskDetail.almostThereTitle')}</h3>
                 <p className="text-sm text-amber-800">
-                  You've selected a helper for this task. Please complete payment below to confirm the assignment and allow work to begin.
+                  {t('taskDetail.almostThereBody')}
                 </p>
+                {task.payment_status !== 'paid' && (
+                  <button
+                    type="button"
+                    onClick={handleReleaseBid}
+                    disabled={releasingBid}
+                    className="mt-3 rounded-md bg-amber-100 px-4 py-2 text-sm font-medium text-amber-900 hover:bg-amber-200 border border-amber-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {releasingBid ? t('taskDetail.releasingBid') : t('taskDetail.releaseBidButton')}
+                  </button>
+                )}
+              </>
+            ) : isTaskOwner ? (
+              <>
+                <h3 className="text-lg font-semibold text-amber-900 mb-1">{t('taskDetail.paymentRequiredTitle')}</h3>
+                <p className="text-sm text-amber-800">
+                  {t('taskDetail.paymentRequiredBody')}
+                </p>
+                {task.payment_status !== 'paid' && (
+                  <button
+                    type="button"
+                    onClick={handleReleaseBid}
+                    disabled={releasingBid}
+                    className="mt-3 rounded-md bg-amber-100 px-4 py-2 text-sm font-medium text-amber-900 hover:bg-amber-200 border border-amber-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {releasingBid ? t('taskDetail.releasingBid') : t('taskDetail.releaseBidButton')}
+                  </button>
+                )}
               </>
             ) : user && task.assigned_to === user.id ? (
               <>
-                <h3 className="text-lg font-semibold text-amber-900 mb-1">Awaiting Payment</h3>
+                <h3 className="text-lg font-semibold text-amber-900 mb-1">
+                  {helperConfirmed ? t('taskDetail.awaitingPaymentTitle') : t('taskDetail.actionNeededTitle')}
+                </h3>
                 <p className="text-sm text-amber-800">
-                  Your bid has been selected! The task owner is completing payment. You'll be notified by email once payment is confirmed and you can start work.
-                  <strong className="block mt-1">Please do not begin work until you receive confirmation.</strong>
+                  {helperConfirmed ? (
+                    <>
+                      {t('taskDetail.helperAwaitingPaymentBody')}
+                      <strong className="block mt-1">{t('taskDetail.doNotBeginWork')}</strong>
+                    </>
+                  ) : (
+                    <>
+                      {t('taskDetail.helperConfirmPriceBody')}
+                    </>
+                  )}
                 </p>
               </>
             ) : (
               <>
-                <h3 className="text-lg font-semibold text-amber-900 mb-1">Awaiting Payment</h3>
-                <p className="text-sm text-amber-800">A helper has been selected. The task owner is completing payment.</p>
+                <h3 className="text-lg font-semibold text-amber-900 mb-1">{t('taskDetail.awaitingPaymentTitle')}</h3>
+                <p className="text-sm text-amber-800">{t('taskDetail.observerAwaitingPayment')}</p>
               </>
             )}
           </div>
-        )}
+          )
+        })()}
+
+        {/* Helper: confirm final price (double-handshake) */}
+        {task.status === 'pending_payment' &&
+          user &&
+          task.assigned_to === user.id &&
+          task.payment_status !== 'paid' &&
+          !task.helper_confirmed_final_price_at && (
+            <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50/90 p-4 shadow-sm">
+              <h3 className="text-base font-semibold text-emerald-900 mb-2">{t('taskDetail.confirmFinalPriceTitle')}</h3>
+              <p className="text-sm text-emerald-900/90 leading-relaxed mb-4">
+                {t('taskDetail.confirmFinalPriceBody').replace(
+                  '{amount}',
+                  formatEuro(task.budget || bids.find((b) => b.status === 'accepted')?.amount || 0)
+                )}
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleConfirmFinalPrice}
+                  disabled={confirmingHelperPrice || withdrawingBid}
+                  className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {confirmingHelperPrice ? t('taskDetail.confirming') : t('taskDetail.confirmFinalPrice')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleStartConversation(task.created_by)}
+                  className="rounded-md bg-white px-4 py-2 text-sm font-medium text-primary-700 hover:bg-primary-50 border border-primary-300"
+                >
+                  {t('taskDetail.messageTasker')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleWithdrawBid}
+                  disabled={withdrawingBid || confirmingHelperPrice}
+                  className="rounded-md bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100 border border-amber-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {withdrawingBid ? t('taskDetail.withdrawing') : t('taskDetail.withdrawBidLower')}
+                </button>
+              </div>
+              <p className="text-xs text-emerald-800/70 mt-3">
+                {t('taskDetail.notHappyWithdrawHint')}
+              </p>
+            </div>
+          )}
 
         {/* Payment Section - Show for task owner when task is assigned (pending_payment or in_progress) */}
         {isTaskOwner && (task.status === 'pending_payment' || task.status === 'in_progress') && task.assigned_to && (() => {
@@ -2866,32 +3273,57 @@ export default function TaskDetailPage() {
           const acceptedBid = bids.find(b => b.status === 'accepted')
           const paymentAmount = task.budget || acceptedBid?.amount
           if (!paymentAmount) return null
-          
+          const canPayNow =
+            task.status !== 'pending_payment' ||
+            Boolean(task.helper_confirmed_final_price_at) ||
+            task.payment_status === 'paid'
+
           return (
             <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">Payment Required</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{t('taskDetail.paymentRequiredTitle')}</h3>
                   <div className="text-sm text-gray-600 space-y-1">
-                    <p>Task amount: {formatEuro(paymentAmount, false)}</p>
-                    <p>Service fee: €2.00</p>
-                    <p className="font-semibold text-gray-900">Total: {formatEuro(paymentAmount + 2, false)}</p>
+                    <p>{t('taskDetail.paymentTaskAmount')} {formatEuro(paymentAmount)}</p>
+                    <p>{t('taskDetail.paymentServiceFee')} €2.00</p>
+                    <p className="font-semibold text-gray-900">{t('taskDetail.paymentTotal')} {formatEuro(paymentAmount + 2)}</p>
                   </div>
                   {task.payment_status === 'paid' && (
-                    <p className="text-sm text-green-600 mt-2 font-medium">✓ Payment completed</p>
+                    <p className="text-sm text-green-600 mt-2 font-medium">{t('taskDetail.paymentCompleted')}</p>
                   )}
                   {task.payment_status === 'failed' && (
-                    <p className="text-sm text-red-600 mt-2">Payment failed. Please try again.</p>
+                    <p className="text-sm text-amber-800 mt-2">{t('taskDetail.paymentFailedRetry')}</p>
                   )}
+                  {task.status === 'pending_payment' &&
+                    task.payment_status !== 'paid' &&
+                    !task.helper_confirmed_final_price_at && (
+                      <p className="text-sm text-amber-800 mt-2">
+                        {t('taskDetail.payUnlocksAfterConfirm')}
+                      </p>
+                    )}
                 </div>
                 {task.payment_status !== 'paid' && (
-                  <button
-                    onClick={handlePayTask}
-                    disabled={processingPayment}
-                    className="bg-primary-600 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {processingPayment ? 'Processing...' : `Pay ${formatEuro(paymentAmount + 2, false)}`}
-                  </button>
+                  <div className="flex-shrink-0">
+                    {canPayNow ? (
+                      <button
+                        onClick={handlePayTask}
+                        disabled={processingPayment}
+                        className="bg-primary-600 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+                      >
+                        {processingPayment
+                          ? t('taskDetail.processing')
+                          : t('taskDetail.payButton').replace('{amount}', formatEuro(paymentAmount + 2))}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        className="bg-gray-200 text-gray-500 px-6 py-2 rounded-md text-sm font-medium cursor-not-allowed w-full sm:w-auto"
+                      >
+                        {t('taskDetail.payWaitingHelper')}
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -3360,11 +3792,20 @@ export default function TaskDetailPage() {
       )}
       {canBid && !(userProfile as any)?.is_paused && (
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Submit a Bid</h2>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">{t('taskDetail.submitBidTitle')}</h2>
+            <button
+              type="button"
+              onClick={() => setShowHowBidsWork(true)}
+              className="text-xs text-primary-600 hover:text-primary-800 font-medium transition-colors"
+            >
+              {t('bidding.howBidsWorkLink')}
+            </button>
+          </div>
           <form onSubmit={handleSubmitBid} className="space-y-4">
             <div>
               <label htmlFor="bidAmount" className="block text-sm font-medium text-gray-700 mb-2">
-                Total price (€)
+                {t('taskDetail.totalPriceLabel')}
               </label>
               <input
                 type="number"
@@ -3375,12 +3816,12 @@ export default function TaskDetailPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                 value={bidAmount}
                 onChange={(e) => setBidAmount(e.target.value)}
-                placeholder="Enter the total amount you will charge"
+                placeholder={t('taskDetail.totalPricePlaceholder')}
               />
             </div>
             <div>
               <label htmlFor="bidMessage" className="block text-sm font-medium text-gray-700 mb-2">
-                Price justification / notes *
+                {t('taskDetail.priceJustificationLabel')}
               </label>
               <textarea
                 id="bidMessage"
@@ -3389,7 +3830,7 @@ export default function TaskDetailPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                 value={bidMessage}
                 onChange={(e) => setBidMessage(e.target.value)}
-                placeholder="Explain what’s included, materials or time required, and anything the poster should know."
+                placeholder={t('taskDetail.priceJustificationPlaceholder')}
               />
             </div>
             <button
@@ -3397,24 +3838,30 @@ export default function TaskDetailPage() {
               disabled={submittingBid}
               className="w-full bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700 disabled:opacity-50"
             >
-              {submittingBid ? 'Submitting bid...' : 'Submit Bid'}
+              {submittingBid ? t('taskDetail.submittingBid') : t('taskDetail.submitBid')}
             </button>
             {(submittingBid || bidSubmitStatus) && (
               <p className="text-xs text-blue-700 text-center" aria-live="polite">
-                {bidSubmitStatus || 'Submitting your bid...'}
+                {bidSubmitStatus || t('taskDetail.submittingYourBid')}
               </p>
             )}
             <p className="text-xs text-gray-500 text-center">
-              Helper bids and sets the price at their own risk, final price is fixed once accepted.
+              {t('taskDetail.bidChatFootnote')}
             </p>
           </form>
+          <HowBidsWorkModal isOpen={showHowBidsWork} onClose={() => setShowHowBidsWork(false)} />
         </div>
       )}
 
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Bids ({visibleBids.length})
+          {t('taskDetail.bidsHeading').replace('{count}', String(visibleBids.length))}
         </h2>
+        {bidUpdateStatus && !showAdjustBidModal && (
+          <p className="mb-3 text-xs text-blue-700" aria-live="polite">
+            {bidUpdateStatus}
+          </p>
+        )}
         {acceptBidStatus && (
           <div className="mb-4 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800" aria-live="polite">
             {acceptBidStatus}
@@ -3422,7 +3869,7 @@ export default function TaskDetailPage() {
         )}
         {visibleBids.length === 0 ? (
           <p className="text-gray-500 text-center py-8">
-            {task.assigned_to ? 'Awaiting quote.' : 'No bids yet. Be the first to bid!'}
+            {task.assigned_to ? t('taskDetail.awaitingQuote') : t('taskDetail.noBidsYet')}
           </p>
         ) : (
           <div className="space-y-4">
@@ -3434,6 +3881,8 @@ export default function TaskDetailPage() {
                     ? 'border-amber-400 bg-amber-50'
                     : bid.status === 'accepted'
                     ? 'border-green-500 bg-green-50'
+                    : bid.status === 'withdrawn'
+                    ? 'border-gray-300 bg-gray-50 opacity-70'
                     : 'border-gray-200'
                 }`}
               >
@@ -3589,6 +4038,11 @@ export default function TaskDetailPage() {
                           {bid.status === 'rejected' && !paymentExpiredForBid && (
                             <span className="px-2 py-1 text-xs font-medium bg-red-500 text-white rounded">
                               Rejected
+                            </span>
+                          )}
+                          {bid.status === 'withdrawn' && (
+                            <span className="px-2 py-1 text-xs font-medium bg-gray-400 text-white rounded">
+                              Withdrawn
                             </span>
                           )}
                         </div>
@@ -3767,29 +4221,48 @@ export default function TaskDetailPage() {
                       {format(new Date(bid.created_at), 'MMM d, yyyy h:mm a')}
                     </p>
                   </div>
-                  <div className="ml-4 flex space-x-2">
+                  <div className="ml-4 flex flex-shrink-0 flex-wrap items-center justify-end gap-2">
                     {isTaskOwner && task.status === 'open' && bid.status === 'pending' && (
                       <button
                         onClick={() => handleAcceptBid(bid.id)}
                         disabled={Boolean(acceptingBidId)}
                         className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
                       >
-                        {acceptingBidId === bid.id ? 'Accepting...' : acceptingBidId ? 'Please wait...' : 'Accept Bid'}
+                        {acceptingBidId === bid.id ? t('taskDetail.accepting') : acceptingBidId ? t('taskDetail.pleaseWait') : t('taskDetail.acceptBid')}
                       </button>
+                    )}
+                    {canEditBid && bid.id === myPendingBid?.id && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setShowAdjustBidModal(true)}
+                          className="px-3 py-2 rounded-md text-sm font-medium bg-primary-100 text-primary-800 hover:bg-primary-200 border border-primary-200 whitespace-nowrap"
+                        >
+                          {t('taskDetail.adjustBid')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleWithdrawBid}
+                          disabled={withdrawingBid}
+                          className="px-3 py-2 rounded-md text-sm font-medium bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200 whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          {withdrawingBid ? t('taskDetail.withdrawing') : t('taskDetail.withdrawBid')}
+                        </button>
+                      </>
                     )}
                     {canSeeBidDetails(bid) && user && bid.user_id && (
                       <button
                         onClick={() => handleStartConversation(bid.user_id!)}
-                        className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
+                        className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700 whitespace-nowrap"
                       >
-                        Message
+                        {t('taskDetail.message')}
                       </button>
                     )}
                   </div>
                 </div>
                 {isTaskOwner && canSeeBidDetails(bid) && (
                   <p className="text-xs text-gray-500 mt-2">
-                    Helper bids and sets the price at their own risk, final price is fixed once accepted.
+                    {t('taskDetail.priceFinalBothSides')}
                   </p>
                 )}
               </div>
@@ -4083,6 +4556,82 @@ export default function TaskDetailPage() {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    )}
+
+    {showAdjustBidModal && canEditBid && (
+      <div
+        className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="adjust-bid-title"
+        onClick={() => !submittingBidUpdate && setShowAdjustBidModal(false)}
+      >
+        <div
+          className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 border border-gray-200"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h2 id="adjust-bid-title" className="text-lg font-semibold text-gray-900 mb-1">
+            {t('taskDetail.adjustBidModalTitle')}
+          </h2>
+          <p className="text-sm text-gray-600 mb-4">
+            {t('taskDetail.adjustBidModalIntro')}
+          </p>
+          <form onSubmit={handleUpdateBid} className="space-y-4">
+            <div>
+              <label htmlFor="adjustBidAmountModal" className="block text-sm font-medium text-gray-700 mb-2">
+                {t('taskDetail.totalPriceLabel')}
+              </label>
+              <input
+                type="number"
+                id="adjustBidAmountModal"
+                required
+                min="0"
+                step="0.01"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                value={editBidAmount}
+                onChange={(e) => setEditBidAmount(e.target.value)}
+                placeholder={t('taskDetail.totalPricePlaceholder')}
+              />
+            </div>
+            <div>
+              <label htmlFor="adjustBidMessageModal" className="block text-sm font-medium text-gray-700 mb-2">
+                {t('taskDetail.priceJustificationLabel')}
+              </label>
+              <textarea
+                id="adjustBidMessageModal"
+                rows={4}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                value={editBidMessage}
+                onChange={(e) => setEditBidMessage(e.target.value)}
+                placeholder={t('taskDetail.priceJustificationPlaceholder')}
+              />
+            </div>
+            <div className="flex gap-2 justify-end pt-2">
+              <button
+                type="button"
+                disabled={submittingBidUpdate}
+                onClick={() => setShowAdjustBidModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="submit"
+                disabled={submittingBidUpdate}
+                className="px-4 py-2 text-sm font-medium text-white bg-primary-700 rounded-md hover:bg-primary-800 disabled:opacity-50"
+              >
+                {submittingBidUpdate ? t('taskDetail.adjustBidSavingShort') : t('taskDetail.adjustBidSaveChanges')}
+              </button>
+            </div>
+            {submittingBidUpdate && (
+              <p className="text-xs text-blue-700 text-center" aria-live="polite">
+                {bidUpdateStatus || t('taskDetail.adjustBidSavingStatus')}
+              </p>
+            )}
+          </form>
         </div>
       </div>
     )}

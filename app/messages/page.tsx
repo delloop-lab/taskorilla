@@ -5,9 +5,12 @@ import { supabase } from '@/lib/supabase'
 import { Conversation } from '@/lib/types'
 import { format } from 'date-fns'
 import Link from 'next/link'
+import { Trash2 } from 'lucide-react'
 import { canRevealFullNameForTask, getDisplayName } from '@/lib/name-privacy'
+import { useLanguage } from '@/lib/i18n'
 
 export default function MessagesPage() {
+  const { t } = useLanguage()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
@@ -70,11 +73,51 @@ export default function MessagesPage() {
         return
       }
 
+      const { data: hiddenRows, error: hiddenErr } = await supabase
+        .from('user_hidden_conversations')
+        .select('conversation_id')
+        .eq('user_id', user.id)
+
+      if (hiddenErr) {
+        console.warn('user_hidden_conversations:', hiddenErr.message)
+      }
+      const hiddenIds = new Set(
+        !hiddenErr && hiddenRows ? hiddenRows.map((r) => r.conversation_id) : []
+      )
+
+      // Auto-unhide only the specific conversations that have unread messages
+      if (hiddenIds.size > 0) {
+        const hiddenArr = Array.from(hiddenIds)
+        const { data: unreadRows } = await supabase
+          .from('messages')
+          .select('conversation_id')
+          .eq('receiver_id', user.id)
+          .eq('is_read', false)
+          .in('conversation_id', hiddenArr)
+
+        const toUnhide = Array.from(new Set((unreadRows || []).map((r) => r.conversation_id)))
+        if (toUnhide.length > 0) {
+          await supabase
+            .from('user_hidden_conversations')
+            .delete()
+            .eq('user_id', user.id)
+            .in('conversation_id', toUnhide)
+          toUnhide.forEach((id) => hiddenIds.delete(id))
+        }
+      }
+
+      const visibleConversations = conversationsData.filter((c) => !hiddenIds.has(c.id))
+
+      if (visibleConversations.length === 0) {
+        setConversations([])
+        return
+      }
+
       // Fetch related data
-      const taskIds = conversationsData.map(c => c.task_id).filter(Boolean)
+      const taskIds = visibleConversations.map(c => c.task_id).filter(Boolean)
       const participantIds = Array.from(new Set([
-        ...conversationsData.map(c => c.participant1_id),
-        ...conversationsData.map(c => c.participant2_id)
+        ...visibleConversations.map(c => c.participant1_id),
+        ...visibleConversations.map(c => c.participant2_id)
       ]))
 
       const [tasksResult, profilesResult] = await Promise.all([
@@ -86,7 +129,7 @@ export default function MessagesPage() {
 
       // Load last message and unread count for each conversation
       const conversationsWithMessages = await Promise.all(
-        conversationsData.map(async (conv) => {
+        visibleConversations.map(async (conv) => {
           const [messagesResult, unreadResult] = await Promise.all([
             supabase
               .from('messages')
@@ -126,23 +169,56 @@ export default function MessagesPage() {
     }
   }
 
+  const removeFromInbox = async (convId: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!confirm(t('messages.removeFromInboxConfirm'))) {
+      return
+    }
+    const { data: { user: u } } = await supabase.auth.getUser()
+    if (!u) return
+
+    await supabase
+      .from('messages')
+      .update({ is_read: true })
+      .eq('conversation_id', convId)
+      .eq('receiver_id', u.id)
+
+    const { error } = await supabase.from('user_hidden_conversations').insert({
+      user_id: u.id,
+      conversation_id: convId,
+    })
+
+    if (error) {
+      if ((error as { code?: string }).code === '23505') {
+        loadConversations()
+        return
+      }
+      alert(error.message || t('messages.couldNotRemoveChat'))
+      return
+    }
+
+    window.dispatchEvent(new Event('messages-read'))
+    loadConversations()
+  }
+
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center">Loading conversations...</div>
+        <div className="text-center">{t('messages.loadingList')}</div>
       </div>
     )
   }
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Messages</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">{t('messages.title')}</h1>
 
       {conversations.length === 0 ? (
         <div className="bg-white rounded-lg shadow-md p-12 text-center">
-          <p className="text-gray-500 mb-4">No conversations yet.</p>
+          <p className="text-gray-500 mb-4">{t('messages.emptyTitle')}</p>
           <p className="text-sm text-gray-400">
-            Start a conversation by viewing a task and clicking "Message" on a bid.
+            {t('messages.emptyHint')}
           </p>
         </div>
       ) : (
@@ -165,17 +241,20 @@ export default function MessagesPage() {
             const hasUnread = (conv as any).unread_count > 0
 
             return (
-              <Link
+              <div
                 key={conv.id}
-                href={`/messages/${conv.id}`}
-                className={`block rounded-lg shadow-md hover:shadow-lg transition-shadow p-6 ${
+                className={`relative flex rounded-lg shadow-md hover:shadow-lg transition-shadow ${
                   hasUnread 
                     ? 'bg-blue-50 border-2 border-blue-200' 
                     : 'bg-white'
                 }`}
                 style={{ overflow: 'hidden', wordBreak: 'break-word' }}
               >
-                <div className="flex items-start justify-between min-w-0">
+                <Link
+                  href={`/messages/${conv.id}`}
+                  className="flex-1 min-w-0 block p-6 pr-14"
+                >
+                  <div className="flex items-start justify-between min-w-0">
                   <div className="flex-1 min-w-0" style={{ overflow: 'hidden' }}>
                     <div className="flex items-center space-x-3 mb-2 flex-wrap" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                       <h3 className={`text-lg font-semibold ${hasUnread ? 'text-blue-900' : 'text-gray-900'}`} style={{ wordBreak: 'break-word' }}>
@@ -206,7 +285,7 @@ export default function MessagesPage() {
                         const url = urlMatch[0]
                         const textBefore = content.substring(0, urlMatch.index).trim()
                         const isTaskUrl = url.includes('/tasks/')
-                        const buttonText = isTaskUrl ? 'View Task' : 'Open Link'
+                        const buttonText = isTaskUrl ? t('messages.viewTask') : t('messages.openLink')
                         
                         return (
                           <div className="mb-2 space-y-1">
@@ -246,7 +325,17 @@ export default function MessagesPage() {
                     )}
                   </div>
                 </div>
-              </Link>
+                </Link>
+                <button
+                  type="button"
+                  onClick={(e) => removeFromInbox(conv.id, e)}
+                  className="absolute top-4 right-4 p-2 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                  title={t('messages.removeFromInboxTitle')}
+                  aria-label={t('messages.removeFromInboxAria')}
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
             )
           })}
         </div>

@@ -158,7 +158,7 @@ export async function generateMetadata({ params }: { params: PageParams }): Prom
 
 function formatBudget(budget: number | null): string {
   if (budget == null || Number.isNaN(budget)) {
-    return 'Quote'
+    return 'Quote Needed'
   }
   return `€${Math.round(budget)}`
 }

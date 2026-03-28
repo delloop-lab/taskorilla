@@ -2,14 +2,17 @@ import { supabase as defaultSupabase } from './supabase'
 
 export type EmailType = 
   | 'new_bid'
+  | 'bid_updated'
   | 'bid_accepted'
   | 'bid_rejected'
+  | 'bid_withdrawn'
   | 'new_message'
   | 'task_completed'
   | 'task_cancelled'
   | 'admin_email'
   | 'profile_completion'
   | 'helper_task_match'
+  | 'user_paused'
 
 export interface EmailLogData {
   recipient_email: string

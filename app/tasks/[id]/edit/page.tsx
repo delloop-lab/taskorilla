@@ -1079,7 +1079,7 @@ export default function EditTaskPage() {
                           )}
                           <div className="flex items-center gap-4 text-sm">
                             <span className="font-semibold text-primary-600">
-                              {bid.amount ? `€${bid.amount.toFixed(2)}` : 'Quote'}
+                              {bid.amount ? `€${bid.amount.toFixed(2)}` : 'Quote Needed'}
                             </span>
                             <span className="text-gray-500">
                               Status: <span className={`font-medium ${

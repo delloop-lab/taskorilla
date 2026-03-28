@@ -1137,7 +1137,7 @@ export default function SurveyJSTrialForm() {
     const taskType = data.taskType || 'helper'
     const title = data.title || 'Untitled Task'
     const description = data.description || 'No description provided'
-    const budget = data.budget ? formatEuro(parseFloat(data.budget), false) : 'Quote'
+    const budget = data.budget ? formatEuro(parseFloat(data.budget), false) : 'Quote Needed'
     
     // Look up category name from ID
     let categoryName = ''

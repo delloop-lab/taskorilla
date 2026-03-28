@@ -39,10 +39,13 @@ const AdminMap = dynamic(() => import('@/components/Map'), { ssr: false })
 // AppUser extends User and includes languages and other custom fields
 interface AppUser extends User {
   languages?: string[] | null
-  role?: string // Add role field for admin page usage
+  role?: string
   is_paused?: boolean
   paused_reason?: string | null
   paused_at?: string | null
+  conduct_guide_viewed_at?: string | null
+  pause_warning_sent_at?: string | null
+  archived_at?: string | null
 }
 
 type Task = { 
@@ -573,7 +576,7 @@ export default function SuperadminDashboard() {
   async function fetchUsers() {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, email, full_name, phone_number, phone_country_code, role, created_at, is_helper, is_tasker, badges, is_featured, languages, is_paused, paused_reason, paused_at')
+      .select('id, email, full_name, phone_number, phone_country_code, role, created_at, is_helper, is_tasker, badges, is_featured, languages, is_paused, paused_reason, paused_at, conduct_guide_viewed_at, pause_warning_sent_at, archived_at')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -1153,22 +1156,57 @@ export default function SuperadminDashboard() {
     }
   }
 
+  function looksLikeEmail(value: string): boolean {
+    const s = String(value).trim()
+    if (!s || !s.includes('@')) return false
+    const parts = s.split('@')
+    return parts.length === 2 && parts[0].length > 0 && parts[1].includes('.')
+  }
+
+  function resolveUserFullNameByEmail(email: string | null | undefined): string | null {
+    if (!email) return null
+    const u = users.find((x) => x.email?.toLowerCase() === String(email).toLowerCase())
+    return u?.full_name?.trim() || null
+  }
+
   function getEmailLogSenderName(log: any): string {
     const metadata = log?.metadata || {}
-    const senderName =
-      metadata.senderName ||
-      metadata.bidderName ||
-      metadata.taskerName ||
-      metadata.helperName ||
-      metadata.sender ||
-      null
 
-    if (senderName) return senderName
+    const nameHints = [
+      metadata.senderName,
+      metadata.bidderName,
+      metadata.taskerName,
+      metadata.helperName,
+      metadata.sender,
+    ].filter(Boolean) as string[]
+
+    for (const hint of nameHints) {
+      const s = String(hint).trim()
+      if (!s) continue
+      if (looksLikeEmail(s)) {
+        const resolved = resolveUserFullNameByEmail(s)
+        if (resolved) return resolved
+        continue
+      }
+      return s
+    }
+
+    const metaEmails = [
+      metadata.senderEmail,
+      metadata.bidderEmail,
+      metadata.taskerEmail,
+      metadata.helperEmail,
+    ].filter(Boolean) as string[]
+
+    for (const em of metaEmails) {
+      const resolved = resolveUserFullNameByEmail(em)
+      if (resolved) return resolved
+    }
 
     if (log?.sent_by) {
       const senderUser = users.find((u) => u.id === log.sent_by)
-      if (senderUser?.full_name) return senderUser.full_name
-      if (senderUser?.email) return senderUser.email
+      if (senderUser?.full_name?.trim()) return senderUser.full_name.trim()
+      return 'Member'
     }
 
     return 'System'
@@ -1195,12 +1233,23 @@ export default function SuperadminDashboard() {
 
   function getEmailLogSenderProfileId(log: any): string | null {
     const metadata = log?.metadata || {}
+    const hint =
+      metadata.senderName ||
+      metadata.bidderName ||
+      metadata.taskerName ||
+      metadata.helperName ||
+      null
+    const hintStr = hint != null ? String(hint).trim() : ''
+    const emailFromMeta =
+      metadata.senderEmail ||
+      metadata.bidderEmail ||
+      metadata.taskerEmail ||
+      metadata.helperEmail ||
+      (hintStr && looksLikeEmail(hintStr) ? hintStr : null)
+    const nameForLookup = hintStr && !looksLikeEmail(hintStr) ? hintStr : null
     return (
       log?.sent_by ||
-      getUserIdByEmailOrName(
-        metadata.senderEmail || metadata.bidderEmail || metadata.taskerEmail || metadata.helperEmail || null,
-        metadata.senderName || metadata.bidderName || metadata.taskerName || metadata.helperName || null,
-      )
+      getUserIdByEmailOrName(emailFromMeta, nameForLookup)
     )
   }
 
@@ -1627,6 +1676,23 @@ export default function SuperadminDashboard() {
           ? { ...u, is_paused: json.is_paused, paused_reason: reason || null }
           : u
       ))
+
+      if (json.repeat_offender) {
+        const readGuide = json.conduct_guide_viewed_at
+          ? `They read the Professional Conduct Guide on ${new Date(json.conduct_guide_viewed_at).toLocaleDateString()}.`
+          : 'They were sent the Professional Conduct Guide but never read it.'
+        setModalState({
+          isOpen: true,
+          type: 'confirm',
+          title: 'Repeat Offender',
+          message: `${json.user_name} was previously warned and is being paused again.\n\n${readGuide}\n\nWould you like to archive this user? Their personal data will be anonymized and login disabled, but all messages and activity will be preserved for audit.`,
+          onConfirm: () => {
+            setModalState(prev => ({ ...prev, isOpen: false }))
+            performArchiveUser(userId)
+          },
+        })
+        setModalConfirmText('Archive User')
+      }
     } catch (err: any) {
       alert(err.message || 'Failed to update user')
     }
@@ -1690,6 +1756,90 @@ export default function SuperadminDashboard() {
       })
     } finally {
       setDeletingUserId(null)
+    }
+  }
+
+  async function archiveUser(userId: string) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+
+      const checkRes = await fetch('/api/admin/archive-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ userId, check: true }),
+      })
+      const check = await checkRes.json()
+
+      const c = check.counts || {}
+      let msg = `This will permanently delete ${check.user_name || 'this user'}'s login and personal information.\n\n`
+      msg += `Audit trail: ${c.messages ?? 0} messages, ${c.bids ?? 0} bids, and ${c.tasks ?? 0} tasks will be kept for records but anonymized.\n`
+
+      if (check.has_blockers) {
+        msg += `\n⚠️ WARNING — active work detected:\n`
+        for (const b of check.blockers) {
+          msg += `• ${b}\n`
+        }
+        msg += `\nYou should finish these jobs or refund the money before archiving. Archive anyway?`
+      } else {
+        msg += `\nThis cannot be undone. Are you sure?`
+      }
+
+      setModalState({
+        isOpen: true,
+        type: 'confirm',
+        title: check.has_blockers ? '⚠️ Archive User — Active Work' : 'Archive User',
+        message: msg,
+        onConfirm: () => {
+          setModalState(prev => ({ ...prev, isOpen: false }))
+          performArchiveUser(userId, check.has_blockers)
+        },
+      })
+      setModalConfirmText(check.has_blockers ? 'Archive Anyway' : 'Archive User')
+    } catch (error: any) {
+      alert('Failed to check user status: ' + (error.message || 'Unknown error'))
+    }
+  }
+
+  async function performArchiveUser(userId: string, force = false) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      const response = await fetch('/api/admin/archive-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ userId, force }),
+      })
+      const result = await response.json()
+      if (response.ok) {
+        const p = result.preserved_items
+        const summary = p
+          ? `\nPreserved for audit:\n- ${p.tasks ?? 0} tasks\n- ${p.bids ?? 0} bids\n- ${p.messages ?? 0} messages\n- ${p.reviews ?? 0} reviews`
+          : ''
+        setModalState({
+          isOpen: true,
+          type: 'success',
+          title: 'User Archived',
+          message: `User archived successfully. PII removed, login disabled.${summary}`,
+        })
+        fetchUsers()
+      } else {
+        throw new Error(result.error || 'Failed to archive user')
+      }
+    } catch (error: any) {
+      console.error('Error archiving user:', error)
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: 'Error archiving user: ' + (error.message || 'Unknown error'),
+      })
     }
   }
 
@@ -2071,6 +2221,7 @@ export default function SuperadminDashboard() {
     pending: realBids.filter(b => b.status === 'pending').length,
     accepted: realBids.filter(b => b.status === 'accepted').length,
     rejected: realBids.filter(b => b.status === 'rejected').length,
+    withdrawn: realBids.filter(b => b.status === 'withdrawn').length,
   }
   const avgBidAmount = realBids.length > 0
     ? realBids.reduce((sum, b) => sum + (b.amount || 0), 0) / realBids.length
@@ -2571,12 +2722,29 @@ export default function SuperadminDashboard() {
                     )}
                     {getSelectedUsers().some(u => u.role === 'user') && (
                       <button
-                        onClick={async () => {
+                        onClick={() => {
                           const selectedUsers = getSelectedUsers().filter(u => u.role === 'user')
-                          for (const user of selectedUsers) {
-                            await promoteUser(user.id, 'admin')
-                          }
-                          clearSelection()
+                          const count = selectedUsers.length
+                          const nameList = selectedUsers
+                            .map(u => (u.full_name || u.email || u.id).trim())
+                            .join('\n• ')
+                          setModalState({
+                            isOpen: true,
+                            type: 'confirm',
+                            title: 'Grant admin access?',
+                            message:
+                              `Warning: As superadmin, you are about to grant ADMIN status to ${count} user${count === 1 ? '' : 's'}.\n\n` +
+                              `Admins can use most of this dashboard (users, tasks, emails, and other sensitive actions). Only promote people you fully trust.\n\n` +
+                              `Users to promote:\n• ${nameList}\n\nContinue?`,
+                            onConfirm: async () => {
+                              setModalState(prev => ({ ...prev, isOpen: false }))
+                              for (const user of selectedUsers) {
+                                await promoteUser(user.id, 'admin')
+                              }
+                              clearSelection()
+                            },
+                          })
+                          setModalConfirmText('Yes, promote to Admin')
                         }}
                         className="bg-green-500 hover:bg-green-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-medium"
                       >
@@ -2706,7 +2874,7 @@ export default function SuperadminDashboard() {
                   {sortedAndFilteredUsers.map(u => (
                     <tr 
                       key={u.id} 
-                      className={`hover:bg-gray-50 ${(u as any).is_paused ? 'bg-red-50' : selectedUserIds.has(u.id) ? 'bg-blue-50' : ''}`}
+                      className={`hover:bg-gray-50 ${u.archived_at ? 'bg-gray-100 opacity-60' : (u as any).is_paused ? 'bg-red-50' : selectedUserIds.has(u.id) ? 'bg-blue-50' : ''}`}
                     >
                       <td className="border px-2 sm:px-4 py-2">
                         <input
@@ -2812,7 +2980,18 @@ export default function SuperadminDashboard() {
                         )}
                       </td>
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
-                        {(u as any).is_paused ? (
+                        {u.archived_at ? (
+                          <div className="flex flex-col gap-1">
+                            <span className="text-gray-600 font-semibold text-[11px]">Archived</span>
+                            <span className="text-gray-400 text-[10px]">{new Date(u.archived_at).toLocaleDateString()}</span>
+                            <button
+                              onClick={() => deleteUser(u.id)}
+                              className="text-[10px] text-gray-400 hover:text-red-600 underline text-left"
+                            >
+                              Hard delete (GDPR)
+                            </button>
+                          </div>
+                        ) : (u as any).is_paused ? (
                           <div className="flex flex-col gap-1">
                             <span className="text-red-600 font-semibold text-[11px]">⏸ Paused</span>
                             {(u as any).paused_reason && (
@@ -2820,23 +2999,69 @@ export default function SuperadminDashboard() {
                                 {(u as any).paused_reason}
                               </span>
                             )}
-                            <button
-                              onClick={() => pauseUser(u.id, true)}
-                              className="px-2 py-0.5 bg-green-500 hover:bg-green-600 text-white text-[11px] font-medium rounded"
-                            >
-                              Unpause
-                            </button>
+                            {(u.pause_warning_sent_at || u.conduct_guide_viewed_at) && (
+                              <div className="flex flex-col gap-0.5">
+                                {u.pause_warning_sent_at && (
+                                  <span className="text-red-700 bg-red-100 px-1 py-0.5 rounded text-[10px] font-medium" title={`Warning email sent ${new Date(u.pause_warning_sent_at).toLocaleDateString()}`}>
+                                    Warned {new Date(u.pause_warning_sent_at).toLocaleDateString()}
+                                  </span>
+                                )}
+                                {u.conduct_guide_viewed_at && (
+                                  <span className="text-amber-700 bg-amber-100 px-1 py-0.5 rounded text-[10px] font-medium" title={`Viewed conduct guide on ${new Date(u.conduct_guide_viewed_at).toLocaleDateString()}`}>
+                                    Read Guide {new Date(u.conduct_guide_viewed_at).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            <div className="flex flex-col gap-1">
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => pauseUser(u.id, true)}
+                                  className="px-2 py-0.5 bg-green-500 hover:bg-green-600 text-white text-[11px] font-medium rounded"
+                                >
+                                  Unpause
+                                </button>
+                                {(u.pause_warning_sent_at || u.conduct_guide_viewed_at) && !u.archived_at && (
+                                  <button
+                                    onClick={() => archiveUser(u.id)}
+                                    className="px-2 py-0.5 bg-red-600 hover:bg-red-700 text-white text-[11px] font-medium rounded"
+                                  >
+                                    Archive
+                                  </button>
+                                )}
+                              </div>
+                              {(u.pause_warning_sent_at || u.conduct_guide_viewed_at) && (
+                                <button
+                                  onClick={() => deleteUser(u.id)}
+                                  className="text-[10px] text-gray-400 hover:text-red-600 underline text-left"
+                                >
+                                  Hard delete (GDPR)
+                                </button>
+                              )}
+                            </div>
                           </div>
                         ) : (
-                          <button
-                            onClick={() => {
-                              const reason = prompt('Reason for pausing (optional):') ?? undefined
-                              if (reason !== null) pauseUser(u.id, false, reason || undefined)
-                            }}
-                            className="px-2 py-1 bg-orange-400 hover:bg-orange-500 text-white text-[11px] font-medium rounded"
-                          >
-                            ⏸ Pause
-                          </button>
+                          <div className="flex flex-col gap-1">
+                            {u.pause_warning_sent_at && !u.conduct_guide_viewed_at && (
+                              <span className="text-red-700 bg-red-100 px-1 py-0.5 rounded text-[10px] font-medium" title={`Warning email sent ${new Date(u.pause_warning_sent_at).toLocaleDateString()}`}>
+                                Warned (didn&apos;t read guide)
+                              </span>
+                            )}
+                            {u.conduct_guide_viewed_at && (
+                              <span className="text-amber-700 bg-amber-100 px-1 py-0.5 rounded text-[10px] font-medium" title={`Viewed conduct guide on ${new Date(u.conduct_guide_viewed_at).toLocaleDateString()}`}>
+                                Read Guide
+                              </span>
+                            )}
+                            <button
+                              onClick={() => {
+                                const reason = prompt('Reason for pausing (optional):') ?? undefined
+                                if (reason !== null) pauseUser(u.id, false, reason || undefined)
+                              }}
+                              className="px-2 py-1 bg-orange-400 hover:bg-orange-500 text-white text-[11px] font-medium rounded"
+                            >
+                              ⏸ Pause
+                            </button>
+                          </div>
                         )}
                       </td>
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
@@ -4406,6 +4631,7 @@ export default function SuperadminDashboard() {
                         >
                           <option value="">All Types</option>
                           <option value="new_bid">New Bid</option>
+                          <option value="bid_updated">Bid Updated</option>
                           <option value="bid_accepted">Bid Accepted</option>
                           <option value="bid_rejected">Bid Rejected</option>
                           <option value="new_message">New Message</option>
@@ -4481,10 +4707,10 @@ export default function SuperadminDashboard() {
                             Sent At
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Recipient
+                            Sender
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Sender
+                            Recipient
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[240px]">
                             Subject
@@ -4531,6 +4757,19 @@ export default function SuperadminDashboard() {
                               ) : '-'}
                             </td>
                             <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-700 max-w-[22ch]">
+                              {senderProfileId ? (
+                                <Link
+                                  href={`/user/${senderProfileId}`}
+                                  className="text-primary-600 hover:underline block truncate"
+                                  title={senderName}
+                                >
+                                  {senderName}
+                                </Link>
+                              ) : (
+                                <span className="block truncate" title={senderName}>{senderName}</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-700 max-w-[22ch]">
                               {recipientProfileId ? (
                                 <Link
                                   href={`/user/${recipientProfileId}`}
@@ -4543,19 +4782,6 @@ export default function SuperadminDashboard() {
                                 <span className="block truncate" title={log.recipient_name || 'Unknown Recipient'}>
                                   {log.recipient_name || 'Unknown Recipient'}
                                 </span>
-                              )}
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-700 max-w-[22ch]">
-                              {senderProfileId ? (
-                                <Link
-                                  href={`/user/${senderProfileId}`}
-                                  className="text-primary-600 hover:underline block truncate"
-                                  title={senderName}
-                                >
-                                  {senderName}
-                                </Link>
-                              ) : (
-                                <span className="block truncate" title={senderName}>{senderName}</span>
                               )}
                             </td>
                             <td className="px-4 py-2 text-xs text-gray-700 min-w-[240px]">
@@ -5591,6 +5817,7 @@ export default function SuperadminDashboard() {
                   >
                     <option value="">All Types</option>
                     <option value="new_bid">New Bid</option>
+                    <option value="bid_updated">Bid Updated</option>
                     <option value="bid_accepted">Bid Accepted</option>
                     <option value="bid_rejected">Bid Rejected</option>
                     <option value="new_message">New Message</option>
@@ -5656,8 +5883,8 @@ export default function SuperadminDashboard() {
                         />
                       </th>
                       <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm whitespace-nowrap">Date</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden md:table-cell whitespace-nowrap">Sender</th>
                       <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden md:table-cell whitespace-nowrap">Recipient</th>
-                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden lg:table-cell whitespace-nowrap">Sender</th>
                       <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm min-w-[224px]">Subject</th>
                       <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden lg:table-cell whitespace-nowrap">Type</th>
                       <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden xl:table-cell whitespace-nowrap">Error</th>
@@ -5693,17 +5920,6 @@ export default function SuperadminDashboard() {
                           </div>
                         </td>
                         <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden md:table-cell max-w-[22ch]">
-                          <div className="font-medium truncate max-w-[22ch]" title={log.recipient_name || 'Unknown Recipient'}>
-                            {recipientProfileId ? (
-                              <Link href={`/user/${recipientProfileId}`} className="text-primary-600 hover:underline block truncate">
-                                {log.recipient_name || 'Unknown Recipient'}
-                              </Link>
-                            ) : (
-                              <span>{log.recipient_name || 'Unknown Recipient'}</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden lg:table-cell max-w-[22ch]">
                           <div className="font-medium truncate max-w-[22ch]" title={getEmailLogSenderName(log)}>
                             {senderProfileId ? (
                               <Link href={`/user/${senderProfileId}`} className="text-primary-600 hover:underline block truncate">
@@ -5711,6 +5927,17 @@ export default function SuperadminDashboard() {
                               </Link>
                             ) : (
                               <span>{getEmailLogSenderName(log)}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden md:table-cell max-w-[22ch]">
+                          <div className="font-medium truncate max-w-[22ch]" title={log.recipient_name || 'Unknown Recipient'}>
+                            {recipientProfileId ? (
+                              <Link href={`/user/${recipientProfileId}`} className="text-primary-600 hover:underline block truncate">
+                                {log.recipient_name || 'Unknown Recipient'}
+                              </Link>
+                            ) : (
+                              <span>{log.recipient_name || 'Unknown Recipient'}</span>
                             )}
                           </div>
                         </td>
@@ -7013,6 +7240,7 @@ export default function SuperadminDashboard() {
                 <div className="flex-1">
                   <h2 className="text-xl font-semibold text-gray-800">{viewingEmailLog.subject}</h2>
                   <div className="mt-2 text-sm text-gray-600 space-y-1">
+                    <p><strong>From:</strong> {getEmailLogSenderName(viewingEmailLog)}</p>
                     <p><strong>To:</strong> {viewingEmailLog.recipient_email}</p>
                     <p><strong>Date:</strong> {new Date(viewingEmailLog.created_at).toLocaleString()}</p>
                     <p><strong>Type:</strong> {viewingEmailLog.email_type} | <strong>Status:</strong> <span className={`${
