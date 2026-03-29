@@ -44,18 +44,23 @@ export default function EmailTemplateEditor({
         // Configure paragraph to have minimal margins for email
         paragraph: {
           HTMLAttributes: {
-            style: 'margin: 0.5em 0; word-wrap: break-word; word-break: break-word; overflow-wrap: break-word; max-width: 100%;',
+            style: 'margin: 0 0 1em 0; line-height: 1.6; word-wrap: break-word; word-break: break-word; overflow-wrap: break-word; max-width: 100%;',
           },
         },
         // Configure list items to have minimal spacing
         bulletList: {
           HTMLAttributes: {
-            style: 'margin: 0.5em 0; padding-left: 1.5em;',
+            style: 'margin: 1em 0; padding-left: 1.5em;',
           },
         },
         orderedList: {
           HTMLAttributes: {
-            style: 'margin: 0.5em 0; padding-left: 1.5em;',
+            style: 'margin: 1em 0; padding-left: 1.5em;',
+          },
+        },
+        listItem: {
+          HTMLAttributes: {
+            style: 'margin: 0 0 0.55em 0; line-height: 1.55;',
           },
         },
         // Enable hard break for Shift+Enter line breaks
@@ -321,7 +326,7 @@ export default function EmailTemplateEditor({
       {/* Footer with variable hints */}
       <div className="px-3 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-600">
         <strong>Available variables:</strong>{' '}
-        {['{{user_name}}', '{{user_first_name}}', '{{user_email}}', '{{registration_date}}', '{{tee_image}}'].map((variable, index, array) => (
+        {['{{user_name}}', '{{user_first_name}}', '{{user_email}}', '{{registration_date}}', '{{tee_image}}', '{{mascot}}'].map((variable, index, array) => (
           <span key={variable}>
             <button
               type="button"
@@ -338,7 +343,7 @@ export default function EmailTemplateEditor({
             {index < array.length - 1 && ', '}
           </span>
         ))}
-        {' '}({'{{tee_image}}'} is mascot)
+        {' '}({'{{tee_image}}'} / {'{{mascot}}'} optional — not auto-appended)
       </div>
     </div>
   )

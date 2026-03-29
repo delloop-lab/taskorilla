@@ -850,7 +850,7 @@ export default function EmailTemplateManager({
                       height={300}
                     />
                     <p className="mt-2 text-xs text-gray-500">
-                      💡 You can use HTML formatting. Available variables: {'{{user_name}}'}, {'{{user_email}}'}, {'{{tee_image}}'} (mascot)
+                      💡 HTML allowed. Variables: {'{{user_name}}'}, {'{{user_email}}'}. Mascot: add {'{{tee_image}}'} or {'{{mascot}}'} if you want it — not auto-appended.
                     </p>
                   </div>
 

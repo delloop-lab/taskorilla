@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
@@ -197,8 +197,6 @@ export default function SuperadminDashboard() {
   const [selectedEmailLogIds, setSelectedEmailLogIds] = useState<string[]>([])
   const [emailTemplates, setEmailTemplates] = useState<Array<{ id: string; template_type: string; subject: string }>>([])
   const [selectedEmailTemplate, setSelectedEmailTemplate] = useState<string>('')
-  const [sendingProfileEmail, setSendingProfileEmail] = useState<string | null>(null)
-  const [confirmingEmail, setConfirmingEmail] = useState<string | null>(null)
   // Email log filters
   const [emailLogFilters, setEmailLogFilters] = useState({
     recipient: '',
@@ -246,6 +244,8 @@ export default function SuperadminDashboard() {
   const [userRoleFilter, setUserRoleFilter] = useState<string>('')
   const [userFeaturedFilter, setUserFeaturedFilter] = useState<string>('')
   const [userHelperTaskerFilter, setUserHelperTaskerFilter] = useState<string>('')
+  const USERS_PAGE_SIZE = 25
+  const [usersListPage, setUsersListPage] = useState(1)
   const [geocodingTasks, setGeocodingTasks] = useState(false)
   const [geocodingResult, setGeocodingResult] = useState<any>(null)
   const [regeocodingPortuguese, setRegeocodingPortuguese] = useState(false)
@@ -373,8 +373,89 @@ export default function SuperadminDashboard() {
     })
   }
 
+  const sortedAndFilteredUsers = useMemo(() => {
+    return [...users]
+      .filter(user => {
+        if (userNameFilter && !(user.full_name || '').toLowerCase().includes(userNameFilter.toLowerCase())) {
+          return false
+        }
+        if (userEmailFilter && !(user.email || '').toLowerCase().includes(userEmailFilter.toLowerCase())) {
+          return false
+        }
+        if (userFeaturedFilter === 'featured' && !user.is_featured) {
+          return false
+        }
+        if (userFeaturedFilter === 'not_featured' && user.is_featured) {
+          return false
+        }
+        if (userHelperTaskerFilter === 'helper' && !user.is_helper) {
+          return false
+        }
+        if (userHelperTaskerFilter === 'tasker' && !user.is_tasker) {
+          return false
+        }
+        if (userHelperTaskerFilter === 'both' && (!user.is_helper || !user.is_tasker)) {
+          return false
+        }
+        if (userHelperTaskerFilter === 'helper_only' && (user.is_tasker || !user.is_helper)) {
+          return false
+        }
+        if (userHelperTaskerFilter === 'tasker_only' && (user.is_helper || !user.is_tasker)) {
+          return false
+        }
+        return true
+      })
+      .sort((a, b) => {
+        let aVal: string | number
+        let bVal: string | number
+
+        switch (userSortColumn) {
+          case 'email':
+            aVal = (a.email || '').toLowerCase()
+            bVal = (b.email || '').toLowerCase()
+            break
+          case 'name':
+            aVal = (a.full_name || '').toLowerCase()
+            bVal = (b.full_name || '').toLowerCase()
+            break
+          case 'role':
+            aVal = a.role || ''
+            bVal = b.role || ''
+            break
+          case 'created_at':
+            aVal = new Date(a.created_at).getTime()
+            bVal = new Date(b.created_at).getTime()
+            break
+          case 'is_helper':
+            aVal = a.is_helper ? 1 : 0
+            bVal = b.is_helper ? 1 : 0
+            break
+          case 'is_featured':
+            aVal = a.is_featured ? 1 : 0
+            bVal = b.is_featured ? 1 : 0
+            break
+          default:
+            return 0
+        }
+
+        if (aVal < bVal) return userSortDirection === 'asc' ? -1 : 1
+        if (aVal > bVal) return userSortDirection === 'asc' ? 1 : -1
+        return 0
+      })
+  }, [users, userNameFilter, userEmailFilter, userFeaturedFilter, userHelperTaskerFilter, userSortColumn, userSortDirection])
+
+  const usersTotalPages = Math.max(1, Math.ceil(sortedAndFilteredUsers.length / USERS_PAGE_SIZE))
+
+  useEffect(() => {
+    setUsersListPage(1)
+  }, [userNameFilter, userEmailFilter, userFeaturedFilter, userHelperTaskerFilter])
+
+  useEffect(() => {
+    setUsersListPage(p => Math.min(p, usersTotalPages))
+  }, [usersTotalPages])
+
   function selectAllUsers() {
-    setSelectedUserIds(new Set(users.map(u => u.id)))
+    setSelectedUserIds(new Set(sortedAndFilteredUsers.map(u => u.id)))
   }
 
   function clearSelection() {
@@ -1575,86 +1656,6 @@ export default function SuperadminDashboard() {
     }
   }
 
-  async function confirmUserEmail(userId: string, userEmail: string) {
-    setConfirmingEmail(userId)
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const token = session?.access_token
-
-      const response = await fetch('/api/admin/confirm-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        },
-        body: JSON.stringify({ userId }),
-      })
-
-      const result = await response.json()
-
-      if (response.ok) {
-        setModalState({
-          isOpen: true,
-          type: 'success',
-          title: 'Success',
-          message: `Email confirmed successfully for ${userEmail}`,
-        })
-        fetchUsers()
-      } else {
-        throw new Error(result.error || 'Failed to confirm email')
-      }
-    } catch (error: any) {
-      console.error('Error confirming email:', error)
-      setModalState({
-        isOpen: true,
-        type: 'error',
-        title: 'Error',
-        message: 'Error confirming email: ' + (error.message || 'Unknown error'),
-      })
-    } finally {
-      setConfirmingEmail(null)
-    }
-  }
-
-  async function sendProfileCompletionEmail(userId: string, userEmail: string, userName: string) {
-    setSendingProfileEmail(userId)
-    try {
-      const response = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'profile_completion',
-          recipientEmail: userEmail,
-          recipientName: userName || userEmail,
-        }),
-      })
-
-      const result = await response.json()
-
-      if (response.ok) {
-        setModalState({
-          isOpen: true,
-          type: 'success',
-          title: 'Email Sent',
-          message: `Profile completion email sent successfully to ${userEmail}`,
-        })
-        fetchEmailLogs() // Refresh email logs
-      } else {
-        throw new Error(result.error || 'Failed to send email')
-      }
-    } catch (error: any) {
-      console.error('Error sending profile completion email:', error)
-      setModalState({
-        isOpen: true,
-        type: 'error',
-        title: 'Error',
-        message: 'Error sending email: ' + (error.message || 'Unknown error'),
-      })
-    } finally {
-      setSendingProfileEmail(null)
-    }
-  }
-
   async function pauseUser(userId: string, currentlyPaused: boolean, reason?: string) {
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -2497,79 +2498,12 @@ export default function SuperadminDashboard() {
 
         {/* Users Tab */}
         {tab === 'users' && (() => {
-          // Sort and filter users
-          const sortedAndFilteredUsers = [...users]
-            .filter(user => {
-              // Name filter
-              if (userNameFilter && !(user.full_name || '').toLowerCase().includes(userNameFilter.toLowerCase())) {
-                return false
-              }
-              // Email filter
-              if (userEmailFilter && !(user.email || '').toLowerCase().includes(userEmailFilter.toLowerCase())) {
-                return false
-              }
-              // Featured filter
-              if (userFeaturedFilter === 'featured' && !user.is_featured) {
-                return false
-              }
-              if (userFeaturedFilter === 'not_featured' && user.is_featured) {
-                return false
-              }
-              // Helper/Tasker filter
-              if (userHelperTaskerFilter === 'helper' && !user.is_helper) {
-                return false
-              }
-              if (userHelperTaskerFilter === 'tasker' && !user.is_tasker) {
-                return false
-              }
-              if (userHelperTaskerFilter === 'both' && (!user.is_helper || !user.is_tasker)) {
-                return false
-              }
-              if (userHelperTaskerFilter === 'helper_only' && (user.is_tasker || !user.is_helper)) {
-                return false
-              }
-              if (userHelperTaskerFilter === 'tasker_only' && (user.is_helper || !user.is_tasker)) {
-                return false
-              }
-              return true
-            })
-            .sort((a, b) => {
-              let aVal: any
-              let bVal: any
-              
-              switch (userSortColumn) {
-                case 'email':
-                  aVal = (a.email || '').toLowerCase()
-                  bVal = (b.email || '').toLowerCase()
-                  break
-                case 'name':
-                  aVal = (a.full_name || '').toLowerCase()
-                  bVal = (b.full_name || '').toLowerCase()
-                  break
-                case 'role':
-                  aVal = a.role || ''
-                  bVal = b.role || ''
-                  break
-                case 'created_at':
-                  aVal = new Date(a.created_at).getTime()
-                  bVal = new Date(b.created_at).getTime()
-                  break
-                case 'is_helper':
-                  aVal = a.is_helper ? 1 : 0
-                  bVal = b.is_helper ? 1 : 0
-                  break
-                case 'is_featured':
-                  aVal = a.is_featured ? 1 : 0
-                  bVal = b.is_featured ? 1 : 0
-                  break
-                default:
-                  return 0
-              }
-              
-              if (aVal < bVal) return userSortDirection === 'asc' ? -1 : 1
-              if (aVal > bVal) return userSortDirection === 'asc' ? 1 : -1
-              return 0
-            })
+          const usersPaginated = sortedAndFilteredUsers.slice(
+            (usersListPage - 1) * USERS_PAGE_SIZE,
+            usersListPage * USERS_PAGE_SIZE
+          )
+          const allOnPageSelected =
+            usersPaginated.length > 0 && usersPaginated.every(u => selectedUserIds.has(u.id))
 
           const handleSort = (column: string) => {
             if (userSortColumn === column) {
@@ -2588,13 +2522,23 @@ export default function SuperadminDashboard() {
           return (
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
-              <h2 className="text-lg sm:text-xl font-semibold">Users ({sortedAndFilteredUsers.length}{sortedAndFilteredUsers.length !== users.length ? ` of ${users.length}` : ''})</h2>
+              <div>
+                <h2 className="text-lg sm:text-xl font-semibold">Users ({sortedAndFilteredUsers.length}{sortedAndFilteredUsers.length !== users.length ? ` of ${users.length}` : ''})</h2>
+                {sortedAndFilteredUsers.length > 0 && (
+                  <p className="text-xs text-gray-600 mt-1">
+                    Showing {(usersListPage - 1) * USERS_PAGE_SIZE + 1}–
+                    {Math.min(usersListPage * USERS_PAGE_SIZE, sortedAndFilteredUsers.length)} of {sortedAndFilteredUsers.length}
+                    {usersTotalPages > 1 ? ` · Page ${usersListPage} of ${usersTotalPages}` : ''}
+                  </p>
+                )}
+              </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={selectAllUsers}
                   className="text-sm text-blue-600 hover:text-blue-700 px-3 py-1"
+                  title="Select everyone matching current filters"
                 >
-                  Select All
+                  Select all (filtered)
                 </button>
                 <button
                   onClick={clearSelection}
@@ -2682,130 +2626,190 @@ export default function SuperadminDashboard() {
               )}
             </div>
 
-            {/* Actions Toolbar */}
-            {selectedUserIds.size > 0 && (
+            {/* Actions Toolbar — always visible; buttons disable when not applicable */}
+            {(() => {
+              const bulkSelected = getSelectedUsers()
+              const helperSelected = bulkSelected.filter(u => u.is_helper)
+              const helperCount = helperSelected.length
+              const allHelpersFeatured =
+                helperCount > 0 && helperSelected.every(h => h.is_featured)
+              const canManageBadges =
+                selectedUserIds.size === 1 &&
+                bulkSelected.length === 1 &&
+                !!(bulkSelected[0].is_helper || bulkSelected[0].is_tasker)
+              const promoteCount = bulkSelected.filter(u => u.role === 'user').length
+              const demoteCount = bulkSelected.filter(u => u.role === 'admin').length
+              const deletableCount = bulkSelected.filter(u => u.role !== 'superadmin').length
+              const bulkPauseCount = bulkSelected.filter(
+                u =>
+                  u.role !== 'superadmin' &&
+                  !u.archived_at &&
+                  !(u as AppUser).is_paused
+              ).length
+
+              const btnDisabled = 'disabled:opacity-45 disabled:cursor-not-allowed'
+              return (
               <div className="mb-4 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-medium text-gray-700">
-                    {selectedUserIds.size} user{selectedUserIds.size !== 1 ? 's' : ''} selected:
-                  </span>
-                  {getSelectedUsers().slice(0, 3).map(u => (
-                    <span key={u.id} className="text-xs bg-white px-2 py-1 rounded border">
-                      {u.full_name || u.email}
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-gray-700">
+                      {selectedUserIds.size === 0
+                        ? 'No users selected — use the checkboxes in the table below.'
+                        : `${selectedUserIds.size} user${selectedUserIds.size !== 1 ? 's' : ''} selected:`}
                     </span>
-                  ))}
-                  {selectedUserIds.size > 3 && (
-                    <span className="text-xs text-gray-500">+{selectedUserIds.size - 3} more</span>
-                  )}
-                  <div className="ml-auto flex gap-2 flex-wrap">
-                    {getSelectedUsers().filter(u => u.is_helper || u.is_tasker).length === 1 && (
-                      <button
-                        onClick={() => openBadgeManager()}
-                        className="bg-amber-500 hover:bg-amber-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-medium"
-                      >
-                        🏅 Manage Badges
-                      </button>
+                    {bulkSelected.slice(0, 3).map(u => (
+                      <span key={u.id} className="text-xs bg-white px-2 py-1 rounded border">
+                        {u.full_name || u.email}
+                      </span>
+                    ))}
+                    {selectedUserIds.size > 3 && (
+                      <span className="text-xs text-gray-500">+{selectedUserIds.size - 3} more</span>
                     )}
-                    {getSelectedUsers().some(u => u.is_helper) && (
-                      <button
-                        onClick={async () => {
-                          const selectedHelpers = getSelectedUsers().filter(u => u.is_helper)
-                          for (const helper of selectedHelpers) {
-                            await toggleFeatured(helper.id, helper.is_featured || false)
-                          }
-                          clearSelection()
-                        }}
-                        className="bg-purple-500 hover:bg-purple-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-medium"
-                      >
-                        ⭐ {getSelectedUsers().filter(u => u.is_helper && u.is_featured).length === getSelectedUsers().filter(u => u.is_helper).length ? 'Unfeature' : 'Feature'} ({getSelectedUsers().filter(u => u.is_helper).length})
-                      </button>
-                    )}
-                    {getSelectedUsers().some(u => u.role === 'user') && (
-                      <button
-                        onClick={() => {
-                          const selectedUsers = getSelectedUsers().filter(u => u.role === 'user')
-                          const count = selectedUsers.length
-                          const nameList = selectedUsers
-                            .map(u => (u.full_name || u.email || u.id).trim())
-                            .join('\n• ')
-                          setModalState({
-                            isOpen: true,
-                            type: 'confirm',
-                            title: 'Grant admin access?',
-                            message:
-                              `Warning: As superadmin, you are about to grant ADMIN status to ${count} user${count === 1 ? '' : 's'}.\n\n` +
-                              `Admins can use most of this dashboard (users, tasks, emails, and other sensitive actions). Only promote people you fully trust.\n\n` +
-                              `Users to promote:\n• ${nameList}\n\nContinue?`,
-                            onConfirm: async () => {
-                              setModalState(prev => ({ ...prev, isOpen: false }))
-                              for (const user of selectedUsers) {
-                                await promoteUser(user.id, 'admin')
-                              }
-                              clearSelection()
-                            },
-                          })
-                          setModalConfirmText('Yes, promote to Admin')
-                        }}
-                        className="bg-green-500 hover:bg-green-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-medium"
-                      >
-                        ⬆ Promote to Admin ({getSelectedUsers().filter(u => u.role === 'user').length})
-                      </button>
-                    )}
-                    {getSelectedUsers().some(u => u.role === 'admin') && (
-                      <button
-                        onClick={async () => {
-                          const selectedUsers = getSelectedUsers().filter(u => u.role === 'admin')
-                          for (const user of selectedUsers) {
-                            await promoteUser(user.id, 'user')
-                          }
-                          clearSelection()
-                        }}
-                        className="bg-gray-500 hover:bg-gray-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-medium"
-                      >
-                        ⬇ Demote to User ({getSelectedUsers().filter(u => u.role === 'admin').length})
-                      </button>
-                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
                     <button
+                      type="button"
+                      disabled={!canManageBadges}
+                      title={
+                        canManageBadges
+                          ? 'Open badge editor for this user'
+                          : 'Select exactly one helper or tasker'
+                      }
+                      onClick={() => openBadgeManager()}
+                      className={`bg-amber-500 hover:bg-amber-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-medium ${btnDisabled}`}
+                    >
+                      🏅 Manage Badges
+                    </button>
+                    <button
+                      type="button"
+                      disabled={helperCount === 0}
+                      title={helperCount === 0 ? 'Select one or more helpers to toggle featured' : undefined}
                       onClick={async () => {
-                        const selectedUsers = getSelectedUsers()
-                        for (const user of selectedUsers) {
-                          await sendProfileCompletionEmail(user.id, user.email, user.full_name || '')
+                        if (helperCount === 0) return
+                        for (const helper of helperSelected) {
+                          await toggleFeatured(helper.id, helper.is_featured || false)
                         }
                         clearSelection()
                       }}
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-medium"
+                      className={`bg-purple-500 hover:bg-purple-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-medium ${btnDisabled}`}
                     >
-                      ✉ Send Profile Link ({selectedUserIds.size})
+                      ⭐ {allHelpersFeatured ? 'Unfeature' : 'Feature'} ({helperCount})
                     </button>
-                    {getSelectedUsers().some(u => u.role !== 'superadmin') && (
-                      <button
-                        onClick={async () => {
-                          const selectedUsers = getSelectedUsers().filter(u => u.role !== 'superadmin')
-                          setPendingBulkDelete(true)
-                          setModalState({
-                            isOpen: true,
-                            type: 'confirm',
-                            title: 'Confirm Bulk Deletion',
-                            message: `Are you sure you want to delete ${selectedUsers.length} user(s)? This cannot be undone!`,
-                            onConfirm: async () => {
-                              setModalState({ ...modalState, isOpen: false })
-                              for (const user of selectedUsers) {
-                                await performDeleteUser(user.id)
-                              }
-                              clearSelection()
-                              setPendingBulkDelete(false)
-                            },
-                          })
-                        }}
-                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm font-medium"
-                      >
-                        🗑 Delete ({getSelectedUsers().filter(u => u.role !== 'superadmin').length})
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      disabled={promoteCount === 0}
+                      title={promoteCount === 0 ? 'Select users with role “user” to promote' : undefined}
+                      onClick={() => {
+                        if (promoteCount === 0) return
+                        const selectedUsers = bulkSelected.filter(u => u.role === 'user')
+                        const count = selectedUsers.length
+                        const nameList = selectedUsers
+                          .map(u => (u.full_name || u.email || u.id).trim())
+                          .join('\n• ')
+                        setModalState({
+                          isOpen: true,
+                          type: 'confirm',
+                          title: 'Grant admin access?',
+                          message:
+                            `Warning: As superadmin, you are about to grant ADMIN status to ${count} user${count === 1 ? '' : 's'}.\n\n` +
+                            `Admins can use most of this dashboard (users, tasks, emails, and other sensitive actions). Only promote people you fully trust.\n\n` +
+                            `Users to promote:\n• ${nameList}\n\nContinue?`,
+                          onConfirm: async () => {
+                            setModalState(prev => ({ ...prev, isOpen: false }))
+                            for (const user of selectedUsers) {
+                              await promoteUser(user.id, 'admin')
+                            }
+                            clearSelection()
+                          },
+                        })
+                        setModalConfirmText('Yes, promote to Admin')
+                      }}
+                      className={`bg-green-500 hover:bg-green-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-medium ${btnDisabled}`}
+                    >
+                      ⬆ Promote to Admin ({promoteCount})
+                    </button>
+                    <button
+                      type="button"
+                      disabled={demoteCount === 0}
+                      title={demoteCount === 0 ? 'Select admin users to demote' : undefined}
+                      onClick={async () => {
+                        if (demoteCount === 0) return
+                        const toDemote = bulkSelected.filter(u => u.role === 'admin')
+                        for (const user of toDemote) {
+                          await promoteUser(user.id, 'user')
+                        }
+                        clearSelection()
+                      }}
+                      className={`bg-gray-500 hover:bg-gray-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-medium ${btnDisabled}`}
+                    >
+                      ⬇ Demote to User ({demoteCount})
+                    </button>
+                    <button
+                      type="button"
+                      disabled={bulkPauseCount === 0}
+                      title={
+                        bulkPauseCount === 0
+                          ? 'Select users who are not superadmin, not archived, and not already paused'
+                          : 'Pause selected users (optional reason applies to all)'
+                      }
+                      onClick={async () => {
+                        if (bulkPauseCount === 0) return
+                        const raw = prompt(
+                          'Reason for pausing (optional). This will be sent for each user; leave blank if none:'
+                        )
+                        if (raw === null) return
+                        const reason = raw.trim() || undefined
+                        const toPause = bulkSelected.filter(
+                          u =>
+                            u.role !== 'superadmin' &&
+                            !u.archived_at &&
+                            !(u as AppUser).is_paused
+                        )
+                        for (const user of toPause) {
+                          await pauseUser(user.id, false, reason)
+                        }
+                        clearSelection()
+                      }}
+                      className={`bg-orange-500 hover:bg-orange-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-medium ${btnDisabled}`}
+                    >
+                      ⏸ Pause ({bulkPauseCount})
+                    </button>
+                    <button
+                      type="button"
+                      disabled={deletableCount === 0}
+                      title={
+                        deletableCount === 0
+                          ? 'Select non–superadmin users to delete'
+                          : undefined
+                      }
+                      onClick={() => {
+                        if (deletableCount === 0) return
+                        const selectedUsers = bulkSelected.filter(u => u.role !== 'superadmin')
+                        setPendingBulkDelete(true)
+                        setModalState({
+                          isOpen: true,
+                          type: 'confirm',
+                          title: 'Confirm Bulk Deletion',
+                          message: `Are you sure you want to delete ${selectedUsers.length} user(s)? This cannot be undone!`,
+                          onConfirm: async () => {
+                            setModalState({ ...modalState, isOpen: false })
+                            for (const user of selectedUsers) {
+                              await performDeleteUser(user.id)
+                            }
+                            clearSelection()
+                            setPendingBulkDelete(false)
+                          },
+                        })
+                      }}
+                      className={`bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm font-medium ${btnDisabled}`}
+                    >
+                      🗑 Delete ({deletableCount})
+                    </button>
                   </div>
                 </div>
               </div>
-            )}
+              )
+            })()}
 
             <div className="overflow-x-auto overflow-y-visible -mx-4 sm:mx-0">
               <table className="min-w-full border border-gray-300" style={{ position: 'relative' }}>
@@ -2814,14 +2818,23 @@ export default function SuperadminDashboard() {
                     <th className="border px-2 sm:px-4 py-2 text-left w-12">
                       <input
                         type="checkbox"
-                        checked={selectedUserIds.size === sortedAndFilteredUsers.length && sortedAndFilteredUsers.length > 0}
+                        checked={allOnPageSelected}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            selectAllUsers()
+                            setSelectedUserIds(prev => {
+                              const next = new Set(prev)
+                              usersPaginated.forEach(u => next.add(u.id))
+                              return next
+                            })
                           } else {
-                            clearSelection()
+                            setSelectedUserIds(prev => {
+                              const next = new Set(prev)
+                              usersPaginated.forEach(u => next.delete(u.id))
+                              return next
+                            })
                           }
                         }}
+                        title="Select or clear all users on this page"
                         className="w-4 h-4"
                       />
                     </th>
@@ -2837,16 +2850,22 @@ export default function SuperadminDashboard() {
                     >
                       Name <SortIcon column="name" />
                     </th>
+                    <th
+                      className="border px-1 py-2 text-left text-[10px] sm:text-xs whitespace-nowrap w-16 max-w-[4.25rem] sm:w-20 sm:max-w-[5rem] cursor-pointer hover:bg-gray-200 select-none"
+                      onClick={() => handleSort('created_at')}
+                      title="Profile created in Taskorilla"
+                    >
+                      Reg. <SortIcon column="created_at" />
+                    </th>
                     <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden lg:table-cell">
                       Phone
                     </th>
                     <th 
-                      className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm cursor-pointer hover:bg-gray-200 select-none"
+                      className="border px-1 py-2 text-left text-[10px] sm:text-xs w-16 max-w-[4.25rem] sm:max-w-[5rem] cursor-pointer hover:bg-gray-200 select-none"
                       onClick={() => handleSort('role')}
                     >
                       Role <SortIcon column="role" />
                     </th>
-                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Email Status</th>
                     <th 
                       className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden md:table-cell cursor-pointer hover:bg-gray-200 select-none"
                       onClick={() => handleSort('is_helper')}
@@ -2862,16 +2881,10 @@ export default function SuperadminDashboard() {
                     <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">
                       Status
                     </th>
-                    <th 
-                      className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm cursor-pointer hover:bg-gray-200 select-none"
-                      onClick={() => handleSort('created_at')}
-                    >
-                      Registered <SortIcon column="created_at" />
-                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedAndFilteredUsers.map(u => (
+                  {usersPaginated.map(u => (
                     <tr 
                       key={u.id} 
                       className={`hover:bg-gray-50 ${u.archived_at ? 'bg-gray-100 opacity-60' : (u as any).is_paused ? 'bg-red-50' : selectedUserIds.has(u.id) ? 'bg-blue-50' : ''}`}
@@ -2885,7 +2898,16 @@ export default function SuperadminDashboard() {
                         />
                       </td>
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
-                        <div className="truncate max-w-[150px] sm:max-w-none" title={u.email}>{u.email}</div>
+                        <span
+                          className="cursor-default"
+                          title={u.email || undefined}
+                        >
+                          {u.email
+                            ? u.email.length > 15
+                              ? `${u.email.slice(0, 15)}...`
+                              : u.email
+                            : '—'}
+                        </span>
                       </td>
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden sm:table-cell">
                         <Link
@@ -2897,84 +2919,76 @@ export default function SuperadminDashboard() {
                           {u.full_name || 'N/A'}
                         </Link>
                       </td>
+                      <td
+                        className="border px-1 py-2 text-[10px] sm:text-xs text-gray-700 whitespace-nowrap w-16 max-w-[4.25rem] sm:w-20 sm:max-w-[5rem] overflow-hidden text-ellipsis"
+                        title={u.created_at ? new Date(u.created_at).toLocaleString() : undefined}
+                      >
+                        {u.created_at
+                          ? new Date(u.created_at).toLocaleDateString(undefined, {
+                              year: '2-digit',
+                              month: 'short',
+                              day: 'numeric',
+                            })
+                          : '—'}
+                      </td>
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden lg:table-cell text-gray-600">
                         {(u as any).phone_number ? `${(u as any).phone_country_code || ''} ${(u as any).phone_number}`.trim() : '—'}
                       </td>
-                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
-                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                          u.role === 'superadmin' ? 'bg-purple-100 text-purple-800' :
-                          u.role === 'admin' ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
+                      <td className="border px-1 py-2 w-16 max-w-[4.25rem] sm:max-w-[5rem] overflow-hidden">
+                        <span
+                          className={`inline-block max-w-full truncate align-middle px-1 py-0.5 rounded text-[10px] sm:text-[11px] font-semibold leading-tight ${
+                            u.role === 'superadmin' ? 'bg-purple-100 text-purple-800' :
+                            u.role === 'admin' ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}
+                          title={u.role || undefined}
+                        >
                           {u.role}
                         </span>
                       </td>
-                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
-                        <button
-                          onClick={() => confirmUserEmail(u.id, u.email)}
-                          disabled={confirmingEmail === u.id}
-                          className={`px-2 sm:px-3 py-1 rounded text-xs font-medium transition-colors ${
-                            confirmingEmail === u.id
-                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                              : 'bg-green-500 text-white hover:bg-green-600'
-                          }`}
-                          title="Click to confirm user's email"
-                        >
-                          {confirmingEmail === u.id ? 'Confirming...' : '✓ Confirm Email'}
-                        </button>
-                      </td>
-                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden md:table-cell">
+                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden md:table-cell align-top max-w-[14rem]">
                         {u.is_helper || u.is_tasker ? (
-                          <div className="flex flex-wrap gap-1">
-                            {u.badges && u.badges.length > 0 ? (
-                              u.badges.map((badge, idx) => {
-                                const getBadgeImage = (badgeName: string) => {
-                                  const lowerBadge = badgeName.toLowerCase();
-                                  if (lowerBadge.includes('founding') && lowerBadge.includes('tasker')) {
-                                    return '/images/founding_tasker_badge.png';
-                                  } else if (lowerBadge.includes('founding') && lowerBadge.includes('helper')) {
-                                    return '/images/founding_helper_badge.png';
-                                  } else if (lowerBadge.includes('fast') || lowerBadge.includes('responder')) {
-                                    return '/images/fast.png';
-                                  } else if (lowerBadge.includes('top helper') || lowerBadge === 'top helper') {
-                                    return '/images/top_helper.png';
-                                  } else if (lowerBadge.includes('expert') || lowerBadge.includes('skill')) {
-                                    return '/images/expert.png';
-                                  }
-                                  return null;
-                                };
-                                const badgeImage = getBadgeImage(badge);
-                                return (
-                                  <span key={idx} title={badge}>
-                                    {badgeImage ? (
-                                      <img src={badgeImage} alt={badge} className="h-24 w-24 object-contain" />
-                                    ) : (
-                                      <span className="text-4xl">🏆</span>
-                                    )}
-                                  </span>
-                                );
-                              })
-                            ) : (
-                              <span className="text-xs text-gray-400">No badges</span>
-                            )}
-                          </div>
+                          u.badges && u.badges.length > 0 ? (
+                            <div className="flex flex-wrap gap-0.5">
+                              {u.badges.map((badge, idx) => (
+                                <span
+                                  key={idx}
+                                  className="inline-block text-[11px] leading-tight bg-amber-50 text-amber-900 border border-amber-200/80 px-1.5 py-0.5 rounded"
+                                  title={badge}
+                                >
+                                  {badge}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-400">No badges</span>
+                          )
                         ) : (
                           <span className="text-xs text-gray-400">Not a helper/tasker</span>
                         )}
                       </td>
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden lg:table-cell">
                         {u.is_helper ? (
-                          <button
-                            onClick={() => toggleFeatured(u.id, u.is_featured || false)}
-                            className={`px-2 sm:px-3 py-1 rounded text-xs font-medium transition-colors ${
-                              u.is_featured
-                                ? 'bg-purple-500 text-white hover:bg-purple-600'
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            }`}
-                            title={u.is_featured ? 'Click to unfeature' : 'Click to feature'}
-                          >
-                            {u.is_featured ? '⭐ Featured' : '⭐ Not Featured'}
-                          </button>
+                          u.is_featured ? (
+                            <button
+                              type="button"
+                              onClick={() => toggleFeatured(u.id, true)}
+                              className="px-2 sm:px-3 py-1 rounded-full text-xs font-medium bg-purple-500 text-white hover:bg-purple-600"
+                              title="Click to remove featured"
+                            >
+                              ⭐ Featured
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => toggleFeatured(u.id, false)}
+                              className="text-lg leading-none text-gray-300 hover:text-purple-500 transition-colors px-0.5"
+                              title="Add to highlighted helpers (same action as bulk Feature)"
+                              aria-label="Add helper to highlighted list"
+                            >
+                              ☆
+                            </button>
+                          )
                         ) : (
                           <span className="text-xs text-gray-400">—</span>
                         )}
@@ -3052,26 +3066,40 @@ export default function SuperadminDashboard() {
                                 Read Guide
                               </span>
                             )}
-                            <button
-                              onClick={() => {
-                                const reason = prompt('Reason for pausing (optional):') ?? undefined
-                                if (reason !== null) pauseUser(u.id, false, reason || undefined)
-                              }}
-                              className="px-2 py-1 bg-orange-400 hover:bg-orange-500 text-white text-[11px] font-medium rounded"
-                            >
-                              ⏸ Pause
-                            </button>
+                            {!u.pause_warning_sent_at && !u.conduct_guide_viewed_at && (
+                              <span className="text-xs text-gray-500">Active</span>
+                            )}
                           </div>
                         )}
-                      </td>
-                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
-                        {u.created_at ? new Date(u.created_at).toLocaleDateString() : 'N/A'}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+            {sortedAndFilteredUsers.length > USERS_PAGE_SIZE && (
+              <div className="flex flex-wrap items-center justify-between gap-3 mt-4 px-1 border-t border-gray-100 pt-3">
+                <button
+                  type="button"
+                  disabled={usersListPage <= 1}
+                  onClick={() => setUsersListPage(p => Math.max(1, p - 1))}
+                  className="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  ← Previous {USERS_PAGE_SIZE}
+                </button>
+                <span className="text-sm text-gray-600 tabular-nums">
+                  Page {usersListPage} of {usersTotalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={usersListPage >= usersTotalPages}
+                  onClick={() => setUsersListPage(p => Math.min(usersTotalPages, p + 1))}
+                  className="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Next {USERS_PAGE_SIZE} →
+                </button>
+              </div>
+            )}
           </div>
           )
         })()}
