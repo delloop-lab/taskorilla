@@ -4001,6 +4001,8 @@ export default function TaskDetailPage() {
                               {bid.user.badges.map((badge: string, idx: number) => {
                                 const getBadgeImage = (badgeName: string) => {
                                   const lower = badgeName.toLowerCase()
+                                  if (lower.includes('founding') && lower.includes('tasker')) return '/images/founding_tasker_badge.png'
+                                  if (lower.includes('founding') && lower.includes('helper')) return '/images/founding_helper_badge.png'
                                   if (lower.includes('fast')) return '/images/fast.png'
                                   if (lower.includes('top')) return '/images/top_helper.png'
                                   if (lower.includes('expert')) return '/images/expert.png'
@@ -4157,6 +4159,18 @@ export default function TaskDetailPage() {
                               {bid.user.badges.map((badge: string, idx: number) => {
                                 const getBadgeDetails = (badgeName: string) => {
                                   const lower = badgeName.toLowerCase()
+                                  if (lower.includes('founding') && lower.includes('tasker')) return {
+                                    img: '/images/founding_tasker_badge.png',
+                                    name: 'Founding Tasker',
+                                    description: 'An early member who helped shape the Taskorilla marketplace from the beginning.',
+                                    color: 'bg-indigo-50 border-indigo-200'
+                                  }
+                                  if (lower.includes('founding') && lower.includes('helper')) return {
+                                    img: '/images/founding_helper_badge.png',
+                                    name: 'Founding Helper',
+                                    description: 'An early helper who supported the community during the platform launch period.',
+                                    color: 'bg-sky-50 border-sky-200'
+                                  }
                                   if (lower.includes('fast')) return {
                                     img: '/images/fast.png',
                                     name: 'Fast Responder',

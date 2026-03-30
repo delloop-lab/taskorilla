@@ -35,7 +35,7 @@ export default function Footer({ variant = 'default' }: FooterProps) {
             <span>{t('footer.rights')}</span>
             <span className="text-xs opacity-75 font-medium">{version}</span>
             <a
-              href="https://www.facebook.com/profile.php?id=61584791914940"
+              href="https://www.facebook.com/groups/taskorilla/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 hover:text-blue-700 transition-colors inline-flex items-center"
@@ -97,7 +97,7 @@ export default function Footer({ variant = 'default' }: FooterProps) {
           <Link href="/contact" className="hover:text-foreground transition-colors">{t('footer.contact')}</Link>
           <span className="text-muted-foreground/30">|</span>
           <a
-            href="https://www.facebook.com/profile.php?id=61584791914940"
+            href="https://www.facebook.com/groups/taskorilla/"
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 hover:text-blue-700 transition-colors inline-flex items-center"

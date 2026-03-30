@@ -22,7 +22,7 @@ export function SocialBar({ className }: SocialBarProps) {
       </span>
       <div className="flex items-center gap-2">
         <a
-          href="https://www.facebook.com/profile.php?id=61584791914940"
+          href="https://www.facebook.com/groups/taskorilla/"
           target="_blank"
           rel="noopener noreferrer"
           className="text-blue-600 hover:text-blue-700 transition-colors inline-flex items-center"
