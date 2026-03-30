@@ -65,6 +65,12 @@ type Task = {
   location?: string | null
 }
 
+type HelperTaskAllocation = {
+  helper_id: string
+  first_allocated_at: string | null
+  allocated_via: string | null
+}
+
 type Bid = {
   id: string
   task_id: string
@@ -98,6 +104,7 @@ export default function SuperadminDashboard() {
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState<AppUser[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
+  const [taskAllocationsByTask, setTaskAllocationsByTask] = useState<Record<string, HelperTaskAllocation[]>>({})
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
   const [bids, setBids] = useState<Bid[]>([])
   const [reviews, setReviews] = useState<Review[]>([])
@@ -297,13 +304,21 @@ export default function SuperadminDashboard() {
     reason?: string
     aiClassification?: { skills: string[]; professions: string[] }
     matchMode?: string
+    allocatedCount?: number
+    excludedCount?: number
+    taskTypeKey?: string
   }>({ task: null, matches: [], reason: undefined })
   const [sendingMatches, setSendingMatches] = useState(false)
   const [sendMatchesMessage, setSendMatchesMessage] = useState<string | null>(null)
   const [sendTaskId, setSendTaskId] = useState('')
-  const [sendTaskMatches, setSendTaskMatches] = useState<Array<{ id: string; name: string; email: string; distanceKm?: number; phoneNumber?: string | null; phoneCountryCode?: string | null; smsOptOut?: boolean; compositeScore?: number; semanticScore?: number; distanceScore?: number; professionScore?: number; skillScore?: number; profileScore?: number }>>([])
+  const [sendTaskMatches, setSendTaskMatches] = useState<Array<{ id: string; name: string; email: string; distanceKm?: number; phoneNumber?: string | null; phoneCountryCode?: string | null; smsOptOut?: boolean; compositeScore?: number; semanticScore?: number; distanceScore?: number; professionScore?: number; skillScore?: number; profileScore?: number; isAllocated?: boolean; allocatedAt?: string | null; allocatedVia?: string | null }>>([])
   const [sendTaskMatchesLoading, setSendTaskMatchesLoading] = useState(false)
   const [selectedSendHelperIds, setSelectedSendHelperIds] = useState<Set<string>>(new Set())
+  const [overrideExcludedHelperIds, setOverrideExcludedHelperIds] = useState<Set<string>>(new Set())
+  const [updatingMatchFeedbackHelperId, setUpdatingMatchFeedbackHelperId] = useState<string | null>(null)
+  const [showMatchFeedbackReasonModal, setShowMatchFeedbackReasonModal] = useState(false)
+  const [matchFeedbackReasonInput, setMatchFeedbackReasonInput] = useState('wrong_skill')
+  const [pendingExcludeFeedbackTarget, setPendingExcludeFeedbackTarget] = useState<{ taskId: string; helperId: string } | null>(null)
   const [sendViaEmail, setSendViaEmail] = useState(true)
   const [sendViaSms, setSendViaSms] = useState(false)
   const [lockMatchTaskSelection, setLockMatchTaskSelection] = useState(true)
@@ -678,7 +693,38 @@ export default function SuperadminDashboard() {
     } else if (data) {
       setTasks(data)
       setSelectedTaskIds([])
+      await fetchTaskAllocations(data.map((t: Task) => t.id))
     }
+  }
+
+  async function fetchTaskAllocations(taskIds: string[]) {
+    if (!taskIds.length) {
+      setTaskAllocationsByTask({})
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('helper_task_allocations')
+      .select('task_id, helper_id, first_allocated_at, allocated_via')
+      .in('task_id', taskIds)
+      .order('first_allocated_at', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching helper task allocations:', error)
+      return
+    }
+
+    const grouped: Record<string, HelperTaskAllocation[]> = {}
+    for (const row of (data || [])) {
+      const taskId = (row as any).task_id as string
+      if (!grouped[taskId]) grouped[taskId] = []
+      grouped[taskId].push({
+        helper_id: (row as any).helper_id as string,
+        first_allocated_at: (row as any).first_allocated_at ?? null,
+        allocated_via: (row as any).allocated_via ?? null,
+      })
+    }
+    setTaskAllocationsByTask(grouped)
   }
 
   async function fetchReports() {
@@ -1470,11 +1516,17 @@ export default function SuperadminDashboard() {
         reason: data.reason,
         aiClassification: data.aiClassification || undefined,
         matchMode: data.matchMode || undefined,
+        allocatedCount: Number(data.allocatedCount || 0),
+        excludedCount: Number(data.excludedCount || 0),
+        taskTypeKey: data.taskTypeKey || undefined,
       })
-      setSelectedSendHelperIds(new Set((data.matches || []).map((m: any) => m.id as string)))
+      setSelectedSendHelperIds(new Set((data.matches || []).filter((m: any) => !m.isAllocated && !m.isExcluded).map((m: any) => m.id as string)))
+      setOverrideExcludedHelperIds(new Set())
+      return data
     } catch (error: any) {
       console.error('Error fetching helper task match preview:', error)
       setPreviewError(error.message || 'Failed to load preview')
+      return null
     } finally {
       setPreviewLoading(false)
     }
@@ -1526,7 +1578,8 @@ export default function SuperadminDashboard() {
       const data = await response.json().catch(() => ({}))
       if (response.ok && Array.isArray(data.matches)) {
         setSendTaskMatches(data.matches)
-        setSelectedSendHelperIds(new Set(data.matches.map((m: any) => m.id as string)))
+        setSelectedSendHelperIds(new Set(data.matches.filter((m: any) => !m.isAllocated && !m.isExcluded).map((m: any) => m.id as string)))
+        setOverrideExcludedHelperIds(new Set())
       }
     } catch (error: any) {
       console.error('Error fetching send task matches:', error)
@@ -1549,7 +1602,7 @@ export default function SuperadminDashboard() {
     })
   }
 
-  async function sendHelperTaskMatchEmails(taskId: string, helperIds: string[]) {
+  async function sendHelperTaskMatchEmails(taskId: string, helperIds: string[], overrideExcludedIds: string[] = []) {
     try {
       setSendMatchesMessage(null)
       setSendingMatches(true)
@@ -1568,6 +1621,7 @@ export default function SuperadminDashboard() {
         body: JSON.stringify({
           taskId,
           helperIds,
+          overrideExcludedHelperIds: overrideExcludedIds,
           channels: [
             ...(sendViaEmail ? ['email'] : []),
             ...(sendViaSms ? ['sms'] : []),
@@ -1584,15 +1638,129 @@ export default function SuperadminDashboard() {
       const parts: string[] = []
       if (sendViaEmail) parts.push(`${data.sent || 0} email(s)`)
       if (sendViaSms) parts.push(`${data.smsSent || 0} SMS`)
+      const skippedAllocated = Number(data.skippedAllocated || 0)
+      const skippedExcluded = Number(data.skippedExcluded || 0)
+      const overriddenExcludedSent = Number(data.overriddenExcludedSent || 0)
       setSendMatchesMessage(
-        `Sent: ${parts.join(', ')}. Skipped ${data.skipped || 0} (already sent or invalid).`
+        `Sent: ${parts.join(', ')}. Skipped ${data.skipped || 0} (already sent/invalid)${skippedAllocated > 0 ? `. ${skippedAllocated} already allocated to this task.` : ''}${skippedExcluded > 0 ? `. ${skippedExcluded} excluded for this task type.` : ''}${overriddenExcludedSent > 0 ? `. ${overriddenExcludedSent} excluded helper(s) were sent by override.` : ''}`
       )
+      await fetchTasks()
+      if (previewTaskId) {
+        await previewHelperTaskMatch(previewTaskId)
+      }
     } catch (error: any) {
       console.error('Error sending helper task match emails:', error)
       setSendMatchesMessage(error.message || 'Failed to send helper match emails.')
     } finally {
       setSendingMatches(false)
     }
+  }
+
+  async function submitHelperMatchFeedback(
+    taskId: string,
+    helperId: string,
+    action: 'exclude' | 'clear',
+    reason: string,
+    notes: string
+  ) {
+    try {
+      setPreviewError(null)
+      setUpdatingMatchFeedbackHelperId(helperId)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Not authenticated')
+
+      const response = await fetch('/api/admin/helper-match-feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          taskId,
+          helperId,
+          action,
+          reason,
+          notes,
+        }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.error || `Failed to update feedback (${response.status})`)
+
+      // Optimistic UI update so admin sees immediate state change.
+      setPreviewResult((prev) => {
+        const updatedMatches = (prev.matches || []).map((m: any) => {
+          if (m.id !== helperId) return m
+          if (action === 'exclude') {
+            return {
+              ...m,
+              isExcluded: true,
+              excludeReason: reason,
+              excludeNotes: notes || null,
+              excludeCreatedAt: new Date().toISOString(),
+            }
+          }
+          return {
+            ...m,
+            isExcluded: false,
+            excludeReason: null,
+            excludeNotes: null,
+            excludeCreatedAt: null,
+            excludeFeedbackId: null,
+          }
+        })
+        return {
+          ...prev,
+          matches: updatedMatches,
+          excludedCount: updatedMatches.filter((m: any) => m.isExcluded).length,
+        }
+      })
+
+      setSelectedSendHelperIds((prev) => {
+        const next = new Set(prev)
+        if (action === 'exclude') next.delete(helperId)
+        return next
+      })
+      if (action === 'clear') {
+        setOverrideExcludedHelperIds((prev) => {
+          const next = new Set(prev)
+          next.delete(helperId)
+          return next
+        })
+      }
+
+      setSendMatchesMessage(action === 'exclude' ? 'Helper marked as excluded for this task type.' : 'Helper exclusion cleared for this task type.')
+      const refreshed = await previewHelperTaskMatch(taskId)
+      const refreshedHelper = (refreshed?.matches || []).find((m: any) => m.id === helperId)
+      if (action === 'exclude' && refreshedHelper && !refreshedHelper.isExcluded) {
+        const savedKey = typeof data?.taskTypeKey === 'string' ? data.taskTypeKey : 'unknown'
+        const previewKey = typeof refreshed?.taskTypeKey === 'string' ? refreshed.taskTypeKey : 'unknown'
+        setPreviewError(
+          `This helper did not persist as unsuitable after refresh. helperId=${helperId}, savedKey=${savedKey}, previewKey=${previewKey}`
+        )
+      }
+      if (action === 'clear' && refreshedHelper && refreshedHelper.isExcluded) {
+        const savedKey = typeof data?.taskTypeKey === 'string' ? data.taskTypeKey : 'unknown'
+        const previewKey = typeof refreshed?.taskTypeKey === 'string' ? refreshed.taskTypeKey : 'unknown'
+        setPreviewError(
+          `This helper is still marked unsuitable after refresh. helperId=${helperId}, savedKey=${savedKey}, previewKey=${previewKey}`
+        )
+      }
+      router.refresh()
+    } catch (error: any) {
+      setSendMatchesMessage(error.message || 'Failed to update helper match feedback.')
+    } finally {
+      setUpdatingMatchFeedbackHelperId(null)
+    }
+  }
+
+  async function updateHelperMatchFeedback(taskId: string, helperId: string, action: 'exclude' | 'clear') {
+    if (action === 'exclude') {
+      setPendingExcludeFeedbackTarget({ taskId, helperId })
+      setMatchFeedbackReasonInput('wrong_skill')
+      setShowMatchFeedbackReasonModal(true)
+      return
+    }
+    await submitHelperMatchFeedback(taskId, helperId, action, 'not_suitable', '')
   }
 
 
@@ -2211,12 +2379,12 @@ export default function SuperadminDashboard() {
     superadmin: users.filter(u => u.role === 'superadmin').length,
   }
 
-  const totalBudget = realTasks.reduce((sum, t) => sum + (t.budget || 0), 0)
+  const totalBudget = realTasks.reduce((sum, t) => sum + (Number(t.budget) || 0), 0)
   const avgBudget = realTasks.length > 0 ? totalBudget / realTasks.length : 0
-  const completedTasksWithBudget = realTasks.filter(t => t.status === 'completed' && t.budget)
-  const totalSpent = completedTasksWithBudget.reduce((sum, t) => sum + (t.budget || 0), 0)
+  const completedTasksWithBudget = realTasks.filter(t => t.status === 'completed' && Number(t.budget))
+  const totalSpent = completedTasksWithBudget.reduce((sum, t) => sum + (Number(t.budget) || 0), 0)
   const acceptedBids = realBids.filter(b => b.status === 'accepted')
-  const totalAcceptedBidAmount = acceptedBids.reduce((sum, b) => sum + (b.amount || 0), 0)
+  const totalAcceptedBidAmount = acceptedBids.reduce((sum, b) => sum + (Number(b.amount) || 0), 0)
 
   const bidStatusCounts = {
     pending: realBids.filter(b => b.status === 'pending').length,
@@ -2225,7 +2393,7 @@ export default function SuperadminDashboard() {
     withdrawn: realBids.filter(b => b.status === 'withdrawn').length,
   }
   const avgBidAmount = realBids.length > 0
-    ? realBids.reduce((sum, b) => sum + (b.amount || 0), 0) / realBids.length
+    ? realBids.reduce((sum, b) => sum + (Number(b.amount) || 0), 0) / realBids.length
     : 0
   const avgAcceptedBidAmount = acceptedBids.length > 0
     ? totalAcceptedBidAmount / acceptedBids.length
@@ -2322,6 +2490,10 @@ export default function SuperadminDashboard() {
       medianMinutes: getMedian(firstBidMinutes),
     }
   })
+  const medianFirstBidHoursData = medianFirstBidMinutesData.map((d) => ({
+    date: d.date,
+    medianHours: d.medianMinutes == null ? null : d.medianMinutes / 60,
+  }))
 
   const getRevenueRangeStart = (range: RevenueRange, now: Date): Date | null => {
     const start = new Date(now)
@@ -3456,6 +3628,7 @@ export default function SuperadminDashboard() {
                     <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm">Status</th>
                     <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden md:table-cell">Type</th>
                     <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden md:table-cell">Assigned To</th>
+                    <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden lg:table-cell">Allocated Helpers</th>
                     <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden lg:table-cell">Created</th>
                     <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden sm:table-cell">Visibility</th>
                   </tr>
@@ -3509,7 +3682,7 @@ export default function SuperadminDashboard() {
                           className="truncate max-w-[260px] sm:max-w-[320px] text-blue-600 hover:underline font-medium block"
                           title={t.title}
                         >
-                          {t.title.length > 50 ? `${t.title.slice(0, 50)}…` : t.title}
+                          {t.title.length > 20 ? `${t.title.slice(0, 20)}…` : t.title}
                         </Link>
                       </td>
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
@@ -3542,6 +3715,26 @@ export default function SuperadminDashboard() {
                         ) : (
                           'Unassigned'
                         )}
+                      </td>
+                      <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden lg:table-cell">
+                        {(() => {
+                          const allocations = taskAllocationsByTask[t.id] || []
+                          if (!allocations.length) return <span className="text-gray-400">—</span>
+                          const helperLabels = allocations.map((a) => {
+                            const helper = users.find((u) => u.id === a.helper_id)
+                            return helper?.full_name || helper?.email || a.helper_id
+                          })
+                          return (
+                            <div className="space-y-1">
+                              <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-800 px-2 py-0.5 text-[11px] font-semibold">
+                                {allocations.length} allocated
+                              </span>
+                              <div className="truncate max-w-[180px] text-gray-600" title={helperLabels.join(', ')}>
+                                {helperLabels.slice(0, 2).join(', ')}{helperLabels.length > 2 ? ` +${helperLabels.length - 2}` : ''}
+                              </div>
+                            </div>
+                          )
+                        })()}
                       </td>
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-600 hidden lg:table-cell">
                         {new Date(t.created_at).toLocaleDateString()}
@@ -3777,11 +3970,11 @@ export default function SuperadminDashboard() {
                   <div style={{ height: '300px' }}>
                     <Bar
                       data={{
-                        labels: ['Pending', 'Accepted', 'Rejected'],
+                        labels: ['Pending', 'Accepted', 'Rejected', 'Withdrawn'],
                         datasets: [{
                           label: 'Bids',
-                          data: [bidStatusCounts.pending, bidStatusCounts.accepted, bidStatusCounts.rejected],
-                          backgroundColor: ['#f59e0b', '#10b981', '#ef4444'],
+                          data: [bidStatusCounts.pending, bidStatusCounts.accepted, bidStatusCounts.rejected, bidStatusCounts.withdrawn],
+                          backgroundColor: ['#f59e0b', '#10b981', '#ef4444', '#6b7280'],
                         }],
                       }}
                       options={{
@@ -3920,10 +4113,10 @@ export default function SuperadminDashboard() {
                 <div style={{ height: '300px' }}>
                   <Line
                     data={{
-                      labels: medianFirstBidMinutesData.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+                      labels: medianFirstBidHoursData.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
                       datasets: [{
-                        label: 'Median Minutes',
-                        data: medianFirstBidMinutesData.map(d => d.medianMinutes),
+                        label: 'Median Hours',
+                        data: medianFirstBidHoursData.map(d => d.medianHours),
                         borderColor: '#6366f1',
                         backgroundColor: 'rgba(99, 102, 241, 0.12)',
                         tension: 0.35,
@@ -3939,7 +4132,7 @@ export default function SuperadminDashboard() {
                             label: (context: any) => {
                               const value = context.parsed.y
                               if (value == null) return 'No bids yet'
-                              return `${Math.round(value)} min`
+                              return `${Number(value).toFixed(1)} h`
                             },
                           },
                         },
@@ -3947,7 +4140,7 @@ export default function SuperadminDashboard() {
                       scales: {
                         y: {
                           beginAtZero: true,
-                          title: { display: true, text: 'Minutes' },
+                          title: { display: true, text: 'Hours' },
                         },
                       },
                     }}
@@ -4373,6 +4566,11 @@ export default function SuperadminDashboard() {
                     <div>
                       <span className="font-semibold">Matched helpers:</span>{' '}
                       {previewResult.matches.length}
+                      {Number(previewResult.allocatedCount || 0) > 0 && (
+                        <span className="ml-2 text-[11px] text-amber-700">
+                          ({Number(previewResult.allocatedCount || 0)} already allocated)
+                        </span>
+                      )}
                     </div>
                     {previewResult.matches.length > 0 && (
                       <div className="max-h-64 overflow-auto rounded border border-gray-200 bg-white">
@@ -4551,7 +4749,11 @@ export default function SuperadminDashboard() {
 
                 <button
                   type="button"
-                  onClick={() => sendTaskId && selectedSendHelperIds.size > 0 && (sendViaEmail || sendViaSms) && sendHelperTaskMatchEmails(sendTaskId, Array.from(selectedSendHelperIds))}
+                  onClick={() => sendTaskId && selectedSendHelperIds.size > 0 && (sendViaEmail || sendViaSms) && sendHelperTaskMatchEmails(
+                    sendTaskId,
+                    Array.from(selectedSendHelperIds),
+                    Array.from(overrideExcludedHelperIds).filter((id) => selectedSendHelperIds.has(id))
+                  )}
                   disabled={!sendTaskId || selectedSendHelperIds.size === 0 || sendingMatches || (!sendViaEmail && !sendViaSms)}
                   className="inline-flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -4967,6 +5169,8 @@ export default function SuperadminDashboard() {
                     const json = await res.json()
                     if (!res.ok) {
                       setAlertMessage({ ok: false, msg: json.error ?? 'Unknown error' })
+                    } else if (json.alreadyAllocated) {
+                      setAlertMessage({ ok: true, msg: 'Helper already allocated to this task. No duplicate alert sent.' })
                     } else {
                       const parts: string[] = []
                       if (json.emailSent) parts.push('email sent')
@@ -5088,6 +5292,12 @@ export default function SuperadminDashboard() {
                       <span className="font-semibold">Matched helpers:</span>{' '}
                       {previewResult.matches.length}
                     </div>
+                    {Number(previewResult.excludedCount || 0) > 0 && (
+                      <div className="text-amber-800">
+                        <span className="font-semibold">Excluded for this task type:</span>{' '}
+                        {Number(previewResult.excludedCount || 0)}
+                      </div>
+                    )}
                     {previewResult.matches.length > 0 && (
                       <div className="flex items-center gap-3">
                         <span className="text-[11px] font-semibold text-gray-700">
@@ -5095,10 +5305,13 @@ export default function SuperadminDashboard() {
                         </span>
                         <button
                           type="button"
-                          onClick={() => setSelectedSendHelperIds(new Set(previewResult.matches.map((m: any) => m.id)))}
+                          onClick={() => {
+                            setSelectedSendHelperIds(new Set(previewResult.matches.filter((m: any) => !m.isAllocated && !m.isExcluded).map((m: any) => m.id)))
+                            setOverrideExcludedHelperIds(new Set())
+                          }}
                           className="text-[11px] text-blue-600 hover:underline"
                         >
-                          Select all
+                          Select all unallocated
                         </button>
                         <button
                           type="button"
@@ -5117,12 +5330,17 @@ export default function SuperadminDashboard() {
                               <th className="px-2 py-1 w-8">
                                 <input
                                   type="checkbox"
-                                  checked={previewResult.matches.length > 0 && selectedSendHelperIds.size === previewResult.matches.length}
+                                  checked={
+                                    previewResult.matches.filter((m: any) => !m.isAllocated && !m.isExcluded).length > 0 &&
+                                    selectedSendHelperIds.size === previewResult.matches.filter((m: any) => !m.isAllocated && !m.isExcluded).length
+                                  }
                                   onChange={(e) => {
                                     if (e.target.checked) {
-                                      setSelectedSendHelperIds(new Set(previewResult.matches.map((m: any) => m.id)))
+                                      setSelectedSendHelperIds(new Set(previewResult.matches.filter((m: any) => !m.isAllocated && !m.isExcluded).map((m: any) => m.id)))
+                                      setOverrideExcludedHelperIds(new Set())
                                     } else {
                                       setSelectedSendHelperIds(new Set())
+                                      setOverrideExcludedHelperIds(new Set())
                                     }
                                   }}
                                   className="w-3.5 h-3.5 cursor-pointer"
@@ -5136,6 +5354,8 @@ export default function SuperadminDashboard() {
                               <th className="px-2 py-1 text-left font-semibold text-gray-700">km</th>
                               <th className="px-2 py-1 text-left font-semibold text-gray-700">Max km</th>
                               <th className="px-2 py-1 text-left font-semibold text-gray-700">Email Pref</th>
+                              <th className="px-2 py-1 text-left font-semibold text-gray-700">Allocated</th>
+                              <th className="px-2 py-1 text-left font-semibold text-gray-700">Status</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -5143,6 +5363,7 @@ export default function SuperadminDashboard() {
                               const hasPhone = !!(m.phoneNumber || '').trim()
                               const optedOut = m.smsOptOut === true
                               const score = typeof m.compositeScore === 'number' ? m.compositeScore : null
+                              const canSelect = !m.isAllocated && (!m.isExcluded || overrideExcludedHelperIds.has(m.id))
                               const badgeColor = score === null ? 'bg-gray-100 text-gray-500'
                                 : score >= 70 ? 'bg-green-100 text-green-800'
                                 : score >= 40 ? 'bg-amber-100 text-amber-800'
@@ -5153,15 +5374,24 @@ export default function SuperadminDashboard() {
                               return (
                                 <tr
                                   key={m.id}
-                                  className={`border-t border-gray-100 cursor-pointer hover:bg-gray-50 ${selectedSendHelperIds.has(m.id) ? 'bg-green-50' : ''}`}
-                                  onClick={() => setSelectedSendHelperIds(prev => { const next = new Set(prev); next.has(m.id) ? next.delete(m.id) : next.add(m.id); return next })}
+                                  className={`border-t border-gray-100 cursor-pointer hover:bg-gray-50 ${selectedSendHelperIds.has(m.id) ? 'bg-green-50' : ''} ${m.isAllocated ? 'bg-amber-50/60' : ''}`}
+                                  onClick={() => {
+                                    if (!canSelect) return
+                                    setSelectedSendHelperIds(prev => {
+                                      const next = new Set(prev)
+                                      next.has(m.id) ? next.delete(m.id) : next.add(m.id)
+                                      return next
+                                    })
+                                  }}
                                 >
                                   <td className="px-2 py-1 text-center">
                                     <input
                                       type="checkbox"
                                       checked={selectedSendHelperIds.has(m.id)}
+                                      disabled={!canSelect}
                                       onClick={(e) => e.stopPropagation()}
                                       onChange={(e) => {
+                                        if (!canSelect) return
                                         setSelectedSendHelperIds(prev => {
                                           const next = new Set(prev)
                                           if (e.target.checked) {
@@ -5172,7 +5402,7 @@ export default function SuperadminDashboard() {
                                           return next
                                         })
                                       }}
-                                      className="w-3.5 h-3.5 cursor-pointer"
+                                      className="w-3.5 h-3.5 cursor-pointer disabled:cursor-not-allowed"
                                     />
                                   </td>
                                   <td className="px-2 py-1">
@@ -5211,6 +5441,41 @@ export default function SuperadminDashboard() {
                                     {typeof m.preferredMaxDistanceKm === 'number' ? m.preferredMaxDistanceKm.toFixed(1) : '—'}
                                   </td>
                                   <td className="px-2 py-1 text-gray-700">{m.emailPreference || 'instant'}</td>
+                                  <td className="px-2 py-1 text-gray-700">
+                                    {m.isAllocated ? (
+                                      <span
+                                        className="inline-flex items-center rounded-full bg-amber-100 text-amber-800 px-1.5 py-0.5 text-[10px] font-semibold"
+                                        title={`Allocated${m.allocatedAt ? ` on ${new Date(m.allocatedAt).toLocaleString()}` : ''}${m.allocatedVia ? ` via ${m.allocatedVia}` : ''}`}
+                                      >
+                                        Yes
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-400">No</span>
+                                    )}
+                                  </td>
+                                  <td className="px-2 py-1 text-gray-700">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        if (!previewTaskId) return
+                                        updateHelperMatchFeedback(previewTaskId, m.id, m.isExcluded ? 'clear' : 'exclude')
+                                      }}
+                                      disabled={updatingMatchFeedbackHelperId === m.id}
+                                      className={`px-1.5 py-0.5 rounded text-[10px] border disabled:opacity-50 ${
+                                        m.isExcluded
+                                          ? 'border-red-300 text-red-700 hover:bg-red-50'
+                                          : 'border-green-300 text-green-700 hover:bg-green-50'
+                                      }`}
+                                      title={
+                                        m.isExcluded
+                                          ? `${m.excludeReason || 'not_suitable'}${m.excludeNotes ? ` · ${m.excludeNotes}` : ''}`
+                                          : 'Click to mark this helper as unsuitable'
+                                      }
+                                    >
+                                      {m.isExcluded ? 'Unsuitable' : 'Suitable'}
+                                    </button>
+                                  </td>
                                 </tr>
                               )
                             })}
@@ -5258,7 +5523,10 @@ export default function SuperadminDashboard() {
                       <span className="text-xs font-semibold text-gray-700">
                         {selectedSendHelperIds.size} of {previewResult.matches.length} helper(s) selected
                       </span>
-                      <button type="button" onClick={() => setSelectedSendHelperIds(new Set(previewResult.matches.map((m: any) => m.id)))} className="text-xs text-blue-600 hover:underline">Select all</button>
+                      <button type="button" onClick={() => {
+                        setSelectedSendHelperIds(new Set(previewResult.matches.filter((m: any) => !m.isAllocated && !m.isExcluded).map((m: any) => m.id)))
+                        setOverrideExcludedHelperIds(new Set())
+                      }} className="text-xs text-blue-600 hover:underline">Select all unallocated</button>
                       <button type="button" onClick={() => setSelectedSendHelperIds(new Set())} className="text-xs text-gray-500 hover:underline">Deselect all</button>
                     </div>
                     <p className="text-[11px] text-gray-600">
@@ -5269,7 +5537,11 @@ export default function SuperadminDashboard() {
 
                 <button
                   type="button"
-                  onClick={() => previewTaskId && selectedSendHelperIds.size > 0 && (sendViaEmail || sendViaSms) && sendHelperTaskMatchEmails(previewTaskId, Array.from(selectedSendHelperIds))}
+                  onClick={() => previewTaskId && selectedSendHelperIds.size > 0 && (sendViaEmail || sendViaSms) && sendHelperTaskMatchEmails(
+                    previewTaskId,
+                    Array.from(selectedSendHelperIds),
+                    Array.from(overrideExcludedHelperIds).filter((id) => selectedSendHelperIds.has(id))
+                  )}
                   disabled={!previewTaskId || selectedSendHelperIds.size === 0 || sendingMatches || (!sendViaEmail && !sendViaSms)}
                   className="inline-flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -7406,6 +7678,64 @@ export default function SuperadminDashboard() {
                   className="px-6 py-2 bg-primary-600 text-white rounded-md font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors"
                 >
                   OK
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Match Feedback Reason Modal */}
+        {showMatchFeedbackReasonModal && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={() => {
+              setShowMatchFeedbackReasonModal(false)
+              setPendingExcludeFeedbackTarget(null)
+            }}
+          >
+            <div
+              className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 mb-4">
+                <svg className="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">Mark Helper as Unsuitable</h3>
+              <p className="text-sm text-gray-600 text-center mb-4">Choose a reason code for this exclusion.</p>
+              <input
+                type="text"
+                value={matchFeedbackReasonInput}
+                onChange={(e) => setMatchFeedbackReasonInput(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="wrong_skill"
+              />
+              <div className="flex justify-center gap-3 mt-5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMatchFeedbackReasonModal(false)
+                    setPendingExcludeFeedbackTarget(null)
+                  }}
+                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-md font-medium hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={!pendingExcludeFeedbackTarget || !!updatingMatchFeedbackHelperId}
+                  onClick={async () => {
+                    if (!pendingExcludeFeedbackTarget) return
+                    const target = pendingExcludeFeedbackTarget
+                    const reason = (matchFeedbackReasonInput || '').trim() || 'not_suitable'
+                    setShowMatchFeedbackReasonModal(false)
+                    setPendingExcludeFeedbackTarget(null)
+                    await submitHelperMatchFeedback(target.taskId, target.helperId, 'exclude', reason, '')
+                  }}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:opacity-50"
+                >
+                  Save
                 </button>
               </div>
             </div>

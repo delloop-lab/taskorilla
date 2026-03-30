@@ -63,6 +63,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
     }
 
+    // Hard de-dupe guard: if this helper was already allocated to this task,
+    // skip additional manual match alerts.
+    const { data: existingAllocation } = await supabase
+      .from('helper_task_allocations')
+      .select('id, first_allocated_at, last_notified_at, allocated_via, channels')
+      .eq('task_id', taskId)
+      .eq('helper_id', userId)
+      .maybeSingle()
+
+    if (existingAllocation) {
+      return NextResponse.json({
+        emailSent: false,
+        smsSent: false,
+        errors: [],
+        alreadyAllocated: true,
+        allocation: existingAllocation,
+      })
+    }
+
     const baseUrl = (
       process.env.NEXT_PUBLIC_SITE_URL ||
       process.env.NEXT_PUBLIC_APP_URL ||
@@ -169,7 +188,35 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ emailSent, smsSent, errors })
+    if (emailSent || smsSent) {
+      const channelsSent: string[] = [
+        ...(emailSent ? ['email'] : []),
+        ...(smsSent ? ['sms'] : []),
+      ]
+
+      await supabase
+        .from('helper_task_allocations')
+        .upsert(
+          {
+            task_id: task.id,
+            helper_id: profile.id,
+            allocated_via: 'admin_manual_alert',
+            channels: channelsSent,
+            first_allocated_at: new Date().toISOString(),
+            last_notified_at: new Date().toISOString(),
+            last_notified_channels: channelsSent,
+            created_by: user.id,
+            metadata: {
+              source: 'send-user-alert',
+              channels_requested: channels,
+              task_title: task.title,
+            },
+          },
+          { onConflict: 'task_id,helper_id' }
+        )
+    }
+
+    return NextResponse.json({ emailSent, smsSent, errors, alreadyAllocated: false })
   } catch (err: any) {
     console.error('Error in send-user-alert route:', err)
     return NextResponse.json({ error: err?.message || 'Internal server error' }, { status: 500 })

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import {
   EmailPreference,
@@ -8,12 +9,22 @@ import {
   matchHelpersForTask,
 } from '@/lib/helper-matching'
 import { scoreHelpersForTask } from '@/lib/ai-matching'
+import { buildTaskTypeKey } from '@/lib/helper-match-feedback'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient(request)
+    const hasServiceRole =
+      !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      !!process.env.SUPABASE_SERVICE_ROLE_KEY
+    const supabaseAdmin = hasServiceRole
+      ? createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+          process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+        )
+      : null
 
     const url = new URL(request.url)
     const taskId = url.searchParams.get('taskId')
@@ -107,6 +118,7 @@ export async function GET(request: NextRequest) {
         : undefined
 
     const reqProfessions = Array.isArray(taskRow.required_professions) ? taskRow.required_professions : []
+    const taskTypeKey = buildTaskTypeKey(taskRow, allTags)
 
     const matchingTask: MatchingTask = {
       id: taskRow.id,
@@ -187,22 +199,152 @@ export async function GET(request: NextRequest) {
         } as MatchingHelper
       }) ?? []
 
+    // Read with the authenticated client first so admin actions are reflected immediately.
+    let { data: allocationRows, error: allocationError } = await supabase
+      .from('helper_task_allocations')
+      .select('helper_id, first_allocated_at, allocated_via')
+      .eq('task_id', taskId)
+
+    if (allocationError) {
+      console.error('[helper-task-match-preview] failed to load allocations:', allocationError.message)
+      if (supabaseAdmin) {
+        const retry = await supabaseAdmin
+          .from('helper_task_allocations')
+          .select('helper_id, first_allocated_at, allocated_via')
+          .eq('task_id', taskId)
+        allocationRows = retry.data || []
+        allocationError = retry.error || null
+        if (allocationError) {
+          console.error('[helper-task-match-preview] fallback allocations read failed:', allocationError.message)
+        }
+      }
+    }
+
+    const allocationMap = new Map(
+      (allocationRows || []).map((row: any) => [
+        row.helper_id as string,
+        {
+          allocatedAt: row.first_allocated_at as string | null,
+          allocatedVia: row.allocated_via as string | null,
+        },
+      ])
+    )
+
+    let { data: feedbackRows, error: feedbackError } = await supabase
+      .from('helper_match_feedback')
+      .select('id, helper_id, reason, notes, created_at')
+      .eq('task_type_key', taskTypeKey)
+      .eq('feedback', 'exclude')
+
+    if (feedbackError) {
+      console.error('[helper-task-match-preview] failed to load exclusion feedback:', feedbackError.message)
+      if (supabaseAdmin) {
+        const retry = await supabaseAdmin
+          .from('helper_match_feedback')
+          .select('id, helper_id, reason, notes, created_at')
+          .eq('task_type_key', taskTypeKey)
+          .eq('feedback', 'exclude')
+        feedbackRows = retry.data || []
+        feedbackError = retry.error || null
+        if (feedbackError) {
+          console.error('[helper-task-match-preview] fallback feedback read failed:', feedbackError.message)
+        }
+      }
+    }
+
+    // Safety net: include helper exclusions saved against this exact task ID,
+    // in case task_type_key derivation changed over time.
+    let { data: taskFeedbackRows, error: taskFeedbackError } = await supabase
+      .from('helper_match_feedback')
+      .select('id, helper_id, reason, notes, created_at')
+      .eq('task_id', taskId)
+      .eq('feedback', 'exclude')
+
+    if (taskFeedbackError) {
+      console.error('[helper-task-match-preview] failed to load task-specific feedback:', taskFeedbackError.message)
+      if (supabaseAdmin) {
+        const retry = await supabaseAdmin
+          .from('helper_match_feedback')
+          .select('id, helper_id, reason, notes, created_at')
+          .eq('task_id', taskId)
+          .eq('feedback', 'exclude')
+        taskFeedbackRows = retry.data || []
+        taskFeedbackError = retry.error || null
+        if (taskFeedbackError) {
+          console.error('[helper-task-match-preview] fallback task-specific feedback read failed:', taskFeedbackError.message)
+        }
+      }
+    }
+
+    const mergedFeedbackRows = [...(feedbackRows || []), ...(taskFeedbackRows || [])]
+    const dedupedFeedbackRows = Array.from(
+      new Map(mergedFeedbackRows.map((row: any) => [row.helper_id as string, row])).values()
+    )
+
+    const feedbackMap = new Map(
+      dedupedFeedbackRows.map((row: any) => [
+        row.helper_id as string,
+        {
+          feedbackId: row.id as string,
+          reason: (row.reason as string | null) || 'not_suitable',
+          notes: (row.notes as string | null) || null,
+          createdAt: (row.created_at as string | null) || null,
+        },
+      ])
+    )
+
     // Try AI-powered scoring; fall back to lexical matching if it fails
     try {
       const scoreResult = await scoreHelpersForTask(matchingTask, helpers)
+      const matchesWithAllocation = scoreResult.helpers.map((helper) => {
+        const alloc = allocationMap.get(helper.id)
+        const exclusion = feedbackMap.get(helper.id)
+        return {
+          ...helper,
+          isAllocated: !!alloc,
+          allocatedAt: alloc?.allocatedAt || null,
+          allocatedVia: alloc?.allocatedVia || null,
+          isExcluded: !!exclusion,
+          excludeReason: exclusion?.reason || null,
+          excludeNotes: exclusion?.notes || null,
+          excludeCreatedAt: exclusion?.createdAt || null,
+          excludeFeedbackId: exclusion?.feedbackId || null,
+        }
+      })
       return NextResponse.json({
         task: matchingTask,
-        matches: scoreResult.helpers,
+        matches: matchesWithAllocation,
         aiClassification: scoreResult.aiClassification,
         matchMode: 'ai',
+        allocatedCount: matchesWithAllocation.filter((m) => m.isAllocated).length,
+        excludedCount: matchesWithAllocation.filter((m) => m.isExcluded).length,
+        taskTypeKey,
       })
     } catch (aiError: any) {
       console.error('[helper-task-match-preview] AI scoring failed, falling back to lexical:', aiError.message)
       const matches: EligibleHelper[] = matchHelpersForTask(matchingTask, helpers)
+      const matchesWithAllocation = matches.map((helper) => {
+        const alloc = allocationMap.get(helper.id)
+        const exclusion = feedbackMap.get(helper.id)
+        return {
+          ...helper,
+          isAllocated: !!alloc,
+          allocatedAt: alloc?.allocatedAt || null,
+          allocatedVia: alloc?.allocatedVia || null,
+          isExcluded: !!exclusion,
+          excludeReason: exclusion?.reason || null,
+          excludeNotes: exclusion?.notes || null,
+          excludeCreatedAt: exclusion?.createdAt || null,
+          excludeFeedbackId: exclusion?.feedbackId || null,
+        }
+      })
       return NextResponse.json({
         task: matchingTask,
-        matches,
+        matches: matchesWithAllocation,
         matchMode: 'lexical',
+        allocatedCount: matchesWithAllocation.filter((m) => m.isAllocated).length,
+        excludedCount: matchesWithAllocation.filter((m) => m.isExcluded).length,
+        taskTypeKey,
       })
     }
   } catch (error: any) {

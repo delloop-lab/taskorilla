@@ -91,6 +91,16 @@ SELECT
     ELSE '❌ email_logs table MISSING - Run: create_email_logs_table.sql'
   END as email_logs_status;
 
+-- Check for helper_match_feedback table
+SELECT
+  CASE
+    WHEN EXISTS (
+      SELECT 1 FROM information_schema.tables
+      WHERE table_name = 'helper_match_feedback'
+    ) THEN '✅ helper_match_feedback table EXISTS'
+    ELSE '❌ helper_match_feedback table MISSING - Run: add_helper_match_feedback.sql'
+  END as helper_match_feedback_status;
+
 
 
 

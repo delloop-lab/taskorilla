@@ -13,6 +13,7 @@ import { logEmail } from '@/lib/email-logger'
 import { sendHelperAlert } from '@/lib/sms'
 import { shortenUrl } from '@/lib/url-shortener'
 import { logSms } from '@/lib/sms-logger'
+import { buildTaskTypeKey } from '@/lib/helper-match-feedback'
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,6 +22,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null)
     const taskId = body?.taskId as string | undefined
     const helperIds: string[] | undefined = Array.isArray(body?.helperIds) ? body.helperIds : undefined
+    const overrideExcludedHelperIds: string[] | undefined = Array.isArray(body?.overrideExcludedHelperIds)
+      ? body.overrideExcludedHelperIds
+      : undefined
     const channels: string[] = Array.isArray(body?.channels) ? body.channels : ['email']
     const sendEmail = channels.includes('email')
     const sendSms = channels.includes('sms')
@@ -122,6 +126,7 @@ export async function POST(request: NextRequest) {
         : undefined
 
     const reqProfessions = Array.isArray(taskRow.required_professions) ? taskRow.required_professions : []
+    const taskTypeKey = buildTaskTypeKey(taskRow, allTags)
 
     const matchingTask: MatchingTask = {
       id: taskRow.id,
@@ -219,11 +224,54 @@ export async function POST(request: NextRequest) {
       matches = matches.filter(m => allowedIds.has(m.id))
     }
 
+    const overrideExcludedSet = new Set(overrideExcludedHelperIds || [])
+    const { data: exclusionRowsByType } = await supabase
+      .from('helper_match_feedback')
+      .select('helper_id')
+      .eq('task_type_key', taskTypeKey)
+      .eq('feedback', 'exclude')
+
+    const { data: exclusionRowsByTask } = await supabase
+      .from('helper_match_feedback')
+      .select('helper_id')
+      .eq('task_id', matchingTask.id)
+      .eq('feedback', 'exclude')
+
+    const excludedHelperIds = new Set(
+      [...(exclusionRowsByType || []), ...(exclusionRowsByTask || [])].map((row: any) => row.helper_id as string)
+    )
+
+    const totalBeforeExcludedFilter = matches.length
+    matches = matches.filter(m => !excludedHelperIds.has(m.id) || overrideExcludedSet.has(m.id))
+    const skippedExcluded = totalBeforeExcludedFilter - matches.length
+    const overriddenExcludedSentIds = matches
+      .filter(m => excludedHelperIds.has(m.id) && overrideExcludedSet.has(m.id))
+      .map(m => m.id)
+
+    // Primary dedupe source: helpers already allocated to this task.
+    const { data: existingAllocations } = await supabase
+      .from('helper_task_allocations')
+      .select('helper_id')
+      .eq('task_id', matchingTask.id)
+
+    const alreadyAllocatedHelperIds = new Set(
+      (existingAllocations || []).map((row: any) => row.helper_id as string)
+    )
+    const totalCandidatesBeforeAllocationFilter = matches.length
+    matches = matches.filter(m => !alreadyAllocatedHelperIds.has(m.id))
+    const skippedAllocated = totalCandidatesBeforeAllocationFilter - matches.length
+
     if (!matches.length) {
       return NextResponse.json({
         task: matchingTask,
         sent: 0,
+        smsSent: 0,
         skipped: 0,
+        skippedAllocated,
+        skippedExcluded,
+        overriddenExcludedSent: overriddenExcludedSentIds.length,
+        overriddenExcludedSentIds,
+        alreadyAllocatedIds: Array.from(alreadyAllocatedHelperIds),
         details: 'No eligible helpers found for this task.',
       })
     }
@@ -271,6 +319,8 @@ export async function POST(request: NextRequest) {
     for (const helper of matches) {
       const helperAny = helper as any
       let didSomething = false
+      let helperEmailSent = false
+      let helperSmsSent = false
 
       // ── Email ──────────────────────────────────────────────────────────────
       if (sendEmail) {
@@ -330,6 +380,7 @@ export async function POST(request: NextRequest) {
             }, supabase)
 
             didSomething = true
+            helperEmailSent = true
           }
         }
       }
@@ -354,6 +405,7 @@ export async function POST(request: NextRequest) {
           if (smsResult.success) {
             smsSentCount++
             didSomething = true
+            helperSmsSent = true
             await logSms({
               recipient_phone: fullPhone,
               recipient_name: helper.name || undefined,
@@ -367,7 +419,34 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      if (didSomething) sentCount++
+      if (didSomething) {
+        sentCount++
+        const channelsSent: string[] = [
+          ...(helperEmailSent ? ['email'] : []),
+          ...(helperSmsSent ? ['sms'] : []),
+        ]
+
+        await supabase
+          .from('helper_task_allocations')
+          .upsert(
+            {
+              task_id: matchingTask.id,
+              helper_id: helper.id,
+              allocated_via: 'admin_match_send',
+              channels: channelsSent,
+              first_allocated_at: new Date().toISOString(),
+              last_notified_at: new Date().toISOString(),
+              last_notified_channels: channelsSent,
+              created_by: user.id,
+              metadata: {
+                source: 'helper-task-match-send',
+                channels_requested: channels,
+                ai_match: true,
+              },
+            },
+            { onConflict: 'task_id,helper_id' }
+          )
+      }
     }
 
     return NextResponse.json({
@@ -375,6 +454,11 @@ export async function POST(request: NextRequest) {
       sent: sentCount,
       smsSent: smsSentCount,
       skipped: skippedCount,
+      skippedAllocated,
+      skippedExcluded,
+      overriddenExcludedSent: overriddenExcludedSentIds.length,
+      overriddenExcludedSentIds,
+      alreadyAllocatedIds: Array.from(alreadyAllocatedHelperIds),
     })
   } catch (error: any) {
     console.error('Error in helper-task-match-send API:', error)
