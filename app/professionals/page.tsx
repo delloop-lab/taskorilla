@@ -25,6 +25,9 @@ export default function ProfessionalsPage() {
   const [selectedProfession, setSelectedProfession] = useState<string | null>(null)
   const [availableProfessions, setAvailableProfessions] = useState<string[]>([])
   const [showFilters, setShowFilters] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'grouped'>('list')
+  const [sortBy, setSortBy] = useState<'best_match' | 'highest_rated' | 'most_reviews' | 'newest'>('best_match')
+  const [visibleCount, setVisibleCount] = useState(12)
   const { users: userRatings } = useUserRatings()
 
   // Build a ratings map once so we can look up helper ratings quickly
@@ -43,6 +46,10 @@ export default function ProfessionalsPage() {
       setShowFilters(true)
     }
   }, [searchTerm, selectedProfession])
+
+  useEffect(() => {
+    setVisibleCount(12)
+  }, [searchTerm, selectedProfession, sortBy])
 
   const loadProfessionals = async () => {
     try {
@@ -127,11 +134,39 @@ export default function ProfessionalsPage() {
     return matchesSearch && matchesProfession
   })
 
+  const sortedHelpers = useMemo(() => {
+    const list = [...filteredHelpers]
+    if (sortBy === 'newest') {
+      return list.sort(
+        (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      )
+    }
+    if (sortBy === 'highest_rated') {
+      return list.sort((a, b) => {
+        const aRatings = ratingsMap.size ? getUserRatingsById(a.id, ratingsMap) : null
+        const bRatings = ratingsMap.size ? getUserRatingsById(b.id, ratingsMap) : null
+        const aRating = Number(aRatings?.helper_avg_rating || 0)
+        const bRating = Number(bRatings?.helper_avg_rating || 0)
+        if (bRating !== aRating) return bRating - aRating
+        return Number(bRatings?.helper_review_count || 0) - Number(aRatings?.helper_review_count || 0)
+      })
+    }
+    if (sortBy === 'most_reviews') {
+      return list.sort((a, b) => {
+        const aRatings = ratingsMap.size ? getUserRatingsById(a.id, ratingsMap) : null
+        const bRatings = ratingsMap.size ? getUserRatingsById(b.id, ratingsMap) : null
+        return Number(bRatings?.helper_review_count || 0) - Number(aRatings?.helper_review_count || 0)
+      })
+    }
+    // best_match: preserve search relevance order coming from filtering source
+    return list
+  }, [filteredHelpers, sortBy, ratingsMap])
+
   // Group professionals by profession category
-  const groupProfessionalsByCategory = () => {
+  const groupProfessionalsByCategory = (sourceHelpers: User[]) => {
     const grouped: { [key: string]: User[] } = {}
     
-    filteredHelpers.forEach(helper => {
+    sourceHelpers.forEach(helper => {
       if (!helper.professions || helper.professions.length === 0) return
       
       // Find which categories this helper belongs to based on their professions
@@ -159,10 +194,132 @@ export default function ProfessionalsPage() {
     return grouped
   }
 
-  const groupedProfessionals = groupProfessionalsByCategory()
+  const groupedProfessionals = groupProfessionalsByCategory(sortedHelpers)
   const orderedProfessionCategories = [...PROFESSION_CATEGORIES].sort((a, b) =>
     a.name.localeCompare(b.name)
   )
+
+  const renderHelperCard = (helper: User) => {
+    const helperRatings = ratingsMap.size ? getUserRatingsById(helper.id, ratingsMap) : null
+    return (
+      <Link
+        key={helper.id}
+        href={`/user/${helper.profile_slug || helper.id}`}
+        className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+      >
+        <div className="p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="h-16 w-16 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+              {helper.avatar_url ? (
+                <img
+                  src={helper.avatar_url}
+                  alt={getDisplayName({ fullName: helper.full_name, email: helper.email, revealFull: false })}
+                  className="h-full w-full object-cover rounded-full"
+                  loading="lazy"
+                  decoding="async"
+                />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center">
+                  <UserIcon className="w-8 h-8 text-gray-400" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-gray-900 truncate">
+                {getDisplayName({ fullName: helper.full_name, email: helper.email, revealFull: false })}
+              </h3>
+              {helper.company_name && (
+                <p className="text-sm text-gray-600 truncate blur-sm select-none" title="Company name unlocks after succesful bid">
+                  {helper.company_name}
+                </p>
+              )}
+              {helper.postcode && helper.country && (
+                <p className="text-xs text-gray-500">
+                  📍 {helper.postcode}, {helper.country}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {helperRatings && (
+            <div className="mb-2">
+              <CompactUserRatingsDisplay ratings={helperRatings} size="sm" showTasker={false} showHelper={true} />
+            </div>
+          )}
+
+          {helper.badges && helper.badges.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {helper.badges.slice(0, 3).map((badge, index) => {
+                const getBadgeImage = (badgeName: string) => {
+                  const lowerBadge = badgeName.toLowerCase()
+                  if (lowerBadge.includes('founding') && lowerBadge.includes('tasker')) return '/images/founding_tasker_badge.png'
+                  if (lowerBadge.includes('founding') && lowerBadge.includes('helper')) return '/images/founding_helper_badge.png'
+                  if (lowerBadge.includes('fast') || lowerBadge.includes('responder')) return '/images/fast.png'
+                  if (lowerBadge.includes('top helper') || lowerBadge === 'top helper') return '/images/top_helper.png'
+                  if (lowerBadge.includes('expert') || lowerBadge.includes('skill')) return '/images/expert.png'
+                  return null
+                }
+                const badgeImage = getBadgeImage(badge)
+                return (
+                  <span key={index} title={badge}>
+                    {badgeImage ? (
+                      <img src={badgeImage} alt={badge} className="h-8 w-8 object-contain" />
+                    ) : (
+                      <span className="text-lg">🏆</span>
+                    )}
+                  </span>
+                )
+              })}
+              {helper.badges.length > 3 && (
+                <span className="px-2 py-0.5 text-gray-500 text-[10px]">+{helper.badges.length - 3}</span>
+              )}
+            </div>
+          )}
+
+          {(helper.hourly_rate || (helper.professions && helper.professions.length > 0)) && (
+            <div className="mb-3">
+              <span className="text-lg font-semibold text-primary-600">
+                {helper.hourly_rate != null ? `€${formatRate(Number(helper.hourly_rate))}/hr` : 'Ask About Fees'}
+              </span>
+            </div>
+          )}
+
+          {helper.bio && (
+            <p className="text-sm text-gray-700 line-clamp-2 mb-3">{helper.bio}</p>
+          )}
+
+          {helper.skills && helper.skills.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {helper.skills.slice(0, 3).map((skill, index) => (
+                <span key={index} className="px-2 py-1 bg-primary-100 text-primary-800 rounded text-xs font-medium">
+                  {skill}
+                </span>
+              ))}
+              {helper.skills.length > 3 && (
+                <span className="px-2 py-1 text-gray-600 text-xs">+{helper.skills.length - 3} more</span>
+              )}
+            </div>
+          )}
+
+          {helper.professions && helper.professions.length > 0 && (
+            <div className="mb-3">
+              <p className="text-xs text-gray-600 mb-1">Professional:</p>
+              <div className="flex flex-wrap gap-1">
+                {helper.professions.slice(0, 2).map((profession, index) => (
+                  <span key={index} className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs border border-purple-200">
+                    {profession}
+                  </span>
+                ))}
+                {helper.professions.length > 2 && (
+                  <span className="px-2 py-1 text-gray-600 text-xs">+{helper.professions.length - 2}</span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </Link>
+    )
+  }
 
   if (loading) {
     return (
@@ -261,19 +418,36 @@ export default function ProfessionalsPage() {
           <p className="text-gray-600">
             {t('professionals.found')}{' '}
             <span className="font-semibold text-gray-900">
-              {filteredHelpers.length}
+              {sortedHelpers.length}
             </span>{' '}
-            {filteredHelpers.length !== 1
+            {sortedHelpers.length !== 1
               ? t('professionals.foundProfessionals')
               : t('professionals.foundProfessional')}
           </p>
-          <p className="text-xs sm:text-sm text-gray-400">
-            {t('professionals.subtitle')}
-          </p>
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+            <select
+              value={viewMode}
+              onChange={(e) => setViewMode(e.target.value as 'list' | 'grouped')}
+              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white"
+            >
+              <option value="list">List view</option>
+              <option value="grouped">Grouped view</option>
+            </select>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'best_match' | 'highest_rated' | 'most_reviews' | 'newest')}
+              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white"
+            >
+              <option value="best_match">Sort: Best match</option>
+              <option value="highest_rated">Sort: Highest rated</option>
+              <option value="most_reviews">Sort: Most reviews</option>
+              <option value="newest">Sort: Newest</option>
+            </select>
+          </div>
         </div>
 
         {/* Professionals Grouped by Category */}
-        {filteredHelpers.length === 0 ? (
+        {sortedHelpers.length === 0 ? (
           <div className="bg-white rounded-lg shadow-md p-12 text-center">
             <p className="text-gray-600 text-lg">{t('professionals.noProfessionalsFound')}</p>
             <button
@@ -285,6 +459,23 @@ export default function ProfessionalsPage() {
             >
               {t('professionals.clearFilters')}
             </button>
+          </div>
+        ) : viewMode === 'list' ? (
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sortedHelpers.slice(0, visibleCount).map((helper) => renderHelperCard(helper))}
+            </div>
+            {visibleCount < sortedHelpers.length && (
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount(prev => prev + 12)}
+                  className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                >
+                  Load more professionals
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-8">
@@ -298,185 +489,7 @@ export default function ProfessionalsPage() {
                     {category.name}
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {categoryHelpers.map((helper) => {
-                      const helperRatings = ratingsMap.size
-                        ? getUserRatingsById(helper.id, ratingsMap)
-                        : null
-
-                      return (
-                        <Link
-                          key={helper.id}
-                          href={`/user/${helper.profile_slug || helper.id}`}
-                          className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-                        >
-                          <div className="p-6">
-                            {/* Avatar & Name */}
-                            <div className="flex items-center gap-4 mb-4">
-                              <div className="h-16 w-16 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-                                {helper.avatar_url ? (
-                                  <img
-                                    src={helper.avatar_url}
-                                    alt={getDisplayName({ fullName: helper.full_name, email: helper.email, revealFull: false })}
-                                    className="h-full w-full object-cover rounded-full"
-                                    loading="lazy"
-                                    decoding="async"
-                                  />
-                                ) : (
-                                  <div className="h-full w-full flex items-center justify-center">
-                                    <UserIcon className="w-8 h-8 text-gray-400" />
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-gray-900 truncate">
-                                  {getDisplayName({ fullName: helper.full_name, email: helper.email, revealFull: false })}
-                                </h3>
-                                {helper.company_name && (
-                                  <p className="text-sm text-gray-600 truncate blur-sm select-none" title="Company name unlocks after succesful bid">
-                                    {helper.company_name}
-                                  </p>
-                                )}
-                                {helper.postcode && helper.country && (
-                                  <p className="text-xs text-gray-500">
-                                    📍 {helper.postcode}, {helper.country}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Ratings: Helper stars from reviews only */}
-                            {helperRatings && (
-                              <div className="mb-2">
-                                <CompactUserRatingsDisplay 
-                                  ratings={helperRatings} 
-                                  size="sm"
-                                  showTasker={false}
-                                  showHelper={true}
-                                />
-                              </div>
-                            )}
-
-                            {/* Badges (actual badge images, compact) */}
-                            {helper.badges && helper.badges.length > 0 && (
-                              <div className="flex flex-wrap gap-2 mb-3">
-                                {helper.badges.slice(0, 3).map((badge, index) => {
-                                  const getBadgeImage = (badgeName: string) => {
-                                    const lowerBadge = badgeName.toLowerCase()
-                                    if (lowerBadge.includes('founding') && lowerBadge.includes('tasker')) {
-                                      return '/images/founding_tasker_badge.png'
-                                    } else if (lowerBadge.includes('founding') && lowerBadge.includes('helper')) {
-                                      return '/images/founding_helper_badge.png'
-                                    } else if (lowerBadge.includes('fast') || lowerBadge.includes('responder')) {
-                                      return '/images/fast.png'
-                                    } else if (lowerBadge.includes('top helper') || lowerBadge === 'top helper') {
-                                      return '/images/top_helper.png'
-                                    } else if (lowerBadge.includes('expert') || lowerBadge.includes('skill')) {
-                                      return '/images/expert.png'
-                                    }
-                                    return null
-                                  }
-
-                                  const badgeImage = getBadgeImage(badge)
-
-                                  return (
-                                    <span key={index} title={badge}>
-                                      {badgeImage ? (
-                                        <img
-                                          src={badgeImage}
-                                          alt={badge}
-                                          className="h-8 w-8 object-contain"
-                                        />
-                                      ) : (
-                                        <span className="text-lg">🏆</span>
-                                      )}
-                                    </span>
-                                  )
-                                })}
-                                {helper.badges.length > 3 && (
-                                  <span className="px-2 py-0.5 text-gray-500 text-[10px]">
-                                    +{helper.badges.length - 3}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Hourly Rate */}
-                            {(helper.hourly_rate || (helper.professions && helper.professions.length > 0)) && (
-                              <div className="mb-3">
-                                <span className="text-lg font-semibold text-primary-600">
-                                  {helper.hourly_rate != null ? `€${formatRate(Number(helper.hourly_rate))}/hr` : 'Ask About Fees'}
-                                </span>
-                              </div>
-                            )}
-
-                            {/* Bio Preview */}
-                            {helper.bio && (
-                              <p className="text-sm text-gray-700 line-clamp-2 mb-3">
-                                {helper.bio}
-                              </p>
-                            )}
-
-                            {/* Skills */}
-                            {helper.skills && helper.skills.length > 0 && (
-                              <div className="flex flex-wrap gap-2 mb-3">
-                                {helper.skills.slice(0, 3).map((skill, index) => (
-                                  <span
-                                    key={index}
-                                    className="px-2 py-1 bg-primary-100 text-primary-800 rounded text-xs font-medium"
-                                  >
-                                    {skill}
-                                  </span>
-                                ))}
-                                {helper.skills.length > 3 && (
-                                  <span className="px-2 py-1 text-gray-600 text-xs">
-                                    +{helper.skills.length - 3} more
-                                  </span>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Professions */}
-                            {helper.professions && helper.professions.length > 0 && (
-                              <div className="mb-3">
-                                <p className="text-xs text-gray-600 mb-1">Professional:</p>
-                                <div className="flex flex-wrap gap-1">
-                                  {helper.professions.slice(0, 2).map((profession, index) => (
-                                    <span
-                                      key={index}
-                                      className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs border border-purple-200"
-                                    >
-                                      {profession}
-                                    </span>
-                                  ))}
-                                  {helper.professions.length > 2 && (
-                                    <span className="px-2 py-1 text-gray-600 text-xs">
-                                      +{helper.professions.length - 2}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Professional Offerings */}
-                            {helper.professional_offerings && helper.professional_offerings.length > 0 && (
-                              <div className="mb-3">
-                                <p className="text-xs text-gray-600 mb-1">Offers:</p>
-                                <div className="space-y-1 text-sm text-gray-700">
-                                  {helper.professional_offerings.slice(0, 2).map((offering, index) => (
-                                    <p key={index} className="line-clamp-1">• {offering}</p>
-                                  ))}
-                                  {helper.professional_offerings.length > 2 && (
-                                    <p className="text-xs text-gray-500">
-                                      +{helper.professional_offerings.length - 2} more
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </Link>
-                      )
-                    })}
+                    {categoryHelpers.map((helper) => renderHelperCard(helper))}
                   </div>
                 </div>
               )
