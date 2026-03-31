@@ -24,6 +24,9 @@ import { getDisplayName } from '@/lib/name-privacy'
 const isDev = process.env.NODE_ENV === 'development'
 const debugLog = (...args: any[]) => isDev && console.log(...args)
 const debugWarn = (...args: any[]) => isDev && console.warn(...args)
+// Keep first browse load smaller for faster initial render.
+// Revert by changing this value back to 50.
+const BROWSE_INITIAL_LIMIT = 20
 
 type FilterType = 'all' | 'open' | 'my_tasks' | 'new' | 'my_bids'
 
@@ -155,7 +158,8 @@ function TasksPageContent() {
   const { users: userRatings, loading: ratingsLoading } = useUserRatings()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<FilterType>('open') // Default to Open Tasks
+  const [filter, setFilter] = useState<FilterType>('all') // Default to All Tasks
+  const [pendingFilter, setPendingFilter] = useState<FilterType | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [currentUserPaused, setCurrentUserPaused] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -192,6 +196,18 @@ function TasksPageContent() {
   const [reportType, setReportType] = useState<'task' | 'user'>('task')
   const [sessionReady, setSessionReady] = useState(false)
   const [viewMode, setViewMode] = useState<'compact' | 'full' | 'accordion'>('full')
+  const [queryLimit, setQueryLimit] = useState(BROWSE_INITIAL_LIMIT)
+  const [lastRawCount, setLastRawCount] = useState(0)
+  const [totalAvailableCount, setTotalAvailableCount] = useState<number | null>(null)
+  const [devDebugInfo, setDevDebugInfo] = useState<{
+    activeFilter: FilterType
+    rawRows: number
+    visibleRows: number
+    queryLimit: number
+    showArchived: boolean
+    searchTerm: string
+  } | null>(null)
+  const isLoadingMore = loading && tasks.length > 0
   
   // Simple version counter to track which load is current
   const loadVersionRef = useRef(0)
@@ -208,6 +224,11 @@ function TasksPageContent() {
 
   useEffect(() => { userRatingsRef.current = userRatings }, [userRatings])
   useEffect(() => { userLocationRef.current = userLocation }, [userLocation])
+
+  const handleLoadAllRemaining = () => {
+    setLoading(true)
+    setQueryLimit((prev) => prev + BROWSE_INITIAL_LIMIT)
+  }
 
   const loadCategories = async () => {
     try {
@@ -342,7 +363,7 @@ function TasksPageContent() {
       !showArchived &&
       !isAdmin
     
-    if (!skipCache && activeFilter === 'open' && hasNoExtraFilters) {
+    if (!skipCache && activeFilter === 'open' && hasNoExtraFilters && queryLimit === BROWSE_INITIAL_LIMIT) {
       const cachedTasks = getCachedTasks('open')
       if (cachedTasks && cachedTasks.length > 0) {
         debugLog(`⏱️ Using cached tasks - instant display`)
@@ -497,13 +518,43 @@ function TasksPageContent() {
       
       let tasksData: any[] | null = null
       let error: any = null
+      let totalMatchingCount: number | null = null
       
       // Use fast RPC function for simple 'open' filter (bypasses RLS for speed)
       if (activeFilter === 'open' && hasNoExtraFilters) {
         debugLog(`⏱️ [${thisVersion}] Using fast RPC function for open tasks`)
-        const result = await supabase.rpc('get_open_tasks', { task_limit: 50 })
+        const result = await supabase.rpc('get_open_tasks', { task_limit: queryLimit })
         tasksData = result.data
         error = result.error
+
+        if (!error) {
+          // Include locked tasks in browse so task volume remains visible.
+          const lockedResult = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('status', 'locked')
+            .eq('hidden_by_admin', false)
+            .order('created_at', { ascending: false })
+            .limit(queryLimit)
+          if (!lockedResult.error && lockedResult.data?.length) {
+            const merged = [...(tasksData || []), ...lockedResult.data]
+            const deduped = new Map<string, any>()
+            merged.forEach((t: any) => deduped.set(t.id, t))
+            tasksData = Array.from(deduped.values())
+          }
+
+          let countQuery = supabase
+            .from('tasks')
+            .select('id', { count: 'exact', head: true })
+            .or('status.eq.open,status.eq.locked')
+          if (!isAdmin) {
+            countQuery = countQuery.eq('hidden_by_admin', false)
+          }
+          const countResult = await countQuery
+          if (!countResult.error) {
+            totalMatchingCount = countResult.count ?? (tasksData?.length || 0)
+          }
+        }
         
         // Fallback to regular query if RPC fails (function might not exist yet)
         if (error && error.code === 'PGRST202') {
@@ -511,47 +562,57 @@ function TasksPageContent() {
           error = null
           const fallbackResult = await supabase
             .from('tasks')
-            .select('*')
-            .eq('status', 'open')
+            .select('*', { count: 'exact' })
+            .or('status.eq.open,status.eq.locked')
             .eq('hidden_by_admin', false)
-            .eq('archived', false)
             .order('created_at', { ascending: false })
-            .limit(50)
+            .limit(queryLimit)
           tasksData = fallbackResult.data
           error = fallbackResult.error
+          if (!fallbackResult.error) {
+            totalMatchingCount = fallbackResult.count ?? (tasksData?.length || 0)
+          }
         }
       } else {
         // Build regular query for other filters
         let query = supabase.from('tasks').select('*')
+        let countQuery = supabase.from('tasks').select('id', { count: 'exact', head: true })
         
         // Apply essential filters first (most selective)
         if (!isAdmin) {
           query = query.eq('hidden_by_admin', false)
+          countQuery = countQuery.eq('hidden_by_admin', false)
         }
-        if (!showArchived) {
+        if (!showArchived && activeFilter !== 'my_bids' && activeFilter !== 'my_tasks' && activeFilter !== 'all' && activeFilter !== 'open') {
           query = query.eq('archived', false)
+          countQuery = countQuery.eq('archived', false)
         }
         
         // Apply filter-specific conditions (most selective first)
         switch (activeFilter) {
           case 'open':
-            query = query.eq('status', 'open').is('assigned_to', null)
+            query = query.or('status.eq.open,status.eq.locked')
+            countQuery = countQuery.or('status.eq.open,status.eq.locked')
             break
           case 'my_tasks':
             if (user) {
               query = query.or(`created_by.eq.${user.id},assigned_to.eq.${user.id}`)
+              countQuery = countQuery.or(`created_by.eq.${user.id},assigned_to.eq.${user.id}`)
             } else {
               query = query.eq('created_by', '00000000-0000-0000-0000-000000000000')
+              countQuery = countQuery.eq('created_by', '00000000-0000-0000-0000-000000000000')
             }
             break
           case 'new':
             const sevenDaysAgo = new Date()
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
             query = query.eq('status', 'open').is('assigned_to', null).gte('created_at', sevenDaysAgo.toISOString())
+            countQuery = countQuery.eq('status', 'open').is('assigned_to', null).gte('created_at', sevenDaysAgo.toISOString())
             break
           case 'my_bids':
             if (taskIdsWithBids.length > 0) {
               query = query.in('id', taskIdsWithBids)
+              countQuery = countQuery.in('id', taskIdsWithBids)
             }
             break
         }
@@ -559,15 +620,19 @@ function TasksPageContent() {
         // Apply additional filters (less selective, but still important)
         if (selectedCategory !== 'all' && !selectedCategory.startsWith('skill-') && !selectedCategory.startsWith('service-') && !selectedCategory.startsWith('prof-')) {
           query = query.eq('category_id', selectedCategory)
+          countQuery = countQuery.eq('category_id', selectedCategory)
         }
         if (selectedSubCategory !== 'all' && selectedSubCategory) {
           query = query.eq('sub_category_id', selectedSubCategory)
+          countQuery = countQuery.eq('sub_category_id', selectedSubCategory)
         }
         if (minBudget) {
           query = query.gte('budget', Number(minBudget))
+          countQuery = countQuery.gte('budget', Number(minBudget))
         }
         if (maxBudget) {
           query = query.lte('budget', Number(maxBudget))
+          countQuery = countQuery.lte('budget', Number(maxBudget))
         }
         if (searchTerm.trim()) {
           const words = searchTerm.trim().split(/\s+/).filter(w => w.length > 0)
@@ -577,15 +642,19 @@ function TasksPageContent() {
               return `title.ilike.%${escapedWord}%,description.ilike.%${escapedWord}%`
             }).join(',')
             query = query.or(searchConditions)
+            countQuery = countQuery.or(searchConditions)
           }
         }
         
         // Execute query immediately - this is the critical path
-        query = query.order('created_at', { ascending: false }).limit(50)
+        query = query.order('created_at', { ascending: false }).limit(queryLimit)
         
-        const result = await query
+        const [result, countResult] = await Promise.all([query, countQuery])
         tasksData = result.data
         error = result.error
+        if (!countResult.error) {
+          totalMatchingCount = countResult.count ?? (tasksData?.length || 0)
+        }
       }
       
       const queryEndTime = performance.now()
@@ -611,6 +680,8 @@ function TasksPageContent() {
       
       if (!tasksData || tasksData.length === 0) {
         if (loadVersionRef.current === thisVersion) {
+          setLastRawCount(0)
+          setTotalAvailableCount(totalMatchingCount ?? 0)
           setTasks([])
           setLoading(false)
           isLoadingRef.current = false
@@ -832,31 +903,45 @@ function TasksPageContent() {
       }
       
       // Hide one-to-one tasks (assigned_to is set) from users who are neither the owner nor the assigned helper
-      const isMyOneToOne = (task: any) => {
-        if (!task.assigned_to) return true
-        if (!user) return false
-        return task.created_by === user.id || task.assigned_to === user.id
+      // except in "all" view where we intentionally maximize visible task volume.
+      if (activeFilter !== 'all') {
+        const isMyOneToOne = (task: any) => {
+          if (!task.assigned_to) return true
+          if (!user) return false
+          return task.created_by === user.id || task.assigned_to === user.id
+        }
+        tasksWithProfiles = tasksWithProfiles.filter(isMyOneToOne)
       }
-      tasksWithProfiles = tasksWithProfiles.filter(isMyOneToOne)
 
       // Apply filter-specific client-side filtering
       if (activeFilter === 'all' && user) {
         tasksWithProfiles = tasksWithProfiles.filter(task => {
-          const isOpen = task.status === 'open'
-          const isCompleted = task.status === 'completed'
-          const isPendingOrActive = task.status === 'pending_payment' || task.status === 'in_progress'
+          const isLocked = task.status === 'locked'
           const isPostedByMe = task.created_by === user.id
           const isHelpedByMe = task.assigned_to === user.id
-          return isOpen || (isPendingOrActive && (isPostedByMe || isHelpedByMe)) || (isCompleted && (isPostedByMe || isHelpedByMe))
+          const isArchived = task.archived === true
+          if (!showArchived && isArchived && !isLocked) return false
+          // "All" should maximize visible tasks for social proof.
+          // Keep archive/private rules, but don't status-restrict.
+          return true
         })
       } else if (activeFilter === 'all' && !user) {
-        tasksWithProfiles = tasksWithProfiles.filter(task => task.status === 'open')
+        tasksWithProfiles = tasksWithProfiles.filter(task => {
+          const isArchived = task.archived === true
+          const isLocked = task.status === 'locked'
+          if (isArchived && !isLocked) return false
+          return true
+        })
       } else if (activeFilter === 'open') {
-        tasksWithProfiles = tasksWithProfiles.filter(task => task.status === 'open')
+        tasksWithProfiles = tasksWithProfiles.filter(task => task.status === 'open' || task.status === 'locked')
       } else if (activeFilter === 'my_tasks' && user) {
-        tasksWithProfiles = tasksWithProfiles.filter(task => 
-          task.created_by === user.id || task.assigned_to === user.id
-        )
+        tasksWithProfiles = tasksWithProfiles.filter(task => {
+          const isMine = task.created_by === user.id || task.assigned_to === user.id
+          if (!isMine) return false
+          const isArchived = task.archived === true
+          if (!showArchived && isArchived && task.status !== 'locked') return false
+          return true
+        })
       } else if (activeFilter === 'new') {
         const sevenDaysAgo = new Date()
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
@@ -867,9 +952,9 @@ function TasksPageContent() {
         })
       } else if (activeFilter === 'my_bids') {
         tasksWithProfiles = tasksWithProfiles.filter(task => {
-          const isRelevant = task.status === 'open' || task.status === 'pending_payment'
+          const isRelevant = task.status === 'open' || task.status === 'pending_payment' || task.status === 'locked'
           const isArchived = task.archived === true
-          if (!showArchived && isArchived) return false
+          if (!showArchived && isArchived && task.status !== 'locked') return false
           return isRelevant
         })
       }
@@ -882,6 +967,19 @@ function TasksPageContent() {
       // Final check before updating state
       const processEnd = performance.now()
       debugLog(`⏱️ [${thisVersion}] Processing tasks: ${(processEnd - processStart).toFixed(2)}ms`)
+      const rawCount = tasksData?.length || 0
+      setLastRawCount(rawCount)
+      setTotalAvailableCount(totalMatchingCount ?? rawCount)
+      if (isDev) {
+        setDevDebugInfo({
+          activeFilter,
+          rawRows: rawCount,
+          visibleRows: tasksWithProfiles.length,
+          queryLimit,
+          showArchived,
+          searchTerm: searchTerm.trim(),
+        })
+      }
       
       if (loadVersionRef.current === thisVersion) {
         setTasks(tasksWithProfiles)
@@ -916,7 +1014,7 @@ function TasksPageContent() {
     if (urlFilter && ['all', 'open', 'my_tasks', 'new', 'my_bids'].includes(urlFilter)) {
       return urlFilter
     }
-    return 'open' // Default to Open Tasks
+    return 'all' // Default to All Tasks
   }
 
   // Initialize page - CRITICAL: Run immediately, don't wait for anything
@@ -1114,8 +1212,15 @@ function TasksPageContent() {
     maxDistance,
     minimumRating,
     filter,
-    sessionReady
+    sessionReady,
+    queryLimit
   ])
+
+  // Reset paging when switching primary tab
+  useEffect(() => {
+    setQueryLimit(BROWSE_INITIAL_LIMIT)
+    setTotalAvailableCount(null)
+  }, [filter])
 
   // Load subcategories when category changes
   useEffect(() => {
@@ -1208,12 +1313,55 @@ function TasksPageContent() {
     }
   }, [loading, tasks, lastViewTime])
 
+  useEffect(() => {
+    if (!loading) {
+      setPendingFilter(null)
+    }
+  }, [loading])
+
   // Handle filter button click
   const handleFilterClick = (newFilter: FilterType) => {
     debugLog(`🖱️ Filter button clicked: ${newFilter}`)
+    // Show immediate visual feedback when switching tabs.
+    setLoading(true)
+    setPendingFilter(newFilter)
     setFilter(newFilter)
     router.push(`/tasks?filter=${newFilter}`)
     loadTasks(newFilter)
+  }
+
+  const getLoadingFilterLabel = () => {
+    switch (filter) {
+      case 'all':
+        return 'ALL'
+      case 'open':
+        return 'OPEN'
+      case 'my_tasks':
+        return 'MY TASKS'
+      case 'new':
+        return 'NEW'
+      case 'my_bids':
+        return 'BIDS'
+      default:
+        return 'TASKS'
+    }
+  }
+
+  const getCountFilterLabel = () => {
+    switch (filter) {
+      case 'all':
+        return 'ALL'
+      case 'open':
+        return 'OPEN'
+      case 'my_tasks':
+        return 'MY'
+      case 'new':
+        return 'NEW'
+      case 'my_bids':
+        return 'BID'
+      default:
+        return 'ALL'
+    }
   }
 
   if (loading && tasks.length === 0) {
@@ -1344,7 +1492,15 @@ function TasksPageContent() {
               : 'bg-white text-gray-700 hover:bg-gray-50'
           }`}
         >
-          {t('tasks.allTasks')}
+          <span className="inline-flex items-center gap-2">
+            {pendingFilter === 'all' && loading && (
+              <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+                <path d="M22 12a10 10 0 00-10-10" stroke="currentColor" strokeWidth="3" className="opacity-90" />
+              </svg>
+            )}
+            {t('tasks.allTasks')}
+          </span>
         </button>
         <button
           onClick={() => handleFilterClick('open')}
@@ -1355,7 +1511,15 @@ function TasksPageContent() {
               : 'bg-white text-gray-700 hover:bg-gray-50'
           }`}
         >
-          {t('tasks.openTasks')}
+          <span className="inline-flex items-center gap-2">
+            {pendingFilter === 'open' && loading && (
+              <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+                <path d="M22 12a10 10 0 00-10-10" stroke="currentColor" strokeWidth="3" className="opacity-90" />
+              </svg>
+            )}
+            {t('tasks.openTasks')}
+          </span>
         </button>
         {currentUserId && (
           <button
@@ -1367,7 +1531,15 @@ function TasksPageContent() {
                 : 'bg-white text-gray-700 hover:bg-gray-50'
             }`}
           >
-            {t('tasks.myTasks')}
+            <span className="inline-flex items-center gap-2">
+              {pendingFilter === 'my_tasks' && loading && (
+                <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+                  <path d="M22 12a10 10 0 00-10-10" stroke="currentColor" strokeWidth="3" className="opacity-90" />
+                </svg>
+              )}
+              {t('tasks.myTasks')}
+            </span>
           </button>
         )}
         <button
@@ -1385,7 +1557,15 @@ function TasksPageContent() {
               : 'bg-white text-gray-700 hover:bg-gray-50'
           }`}
         >
-          {t('tasks.newTasks')}
+          <span className="inline-flex items-center gap-2">
+            {pendingFilter === 'new' && loading && (
+              <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+                <path d="M22 12a10 10 0 00-10-10" stroke="currentColor" strokeWidth="3" className="opacity-90" />
+              </svg>
+            )}
+            {t('tasks.newTasks')}
+          </span>
         </button>
         {currentUserId && (
           <button
@@ -1397,7 +1577,15 @@ function TasksPageContent() {
                 : 'bg-white text-gray-700 hover:bg-gray-50'
             }`}
           >
-            {t('tasks.bids')}
+            <span className="inline-flex items-center gap-2">
+              {pendingFilter === 'my_bids' && loading && (
+                <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+                  <path d="M22 12a10 10 0 00-10-10" stroke="currentColor" strokeWidth="3" className="opacity-90" />
+                </svg>
+              )}
+              {t('tasks.bids')}
+            </span>
           </button>
         )}
         {currentUserId && (
@@ -1659,19 +1847,46 @@ function TasksPageContent() {
         )}
       </div>
 
-      {/* Loading indicator */}
-      {loading && tasks.length > 0 && (
-        <div className="text-center py-4 text-gray-500 text-sm">
-          Loading...
-        </div>
-      )}
-
       {/* View toggle and results count */}
-      {!loading && tasks.length > 0 && (
+      {tasks.length > 0 && (
         <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-gray-600">
-            {tasks.length} {tasks.length !== 1 ? t('tasks.tasksFound') : t('tasks.taskFound')}
-          </p>
+          <div className="flex items-center gap-3 flex-wrap">
+            {loading ? (
+              <p className="text-sm text-gray-500 flex items-center gap-2">
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+                  <path d="M22 12a10 10 0 00-10-10" stroke="currentColor" strokeWidth="3" className="opacity-90" />
+                </svg>
+                {isLoadingMore
+                  ? `Loading more ${getLoadingFilterLabel()} tasks...`
+                  : `Loading ${getLoadingFilterLabel()} tasks...`}
+              </p>
+            ) : (
+              <p className="text-sm text-gray-600">
+                {`Showing ${tasks.length} from ${Math.max(tasks.length, totalAvailableCount ?? tasks.length)} ${getCountFilterLabel()} tasks.`}
+              </p>
+            )}
+            {!loading && lastRawCount >= queryLimit && (
+              <button
+                type="button"
+                onClick={handleLoadAllRemaining}
+                disabled={isLoadingMore}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors inline-flex items-center gap-2 ${
+                  isLoadingMore
+                    ? 'bg-primary-400 text-white cursor-not-allowed'
+                    : 'bg-primary-600 text-white hover:bg-primary-700'
+                }`}
+              >
+                {isLoadingMore && (
+                  <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+                    <path d="M22 12a10 10 0 00-10-10" stroke="currentColor" strokeWidth="3" className="opacity-90" />
+                  </svg>
+                )}
+                {isLoadingMore ? 'Loading more...' : `Load next ${BROWSE_INITIAL_LIMIT} tasks`}
+              </button>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500 hidden sm:inline">{t('tasks.view')}:</span>
             <div className="flex bg-gray-100 rounded-lg p-1">
@@ -1748,16 +1963,29 @@ function TasksPageContent() {
             })
 
             const cardHref = currentUserId ? `/tasks/${task.id}` : `/public-tasks/${publicSlug}`
+            const canOpenTask = task.status !== 'locked' || (currentUserId != null && (task.created_by === currentUserId || isAdmin))
+
+            const cardClassName = `bg-white rounded-lg shadow-md transition-shadow overflow-hidden flex flex-col relative ${
+              canOpenTask ? 'hover:shadow-lg' : 'opacity-90 cursor-not-allowed'
+            } ${
+              isAdmin && task.hidden_by_admin ? 'border-2 border-red-300 bg-red-50' : ''
+            }`
 
             return (
               <Link
                 key={task.id}
                 href={cardHref}
                 data-task-id={task.id}
-                className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden flex flex-col relative ${
-                  isAdmin && task.hidden_by_admin ? 'border-2 border-red-300 bg-red-50' : ''
-                }`}
+                className={cardClassName}
+                onClick={(e) => {
+                  if (!canOpenTask) e.preventDefault()
+                }}
               >
+                {!canOpenTask && (
+                  <div className="absolute top-2 left-2 z-20 bg-gray-900/85 text-white text-[10px] font-semibold px-2 py-1 rounded">
+                    Locked
+                  </div>
+                )}
                 {/* COMPACT VIEW */}
                 {viewMode === 'compact' ? (
                   <div className="p-4">
@@ -2066,7 +2294,33 @@ function TasksPageContent() {
           })
         )}
       </div>
-
+      {!loading && lastRawCount >= queryLimit && (
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={handleLoadAllRemaining}
+            disabled={isLoadingMore}
+            className={`px-5 py-2.5 rounded-md text-sm font-medium transition-colors inline-flex items-center gap-2 ${
+              isLoadingMore
+                ? 'bg-primary-400 text-white cursor-not-allowed'
+                : 'bg-primary-600 text-white hover:bg-primary-700'
+            }`}
+          >
+            {isLoadingMore && (
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+                <path d="M22 12a10 10 0 00-10-10" stroke="currentColor" strokeWidth="3" className="opacity-90" />
+              </svg>
+            )}
+            {isLoadingMore ? 'Loading more...' : `Load next ${BROWSE_INITIAL_LIMIT} tasks`}
+          </button>
+        </div>
+      )}
+      {!loading && totalAvailableCount !== null && (
+        <p className="mt-3 text-center text-sm text-gray-600">
+          {`${tasks.length} from ${Math.max(tasks.length, totalAvailableCount)} total tasks.`}
+        </p>
+      )}
       <UserProfileModal
         userId={selectedUserId}
         isOpen={isProfileModalOpen}
