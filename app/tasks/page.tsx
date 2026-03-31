@@ -1963,7 +1963,8 @@ function TasksPageContent() {
             })
 
             const cardHref = currentUserId ? `/tasks/${task.id}` : `/public-tasks/${publicSlug}`
-            const canOpenTask = task.status !== 'locked' || (currentUserId != null && (task.created_by === currentUserId || isAdmin))
+            const isLockedTask = (task as any).status === 'locked'
+            const canOpenTask = !isLockedTask || (currentUserId != null && (task.created_by === currentUserId || isAdmin))
 
             const cardClassName = `bg-white rounded-lg shadow-md transition-shadow overflow-hidden flex flex-col relative ${
               canOpenTask ? 'hover:shadow-lg' : 'opacity-90 cursor-not-allowed'
