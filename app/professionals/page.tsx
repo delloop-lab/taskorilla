@@ -25,7 +25,7 @@ export default function ProfessionalsPage() {
   const [selectedProfession, setSelectedProfession] = useState<string | null>(null)
   const [availableProfessions, setAvailableProfessions] = useState<string[]>([])
   const [showFilters, setShowFilters] = useState(false)
-  const [viewMode, setViewMode] = useState<'list' | 'grouped'>('list')
+  const [viewMode, setViewMode] = useState<'list' | 'grouped'>('grouped')
   const [sortBy, setSortBy] = useState<'best_match' | 'highest_rated' | 'most_reviews' | 'newest'>('best_match')
   const [visibleCount, setVisibleCount] = useState(12)
   const { users: userRatings } = useUserRatings()
