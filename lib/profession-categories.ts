@@ -117,10 +117,17 @@ export const PROFESSION_CATEGORIES: ProfessionCategory[] = [
       'Hairdresser / Barber',
       'Nail Technician',
       'Makeup Artist',
-      'Massage Therapist',
       'Personal Trainer',
       'Yoga / Pilates Instructor',
+    ],
+  },
+  {
+    name: 'Healthcare',
+    subs: [
+      'Therapist',
+      'Massage Therapist',
       'Nutritionist',
+      'Acupuncturist',
     ],
   },
 ]

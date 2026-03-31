@@ -160,6 +160,9 @@ export default function ProfessionalsPage() {
   }
 
   const groupedProfessionals = groupProfessionalsByCategory()
+  const orderedProfessionCategories = [...PROFESSION_CATEGORIES].sort((a, b) =>
+    a.name.localeCompare(b.name)
+  )
 
   if (loading) {
     return (
@@ -285,7 +288,7 @@ export default function ProfessionalsPage() {
           </div>
         ) : (
           <div className="space-y-8">
-            {PROFESSION_CATEGORIES.map(category => {
+            {orderedProfessionCategories.map(category => {
               const categoryHelpers = groupedProfessionals[category.name] || []
               if (categoryHelpers.length === 0) return null
               
