@@ -313,89 +313,112 @@ export default function PricingPage() {
 
         {/* Taskorilla vs Competitors Table */}
         <div id="comparison-table" className="mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-4">
-            {t.compareTitle}
-          </h2>
-          <p className="text-center text-gray-700 text-lg mb-8 max-w-4xl mx-auto">
-            {t.compareSubtitle}
-          </p>
+          <details className="bg-white rounded-xl shadow-md p-6">
+            <summary className="text-2xl md:text-3xl font-bold text-gray-900 cursor-pointer">
+              <strong>How Taskorilla Compares</strong>
+            </summary>
 
-          <div className="overflow-x-auto">
-            <table id="comparison-table-table" className="w-full border-collapse bg-white shadow-lg rounded-lg overflow-hidden comparison-table">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900">{t.tableHeaders.platform}</th>
-                  <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900">{t.tableHeaders.posterCost}</th>
-                  <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900">{t.tableHeaders.helperCost}</th>
-                  <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900">{t.tableHeaders.risk}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="bg-green-100 border-l-4 border-l-green-600 hover:bg-green-200 transition-all duration-200">
-                  <td className="border border-gray-300 px-3 py-3 font-bold">Taskorilla</td>
-                  <td className="border border-gray-300 px-3 py-3">{t.taskorilla.posterCost}</td>
-                  <td className="border border-gray-300 px-3 py-3">{t.taskorilla.helperCost}</td>
-                  <td className="border border-gray-300 px-3 py-3 font-bold text-green-700">{t.taskorilla.risk}</td>
-                </tr>
-                <tr className="even:bg-gray-50 hover:bg-green-50 transition-all duration-200">
-                  <td className="border border-gray-300 px-3 py-3 font-bold">Airtasker</td>
-                  <td className="border border-gray-300 px-3 py-3">{t.competitors.airtasker.posterCost}</td>
-                  <td className="border border-gray-300 px-3 py-3">{t.competitors.airtasker.helperCost}</td>
-                  <td className="border border-gray-300 px-3 py-3 font-bold text-red-600">{t.competitors.airtasker.risk}</td>
-                </tr>
-                <tr className="even:bg-gray-50 hover:bg-green-50 transition-all duration-200">
-                  <td className="border border-gray-300 px-3 py-3 font-bold">TaskRabbit</td>
-                  <td className="border border-gray-300 px-3 py-3">{t.competitors.taskrabbit.posterCost}</td>
-                  <td className="border border-gray-300 px-3 py-3">{t.competitors.taskrabbit.helperCost}</td>
-                  <td className="border border-gray-300 px-3 py-3 font-bold text-red-600">{t.competitors.taskrabbit.risk}</td>
-                </tr>
-                <tr className="even:bg-gray-50 hover:bg-green-50 transition-all duration-200">
-                  <td className="border border-gray-300 px-3 py-3 font-bold">Thumbtack</td>
-                  <td className="border border-gray-300 px-3 py-3">{t.competitors.thumbtack.posterCost}</td>
-                  <td className="border border-gray-300 px-3 py-3">{t.competitors.thumbtack.helperCost}</td>
-                  <td className="border border-gray-300 px-3 py-3 font-bold text-red-600">{t.competitors.thumbtack.risk}</td>
-                </tr>
-                <tr className="even:bg-gray-50 hover:bg-green-50 transition-all duration-200">
-                  <td className="border border-gray-300 px-3 py-3 font-bold">Handy</td>
-                  <td className="border border-gray-300 px-3 py-3">{t.competitors.handy.posterCost}</td>
-                  <td className="border border-gray-300 px-3 py-3">{t.competitors.handy.helperCost}</td>
-                  <td className="border border-gray-300 px-3 py-3 font-bold text-red-600">{t.competitors.handy.risk}</td>
-                </tr>
-                <tr className="even:bg-gray-50 hover:bg-green-50 transition-all duration-200">
-                  <td className="border border-gray-300 px-3 py-3 font-bold">Fiverr</td>
-                  <td className="border border-gray-300 px-3 py-3">{t.competitors.fiverr.posterCost}</td>
-                  <td className="border border-gray-300 px-3 py-3">{t.competitors.fiverr.helperCost}</td>
-                  <td className="border border-gray-300 px-3 py-3 font-bold text-red-600">{t.competitors.fiverr.risk}</td>
-                </tr>
-                <tr className="even:bg-gray-50 hover:bg-green-50 transition-all duration-200">
-                  <td className="border border-gray-300 px-3 py-3 font-bold">Zaask</td>
-                  <td className="border border-gray-300 px-3 py-3">{t.competitors.zaask.posterCost}</td>
-                  <td className="border border-gray-300 px-3 py-3">{t.competitors.zaask.helperCost}</td>
-                  <td className="border border-gray-300 px-3 py-3 font-bold text-red-600">{t.competitors.zaask.risk}</td>
-                </tr>
-                <tr className="even:bg-gray-50 hover:bg-green-50 transition-all duration-200">
-                  <td className="border border-gray-300 px-3 py-3 font-bold">Star of Service</td>
-                  <td className="border border-gray-300 px-3 py-3">{t.competitors.starofservice.posterCost}</td>
-                  <td className="border border-gray-300 px-3 py-3">{t.competitors.starofservice.helperCost}</td>
-                  <td className="border border-gray-300 px-3 py-3 font-bold text-red-600">{t.competitors.starofservice.risk}</td>
-                </tr>
-                <tr className="even:bg-gray-50 hover:bg-green-50 transition-all duration-200">
-                  <td className="border border-gray-300 px-3 py-3 font-bold">OLX</td>
-                  <td className="border border-gray-300 px-3 py-3">{t.competitors.olx.posterCost}</td>
-                  <td className="border border-gray-300 px-3 py-3">{t.competitors.olx.helperCost}</td>
-                  <td className="border border-gray-300 px-3 py-3 font-bold text-red-600">{t.competitors.olx.risk}</td>
-                </tr>
-                <tr className="even:bg-gray-50 hover:bg-green-50 transition-all duration-200">
-                  <td className="border border-gray-300 px-3 py-3 font-bold">Facebook</td>
-                  <td className="border border-gray-300 px-3 py-3">{t.competitors.facebook.posterCost}</td>
-                  <td className="border border-gray-300 px-3 py-3">{t.competitors.facebook.helperCost}</td>
-                  <td className="border border-gray-300 px-3 py-3 font-bold text-red-600">{t.competitors.facebook.risk}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+            <div className="mt-6 space-y-4 text-gray-700">
+              <p>Roles on Taskorilla:</p>
+              <p><strong>Tasker</strong> - the person posting a task because they need something done.</p>
+              <p><strong>Helper</strong> - the person doing the task and completing the work.</p>
+              <p>
+                Other platforms leave you guessing on fees or hoping your task gets done right. Taskorilla does things differently:
+                simple, clear pricing, all the tools you need, and a double handshake system - tasks are only confirmed when both
+                Tasker and Helper agree, and payment is released once the task is completed. No surprises, no risk.
+              </p>
+              <p className="font-semibold text-gray-900">Comparison Table</p>
+            </div>
 
-          <p className="text-center text-gray-600 text-sm mt-6 max-w-4xl mx-auto" dangerouslySetInnerHTML={{ __html: t.disclaimer }} />
+            <div className="overflow-x-auto mt-4">
+              <table id="comparison-table-table" className="w-full border-collapse bg-white shadow-lg rounded-lg overflow-hidden comparison-table">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900">Platform</th>
+                    <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900">Tasker Cost</th>
+                    <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900">Helper Cost / Fees</th>
+                    <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900">Risk for Tasker / Helper</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="bg-green-100 border-l-4 border-l-green-600 hover:bg-green-200 transition-all duration-200">
+                    <td className="border border-gray-300 px-3 py-3 font-bold">Taskorilla</td>
+                    <td className="border border-gray-300 px-3 py-3">EUR0 to post, EUR2 platform fee on completion</td>
+                    <td className="border border-gray-300 px-3 py-3">10% commission on completion</td>
+                    <td className="border border-gray-300 px-3 py-3 font-bold text-green-700">✅ Tasker risk: None / Helper risk: None - work only starts after both sides confirm; payment released after completion (double handshake system)</td>
+                  </tr>
+                  <tr className="even:bg-gray-50 hover:bg-green-50 transition-all duration-200">
+                    <td className="border border-gray-300 px-3 py-3 font-bold">Airtasker</td>
+                    <td className="border border-gray-300 px-3 py-3">Usually free to post; may have connection/assignment fee</td>
+                    <td className="border border-gray-300 px-3 py-3">12.5%-20% service fee, tiered by Tasker (Helper) level</td>
+                    <td className="border border-gray-300 px-3 py-3 font-bold text-orange-600">❌ Tasker risk: Low / Helper risk: Medium - Helper pays service fees even if task is not completed; Tasker has no full protection. Tasker level = Helper&apos;s experience tier affecting fees and visibility</td>
+                  </tr>
+                  <tr className="even:bg-gray-50 hover:bg-green-50 transition-all duration-200">
+                    <td className="border border-gray-300 px-3 py-3 font-bold">TaskRabbit</td>
+                    <td className="border border-gray-300 px-3 py-3">Service fee + trust/support fee on every booked task</td>
+                    <td className="border border-gray-300 px-3 py-3">No direct commission; registration fee may apply</td>
+                    <td className="border border-gray-300 px-3 py-3 font-bold text-orange-600">❌ Tasker risk: Medium / Helper risk: Low - fees apply once booked; risk if task is not completed satisfactorily</td>
+                  </tr>
+                  <tr className="even:bg-gray-50 hover:bg-green-50 transition-all duration-200">
+                    <td className="border border-gray-300 px-3 py-3 font-bold">Thumbtack</td>
+                    <td className="border border-gray-300 px-3 py-3">Tasker pays directly for service</td>
+                    <td className="border border-gray-300 px-3 py-3">Helper pays per lead or %</td>
+                    <td className="border border-gray-300 px-3 py-3 font-bold text-orange-600">❌ Tasker risk: Medium / Helper risk: Medium - Helper pays per lead; Tasker risk if work incomplete</td>
+                  </tr>
+                  <tr className="even:bg-gray-50 hover:bg-green-50 transition-all duration-200">
+                    <td className="border border-gray-300 px-3 py-3 font-bold">Handy</td>
+                    <td className="border border-gray-300 px-3 py-3">Tasker pays upfront</td>
+                    <td className="border border-gray-300 px-3 py-3">Commission deducted from earnings</td>
+                    <td className="border border-gray-300 px-3 py-3 font-bold text-orange-600">❌ Tasker risk: Medium / Helper risk: Medium - Tasker pays before work; Helper pays commission regardless of outcome</td>
+                  </tr>
+                  <tr className="even:bg-gray-50 hover:bg-green-50 transition-all duration-200">
+                    <td className="border border-gray-300 px-3 py-3 font-bold">Fiverr</td>
+                    <td className="border border-gray-300 px-3 py-3">Tasker pays upfront</td>
+                    <td className="border border-gray-300 px-3 py-3">10-20% commission on completed work</td>
+                    <td className="border border-gray-300 px-3 py-3 font-bold text-orange-600">❌ Tasker risk: Medium / Helper risk: Medium - Tasker pays upfront; Helper risk if work unsatisfactory</td>
+                  </tr>
+                  <tr className="even:bg-gray-50 hover:bg-green-50 transition-all duration-200">
+                    <td className="border border-gray-300 px-3 py-3 font-bold">Zaask</td>
+                    <td className="border border-gray-300 px-3 py-3">Free to request quotes</td>
+                    <td className="border border-gray-300 px-3 py-3">Helper may pay per quote; commission varies</td>
+                    <td className="border border-gray-300 px-3 py-3 font-bold text-orange-600">❌ Tasker risk: Medium / Helper risk: Medium - Helper may pay for unconverted quotes; Tasker risk if work incomplete</td>
+                  </tr>
+                  <tr className="even:bg-gray-50 hover:bg-green-50 transition-all duration-200">
+                    <td className="border border-gray-300 px-3 py-3 font-bold">Star of Service</td>
+                    <td className="border border-gray-300 px-3 py-3">Free to post; Tasker pays for selected services</td>
+                    <td className="border border-gray-300 px-3 py-3">Helper pays per accepted lead; commission may apply</td>
+                    <td className="border border-gray-300 px-3 py-3 font-bold text-orange-600">❌ Tasker risk: Medium / Helper risk: Medium - costs depend on accepted leads/tasks; no full guarantees</td>
+                  </tr>
+                  <tr className="even:bg-gray-50 hover:bg-green-50 transition-all duration-200">
+                    <td className="border border-gray-300 px-3 py-3 font-bold">OLX</td>
+                    <td className="border border-gray-300 px-3 py-3">Free to post in classifieds</td>
+                    <td className="border border-gray-300 px-3 py-3">No platform fees; risk if Tasker does not pay</td>
+                    <td className="border border-gray-300 px-3 py-3 font-bold text-red-600">❌❌ Tasker risk: High / Helper risk: High - no platform guarantees; full risk on both parties</td>
+                  </tr>
+                  <tr className="even:bg-gray-50 hover:bg-green-50 transition-all duration-200">
+                    <td className="border border-gray-300 px-3 py-3 font-bold">Facebook</td>
+                    <td className="border border-gray-300 px-3 py-3">Free to post</td>
+                    <td className="border border-gray-300 px-3 py-3">No platform fees</td>
+                    <td className="border border-gray-300 px-3 py-3 font-bold text-red-600">❌❌ Tasker risk: High / Helper risk: High - no protections; full risk on both parties</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-6 space-y-4">
+              <p className="font-semibold text-gray-900">Key Points:</p>
+              <p className="text-gray-700">
+                Taskorilla&apos;s double handshake system guarantees safety: both Tasker and Helper must confirm before work begins,
+                and payment is only released once the task is completed.
+              </p>
+              <p className="text-gray-700">
+                Fees and policies on other platforms vary and may expose Taskers or Helpers to risk.
+              </p>
+              <p className="text-gray-600 text-sm">
+                <strong>Disclaimer:</strong> All comparisons are based on publicly available information as of January 2026. Taskorilla is not affiliated with or endorsed by any of the platforms mentioned. Fees and policies may change over time. E&amp;OE
+              </p>
+            </div>
+          </details>
         </div>
       </div>
 
@@ -453,9 +476,9 @@ export default function PricingPage() {
           }
           
           .comparison-table td:nth-of-type(1):before { content: "Platform"; }
-          .comparison-table td:nth-of-type(2):before { content: "Task Poster Cost"; }
+          .comparison-table td:nth-of-type(2):before { content: "Tasker Cost"; }
           .comparison-table td:nth-of-type(3):before { content: "Helper Cost / Fees"; }
-          .comparison-table td:nth-of-type(4):before { content: "Risk"; }
+          .comparison-table td:nth-of-type(4):before { content: "Risk for Tasker / Helper"; }
         }
       `}</style>
 
