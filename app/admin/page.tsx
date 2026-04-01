@@ -23,6 +23,7 @@ import StandardModal from '@/components/StandardModal'
 import EmailTemplateManager from '@/components/EmailTemplateManager'
 import EmailTemplateEditor from '@/components/EmailTemplateEditor'
 import CreateBlogPost from '@/components/CreateBlogPost'
+import AdminHelpFeedbackPanel from '@/components/AdminHelpFeedbackPanel'
 import { blogs } from '@/lib/blog-data'
 import { User } from '@/lib/types'
 import { STANDARD_SKILLS, STANDARD_SERVICES } from '@/lib/helper-constants'
@@ -372,6 +373,8 @@ export default function SuperadminDashboard() {
   const [pendingBulkDelete, setPendingBulkDelete] = useState<boolean>(false)
   const usersChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   const tasksChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const bidsChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const reviewsChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   
   const HELPER_BADGES = ['Founding Helper', 'Fast Responder', 'Top Helper', 'Expert Skills']
   const TASKER_BADGES = ['Founding Tasker']
@@ -559,6 +562,28 @@ export default function SuperadminDashboard() {
       })
       .subscribe()
 
+    bidsChannelRef.current = supabase
+      .channel('admin-bids-channel')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'bids'
+      }, () => {
+        fetchBids()
+      })
+      .subscribe()
+
+    reviewsChannelRef.current = supabase
+      .channel('admin-reviews-channel')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'reviews'
+      }, () => {
+        fetchReviews()
+      })
+      .subscribe()
+
     return () => {
       // Clean up subscriptions
       if (usersChannelRef.current) {
@@ -568,6 +593,14 @@ export default function SuperadminDashboard() {
       if (tasksChannelRef.current) {
         supabase.removeChannel(tasksChannelRef.current)
         tasksChannelRef.current = null
+      }
+      if (bidsChannelRef.current) {
+        supabase.removeChannel(bidsChannelRef.current)
+        bidsChannelRef.current = null
+      }
+      if (reviewsChannelRef.current) {
+        supabase.removeChannel(reviewsChannelRef.current)
+        reviewsChannelRef.current = null
       }
     }
   }, [router])
@@ -873,6 +906,59 @@ export default function SuperadminDashboard() {
         message:
           error.message ||
           'Failed to update visibility for selected tasks. Please try again.',
+      })
+    }
+  }
+
+  const handleBulkUnlockTasks = async () => {
+    if (!selectedTaskIds.length) return
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      const token = session?.access_token
+
+      const selectedTasks = tasks.filter((t) => selectedTaskIds.includes(t.id))
+      const lockedTasks = selectedTasks.filter((t) => t.status === 'locked')
+
+      if (!lockedTasks.length) {
+        setModalState({
+          isOpen: true,
+          type: 'info',
+          title: 'No locked tasks selected',
+          message: 'Select at least one locked task to unlock.',
+        })
+        return
+      }
+
+      await Promise.all(
+        lockedTasks.map((task) =>
+          fetch('/api/admin/unlock-task', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { Authorization: `Bearer ${token}` }),
+            },
+            body: JSON.stringify({ taskId: task.id }),
+          })
+        )
+      )
+
+      await fetchTasks()
+      setSelectedTaskIds([])
+      setModalState({
+        isOpen: true,
+        type: 'success',
+        title: 'Success',
+        message: `${lockedTasks.length} locked task${lockedTasks.length === 1 ? '' : 's'} unlocked.`,
+      })
+    } catch (error: any) {
+      console.error('Error unlocking tasks in bulk:', error)
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: error.message || 'Failed to unlock selected tasks. Please try again.',
       })
     }
   }
@@ -2364,6 +2450,15 @@ export default function SuperadminDashboard() {
   const realTaskIdSet = new Set(realTasks.map(t => t.id))
   const realBids = bids.filter(b => realTaskIdSet.has(b.task_id))
   const realReviews = reviews.filter(r => realTaskIdSet.has(r.task_id))
+  const latestBidByHelperTask = realBids.reduce((acc, bid) => {
+    const key = `${bid.task_id}:${bid.user_id}`
+    const existing = acc.get(key)
+    if (!existing || new Date(bid.created_at).getTime() > new Date(existing.created_at).getTime()) {
+      acc.set(key, bid)
+    }
+    return acc
+  }, new Map<string, Bid>())
+  const latestRealBids = Array.from(latestBidByHelperTask.values())
 
   const taskStatusCounts = {
     open: realTasks.filter(t => t.status === 'open').length,
@@ -2383,7 +2478,7 @@ export default function SuperadminDashboard() {
   const avgBudget = realTasks.length > 0 ? totalBudget / realTasks.length : 0
   const completedTasksWithBudget = realTasks.filter(t => t.status === 'completed' && Number(t.budget))
   const totalSpent = completedTasksWithBudget.reduce((sum, t) => sum + (Number(t.budget) || 0), 0)
-  const acceptedBids = realBids.filter(b => b.status === 'accepted')
+  const acceptedBids = latestRealBids.filter(b => b.status === 'accepted')
   const totalAcceptedBidAmount = acceptedBids.reduce((sum, b) => sum + (Number(b.amount) || 0), 0)
 
   const bidStatusCounts = {
@@ -3592,6 +3687,18 @@ export default function SuperadminDashboard() {
                 >
                   Hide
                 </button>
+                <button
+                  type="button"
+                  disabled={!hasSelectedTasks}
+                  onClick={handleBulkUnlockTasks}
+                  className={`px-3 py-1 rounded-md text-xs sm:text-sm font-medium ${
+                    hasSelectedTasks
+                      ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  Unlock
+                </button>
                 {hasSelectedTasks && (
                   <button
                     type="button"
@@ -3856,9 +3963,9 @@ export default function SuperadminDashboard() {
                 </div>
                 <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                   <p className="text-sm text-gray-600 mb-1">Total Bids</p>
-                  <p className="text-3xl font-bold text-orange-600">{realBids.length}</p>
+                  <p className="text-3xl font-bold text-orange-600">{latestRealBids.length}</p>
                   <p className="text-xs text-gray-500 mt-1">
-                    {bidStatusCounts.accepted} accepted ({realBids.length > 0 ? ((bidStatusCounts.accepted / realBids.length) * 100).toFixed(1) : 0}%)
+                    {bidStatusCounts.accepted} accepted ({latestRealBids.length > 0 ? ((bidStatusCounts.accepted / latestRealBids.length) * 100).toFixed(1) : 0}%)
                   </p>
                 </div>
             </div>
@@ -4148,6 +4255,8 @@ export default function SuperadminDashboard() {
                 </div>
               </div>
             </div>
+
+            <AdminHelpFeedbackPanel />
 
             {/* Additional Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">

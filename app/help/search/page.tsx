@@ -8,6 +8,20 @@ import HelpSearchBar from '@/components/HelpSearchBar'
 import { searchHelpContent, slugify, type Language } from '@/lib/help-utils'
 import { useLanguage } from '@/lib/i18n'
 
+function SearchLoadingFallback() {
+  const { language } = useLanguage()
+  const loadingText = language === 'pt' ? 'A pesquisar...' : 'Searching...'
+
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-gray-600">{loadingText}</p>
+      </div>
+    </div>
+  )
+}
+
 function SearchResults() {
   const searchParams = useSearchParams()
   const { t, language } = useLanguage()
@@ -104,14 +118,7 @@ function SearchResults() {
 export default function SearchPage() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <Suspense fallback={
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-gray-600">Searching...</p>
-          </div>
-        </div>
-      }>
+      <Suspense fallback={<SearchLoadingFallback />}>
         <SearchResults />
       </Suspense>
     </div>

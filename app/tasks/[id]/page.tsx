@@ -404,6 +404,12 @@ export default function TaskDetailPage() {
         return
       }
 
+      // Locked tasks are only viewable by owner or admin.
+      if (taskData?.status === 'locked' && (!user || (taskData.created_by !== user.id && !isAdmin))) {
+        router.push('/tasks')
+        return
+      }
+
       // Fetch profile and rating for task creator
       if (taskData) {
         const [profileResult, reviewsResult, imagesResult, completionPhotosResult, progressUpdatesResult, tagsResult, assignedHelperResult] = await Promise.all([
@@ -2426,8 +2432,8 @@ export default function TaskDetailPage() {
     setModalState({
       isOpen: true,
       type: 'confirm',
-      title: 'Confirm Deletion',
-      message: 'Are you sure you want to delete this task? This action cannot be undone and will also delete all bids and conversations related to this task.',
+      title: 'Delete Task',
+      message: 'Are you sure you want to delete this task?\nThis is only allowed before any bid is accepted. The task will be archived, then subsequently deleted.',
       onConfirm: () => {
         setModalState({ ...modalState, isOpen: false })
         performDeleteTask()
@@ -2438,28 +2444,52 @@ export default function TaskDetailPage() {
   const performDeleteTask = async () => {
 
     try {
+      const { count: acceptedBidCount, error: acceptedBidCheckError } = await supabase
+        .from('bids')
+        .select('id', { count: 'exact', head: true })
+        .eq('task_id', taskId)
+        .eq('status', 'accepted')
+
+      if (acceptedBidCheckError) {
+        throw acceptedBidCheckError
+      }
+
+      if ((acceptedBidCount || 0) > 0) {
+        setPendingDeleteTask(false)
+        setModalState({
+          isOpen: true,
+          type: 'warning',
+          title: 'Cannot Lock Task',
+          message: 'This task already has an accepted bid, so it cannot be locked/deleted.',
+        })
+        return
+      }
+
       const { error } = await supabase
         .from('tasks')
-        .delete()
+        .update({
+          status: 'locked',
+          archived: true,
+        })
         .eq('id', taskId)
 
       if (error) {
-        console.error('Delete error:', error)
+        console.error('Lock task error:', error)
         throw error
       }
 
-      // Redirect immediately after successful delete
+      // Redirect immediately after successful lock/archive
       setPendingDeleteTask(false)
       router.push('/tasks')
       router.refresh()
     } catch (error: any) {
-      console.error('Error deleting task:', error)
+      console.error('Error locking task:', error)
       setPendingDeleteTask(false)
       setModalState({
         isOpen: true,
         type: 'error',
         title: 'Error',
-        message: `Error deleting task: ${error.message || 'You may not have permission to delete this task. Make sure you are the task owner and that the delete policy is set up in the database.'}`,
+        message: `Error locking task: ${error.message || 'You may not have permission to lock this task.'}`,
       })
     }
   }

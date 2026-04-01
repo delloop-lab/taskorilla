@@ -91,7 +91,7 @@ export interface Task {
   title: string
   description: string
   budget: number
-  status: 'open' | 'pending_payment' | 'in_progress' | 'completed' | 'cancelled'
+  status: 'open' | 'pending_payment' | 'in_progress' | 'completed' | 'cancelled' | 'locked'
   created_by: string
   assigned_to?: string
   created_at: string

@@ -1,3 +1,7 @@
+const startupT0 = Date.now()
+const startupNow = new Date().toISOString()
+console.log(`[startup] next.config.js load begin at ${startupNow} (pid=${process.pid})`)
+
 const withPWA = require('next-pwa')({
   dest: 'public',
   register: true,
@@ -207,6 +211,8 @@ const nextConfig = {
 }
 
 module.exports = withPWA(nextConfig)
+
+console.log(`[startup] next.config.js load done in ${Date.now() - startupT0}ms`)
 
 
 

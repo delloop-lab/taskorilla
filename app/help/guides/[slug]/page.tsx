@@ -300,7 +300,12 @@ export default function GuidePage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
                 {wasHelpfulText}
               </h3>
-              <GuideFeedbackButtons guideTitle={translatedGuide.title} />
+              <GuideFeedbackButtons
+                guideId={translatedGuide.id}
+                guideTitle={translatedGuide.title}
+                guideSlug={slug}
+                language={lang}
+              />
             </div>
           </div>
 

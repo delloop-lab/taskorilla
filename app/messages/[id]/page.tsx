@@ -324,6 +324,7 @@ export default function ConversationPage() {
         ? [task.assigned_to]
         : [],
   })
+  const isLockedTaskConversation = task?.status === 'locked'
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -336,6 +337,16 @@ export default function ConversationPage() {
         type: 'warning',
         title: t('messages.accountPausedTitle'),
         message: t('messages.accountPausedMessage'),
+      })
+      return
+    }
+
+    if (isLockedTaskConversation) {
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: 'Conversation Locked',
+        message: 'This task is locked, so messaging is disabled for this conversation.',
       })
       return
     }
@@ -761,7 +772,12 @@ export default function ConversationPage() {
           {t('messages.otherUserUnavailable')}
         </div>
       )}
-      <form onSubmit={handleSendMessage} className={`bg-white rounded-lg shadow-md p-4 ${currentUserPaused || otherUserPaused ? 'opacity-50 pointer-events-none' : ''}`}>
+      {!currentUserPaused && !otherUserPaused && isLockedTaskConversation && (
+        <div className="bg-gray-100 border border-gray-200 rounded-lg p-4 text-sm text-gray-700">
+          This task is locked. Messaging is disabled for this conversation.
+        </div>
+      )}
+      <form onSubmit={handleSendMessage} className={`bg-white rounded-lg shadow-md p-4 ${currentUserPaused || otherUserPaused || isLockedTaskConversation ? 'opacity-50 pointer-events-none' : ''}`}>
         {messageImage && (
           <div className="mb-3 relative inline-block max-w-full">
             <img

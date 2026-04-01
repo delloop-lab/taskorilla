@@ -101,6 +101,30 @@ SELECT
     ELSE '❌ helper_match_feedback table MISSING - Run: add_helper_match_feedback.sql'
   END as helper_match_feedback_status;
 
+-- Check for guide_feedback table
+SELECT
+  CASE
+    WHEN EXISTS (
+      SELECT 1 FROM information_schema.tables
+      WHERE table_name = 'guide_feedback'
+    ) THEN '✅ guide_feedback table EXISTS'
+    ELSE '❌ guide_feedback table MISSING - Run: add_guide_feedback.sql'
+  END as guide_feedback_status;
+
+-- Check tasks status constraint includes locked
+SELECT
+  CASE
+    WHEN EXISTS (
+      SELECT 1
+      FROM pg_constraint c
+      JOIN pg_class t ON t.oid = c.conrelid
+      WHERE t.relname = 'tasks'
+        AND c.conname = 'tasks_status_check'
+        AND pg_get_constraintdef(c.oid) LIKE '%locked%'
+    ) THEN '✅ tasks_status_check supports locked'
+    ELSE '❌ tasks_status_check missing locked - Run: add_locked_task_status.sql'
+  END as tasks_status_locked_status;
+
 
 
 

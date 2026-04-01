@@ -1,5 +1,14 @@
 import nodemailer from 'nodemailer'
 
+const EMAIL_MODULE_T0 = Date.now()
+const startupState = globalThis as typeof globalThis & {
+  __taskorillaEmailModuleLoads?: number
+}
+startupState.__taskorillaEmailModuleLoads = (startupState.__taskorillaEmailModuleLoads || 0) + 1
+console.log(
+  `[startup] email.ts module init #${startupState.__taskorillaEmailModuleLoads} (pid=${process.pid})`
+)
+
 // Get SMTP password - support both SMTP_PASSWORD and SMTP_PASS for compatibility
 const getSMTPPassword = () => {
   return process.env.SMTP_PASSWORD || process.env.SMTP_PASS
@@ -32,6 +41,7 @@ const isSMTPConfigured = validateSMTPConfig()
 let transporter: nodemailer.Transporter | null = null
 
 if (isSMTPConfigured) {
+  const createTransportT0 = Date.now()
   transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST!,
     port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587,
@@ -46,18 +56,26 @@ if (isSMTPConfigured) {
     },
   })
 
-  // Verify transporter connection on startup (non-blocking, don't await)
-  transporter.verify((error) => {
-    if (error) {
-      console.error('❌ SMTP connection verification failed:', error.message)
-      console.error('Please check your SMTP configuration in .env file')
-    } else {
-      console.log('✅ SMTP transporter configured and ready')
-    }
-  })
+  // Verify transporter on startup in production only.
+  // In development, skipping verify avoids repeated startup delays per worker process.
+  if (process.env.NODE_ENV === 'production') {
+    transporter.verify((error) => {
+      const verifyMs = Date.now() - createTransportT0
+      if (error) {
+        console.error(`❌ SMTP connection verification failed after ${verifyMs}ms:`, error.message)
+        console.error('Please check your SMTP configuration in .env file')
+      } else {
+        console.log(`✅ SMTP transporter configured and ready (verify ${verifyMs}ms)`)
+      }
+    })
+  } else {
+    console.log('[startup] SMTP verify skipped in development')
+  }
 } else {
   console.warn('⚠️ SMTP transporter not created - missing required environment variables')
 }
+
+console.log(`[startup] email.ts init done in ${Date.now() - EMAIL_MODULE_T0}ms`)
 
 const getFromAddress = () => {
   if (!process.env.SMTP_FROM) {
