@@ -1269,7 +1269,7 @@ export default function NewTaskClient() {
                   onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Enter your budget. If you leave it blank, visitors will see "Quote" instead.
+                  Tasks with a defined budget receive significantly higher engagement. Not sure what to offer? Refer to the Official Portugal Pricing Standard. If left blank, your task will be listed as "Open for Bidding" to allow for custom quotes.
                   {requestedHelper && (
                     <>
                       <br />

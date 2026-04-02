@@ -146,7 +146,25 @@ export function getTrialFormSchema(
             // NOTE: Changed from inputType: 'number' to regular text input
             // because SurveyJS number inputs were causing refresh issues when logged in
             placeHolder: t('surveyForm.budgetPlaceholder'),
-            description: t('surveyForm.budgetDescription')
+            description: ''
+          },
+          {
+            type: 'html',
+            name: 'budgetHelpHtml',
+            html: `
+              <div style="margin-top: 6px; line-height: 1.45;">
+                <p style="margin: 0 0 4px 0; color: #4b5563; font-size: 13px;">
+                  Tasks with a defined budget receive significantly higher engagement. Not sure what to offer?
+                  Refer to the
+                  <a href="https://taskorilla.com/help/guides/taskorilla-official-task-pricing-guide-portugal-2026" target="_blank" rel="noopener noreferrer" style="color: #1d4ed8; text-decoration: underline;">
+                    Official Portugal Pricing Standard
+                  </a>.
+                </p>
+                <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+                  If left blank, your task will be listed as "Open for Bidding" to allow for custom quotes.
+                </p>
+              </div>
+            `
           }
         ]
       },

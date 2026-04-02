@@ -330,9 +330,9 @@
   },
   "surveyForm": {
     "backButton": "Back",
-    "budgetDescription": "Enter your budget. If you leave it blank, visitors will see \"Quote\" instead.",
+    "budgetDescription": "Tasks with a defined budget receive significantly higher engagement. Not sure what to offer? Refer to the Official Portugal Pricing Standard. If left blank, your task will be listed as \"Open for Bidding\" to allow for custom quotes.",
     "budgetPlaceholder": "Enter amount (e.g., 50.00)",
-    "budgetQuestion": "What's your budget? (Optional)",
+    "budgetQuestion": "What's your budget?",
     "categoryQuestion": "Which type of helper best fits your task?",
     "description": "Let's get started! We'll guide you through each step.",
     "descriptionPlaceholder": "Describe what you need done in detail...",
