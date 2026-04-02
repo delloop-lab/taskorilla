@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronUp, Download, MapPin } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import FAQAccordion from '@/components/FAQAccordion'
 import GuideFeedbackButtons from '@/components/GuideFeedbackButtons'
@@ -55,6 +55,7 @@ export default function GuidePage() {
 
   // Get related FAQs from the same category in the current language
   const relatedFAQs = getFAQsByCategory(translatedGuide.category, lang).slice(0, 5)
+  const isInstitutionalPricingGuide = slug === 'taskorilla-official-task-pricing-guide-portugal-2026'
 
   // Format content for better display
   const renderInlineMarkdown = (text: string) => {
@@ -63,7 +64,13 @@ export default function GuidePage() {
       const linkMatch = part.match(/\[(.*?)\]\((.*?)\)/)
       if (linkMatch) {
         return (
-          <a key={i} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">
+          <a
+            key={i}
+            href={linkMatch[2]}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 underline"
+          >
             {linkMatch[1]}
           </a>
         )
@@ -86,12 +93,29 @@ export default function GuidePage() {
   }
 
   const renderTable = (table: { headerCells: string[]; rows: string[][] }, key: string) => (
-    <div key={key} className="overflow-x-auto">
-      <table className="min-w-full border border-gray-200 rounded-lg text-sm">
+    <div key={key} className="overflow-x-auto print:overflow-visible print:[break-inside:avoid] print:[page-break-inside:avoid]">
+      <table
+        className={`min-w-full border border-gray-200 rounded-lg text-sm print:text-xs ${
+          isInstitutionalPricingGuide && table.headerCells[0]?.toLowerCase().includes('region')
+            ? 'border-t-2 border-b-2 border-slate-500'
+            : ''
+        }`}
+      >
         <thead>
-          <tr className="bg-gray-50">
+          <tr className={`bg-gray-50 ${isInstitutionalPricingGuide ? 'bg-slate-50' : ''}`}>
             {table.headerCells.map((cell, i) => (
-              <th key={i} className="px-4 py-2 text-left font-semibold text-gray-900 border-b border-gray-200">
+              <th
+                key={i}
+                className={`px-4 py-2 text-left font-semibold text-gray-900 border-b border-gray-200 ${
+                  table.headerCells.length === 3
+                    ? (isInstitutionalPricingGuide && table.headerCells[0]?.toLowerCase().includes('region')
+                      ? 'w-1/3'
+                      : i === 0 ? 'w-[50%]' : i === 2 ? 'w-[20%]' : 'w-[30%]')
+                    : table.headerCells.length === 2
+                      ? (i === 0 ? 'w-[65%]' : 'w-[35%]')
+                      : ''
+                }`}
+              >
                 {cell}
               </th>
             ))}
@@ -100,11 +124,31 @@ export default function GuidePage() {
         <tbody>
           {table.rows.map((row, i) => (
             <tr key={i} className="border-b border-gray-100 hover:bg-gray-50/50">
-              {row.map((cell, j) => (
-                <td key={j} className="px-4 py-2 text-gray-700">
-                  {cell}
+              {row.length === 1 ? (
+                <td
+                  colSpan={table.headerCells.length}
+                  className="px-4 py-2 text-gray-700 align-top italic bg-gray-50"
+                >
+                  {row[0]}
                 </td>
-              ))}
+              ) : (
+                row.map((cell, j) => (
+                  <td
+                    key={j}
+                    className={`px-4 py-2 text-gray-700 align-top ${
+                      table.headerCells.length === 3
+                        ? (isInstitutionalPricingGuide && table.headerCells[0]?.toLowerCase().includes('region')
+                          ? 'w-1/3'
+                          : j === 0 ? 'w-[50%]' : j === 2 ? 'w-[20%]' : 'w-[30%]')
+                        : table.headerCells.length === 2
+                          ? (j === 0 ? 'w-[65%]' : 'w-[35%]')
+                          : ''
+                    }`}
+                  >
+                    {cell}
+                  </td>
+                ))
+              )}
             </tr>
           ))}
         </tbody>
@@ -119,11 +163,14 @@ export default function GuidePage() {
     return /post your task now at taskorilla\.com and let helpers come to you/i.test(t) ||
       /publique a sua tarefa em taskorilla\.com e deixe os ajudantes virem até si/i.test(t)
   }
+  const isSectionNoteParagraph = (text: string) => /^note:/i.test(text.trim())
+  const sectionIdFromTitle = (title: string) =>
+    title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/--+/g, '-').trim()
   const ctaButtonLabel = language === 'pt'
     ? 'Publique a sua tarefa em taskorilla.com e deixe os ajudantes virem até si'
     : 'Post your task now at taskorilla.com and let helpers come to you'
   const renderCtaButton = (key: string) => (
-    <div key={key} className="mt-8 mb-4 flex justify-center">
+    <div key={key} className="mt-12 mb-12 flex justify-center">
       <Link
         href="/tasks/new"
         className="inline-flex items-center justify-center px-6 py-3.5 rounded-lg font-semibold text-white bg-primary hover:bg-primary/90 shadow-md hover:shadow-lg transition-all text-center"
@@ -149,11 +196,13 @@ export default function GuidePage() {
       }
     }
 
-    const accordionSections: { title: string; table: { headerCells: string[]; rows: string[][] } }[] = []
+    const accordionSections: { title: string; table: { headerCells: string[]; rows: string[][] }; note?: string }[] = []
     const introNodes: React.ReactNode[] = []
     const outroNodes: React.ReactNode[] = []
     let i = 0
     let phase: 'intro' | 'accordion' | 'outro' = 'intro'
+    let lastIntroWasTable = false
+    let lastOutroWasTable = false
 
     while (i < blocks.length) {
       const b = blocks[i]
@@ -161,9 +210,13 @@ export default function GuidePage() {
         const title = b.value.replace(/^\*\*/, '').replace(/\*\*$/, '').trim()
         const next = blocks[i + 1]
         if (next?.type === 'table' && next.tableData) {
-          accordionSections.push({ title, table: next.tableData })
+          const afterTable = blocks[i + 2]
+          const note = afterTable?.type === 'paragraph' && isSectionNoteParagraph(afterTable.value)
+            ? afterTable.value.trim()
+            : undefined
+          accordionSections.push({ title, table: next.tableData, note })
           phase = 'accordion'
-          i += 2
+          i += note ? 3 : 2
           continue
         }
       }
@@ -175,47 +228,99 @@ export default function GuidePage() {
       if (phase === 'intro') {
         if (b.type === 'table' && b.tableData) {
           introNodes.push(<div key={`t-${i}`} className="mb-6">{renderTable(b.tableData, `t-${i}`)}</div>)
+          lastIntroWasTable = true
         } else if (b.type === 'heading') {
           const headingText = b.value.match(/\*\*(.*?)\*\*/)?.[1] || b.value
           const remainingText = b.value.replace(/\*\*(.*?)\*\*/, '').trim()
           introNodes.push(
             <div key={`h-${i}`} className="mb-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-3">{headingText}</h3>
+              <h3 className={`text-xl font-bold text-gray-900 mb-3 ${isInstitutionalPricingGuide ? 'font-serif' : ''}`}>
+                {isInstitutionalPricingGuide && /regional pricing adjustments/i.test(headingText) ? (
+                  <span className="inline-flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-slate-700" />
+                    {headingText}
+                  </span>
+                ) : (
+                  headingText
+                )}
+              </h3>
               {remainingText && <p className="text-gray-700 leading-relaxed">{renderInlineMarkdown(remainingText)}</p>}
             </div>
           )
+          lastIntroWasTable = false
         } else if (b.type === 'paragraph' && b.value.trim()) {
           if (isCtaParagraph(b.value)) {
             introNodes.push(renderCtaButton(`cta-${i}`))
+            lastIntroWasTable = false
+          } else if (lastIntroWasTable && isSectionNoteParagraph(b.value)) {
+            const noteText = b.value.replace(/^note:\s*/i, '').trim()
+            introNodes.push(
+              <div
+                key={`note-${i}`}
+                className="-mt-6 mb-6 px-4 py-3 text-slate-950"
+                style={{ backgroundColor: '#F8FAFC' }}
+              >
+                <p className="text-[11px] uppercase tracking-wide text-slate-950 font-semibold mb-1">Note</p>
+                <p className="font-medium">{renderInlineMarkdown(noteText)}</p>
+              </div>
+            )
+            lastIntroWasTable = false
           } else {
             introNodes.push(
               <p key={`p-${i}`} className="text-gray-700 leading-relaxed mb-4">
                 {renderInlineMarkdown(b.value)}
               </p>
             )
+            lastIntroWasTable = false
           }
         }
       } else if (phase === 'outro') {
         if (b.type === 'table' && b.tableData) {
           outroNodes.push(<div key={`t-${i}`} className="mb-6">{renderTable(b.tableData, `t-${i}`)}</div>)
+          lastOutroWasTable = true
         } else if (b.type === 'heading') {
           const headingText = b.value.match(/\*\*(.*?)\*\*/)?.[1] || b.value
           const remainingText = b.value.replace(/\*\*(.*?)\*\*/, '').trim()
           outroNodes.push(
             <div key={`h-${i}`} className="mb-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-3">{headingText}</h3>
+              <h3 className={`text-xl font-bold text-gray-900 mb-3 ${isInstitutionalPricingGuide ? 'font-serif' : ''}`}>
+                {isInstitutionalPricingGuide && /regional pricing adjustments/i.test(headingText) ? (
+                  <span className="inline-flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-slate-700" />
+                    {headingText}
+                  </span>
+                ) : (
+                  headingText
+                )}
+              </h3>
               {remainingText && <p className="text-gray-700 leading-relaxed">{renderInlineMarkdown(remainingText)}</p>}
             </div>
           )
+          lastOutroWasTable = false
         } else if (b.type === 'paragraph' && b.value.trim()) {
           if (isCtaParagraph(b.value)) {
             outroNodes.push(renderCtaButton(`cta-${i}`))
+            lastOutroWasTable = false
+          } else if (lastOutroWasTable && isSectionNoteParagraph(b.value)) {
+            const noteText = b.value.replace(/^note:\s*/i, '').trim()
+            outroNodes.push(
+              <div
+                key={`note-${i}`}
+                className="-mt-6 mb-6 px-4 py-3 text-slate-950"
+                style={{ backgroundColor: '#F8FAFC' }}
+              >
+                <p className="text-[11px] uppercase tracking-wide text-slate-950 font-semibold mb-1">Note</p>
+                <p className="font-medium">{renderInlineMarkdown(noteText)}</p>
+              </div>
+            )
+            lastOutroWasTable = false
           } else {
             outroNodes.push(
               <p key={`p-${i}`} className="text-gray-700 leading-relaxed mb-4">
                 {renderInlineMarkdown(b.value)}
               </p>
             )
+            lastOutroWasTable = false
           }
         }
       }
@@ -235,12 +340,15 @@ export default function GuidePage() {
           {accordionSections.map((item, idx) => (
             <div
               key={idx}
-              className="border border-gray-200 rounded-lg overflow-hidden hover:border-primary/30 transition-colors"
+              className="border border-gray-200 rounded-lg overflow-hidden hover:border-primary/30 transition-colors print:border-gray-300 print:[break-inside:avoid] print:[page-break-inside:avoid]"
             >
+              <h3 className="hidden print:block text-base font-bold text-gray-900 px-0 py-2">
+                {item.title}
+              </h3>
               <button
                 type="button"
                 onClick={() => setOpenAccordionIndex(openAccordionIndex === idx ? null : idx)}
-                className="w-full px-5 py-4 flex items-center justify-between bg-white hover:bg-gray-50 text-left font-semibold text-gray-900"
+                className="w-full px-5 py-4 flex items-center justify-between bg-white hover:bg-gray-50 text-left font-semibold text-gray-900 print:hidden"
               >
                 <span>{item.title}</span>
                 {openAccordionIndex === idx ? (
@@ -249,13 +357,72 @@ export default function GuidePage() {
                   <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
                 )}
               </button>
-              {openAccordionIndex === idx && (
-                <div className="px-5 py-4 bg-gray-50 border-t border-gray-200">
-                  {renderTable(item.table, `acc-${idx}`)}
-                </div>
-              )}
+              <div className={`${openAccordionIndex === idx ? 'block' : 'hidden'} print:block px-5 py-4 bg-gray-50 border-t border-gray-200 print:bg-white`}>
+                {renderTable(item.table, `acc-${idx}`)}
+                {item.note && (
+                  <div
+                    className="mt-0 px-4 py-3 text-slate-950"
+                    style={{ backgroundColor: '#F8FAFC' }}
+                  >
+                    <p className="text-[11px] uppercase tracking-wide text-slate-600 font-semibold mb-1">Note</p>
+                    <p className="font-medium">{renderInlineMarkdown(item.note.replace(/^note:\s*/i, '').trim())}</p>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
+        </div>
+      )}
+      {outroNodes}
+    </>
+  )
+
+  const formatInstitutionalContent = () => (
+    <>
+      {introNodes}
+      {accordionSections.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
+          <aside className="hidden lg:block lg:col-span-3 print:hidden">
+            <div className="sticky top-24 border border-slate-200 rounded-lg bg-slate-50 p-4">
+              <p className="text-xs uppercase tracking-wide text-slate-600 font-semibold mb-3">Table of Contents</p>
+              <nav className="space-y-2">
+                {accordionSections.map((item) => (
+                  <a
+                    key={item.title}
+                    href={`#${sectionIdFromTitle(item.title)}`}
+                    className="block text-sm text-slate-700 hover:text-slate-900"
+                  >
+                    {item.title}
+                  </a>
+                ))}
+              </nav>
+            </div>
+          </aside>
+          <div className="lg:col-span-9 space-y-6">
+            {accordionSections.map((item, idx) => (
+              <section
+                id={sectionIdFromTitle(item.title)}
+                key={idx}
+                className="border border-slate-200 rounded-lg overflow-hidden print:border-gray-300 print:[break-inside:avoid] print:[page-break-inside:avoid]"
+              >
+                <div className="px-5 py-4 bg-white border-b border-slate-200">
+                  <h3 className="text-lg font-semibold text-slate-900 font-serif">{item.title}</h3>
+                </div>
+                <div className="px-5 py-4 bg-slate-50 print:bg-white">
+                  {renderTable(item.table, `inst-${idx}`)}
+                  {item.note && (
+                    <div
+                      className="mt-0 px-4 py-3 text-slate-950"
+                      style={{ backgroundColor: '#F8FAFC' }}
+                    >
+                      <p className="text-[11px] uppercase tracking-wide text-slate-950 font-semibold mb-1">Note</p>
+                      <p className="font-medium">{renderInlineMarkdown(item.note.replace(/^note:\s*/i, '').trim())}</p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            ))}
+          </div>
         </div>
       )}
       {outroNodes}
@@ -267,12 +434,13 @@ export default function GuidePage() {
   const wasHelpfulText = language === 'pt' ? 'Este guia foi útil?' : 'Was this guide helpful?'
   const relatedFaqsText = language === 'pt' ? 'Perguntas Frequentes Relacionadas' : 'Related FAQs'
   const viewAllFaqsText = language === 'pt' ? 'Ver todas as perguntas frequentes →' : 'View all FAQs →'
+  const downloadPdfText = language === 'pt' ? 'Descarregar como PDF' : 'Download as PDF'
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 print:bg-white">
       {/* Header */}
-      <section className="bg-gradient-to-br from-primary to-accent text-white py-8 px-4">
-        <div className="container mx-auto max-w-4xl">
+      <section className={`${isInstitutionalPricingGuide ? 'bg-[#1B365D]' : 'bg-gradient-to-br from-primary to-accent'} text-white py-8 px-4 print:hidden`}>
+        <div className="container mx-auto max-w-6xl">
           <Link href="/help/guides" className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-4 transition-colors">
             <ArrowLeft className="w-5 h-5" />
             {backToGuidesText}
@@ -281,22 +449,42 @@ export default function GuidePage() {
             <span className="text-sm bg-white/20 px-3 py-1 rounded-full">
               {translatedGuide.category}
             </span>
-            <span className="text-sm opacity-75">{minReadText}</span>
+            {!isInstitutionalPricingGuide && <span className="text-sm opacity-75">{minReadText}</span>}
           </div>
           <h1 className="text-4xl font-bold">{translatedGuide.title}</h1>
         </div>
       </section>
 
       {/* Guide Content */}
-      <section className="py-12 px-4">
-        <div className="container mx-auto max-w-4xl">
-          <div className="bg-white rounded-lg shadow-md p-8 mb-8">
+      <section className="py-12 px-4 print:py-0 print:px-0">
+        <div className="container mx-auto max-w-6xl">
+          <div className="bg-white rounded-lg shadow-md p-8 mb-8 print:shadow-none print:rounded-none print:p-0 print:mb-0">
+            <div className={`mb-8 flex print:hidden ${isInstitutionalPricingGuide ? 'justify-between items-center gap-4' : 'justify-end'}`}>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                <Download className="w-4 h-4" />
+                {downloadPdfText}
+              </button>
+            </div>
+            {isInstitutionalPricingGuide && (
+              <div className="mb-10 text-center border-b border-slate-200 pb-6">
+                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 font-serif">
+                  Taskorilla Official Task Pricing Guide
+                </h2>
+                <p className="mt-2 inline-block px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-sm font-medium">
+                  Ref: PT-2026-V1 | Issued: Jan 2026
+                </p>
+              </div>
+            )}
             <div className="prose prose-lg max-w-none">
-              {formatContent()}
+              {isInstitutionalPricingGuide ? formatInstitutionalContent() : formatContent()}
             </div>
 
             {/* Was this helpful? */}
-            <div className="mt-12 pt-8 border-t border-gray-200">
+            <div className="mt-12 pt-8 border-t border-gray-200 print:hidden">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
                 {wasHelpfulText}
               </h3>
@@ -311,7 +499,7 @@ export default function GuidePage() {
 
           {/* Related FAQs */}
           {relatedFAQs.length > 0 && (
-            <div className="bg-white rounded-lg shadow-md p-8">
+            <div className="bg-white rounded-lg shadow-md p-8 print:hidden">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
                 {relatedFaqsText}
               </h2>
@@ -330,7 +518,9 @@ export default function GuidePage() {
       </section>
 
       {/* Still Need Help */}
-      <GuideStillNeedHelp />
+      <div className="print:hidden">
+        <GuideStillNeedHelp />
+      </div>
     </div>
   )
 }

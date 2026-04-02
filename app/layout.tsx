@@ -128,9 +128,11 @@ export default function RootLayout({
           <SupabasePrewarm />
           <PreLaunchModal />
           <InstallPromptModal />
-          <Navbar />
-          <PausedBanner />
-          <main className="min-h-screen bg-gray-50">
+          <div className="print:hidden">
+            <Navbar />
+            <PausedBanner />
+          </div>
+          <main className="min-h-screen bg-gray-50 print:bg-white">
             {children}
           </main>
         </LanguageProviderWrapper>

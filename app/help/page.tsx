@@ -20,6 +20,9 @@ export default function HelpCenter() {
   const quickStartGuides = quickStartGuideIds
     .map((id) => allGuides.find((g) => g.id === id) || allGuidesEn.find((g) => g.id === id))
     .filter(Boolean)
+  const pricingGuideV2 =
+    allGuides.find((g) => g.id === 'guide-official-pricing-portugal-2026') ||
+    allGuidesEn.find((g) => g.id === 'guide-official-pricing-portugal-2026')
   
   // Get first FAQ from each main category for popular questions
   const popularFaqs = [
@@ -67,6 +70,14 @@ export default function HelpCenter() {
             >
               📚 {t('help.viewAllGuides')}
             </Link>
+            {pricingGuideV2 && (
+              <Link
+                href={`/help/guides/${slugify(pricingGuideV2.title)}`}
+                className="px-6 py-3 bg-slate-700 text-white hover:bg-slate-800 rounded-lg font-medium transition-colors"
+              >
+                {language === 'pt' ? '📘 Guia Oficial de Preços 2026' : '📘 Official Pricing Guide 2026'}
+              </Link>
+            )}
             <a 
               href="mailto:tee@taskorilla.com?subject=Support%20Request"
               className="px-6 py-3 bg-gray-100 hover:bg-primary hover:text-white rounded-lg font-medium transition-colors flex items-center gap-2"
