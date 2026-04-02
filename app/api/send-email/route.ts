@@ -21,6 +21,19 @@ import { logEmail } from '@/lib/email-logger'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { createClient } from '@supabase/supabase-js'
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function formatMultilineTextForHtml(value: string): string {
+  return escapeHtml(value).replace(/\r?\n/g, '<br />')
+}
+
 export async function POST(request: NextRequest) {
   let emailLogData: any = null
   
@@ -200,19 +213,42 @@ export async function POST(request: NextRequest) {
         break
 
       case 'message_blocked_pre_bid':
+        const blockedMessagePreview = String(params.messagePreview || '')
+        const blockedMessageContent = String(params.messageContent || blockedMessagePreview)
+        const blockedReason = String(params.blockedReason || 'policy_violation')
+        const blockedSenderName = String(params.senderName || 'User')
+        const blockedConversationId = params.conversationId || null
+        const blockedTaskId = params.taskId || null
+        const blockedHasImage = params.hasImage === true
+        const blockedMessageHtml = `
+          <div style="font-family: Arial, sans-serif; color: #111827; line-height: 1.6;">
+            <h2 style="margin: 0 0 12px; font-size: 20px;">Blocked pre-bid message</h2>
+            <p style="margin: 0 0 8px;"><strong>Sender:</strong> ${escapeHtml(blockedSenderName)}</p>
+            <p style="margin: 0 0 8px;"><strong>Blocked reason:</strong> ${escapeHtml(blockedReason)}</p>
+            <p style="margin: 0 0 8px;"><strong>Conversation ID:</strong> ${escapeHtml(String(blockedConversationId || 'N/A'))}</p>
+            <p style="margin: 0 0 16px;"><strong>Task ID:</strong> ${escapeHtml(String(blockedTaskId || 'N/A'))}</p>
+            <h3 style="margin: 0 0 8px; font-size: 16px;">Full message content</h3>
+            <div style="white-space: normal; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px;">
+              ${formatMultilineTextForHtml(blockedMessageContent) || '<em>(empty)</em>'}
+            </div>
+          </div>
+        `.trim()
+
         emailLogData = {
           recipient_email: params.recipientEmail || 'blocked@system.local',
           recipient_name: params.recipientName || 'Blocked Message Target',
-          subject: `Blocked pre-bid message from ${params.senderName || 'User'}`,
+          subject: `Blocked pre-bid message from ${blockedSenderName}`,
           email_type: 'message_blocked_pre_bid',
-          related_task_id: params.taskId || null,
+          related_task_id: blockedTaskId,
           metadata: {
-            senderName: params.senderName || 'User',
-            messagePreview: params.messagePreview || '',
-            conversationId: params.conversationId || null,
-            blockedReason: params.blockedReason || 'policy_violation',
-            hasImage: params.hasImage === true,
+            senderName: blockedSenderName,
+            messagePreview: blockedMessagePreview,
+            messageContent: blockedMessageContent,
+            conversationId: blockedConversationId,
+            blockedReason,
+            hasImage: blockedHasImage,
             bidAccepted: false,
+            html_content: blockedMessageHtml,
           },
         }
         break

@@ -151,7 +151,8 @@ const ADDRESS_PATTERNS = [
   // Portuguese street + number: "Rua da Liberdade 123", "Avenida X, 45"
   /\b(rua|r\.|avenida|av\.|travessa|tv\.|largo|praça|praca|estrada|estr\.|urbanizacao|urbanização|quinta|quintã|beco|alameda|rotunda)\s+[a-zA-ZÀ-ÿ0-9'.,\-\s]{2,60},?\s*\d{1,5}[a-zA-Z]?\b/gi,
   // Number first + English street type: "45 King Street", "12-14 High Avenue"
-  /\b\d{1,5}[a-zA-Z]?\s*(?:[-/]\s*\d{1,5}[a-zA-Z]?)?\s+[a-zA-Z0-9'.,\-\s]{2,40}\b(street|st|road|rd|avenue|ave|lane|ln|drive|dr|court|ct|crescent|close|way|place|pl|boulevard|blvd|terrace|ter|square|sq|parkway|pkwy)\b/gi,
+  // NOTE: Do not include "square|sq" here to avoid false positives like "30 mt sq." (area measurements).
+  /\b\d{1,5}[a-zA-Z]?\s*(?:[-/]\s*\d{1,5}[a-zA-Z]?)?\s+[a-zA-Z0-9'.,\-\s]{2,40}\b(street|road|avenue|ave|lane|ln|drive|court|crescent|close|way|place|boulevard|blvd|terrace|parkway|pkwy)\b/gi,
   // Number first + Portuguese street type: "45 Rua X", "120 Avenida Y"
   /\b\d{1,5}[a-zA-Z]?\s+(rua|r\.|avenida|av\.|travessa|tv\.|largo|praça|praca|estrada|estr\.|alameda|beco)\s+[a-zA-ZÀ-ÿ0-9'.,\-\s]{2,40}\b/gi,
   // Eircode-like (Ireland): A65 F4E2
@@ -186,6 +187,10 @@ const ADDRESS_INTENT_PHRASES = [
   'entrego em',
   'leva a',
 ]
+
+// Area/measurement language that should not be treated as an address.
+const AREA_MEASUREMENT_PATTERN = /\b\d{1,4}(?:[.,]\d{1,2})?\s*(?:m2|m²|sqm|sq\.?\s*m|m\s*sq|mt\s*sq|mts?|mtrs?)\b/i
+const ADDRESS_KEYWORD_PATTERN = /\b(rua|avenida|travessa|largo|praça|praca|estrada|alameda|street|road|avenue|lane|drive|court|postcode|postal|morada|address)\b/i
 
 const OFF_PLATFORM_ESCALATION_PHRASES = [
   'i will see you',
@@ -273,6 +278,12 @@ export interface ContentFilterOptions {
   allowPaymentTerms?: boolean
 }
 
+export function hasSpacedDigitsPattern(content: string): boolean {
+  if (!content || typeof content !== 'string') return false
+  SPACED_DIGITS_PATTERN.lastIndex = 0
+  return SPACED_DIGITS_PATTERN.test(content)
+}
+
 const CLEAN: ContentCheckResult = {
   isClean: true,
   containsEmail: false,
@@ -315,8 +326,7 @@ export function checkForContactInfo(content: string, options: ContentFilterOptio
   const hasPhone = matchesAny(raw, PHONE_PATTERNS)
   const digitsOnly = raw.replace(/[^\d]/g, '')
   const suspiciousDigits = /\d{7,}|\d{3,4}[-.\s]\d{3,4}[-.\s]\d{3,4}/.test(raw)
-  const hasSpacedDigits = SPACED_DIGITS_PATTERN.test(raw)
-  if (hasPhone || (digitsOnly.length >= 7 && suspiciousDigits) || hasSpacedDigits) {
+  if (hasPhone || (digitsOnly.length >= 7 && suspiciousDigits)) {
     return blocked({ containsPhone: true }, 'phone number')
   }
 
@@ -376,16 +386,26 @@ export function checkForContactInfo(content: string, options: ContentFilterOptio
   }
 
   // ── 9. Address sharing ─────────────────────────────────────────────────
+  const hasAreaMeasurement = AREA_MEASUREMENT_PATTERN.test(lower)
+  const hasAddressKeyword = ADDRESS_KEYWORD_PATTERN.test(lower)
   if (matchesAny(raw, ADDRESS_PATTERNS)) {
-    return blocked({ containsAddress: true }, 'address pattern')
+    // Avoid false positives such as "30 mt sq", "3 mts", "20 m2"
+    // unless an actual address keyword is also present.
+    if (!(hasAreaMeasurement && !hasAddressKeyword)) {
+      return blocked({ containsAddress: true }, 'address pattern')
+    }
   }
   const addressIntent = containsPhrase(lower, ADDRESS_INTENT_PHRASES)
   if (addressIntent) {
-    return blocked({ containsAddress: true }, `address intent: ${addressIntent}`)
+    if (!(hasAreaMeasurement && !hasAddressKeyword)) {
+      return blocked({ containsAddress: true }, `address intent: ${addressIntent}`)
+    }
   }
   const collapsedAddressIntent = containsPhrase(collapsed, ADDRESS_INTENT_PHRASES)
   if (collapsedAddressIntent) {
-    return blocked({ containsAddress: true }, `obfuscated address intent: ${collapsedAddressIntent}`)
+    if (!(hasAreaMeasurement && !hasAddressKeyword)) {
+      return blocked({ containsAddress: true }, `obfuscated address intent: ${collapsedAddressIntent}`)
+    }
   }
 
   return CLEAN

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { sendHelperAlert } from '@/lib/sms'
+import { hasSpacedDigitsPattern } from '@/lib/content-filter'
 
 /**
  * Fires an SMS to every superadmin when a user sends an image in a
@@ -18,6 +19,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null)
     const conversationId: string | undefined = body?.conversationId
     const taskTitle: string | undefined = body?.taskTitle
+    const messagePreview: string = typeof body?.messagePreview === 'string' ? body.messagePreview : ''
 
     if (!conversationId) {
       return NextResponse.json({ error: 'conversationId is required' }, { status: 400 })
@@ -55,7 +57,9 @@ export async function POST(request: NextRequest) {
     }
 
     const taskLabel = taskTitle ? ` (task: ${taskTitle})` : ''
-    const msg = `⚠️ Taskorilla alert: ${senderLabel} sent an IMAGE in a conversation before bid accepted${taskLabel}. Review in admin.`
+    const hasSpacedDigits = hasSpacedDigitsPattern(messagePreview)
+    const spacedDigitsFlag = hasSpacedDigits ? ' Possible spaced-digit contact pattern detected in message text.' : ''
+    const msg = `⚠️ Taskorilla alert: ${senderLabel} sent an IMAGE in a conversation before bid accepted${taskLabel}.${spacedDigitsFlag} Review in admin.`
 
     const result = await sendHelperAlert(phones, msg)
     return NextResponse.json({ sent: result.success, error: result.error })

@@ -55,7 +55,7 @@ export default function GuidePage() {
 
   // Get related FAQs from the same category in the current language
   const relatedFAQs = getFAQsByCategory(translatedGuide.category, lang).slice(0, 5)
-  const isInstitutionalPricingGuide = slug === 'taskorilla-official-task-pricing-guide-portugal-2026'
+  const isInstitutionalPricingGuide = slug === 'taskorilla-task-pricing-guide-portugal-2026'
 
   // Format content for better display
   const renderInlineMarkdown = (text: string) => {
@@ -472,7 +472,7 @@ export default function GuidePage() {
             {isInstitutionalPricingGuide && (
               <div className="mb-10 text-center border-b border-slate-200 pb-6">
                 <h2 className="text-3xl md:text-4xl font-bold text-slate-900 font-serif">
-                  Taskorilla Official Task Pricing Guide
+                  Taskorilla Task Pricing Guide
                 </h2>
                 <p className="mt-2 inline-block px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-sm font-medium">
                   Ref: PT-2026-V1 | Issued: Jan 2026

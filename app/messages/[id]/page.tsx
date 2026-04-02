@@ -433,6 +433,7 @@ export default function ConversationPage() {
               recipientName: otherParticipant?.full_name || otherParticipant?.email || 'User',
               senderName: user?.email || 'Someone',
               messagePreview: newMessage.trim().substring(0, 160),
+              messageContent: newMessage.trim(),
               conversationId: conversationId,
               taskId: task?.id || null,
               blockedReason: contentCheck.detectedReason || 'policy_violation',
@@ -485,7 +486,11 @@ export default function ConversationPage() {
               'Content-Type': 'application/json',
               ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
-            body: JSON.stringify({ conversationId, taskTitle: task?.title }),
+            body: JSON.stringify({
+              conversationId,
+              taskTitle: task?.title,
+              messagePreview: newMessage.trim().substring(0, 180),
+            }),
           }).catch(() => {})
         })
       }

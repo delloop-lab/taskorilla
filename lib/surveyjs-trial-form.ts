@@ -156,7 +156,7 @@ export function getTrialFormSchema(
                 <p style="margin: 0 0 4px 0; color: #4b5563; font-size: 13px;">
                   Tasks with a defined budget receive significantly higher engagement. Not sure what to offer?
                   Refer to the
-                  <a href="https://taskorilla.com/help/guides/taskorilla-official-task-pricing-guide-portugal-2026" target="_blank" rel="noopener noreferrer" style="color: #1d4ed8; text-decoration: underline;">
+                  <a href="https://taskorilla.com/help/guides/taskorilla-task-pricing-guide-portugal-2026" target="_blank" rel="noopener noreferrer" style="color: #1d4ed8; text-decoration: underline;">
                     Official Portugal Pricing Standard
                   </a>.
                 </p>

@@ -7701,10 +7701,14 @@ export default function SuperadminDashboard() {
                         />
                       </div>
                     )
-                  } else if (viewingEmailLog.metadata?.message) {
+                  } else if (viewingEmailLog.metadata?.messageContent || viewingEmailLog.metadata?.message || viewingEmailLog.metadata?.messagePreview) {
+                    const textContent =
+                      viewingEmailLog.metadata?.messageContent ||
+                      viewingEmailLog.metadata?.message ||
+                      viewingEmailLog.metadata?.messagePreview
                     return (
                       <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                        <div className="whitespace-pre-wrap">{viewingEmailLog.metadata.message}</div>
+                        <div className="whitespace-pre-wrap">{textContent}</div>
                       </div>
                     )
                   } else if (viewingEmailLog.subject) {
