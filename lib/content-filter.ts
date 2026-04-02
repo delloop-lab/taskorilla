@@ -16,7 +16,6 @@ const OBFUSCATION_PATTERNS = [
 
 // ─── Phone ───────────────────────────────────────────────────────────────────
 const PHONE_PATTERNS = [
-  /\+?\d{1,4}[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9}/g,
   /\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b/g,
   /\b\d{2,4}[-.\s]?\d{3}[-.\s]?\d{4}\b/g,
   /\(\d{2,4}\)\s*\d{3}[-.\s]?\d{4}/g,
@@ -149,12 +148,12 @@ const PAYMENT_WORDS = [
 // ─── Addresses / location sharing ────────────────────────────────────────────
 const ADDRESS_PATTERNS = [
   // Portuguese street + number: "Rua da Liberdade 123", "Avenida X, 45"
-  /\b(rua|r\.|avenida|av\.|travessa|tv\.|largo|praça|praca|estrada|estr\.|urbanizacao|urbanização|quinta|quintã|beco|alameda|rotunda)\s+[a-zA-ZÀ-ÿ0-9'.,\-\s]{2,60},?\s*\d{1,5}[a-zA-Z]?\b/gi,
+  /\b(rua|avenida|travessa|largo|praça|praca|estrada|estr\.|urbanizacao|urbanização|quinta|quintã|beco|alameda|rotunda)\s+[a-zA-ZÀ-ÿ0-9'.,\-\s]{2,60},?\s*\d{1,5}[a-zA-Z]?\b/gi,
   // Number first + English street type: "45 King Street", "12-14 High Avenue"
   // NOTE: Do not include "square|sq" here to avoid false positives like "30 mt sq." (area measurements).
   /\b\d{1,5}[a-zA-Z]?\s*(?:[-/]\s*\d{1,5}[a-zA-Z]?)?\s+[a-zA-Z0-9'.,\-\s]{2,40}\b(street|road|avenue|ave|lane|ln|drive|court|crescent|close|way|place|boulevard|blvd|terrace|parkway|pkwy)\b/gi,
   // Number first + Portuguese street type: "45 Rua X", "120 Avenida Y"
-  /\b\d{1,5}[a-zA-Z]?\s+(rua|r\.|avenida|av\.|travessa|tv\.|largo|praça|praca|estrada|estr\.|alameda|beco)\s+[a-zA-ZÀ-ÿ0-9'.,\-\s]{2,40}\b/gi,
+  /\b\d{1,5}[a-zA-Z]?\s+(rua|avenida|travessa|largo|praça|praca|estrada|estr\.|alameda|beco)\s+[a-zA-ZÀ-ÿ0-9'.,\-\s]{2,40}\b/gi,
   // Eircode-like (Ireland): A65 F4E2
   /\b[a-zA-Z]\d{2}\s?[a-zA-Z0-9]{4}\b/g,
   // UK postcode style: SW1A 1AA
@@ -324,9 +323,7 @@ export function checkForContactInfo(content: string, options: ContentFilterOptio
 
   // ── 2. Phone ────────────────────────────────────────────────────────────
   const hasPhone = matchesAny(raw, PHONE_PATTERNS)
-  const digitsOnly = raw.replace(/[^\d]/g, '')
-  const suspiciousDigits = /\d{7,}|\d{3,4}[-.\s]\d{3,4}[-.\s]\d{3,4}/.test(raw)
-  if (hasPhone || (digitsOnly.length >= 7 && suspiciousDigits)) {
+  if (hasPhone) {
     return blocked({ containsPhone: true }, 'phone number')
   }
 
