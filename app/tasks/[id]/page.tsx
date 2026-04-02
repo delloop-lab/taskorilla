@@ -1747,7 +1747,7 @@ export default function TaskDetailPage() {
         setModalState({
           isOpen: true,
           type: 'warning',
-          title: 'Contact Information Detected',
+          title: t('messages.contactInfoDetectedTitle'),
           message: contentCheck.message,
         })
         return
@@ -1925,7 +1925,7 @@ export default function TaskDetailPage() {
         setModalState({
           isOpen: true,
           type: 'warning',
-          title: 'Contact Information Detected',
+          title: t('messages.contactInfoDetectedTitle'),
           message: contentCheck.message,
         })
         return
@@ -2232,7 +2232,7 @@ export default function TaskDetailPage() {
           setModalState({
             isOpen: true,
             type: 'warning',
-            title: 'Contact Information Detected',
+            title: t('messages.contactInfoDetectedTitle'),
             message: contentCheck.message,
           })
           return
@@ -2698,8 +2698,8 @@ export default function TaskDetailPage() {
         setModalState({
           isOpen: true,
           type: 'warning',
-          title: 'Contact Information Detected',
-          message: contentCheck.message,
+          title: 'Keep your review private!',
+          message: "It looks like there's some personal info here. To protect your privacy on your public profile, please remove phone numbers or addresses from your review.",
         })
         return
       }

@@ -148,14 +148,12 @@ const PAYMENT_WORDS = [
 
 // ─── Addresses / location sharing ────────────────────────────────────────────
 const ADDRESS_PATTERNS = [
-  // Portuguese street formats: "Rua X", "Avenida Y", "Travessa Z", etc.
-  /\b(rua|r\.|avenida|av\.|travessa|tv\.|largo|praça|praca|estrada|estr\.|urbanizacao|urbanização|quint[aao]|beco|alameda|rotunda)\s+[a-zA-ZÀ-ÿ0-9'.,\-\s]{2,60}\b/gi,
-  // e.g. "123 Main Street", "45B King Rd", "12-14 High Avenue"
+  // Portuguese street + number: "Rua da Liberdade 123", "Avenida X, 45"
+  /\b(rua|r\.|avenida|av\.|travessa|tv\.|largo|praça|praca|estrada|estr\.|urbanizacao|urbanização|quinta|quintã|beco|alameda|rotunda)\s+[a-zA-ZÀ-ÿ0-9'.,\-\s]{2,60},?\s*\d{1,5}[a-zA-Z]?\b/gi,
+  // Number first + English street type: "45 King Street", "12-14 High Avenue"
   /\b\d{1,5}[a-zA-Z]?\s*(?:[-/]\s*\d{1,5}[a-zA-Z]?)?\s+[a-zA-Z0-9'.,\-\s]{2,40}\b(street|st|road|rd|avenue|ave|lane|ln|drive|dr|court|ct|crescent|close|way|place|pl|boulevard|blvd|terrace|ter|square|sq|parkway|pkwy)\b/gi,
-  // Apartment / unit style
-  /\b(?:apt|apartment|unit|suite|flat)\s*#?\s*[a-zA-Z0-9\-]{1,10}\b/gi,
-  // Portuguese apartment/floor notation
-  /\b(?:andar|dto|esq|frac[cç][aã]o|fra[cç][aã]o|lote|bloco)\s*[a-zA-Z0-9\-]{0,12}\b/gi,
+  // Number first + Portuguese street type: "45 Rua X", "120 Avenida Y"
+  /\b\d{1,5}[a-zA-Z]?\s+(rua|r\.|avenida|av\.|travessa|tv\.|largo|praça|praca|estrada|estr\.|alameda|beco)\s+[a-zA-ZÀ-ÿ0-9'.,\-\s]{2,40}\b/gi,
   // Eircode-like (Ireland): A65 F4E2
   /\b[a-zA-Z]\d{2}\s?[a-zA-Z0-9]{4}\b/g,
   // UK postcode style: SW1A 1AA
@@ -187,10 +185,6 @@ const ADDRESS_INTENT_PHRASES = [
   'passa em',
   'entrego em',
   'leva a',
-  'rua',
-  'avenida',
-  'travessa',
-  'estrada',
 ]
 
 const OFF_PLATFORM_ESCALATION_PHRASES = [
@@ -275,6 +269,10 @@ export interface ContentCheckResult {
   message: string
 }
 
+export interface ContentFilterOptions {
+  allowPaymentTerms?: boolean
+}
+
 const CLEAN: ContentCheckResult = {
   isClean: true,
   containsEmail: false,
@@ -290,13 +288,13 @@ const CLEAN: ContentCheckResult = {
 }
 
 const BLOCK_MSG =
-  'For your safety, sharing contact details, links, or references to other platforms is not allowed before payment is confirmed. All communication must stay on Taskorilla.'
+  'To protect your payments and privacy, please keep your chat on Taskorilla until the task is booked. Once confirmed, you can share direct details!'
 
 function blocked(overrides: Partial<ContentCheckResult>, reason: string): ContentCheckResult {
   return { ...CLEAN, isClean: false, message: BLOCK_MSG, detectedReason: reason, ...overrides }
 }
 
-export function checkForContactInfo(content: string): ContentCheckResult {
+export function checkForContactInfo(content: string, options: ContentFilterOptions = {}): ContentCheckResult {
   if (!content || typeof content !== 'string') return CLEAN
 
   const raw = content
@@ -370,7 +368,7 @@ export function checkForContactInfo(content: string): ContentCheckResult {
   const hasCurrencySymbol = CURRENCY_SYMBOLS.some(s => raw.includes(s))
   const hasCurrencyCode = CURRENCY_CODES.some(c => new RegExp(`\\b${c}\\b`, 'i').test(raw))
   const paymentWord = containsPhrase(lower, PAYMENT_WORDS)
-  if (hasCurrencySymbol || hasCurrencyCode || paymentWord) {
+  if (!options.allowPaymentTerms && (hasCurrencySymbol || hasCurrencyCode || paymentWord)) {
     return blocked(
       { containsPaymentInfo: true },
       paymentWord ? `payment: ${paymentWord}` : 'currency reference',
@@ -408,4 +406,21 @@ export function sanitizeContactInfo(content: string): string {
 export function validateMessageContent(content: string): void {
   const result = checkForContactInfo(content)
   if (!result.isClean) throw new Error(result.message)
+}
+
+export function getRestrictionHint(detectedReason: string | null): string {
+  if (!detectedReason) return 'Please keep details general until payment is confirmed.'
+  if (detectedReason.includes('address')) {
+    return "Just the general area for now, please! (e.g., 'Near the Marina'). You can share the exact door number after booking."
+  }
+  if (detectedReason.includes('phone') || detectedReason.includes('email') || detectedReason.includes('social')) {
+    return 'Whoops! Please remove phone numbers or emails for now. These are automatically shared with your Tasker once the job is confirmed.'
+  }
+  if (detectedReason.includes('messaging app') || detectedReason.includes('off-platform')) {
+    return 'Please keep communication on Taskorilla until payment is confirmed.'
+  }
+  if (detectedReason.includes('payment') || detectedReason.includes('currency')) {
+    return 'Please keep payment handling inside Taskorilla until payment is confirmed.'
+  }
+  return 'Please keep details general until payment is confirmed.'
 }

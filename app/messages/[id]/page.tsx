@@ -8,7 +8,7 @@ import { format } from 'date-fns'
 import Link from 'next/link'
 import { ArrowLeft, Send, Trash2, User as UserIcon } from 'lucide-react'
 import StandardModal from '@/components/StandardModal'
-import { checkForContactInfo } from '@/lib/content-filter'
+import { checkForContactInfo, getRestrictionHint } from '@/lib/content-filter'
 import { compressTaskImage } from '@/lib/image-utils'
 import { canRevealFullNameForTask, getDisplayName } from '@/lib/name-privacy'
 import { isBidUpdateSystemMessage, isBidWithdrawnSystemMessage } from '@/lib/bid-chat-message'
@@ -30,6 +30,7 @@ export default function ConversationPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [otherParticipant, setOtherParticipant] = useState<any>(null)
   const [task, setTask] = useState<any>(null)
+  const [allowCurrencyInChat, setAllowCurrencyInChat] = useState(false)
   const [currentUserPaused, setCurrentUserPaused] = useState(false)
   const [otherUserPaused, setOtherUserPaused] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -142,6 +143,29 @@ export default function ConversationPage() {
           setOtherParticipant(participantResult.data)
           setOtherUserPaused(participantResult.data?.is_paused === true)
           setTask(taskResult.data)
+
+          const taskData = taskResult.data
+          if (!taskData) {
+            setAllowCurrencyInChat(false)
+          } else {
+            // Allow currency terms once the helper in this conversation has placed a bid on this task.
+            const helperId = taskData.created_by === user.id ? participantResult.data?.id : user.id
+            if (!helperId) {
+              setAllowCurrencyInChat(false)
+            } else {
+              const { count: helperBidCount, error: bidError } = await supabase
+                .from('bids')
+                .select('id', { count: 'exact', head: true })
+                .eq('task_id', taskData.id)
+                .eq('user_id', helperId)
+
+              if (bidError) {
+                setAllowCurrencyInChat(false)
+              } else {
+                setAllowCurrencyInChat((helperBidCount || 0) > 0)
+              }
+            }
+          }
         }
       }
     } catch (error) {
@@ -326,6 +350,46 @@ export default function ConversationPage() {
   })
   const isLockedTaskConversation = task?.status === 'locked'
 
+  const getBlockReasonLabel = (detectedReason: string | null): string => {
+    if (!detectedReason) return 'This message cannot be shared yet.'
+    if (detectedReason.includes('address')) return 'Looks like an exact address.'
+    if (detectedReason.includes('phone') || detectedReason.includes('email') || detectedReason.includes('social')) {
+      return 'Looks like contact details.'
+    }
+    if (detectedReason.includes('messaging app') || detectedReason.includes('off-platform')) {
+      return 'Looks like off-platform contact details.'
+    }
+    if (detectedReason.includes('payment') || detectedReason.includes('currency')) {
+      return 'Looks like payment details.'
+    }
+    return 'This message cannot be shared yet.'
+  }
+
+  const tryConsumeOneTimeOverride = async (detectedReason: string | null): Promise<boolean> => {
+    try {
+      const { data } = await supabase.auth.getSession()
+      const token = data?.session?.access_token
+      const res = await fetch('/api/messages/consume-filter-override', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          conversationId,
+          detectedReason,
+        }),
+      })
+
+      if (!res.ok) return false
+      const payload = await res.json()
+      return payload?.allowed === true
+    } catch {
+      return false
+    }
+  }
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
     if ((!newMessage.trim() && !messageImage) || !user || !conversation || sending) return
@@ -345,40 +409,45 @@ export default function ConversationPage() {
       setModalState({
         isOpen: true,
         type: 'warning',
-        title: 'Conversation Locked',
-        message: 'This task is locked, so messaging is disabled for this conversation.',
+        title: 'Chat is currently closed',
+        message: "This task has been finalized or closed, so new messages can't be sent. Check your Task Dashboard for active jobs!",
       })
       return
     }
 
     // Before payment (or when task is missing), keep current safety behaviour.
     if (!canShareContact) {
-      const contentCheck = checkForContactInfo(newMessage)
+      const contentCheck = checkForContactInfo(newMessage, { allowPaymentTerms: allowCurrencyInChat })
       if (!contentCheck.isClean) {
-        // Log blocked pre-bid message attempt for admin visibility
-        fetch('/api/send-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'message_blocked_pre_bid',
-            recipientEmail: otherParticipant?.email || null,
-            recipientName: otherParticipant?.full_name || otherParticipant?.email || 'User',
-            senderName: user?.email || 'Someone',
-            messagePreview: newMessage.trim().substring(0, 160),
-            conversationId: conversationId,
-            taskId: task?.id || null,
-            blockedReason: contentCheck.detectedReason || 'policy_violation',
-            hasImage: !!messageImage,
-          }),
-        }).catch(() => {})
+        const overrideConsumed = await tryConsumeOneTimeOverride(contentCheck.detectedReason)
+        if (overrideConsumed) {
+          // Admin granted a one-time bypass for this conversation.
+        } else {
+          // Log blocked pre-bid message attempt for admin visibility
+          fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'message_blocked_pre_bid',
+              recipientEmail: otherParticipant?.email || null,
+              recipientName: otherParticipant?.full_name || otherParticipant?.email || 'User',
+              senderName: user?.email || 'Someone',
+              messagePreview: newMessage.trim().substring(0, 160),
+              conversationId: conversationId,
+              taskId: task?.id || null,
+              blockedReason: contentCheck.detectedReason || 'policy_violation',
+              hasImage: !!messageImage,
+            }),
+          }).catch(() => {})
 
-        setModalState({
-          isOpen: true,
-          type: 'warning',
-          title: t('messages.contactInfoDetectedTitle'),
-          message: contentCheck.message,
-        })
-        return
+          setModalState({
+            isOpen: true,
+            type: 'warning',
+            title: t('messages.contactInfoDetectedTitle'),
+            message: `${getBlockReasonLabel(contentCheck.detectedReason)} ${contentCheck.message} ${getRestrictionHint(contentCheck.detectedReason)}`,
+          })
+          return
+        }
       }
     }
 

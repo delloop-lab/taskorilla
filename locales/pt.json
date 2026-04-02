@@ -458,9 +458,9 @@
     "send": "Enviar",
     "sending": "A enviar...",
     "previewAlt": "Pré-visualização",
-    "accountPausedTitle": "Conta em pausa",
-    "accountPausedMessage": "A sua conta está em pausa. Não pode enviar mensagens. Contacte o suporte.",
-    "contactInfoDetectedTitle": "Dados de contacto detetados",
+    "accountPausedTitle": "Vamos ajudar a retomar",
+    "accountPausedMessage": "A sua conta está temporariamente em espera. Para voltar a enviar mensagens e encontrar tarefas, fale com a nossa equipa de suporte — estamos aqui para ajudar!",
+    "contactInfoDetectedTitle": "Vamos manter tudo seguro!",
     "errorSendingMessagePrefix": "Erro ao enviar mensagem: ",
     "unknownError": "Erro desconhecido",
     "errorUploadingImage": "Erro ao carregar imagem"

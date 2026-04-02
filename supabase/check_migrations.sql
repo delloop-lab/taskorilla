@@ -125,6 +125,16 @@ SELECT
     ELSE '❌ tasks_status_check missing locked - Run: add_locked_task_status.sql'
   END as tasks_status_locked_status;
 
+-- Check for message_filter_overrides table
+SELECT
+  CASE
+    WHEN EXISTS (
+      SELECT 1 FROM information_schema.tables
+      WHERE table_name = 'message_filter_overrides'
+    ) THEN '✅ message_filter_overrides table EXISTS'
+    ELSE '❌ message_filter_overrides table MISSING - Run: add_message_filter_overrides.sql'
+  END as message_filter_overrides_status;
+
 
 
 

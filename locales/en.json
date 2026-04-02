@@ -458,9 +458,9 @@
     "send": "Send",
     "sending": "Sending...",
     "previewAlt": "Preview",
-    "accountPausedTitle": "Account Paused",
-    "accountPausedMessage": "Your account has been paused. You cannot send messages. Please contact support.",
-    "contactInfoDetectedTitle": "Contact Information Detected",
+    "accountPausedTitle": "Let’s get you back on track",
+    "accountPausedMessage": "Your account is currently on hold. To resume messaging and find tasks, please reach out to our support team—we’re here to help!",
+    "contactInfoDetectedTitle": "Let’s keep things safe!",
     "errorSendingMessagePrefix": "Error sending message: ",
     "unknownError": "Unknown error",
     "errorUploadingImage": "Error uploading image"
