@@ -94,10 +94,21 @@ export const PROFESSION_CATEGORIES: ProfessionCategory[] = [
       'Virtual Assistant',
       'Bookkeeper / Accountant',
       'Marketing Consultant',
+      'Financial Consultant',
       'Social Media Manager',
       'Copywriter / Content Writer',
       'Business Coach',
       'Translator',
+    ],
+  },
+  {
+    name: 'Tourism & Transportation',
+    subs: [
+      'Taxi',
+      'Drive with Car Hire',
+      'Sightseeing Tours',
+      'Shuttles',
+      'Airport Transfers',
     ],
   },
   {

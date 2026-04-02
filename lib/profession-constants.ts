@@ -79,10 +79,21 @@ export const PROFESSION_GROUPS = [
       'Virtual Assistant',
       'Bookkeeper / Accountant',
       'Marketing Consultant',
+      'Financial Consultant',
       'Social Media Manager',
       'Copywriter / Content Writer',
       'Business Coach',
       'Translator',
+    ],
+  },
+  {
+    heading: 'Tourism & Transportation',
+    options: [
+      'Taxi',
+      'Drive with Car Hire',
+      'Sightseeing Tours',
+      'Shuttles',
+      'Airport Transfers',
     ],
   },
   {
