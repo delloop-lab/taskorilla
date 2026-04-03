@@ -16,6 +16,7 @@ interface Props {
     post_media_url: string | null
     notes: string | null
     template_id: string | null
+    pending_approval?: boolean
   }) => Promise<void>
 }
 
@@ -31,6 +32,7 @@ export default function NewPostModal({
   const [mediaUrl, setMediaUrl] = useState('')
   const [notes, setNotes] = useState('')
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | 'custom'>('custom')
+  const [postStatus, setPostStatus] = useState<'posted' | 'pending'>('posted')
   const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [copiedField, setCopiedField] = useState<'none' | 'text' | 'media'>('none')
@@ -57,11 +59,13 @@ export default function NewPostModal({
       setPostText(suggestedTemplate.post_text)
       setMediaUrl((suggestedTemplate.post_media_url || '').trim())
       setNotes(suggestedTemplate.notes || '')
+      setPostStatus('posted')
     } else {
       setSelectedTemplateId('custom')
       setPostText('')
       setMediaUrl('')
       setNotes('')
+      setPostStatus('posted')
     }
   }, [open, group, suggestedTemplate])
 
@@ -73,6 +77,7 @@ export default function NewPostModal({
       setPostText('')
       setMediaUrl('')
       setNotes('')
+      setPostStatus('posted')
       return
     }
     const tpl = templates.find((t) => t.id === id)
@@ -80,6 +85,7 @@ export default function NewPostModal({
       setPostText(tpl.post_text)
       setMediaUrl((tpl.post_media_url || '').trim())
       setNotes(tpl.notes || '')
+      setPostStatus('posted')
     }
   }
 
@@ -92,6 +98,7 @@ export default function NewPostModal({
     setMediaUrl((last.post_media_url || '').trim())
     setNotes(last.notes || '')
     setSelectedTemplateId(last.template_id || 'custom')
+    setPostStatus(last.pending_approval ? 'pending' : 'posted')
   }
 
   const handleFileUpload = async (file: File) => {
@@ -141,6 +148,7 @@ export default function NewPostModal({
         post_media_url: mediaUrl.trim() || null,
         notes: notes.trim() || null,
         template_id: selectedTemplateId === 'custom' ? null : selectedTemplateId,
+        pending_approval: postStatus === 'pending',
       })
       onClose()
     } finally {
@@ -221,7 +229,7 @@ export default function NewPostModal({
           </button>
         </div>
         <form onSubmit={handleSubmit} className="px-4 py-4 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
                 Template (auto-rotated)
@@ -258,6 +266,17 @@ export default function NewPostModal({
                   Reuse last post
                 </button>
               </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+              <select
+                value={postStatus}
+                onChange={(e) => setPostStatus(e.target.value as 'posted' | 'pending')}
+                className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+              >
+                <option value="posted">Posted</option>
+                <option value="pending">Pending</option>
+              </select>
             </div>
           </div>
 
