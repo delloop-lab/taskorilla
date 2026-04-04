@@ -34,6 +34,9 @@ export default function ConversationPage() {
   const [currentUserPaused, setCurrentUserPaused] = useState(false)
   const [otherUserPaused, setOtherUserPaused] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [isAdminViewing, setIsAdminViewing] = useState(false)
+  const [participant1, setParticipant1] = useState<any>(null)
+  const [participant2, setParticipant2] = useState<any>(null)
 
   const [modalState, setModalState] = useState<{
     isOpen: boolean
@@ -83,12 +86,12 @@ export default function ConversationPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // Mark messages as read when viewing
+  // Mark messages as read when viewing (skip for admin audit)
   useEffect(() => {
-    if (user && messages.length > 0) {
+    if (user && messages.length > 0 && !isAdminViewing) {
       markMessagesAsRead()
     }
-  }, [user, messages])
+  }, [user, messages, isAdminViewing])
 
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -98,10 +101,13 @@ export default function ConversationPage() {
       setUser(user)
       const { data: profile } = await supabase
         .from('profiles')
-        .select('is_paused')
+        .select('is_paused, role')
         .eq('id', user.id)
         .single()
       setCurrentUserPaused(profile?.is_paused === true)
+      if (profile?.role === 'admin' || profile?.role === 'superadmin') {
+        setIsAdminViewing(true)
+      }
     }
   }
 
@@ -121,16 +127,24 @@ export default function ConversationPage() {
       if (data) {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
-          const otherId = data.participant1_id === user.id 
-            ? data.participant2_id 
-            : data.participant1_id
+          const isParticipant = data.participant1_id === user.id || data.participant2_id === user.id
+          const otherId = isParticipant
+            ? (data.participant1_id === user.id ? data.participant2_id : data.participant1_id)
+            : data.participant2_id
 
-          const [participantResult, taskResult] = await Promise.all([
+          const [participantResult, participant1Result, taskResult] = await Promise.all([
             supabase
               .from('profiles')
               .select('id, email, full_name, avatar_url, is_paused')
               .eq('id', otherId)
               .single(),
+            !isParticipant
+              ? supabase
+                  .from('profiles')
+                  .select('id, email, full_name, avatar_url, is_paused')
+                  .eq('id', data.participant1_id)
+                  .single()
+              : Promise.resolve({ data: null }),
             data.task_id
               ? supabase
                   .from('tasks')
@@ -144,11 +158,16 @@ export default function ConversationPage() {
           setOtherUserPaused(participantResult.data?.is_paused === true)
           setTask(taskResult.data)
 
+          if (!isParticipant) {
+            setIsAdminViewing(true)
+            setParticipant1(participant1Result.data)
+            setParticipant2(participantResult.data)
+          }
+
           const taskData = taskResult.data
-          if (!taskData) {
+          if (!taskData || !isParticipant) {
             setAllowCurrencyInChat(false)
           } else {
-            // Allow currency terms once the helper in this conversation has placed a bid on this task.
             const helperId = taskData.created_by === user.id ? participantResult.data?.id : user.id
             if (!helperId) {
               setAllowCurrencyInChat(false)
@@ -614,17 +633,30 @@ export default function ConversationPage() {
                 )}
               </div>
             </div>
-            <button
-              type="button"
-              onClick={removeThisChatFromInbox}
-              className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-              {t('messages.removeFromInboxButton')}
-            </button>
+            {!isAdminViewing && (
+              <button
+                type="button"
+                onClick={removeThisChatFromInbox}
+                className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                {t('messages.removeFromInboxButton')}
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {isAdminViewing && (
+        <div className="mb-4 rounded-md border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-800">
+          <span className="font-semibold">Admin audit view</span> — Read-only.
+          {participant1 && participant2 && (
+            <span className="ml-1">
+              Conversation between <span className="font-medium">{participant1.full_name || participant1.email}</span> and <span className="font-medium">{participant2.full_name || participant2.email}</span>.
+            </span>
+          )}
+        </div>
+      )}
 
       {canShareContact && (
         <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
@@ -715,13 +747,15 @@ export default function ConversationPage() {
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
-                    {!isOwnMessage && message.sender && (
+                    {(!isOwnMessage || isAdminViewing) && message.sender && (
                       <p className="text-xs font-semibold mb-1 opacity-75 break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                        {getDisplayName({
-                          fullName: message.sender.full_name,
-                          email: message.sender.email,
-                          revealFull: revealFullNameForTask,
-                        })}
+                        {isAdminViewing
+                          ? (message.sender.full_name || message.sender.email || 'Unknown')
+                          : getDisplayName({
+                              fullName: message.sender.full_name,
+                              email: message.sender.email,
+                              revealFull: revealFullNameForTask,
+                            })}
                       </p>
                     )}
                     {message.image_url && (
@@ -835,23 +869,28 @@ export default function ConversationPage() {
       </div>
 
       {/* Message Input */}
-      {currentUserPaused && (
+      {isAdminViewing && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-sm text-purple-700 text-center">
+          Admin audit mode — messaging disabled.
+        </div>
+      )}
+      {!isAdminViewing && currentUserPaused && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 font-medium">
           {t('messages.pausedBanner')}{' '}
           <Link href="/contact" className="underline">{t('messages.contactSupportLink')}</Link>.
         </div>
       )}
-      {!currentUserPaused && otherUserPaused && (
+      {!isAdminViewing && !currentUserPaused && otherUserPaused && (
         <div className="bg-gray-100 border border-gray-200 rounded-lg p-4 text-sm text-gray-600">
           {t('messages.otherUserUnavailable')}
         </div>
       )}
-      {!currentUserPaused && !otherUserPaused && isLockedTaskConversation && (
+      {!isAdminViewing && !currentUserPaused && !otherUserPaused && isLockedTaskConversation && (
         <div className="bg-gray-100 border border-gray-200 rounded-lg p-4 text-sm text-gray-700">
           This task is locked. Messaging is disabled for this conversation.
         </div>
       )}
-      <form onSubmit={handleSendMessage} className={`bg-white rounded-lg shadow-md p-4 ${currentUserPaused || otherUserPaused || isLockedTaskConversation ? 'opacity-50 pointer-events-none' : ''}`}>
+      {!isAdminViewing && <form onSubmit={handleSendMessage} className={`bg-white rounded-lg shadow-md p-4 ${currentUserPaused || otherUserPaused || isLockedTaskConversation ? 'opacity-50 pointer-events-none' : ''}`}>
         {messageImage && (
           <div className="mb-3 relative inline-block max-w-full">
             <img
@@ -906,7 +945,7 @@ export default function ConversationPage() {
             <span>{sending ? t('messages.sending') : t('messages.send')}</span>
           </button>
         </div>
-      </form>
+      </form>}
     </div>
 
     {/* Standard Modal */}
