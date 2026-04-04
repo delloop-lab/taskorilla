@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
+import { getSafeInternalPath } from '@/lib/safe-next-path'
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
@@ -11,7 +12,9 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get('code') // PKCE auth code
   const type = requestUrl.searchParams.get('type')
   const email = requestUrl.searchParams.get('email') // required for email verification
-  const next = requestUrl.searchParams.get('next') ?? '/tasks'
+  const nextParam = requestUrl.searchParams.get('next')
+  const nextAfterCode = getSafeInternalPath(nextParam, '/tasks')
+  const nextAfterSignup = getSafeInternalPath(nextParam, '/profile?setup=required')
 
   const cookieStore = await cookies()
   
@@ -38,13 +41,13 @@ export async function GET(request: NextRequest) {
     
     if (!error) {
       // If this is a recovery flow, redirect to reset-password
-      if (next === '/reset-password') {
+      if (nextAfterCode === '/reset-password') {
         return NextResponse.redirect(new URL('/reset-password?mode=recovery', requestUrl.origin))
       }
-      return NextResponse.redirect(new URL(next, requestUrl.origin))
+      return NextResponse.redirect(new URL(nextAfterCode, requestUrl.origin))
     } else {
       console.error('Code exchange error:', error)
-      if (next === '/reset-password') {
+      if (nextAfterCode === '/reset-password') {
         return NextResponse.redirect(
           new URL('/reset-password?error=invalid_token&error_description=' + encodeURIComponent(error.message), requestUrl.origin)
         )
@@ -64,7 +67,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (!error) {
-      return NextResponse.redirect(new URL('/profile?setup=required', requestUrl.origin))
+      return NextResponse.redirect(new URL(nextAfterSignup, requestUrl.origin))
     } else {
       console.error('Email confirmation error:', error)
       return NextResponse.redirect(
@@ -101,11 +104,11 @@ export async function GET(request: NextRequest) {
     })
 
     if (!error) {
-      // New signup confirmations should go to profile setup
+      // New signup confirmations should go to profile setup unless a safe next was provided
       if (type === 'signup' || type === 'email') {
-        return NextResponse.redirect(new URL('/profile?setup=required', requestUrl.origin))
+        return NextResponse.redirect(new URL(nextAfterSignup, requestUrl.origin))
       }
-      return NextResponse.redirect(new URL(next, requestUrl.origin))
+      return NextResponse.redirect(new URL(nextAfterCode, requestUrl.origin))
     } else {
       console.error('OTP verification error:', error)
       return NextResponse.redirect(

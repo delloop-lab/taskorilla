@@ -3,6 +3,7 @@
 import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { getSafeInternalPath } from '@/lib/safe-next-path'
 import Link from 'next/link'
 
 function RegisterContent() {
@@ -35,6 +36,7 @@ function RegisterContent() {
   }
 
   const attemptSignUp = async () => {
+    const postConfirmNext = getSafeInternalPath(redirectUrl, '/profile?setup=required')
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -42,7 +44,7 @@ function RegisterContent() {
         data: {
           full_name: fullName,
         },
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/profile?setup=required`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(postConfirmNext)}`,
       },
     })
 
@@ -83,15 +85,13 @@ function RegisterContent() {
         console.error('Error updating terms acceptance:', profileError)
       }
 
-      // Send role-based welcome template email (skip silently if template does not exist)
-      fetch('/api/send-email', {
+      // Queue welcome email ~1h later (avoids stacking with confirmation email)
+      fetch('/api/schedule-tasker-welcome', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type: 'template_email',
           recipientEmail: email,
           recipientName: fullName,
-          templateType: 'tasker_welcome',
           relatedUserId: data.user.id,
         }),
       }).catch(() => {})

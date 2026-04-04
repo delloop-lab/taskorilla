@@ -67,7 +67,7 @@ export default function HelperOnboardingPage() {
       password,
       options: {
         data: { full_name: fullName },
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/profile?setup=required`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/profile?setup=required')}`,
       },
     })
 
