@@ -1,12 +1,77 @@
 'use client'
 
-import { Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
+import { readSignupConfirmationContext } from '@/lib/signup-confirmation-context'
+
+const RESEND_COOLDOWN_SEC = 60
 
 function AuthCodeErrorContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const type = searchParams.get('type')
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null)
+  const [nextPath, setNextPath] = useState<string>('/profile?setup=required')
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [resendMessage, setResendMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    const ctx = readSignupConfirmationContext()
+    if (ctx?.email) {
+      setPendingEmail(ctx.email)
+      setNextPath(ctx.nextPath || '/profile?setup=required')
+    }
+  }, [])
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        const hasPendingTask = typeof window !== 'undefined' && localStorage.getItem('pendingTaskData')
+        const destination = hasPendingTask ? '/tasks/new' : nextPath
+        router.replace(destination)
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [nextPath, router])
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const t = setInterval(() => {
+      setResendCooldown((s) => (s <= 1 ? 0 : s - 1))
+    }, 1000)
+    return () => clearInterval(t)
+  }, [resendCooldown])
+
+  const handleResendConfirmation = async () => {
+    if (!pendingEmail || resendCooldown > 0 || resendStatus === 'sending') return
+    setResendStatus('sending')
+    setResendMessage(null)
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    const emailRedirectTo = `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: pendingEmail,
+      options: { emailRedirectTo },
+    })
+    if (error) {
+      setResendStatus('error')
+      const lower = (error.message || '').toLowerCase()
+      if (lower.includes('rate limit') || lower.includes('email rate limit')) {
+        setResendMessage(
+          'Too many emails sent. Wait a few minutes and try again, or check Supabase Auth rate limits.'
+        )
+      } else {
+        setResendMessage(error.message || 'Could not resend. Try again or use another email.')
+      }
+      return
+    }
+    setResendStatus('sent')
+    setResendMessage('Another confirmation email is on its way. Check spam and promotions folders too.')
+    setResendCooldown(RESEND_COOLDOWN_SEC)
+  }
 
   if (type === 'confirmation') {
     return (
@@ -22,21 +87,58 @@ function AuthCodeErrorContent() {
               Check Your Email
             </h2>
             <p className="mt-2 text-sm text-gray-600">
-              We've sent a confirmation email to your inbox. Please click the link in the email to verify your account.
+              We&apos;ve sent a confirmation email to your inbox. Please click the link in the email to verify your
+              account.
             </p>
+            {pendingEmail && (
+              <p className="mt-3 text-sm text-gray-700 break-all">
+                Sent to: <span className="font-medium">{pendingEmail}</span>
+              </p>
+            )}
             <p className="mt-4 text-sm text-gray-500">
-              Didn't receive the email? <span className="text-red-600 font-medium">Check your spam folder</span>.
+              Didn&apos;t receive the email?{' '}
+              <span className="text-red-600 font-medium">Check your spam / promotions folder</span> and try resend
+              below.
             </p>
           </div>
+          {pendingEmail && (
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={handleResendConfirmation}
+                disabled={resendCooldown > 0 || resendStatus === 'sending'}
+                className="w-full rounded-md bg-primary-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {resendStatus === 'sending'
+                  ? 'Sending…'
+                  : resendCooldown > 0
+                    ? `Resend available in ${resendCooldown}s`
+                    : 'Resend confirmation email'}
+              </button>
+              {resendMessage && (
+                <p
+                  className={`text-sm ${resendStatus === 'error' ? 'text-red-600' : 'text-gray-600'}`}
+                >
+                  {resendMessage}
+                </p>
+              )}
+            </div>
+          )}
+          {!pendingEmail && (
+            <p className="text-xs text-gray-500">
+              Open this page right after signing up to enable resend. Or register again with the same email (Supabase
+              may resend on repeat signup depending on settings).
+            </p>
+          )}
           <div className="space-y-4">
             <Link
-              href="/login"
+              href={`/login?redirect=${encodeURIComponent(nextPath)}`}
               className="block font-medium text-primary-600 hover:text-primary-500"
             >
               Go to Login
             </Link>
             <Link
-              href="/register"
+              href={`/register?redirect=${encodeURIComponent(nextPath)}`}
               className="block text-sm text-gray-600 hover:text-gray-900"
             >
               Register with a different email
@@ -60,7 +162,7 @@ function AuthCodeErrorContent() {
         </div>
         <div>
           <Link
-            href="/login"
+            href={`/login?redirect=${encodeURIComponent(nextPath)}`}
             className="font-medium text-primary-600 hover:text-primary-500"
           >
             Go to Login

@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getSafeInternalPath } from '@/lib/safe-next-path'
+import { saveSignupConfirmationContext } from '@/lib/signup-confirmation-context'
 import Link from 'next/link'
 
 function RegisterContent() {
@@ -69,6 +70,11 @@ function RegisterContent() {
       return
     }
 
+    if (data.user?.identities?.length === 0) {
+      setError('duplicate-email')
+      return
+    }
+
     if (data.user) {
       // Update profile with terms acceptance timestamp
       const foundingBadges = ['Founding Tasker']
@@ -85,21 +91,22 @@ function RegisterContent() {
         console.error('Error updating terms acceptance:', profileError)
       }
 
-      // Queue welcome email ~1h later (avoids stacking with confirmation email)
-      fetch('/api/schedule-tasker-welcome', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipientEmail: email,
-          recipientName: fullName,
-          relatedUserId: data.user.id,
-        }),
-      }).catch(() => {})
-
       if (data.session) {
+        // No confirm email: queue welcome ~1h from now (confirm path queues in /auth/callback)
+        fetch('/api/schedule-welcome-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            templateType: 'tasker_welcome',
+            recipientEmail: email,
+            recipientName: fullName,
+            relatedUserId: data.user.id,
+          }),
+        }).catch(() => {})
         router.push(redirectUrl || '/profile?setup=required')
         router.refresh()
       } else {
+        saveSignupConfirmationContext({ email, nextPath: postConfirmNext })
         setTimeout(() => {
           router.push('/auth/auth-code-error?type=confirmation')
         }, 100)
@@ -152,7 +159,7 @@ function RegisterContent() {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Or{' '}
-            <Link href="/login" className="font-medium text-primary-600 hover:text-primary-500">
+            <Link href={redirectUrl ? `/login?redirect=${encodeURIComponent(redirectUrl)}` : '/login'} className="font-medium text-primary-600 hover:text-primary-500">
               sign in to your existing account
             </Link>
           </p>
@@ -160,7 +167,16 @@ function RegisterContent() {
         <form className="mt-8 space-y-6" onSubmit={handleRegister}>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {error}
+              {error === 'duplicate-email' ? (
+                <>
+                  An account with this email already exists.{' '}
+                  <Link href={redirectUrl ? `/login?redirect=${encodeURIComponent(redirectUrl)}` : '/login'} className="font-medium underline text-primary-600 hover:text-primary-500">
+                    Sign in instead
+                  </Link>.
+                </>
+              ) : (
+                error
+              )}
             </div>
           )}
           <div className="rounded-md shadow-sm space-y-4">

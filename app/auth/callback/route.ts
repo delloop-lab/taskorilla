@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
 import { getSafeInternalPath } from '@/lib/safe-next-path'
+import { queueWelcomeEmailAfterEmailConfirmation } from '@/lib/queue-scheduled-welcome-email'
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
@@ -67,6 +68,17 @@ export async function GET(request: NextRequest) {
     })
 
     if (!error) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (user?.id) {
+        const welcomeResult = await queueWelcomeEmailAfterEmailConfirmation(user.id, {
+          requireRecentEmailConfirmation: false,
+        })
+        if (!welcomeResult.ok) {
+          console.error('Welcome email queue after email confirm:', welcomeResult.reason)
+        }
+      }
       return NextResponse.redirect(new URL(nextAfterSignup, requestUrl.origin))
     } else {
       console.error('Email confirmation error:', error)
@@ -106,6 +118,19 @@ export async function GET(request: NextRequest) {
     if (!error) {
       // New signup confirmations should go to profile setup unless a safe next was provided
       if (type === 'signup' || type === 'email') {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (user?.id) {
+          // `type=email` is the usual Supabase confirm link; guard so stale magic-link logins
+          // do not enqueue a welcome. `type=signup` is explicit signup confirmation.
+          const welcomeResult = await queueWelcomeEmailAfterEmailConfirmation(user.id, {
+            requireRecentEmailConfirmation: type === 'email',
+          })
+          if (!welcomeResult.ok) {
+            console.error('Welcome email queue after email confirm:', welcomeResult.reason)
+          }
+        }
         return NextResponse.redirect(new URL(nextAfterSignup, requestUrl.origin))
       }
       return NextResponse.redirect(new URL(nextAfterCode, requestUrl.origin))

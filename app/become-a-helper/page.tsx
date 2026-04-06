@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { Card, CardContent } from '@/components/ui/card'
 import { CheckCircle } from 'lucide-react'
 import Footer from '@/components/Footer'
+import { saveSignupConfirmationContext } from '@/lib/signup-confirmation-context'
 
 const STEPS = [
   {
@@ -90,6 +91,11 @@ export default function HelperOnboardingPage() {
       return
     }
 
+    if (data.user?.identities?.length === 0) {
+      setError('duplicate-email')
+      return
+    }
+
     if (data.user) {
       const foundingBadges = ['Founding Tasker', 'Founding Helper']
       await supabase
@@ -102,23 +108,21 @@ export default function HelperOnboardingPage() {
         })
         .eq('id', data.user.id)
 
-      // Send role-based welcome template email (skip silently if template does not exist)
-      fetch('/api/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'template_email',
-          recipientEmail: email,
-          recipientName: fullName,
-          templateType: 'helper_welcome',
-          relatedUserId: data.user.id,
-        }),
-      }).catch(() => {})
-
       if (data.session) {
+        fetch('/api/schedule-welcome-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            templateType: 'helper_welcome',
+            recipientEmail: email,
+            recipientName: fullName,
+            relatedUserId: data.user.id,
+          }),
+        }).catch(() => {})
         router.push('/profile?setup=required')
         router.refresh()
       } else {
+        saveSignupConfirmationContext({ email, nextPath: '/profile?setup=required' })
         setTimeout(() => router.push('/auth/auth-code-error?type=confirmation'), 100)
       }
     } else {
@@ -242,7 +246,16 @@ export default function HelperOnboardingPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
-                  {error}
+                  {error === 'duplicate-email' ? (
+                    <>
+                      An account with this email already exists.{' '}
+                      <Link href="/login" className="font-medium underline text-primary-600 hover:text-primary-500">
+                        Sign in instead
+                      </Link>.
+                    </>
+                  ) : (
+                    error
+                  )}
                 </div>
               )}
 
