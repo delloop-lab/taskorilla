@@ -114,6 +114,9 @@ export default function SuperadminDashboard() {
   const [dailyTraffic, setDailyTraffic] = useState<DailyTraffic[]>([])
   const [trafficDays, setTrafficDays] = useState<number>(30)
   const [tab, setTab] = useState<'users' | 'tasks' | 'awaiting_payment' | 'stats' | 'revenue' | 'email' | 'matching' | 'traffic' | 'settings' | 'reports' | 'maps' | 'blog'>('users')
+  const [showBidsDrilldown, setShowBidsDrilldown] = useState(false)
+  const [showAcceptedBidsDrilldown, setShowAcceptedBidsDrilldown] = useState(false)
+  const [showAvgBidAmountDrilldown, setShowAvgBidAmountDrilldown] = useState(false)
   const [reports, setReports] = useState<any[]>([])
   const [loadingReports, setLoadingReports] = useState(false)
   const [deletingReportId, setDeletingReportId] = useState<string | null>(null)
@@ -1384,6 +1387,22 @@ export default function SuperadminDashboard() {
 
   function getEmailLogSenderName(log: any): string {
     const metadata = log?.metadata || {}
+    const templateType = String(metadata?.template_type || '')
+    const sendKind = String(metadata?.send_kind || '')
+
+    // Automated bid notification templates should always appear as System sender.
+    if (
+      log?.email_type === 'template_email' &&
+      (
+        templateType === 'tasker_bid_received' ||
+        templateType === 'tasker_bid_updated' ||
+        sendKind === 'immediate_bid_event' ||
+        sendKind === 'rebid_event' ||
+        sendKind === 'scheduled_bid_event'
+      )
+    ) {
+      return 'System'
+    }
 
     const nameHints = [
       metadata.senderName,
@@ -1423,6 +1442,27 @@ export default function SuperadminDashboard() {
     }
 
     return 'System'
+  }
+
+  function renderEmailLogSubject(log: any): string {
+    const rawSubject = String(log?.subject || '').trim()
+    if (!rawSubject) return '-'
+
+    const metadata = log?.metadata || {}
+    const vars = (metadata?.variables && typeof metadata.variables === 'object')
+      ? metadata.variables
+      : {}
+    if (!rawSubject.includes('{{') || !vars || Object.keys(vars).length === 0) {
+      return rawSubject
+    }
+
+    let rendered = rawSubject
+    for (const [key, value] of Object.entries(vars)) {
+      const safeValue = value == null ? '' : String(value)
+      rendered = rendered.replace(new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g'), safeValue)
+    }
+
+    return rendered
   }
 
   function getUserIdByEmailOrName(email?: string | null, name?: string | null): string | null {
@@ -2459,6 +2499,14 @@ export default function SuperadminDashboard() {
     return acc
   }, new Map<string, Bid>())
   const latestRealBids = Array.from(latestBidByHelperTask.values())
+  const userById = useMemo(
+    () => new Map(users.map((u) => [u.id, u])),
+    [users]
+  )
+  const taskById = useMemo(
+    () => new Map(realTasks.map((t) => [t.id, t])),
+    [realTasks]
+  )
 
   const taskStatusCounts = {
     open: realTasks.filter(t => t.status === 'open').length,
@@ -2487,8 +2535,9 @@ export default function SuperadminDashboard() {
     rejected: realBids.filter(b => b.status === 'rejected').length,
     withdrawn: realBids.filter(b => b.status === 'withdrawn').length,
   }
-  const avgBidAmount = realBids.length > 0
-    ? realBids.reduce((sum, b) => sum + (Number(b.amount) || 0), 0) / realBids.length
+  const avgBidBaseBids = realBids.filter((b) => b.status !== 'withdrawn')
+  const avgBidAmount = avgBidBaseBids.length > 0
+    ? avgBidBaseBids.reduce((sum, b) => sum + (Number(b.amount) || 0), 0) / avgBidBaseBids.length
     : 0
   const avgAcceptedBidAmount = acceptedBids.length > 0
     ? totalAcceptedBidAmount / acceptedBids.length
@@ -3961,14 +4010,74 @@ export default function SuperadminDashboard() {
                     Avg: ${avgBudget.toFixed(2)}
                   </p>
                 </div>
-                <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                <button
+                  type="button"
+                  onClick={() => setShowBidsDrilldown((s) => !s)}
+                  className="bg-orange-50 p-4 rounded-lg border border-orange-200 text-left hover:bg-orange-100 transition-colors"
+                >
                   <p className="text-sm text-gray-600 mb-1">Total Bids</p>
                   <p className="text-3xl font-bold text-orange-600">{latestRealBids.length}</p>
                   <p className="text-xs text-gray-500 mt-1">
                     {bidStatusCounts.accepted} accepted ({latestRealBids.length > 0 ? ((bidStatusCounts.accepted / latestRealBids.length) * 100).toFixed(1) : 0}%)
                   </p>
-                </div>
+                  <p className="text-xs text-orange-700 mt-2 font-medium">
+                    {showBidsDrilldown ? 'Hide bid records' : 'Click to view bid records'}
+                  </p>
+                </button>
             </div>
+
+            {showBidsDrilldown && (
+              <div className="mb-8 border border-orange-200 rounded-lg overflow-hidden">
+                <div className="bg-orange-50 px-4 py-3 border-b border-orange-200">
+                  <h3 className="font-semibold text-orange-900">Bid Records</h3>
+                  <p className="text-xs text-orange-700 mt-1">Showing latest bid per helper per task.</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="text-left px-3 py-2 border-b">Date</th>
+                        <th className="text-left px-3 py-2 border-b">Task</th>
+                        <th className="text-left px-3 py-2 border-b">Bidder</th>
+                        <th className="text-left px-3 py-2 border-b">Amount</th>
+                        <th className="text-left px-3 py-2 border-b">Status</th>
+                        <th className="text-left px-3 py-2 border-b">Bid ID</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {latestRealBids.map((bid) => {
+                        const task = taskById.get(bid.task_id)
+                        const bidder = userById.get(bid.user_id)
+                        return (
+                          <tr key={bid.id} className="hover:bg-gray-50">
+                            <td className="px-3 py-2 border-b whitespace-nowrap">
+                              {new Date(bid.created_at).toLocaleString()}
+                            </td>
+                            <td className="px-3 py-2 border-b">
+                              {task ? (
+                                <Link href={`/tasks/${task.id}`} className="text-primary-700 hover:underline">
+                                  {task.title || task.id}
+                                </Link>
+                              ) : (
+                                <span className="text-gray-500">{bid.task_id}</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 border-b">
+                              {bidder?.full_name || bidder?.email || bid.user_id}
+                            </td>
+                            <td className="px-3 py-2 border-b whitespace-nowrap">
+                              ${Number(bid.amount || 0).toFixed(2)}
+                            </td>
+                            <td className="px-3 py-2 border-b capitalize">{bid.status}</td>
+                            <td className="px-3 py-2 border-b font-mono text-xs">{bid.id}</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             {/* Financial Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -3980,11 +4089,78 @@ export default function SuperadminDashboard() {
                   <p className="text-sm text-gray-600 mb-1">Accepted Bid Total</p>
                   <p className="text-2xl font-bold text-teal-600">${totalAcceptedBidAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </div>
-                <div className="bg-cyan-50 p-4 rounded-lg border border-cyan-200">
+                <button
+                  type="button"
+                  onClick={() => setShowAcceptedBidsDrilldown((s) => !s)}
+                  className="bg-cyan-50 p-4 rounded-lg border border-cyan-200 text-left hover:bg-cyan-100 transition-colors"
+                >
                   <p className="text-sm text-gray-600 mb-1">Avg Accepted Bid</p>
                   <p className="text-2xl font-bold text-cyan-600">${avgAcceptedBidAmount.toFixed(2)}</p>
-                </div>
+                  <p className="text-xs text-cyan-700 mt-2 font-medium">
+                    {showAcceptedBidsDrilldown ? 'Hide calculation' : 'Click to view how this is calculated'}
+                  </p>
+                </button>
             </div>
+
+            {showAcceptedBidsDrilldown && (
+              <div className="mb-8 border border-cyan-200 rounded-lg overflow-hidden">
+                <div className="bg-cyan-50 px-4 py-3 border-b border-cyan-200">
+                  <h3 className="font-semibold text-cyan-900">Accepted Bids Used For Average</h3>
+                  <p className="text-xs text-cyan-700 mt-1">
+                    Formula: {acceptedBids.length} accepted bids, total ${totalAcceptedBidAmount.toFixed(2)} / {acceptedBids.length || 1} = ${avgAcceptedBidAmount.toFixed(2)}
+                  </p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="text-left px-3 py-2 border-b">Date</th>
+                        <th className="text-left px-3 py-2 border-b">Task</th>
+                        <th className="text-left px-3 py-2 border-b">Bidder</th>
+                        <th className="text-left px-3 py-2 border-b">Amount</th>
+                        <th className="text-left px-3 py-2 border-b">Bid ID</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {acceptedBids.map((bid) => {
+                        const task = taskById.get(bid.task_id)
+                        const bidder = userById.get(bid.user_id)
+                        return (
+                          <tr key={bid.id} className="hover:bg-gray-50">
+                            <td className="px-3 py-2 border-b whitespace-nowrap">
+                              {new Date(bid.created_at).toLocaleString()}
+                            </td>
+                            <td className="px-3 py-2 border-b">
+                              {task ? (
+                                <Link href={`/tasks/${task.id}`} className="text-primary-700 hover:underline">
+                                  {task.title || task.id}
+                                </Link>
+                              ) : (
+                                <span className="text-gray-500">{bid.task_id}</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 border-b">
+                              {bidder?.full_name || bidder?.email || bid.user_id}
+                            </td>
+                            <td className="px-3 py-2 border-b whitespace-nowrap">
+                              ${Number(bid.amount || 0).toFixed(2)}
+                            </td>
+                            <td className="px-3 py-2 border-b font-mono text-xs">{bid.id}</td>
+                          </tr>
+                        )
+                      })}
+                      {acceptedBids.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="px-3 py-4 text-center text-gray-500">
+                            No accepted bids yet.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             {/* Language Statistics */}
             <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200 mb-8">
@@ -4269,11 +4445,80 @@ export default function SuperadminDashboard() {
                   <p className="text-2xl font-bold text-pink-600">{realReviews.length}</p>
                   <p className="text-xs text-gray-500 mt-1">Avg: {avgRating.toFixed(2)}/5</p>
                 </div>
-                <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                <button
+                  type="button"
+                  onClick={() => setShowAvgBidAmountDrilldown((s) => !s)}
+                  className="bg-amber-50 p-4 rounded-lg border border-amber-200 text-left hover:bg-amber-100 transition-colors"
+                >
                   <p className="text-sm text-gray-600 mb-1">Avg Bid Amount</p>
                   <p className="text-2xl font-bold text-amber-600">${avgBidAmount.toFixed(2)}</p>
-                </div>
+                  <p className="text-xs text-amber-700 mt-2 font-medium">
+                    {showAvgBidAmountDrilldown ? 'Hide calculation' : 'Click to view how this is calculated'}
+                  </p>
+                </button>
             </div>
+
+            {showAvgBidAmountDrilldown && (
+              <div className="mb-8 border border-amber-200 rounded-lg overflow-hidden">
+                <div className="bg-amber-50 px-4 py-3 border-b border-amber-200">
+                  <h3 className="font-semibold text-amber-900">All Bids Used For Average Bid Amount</h3>
+                  <p className="text-xs text-amber-700 mt-1">
+                    Formula: {avgBidBaseBids.length} bids (excluding withdrawn), total ${avgBidBaseBids.reduce((sum, b) => sum + (Number(b.amount) || 0), 0).toFixed(2)} / {avgBidBaseBids.length || 1} = ${avgBidAmount.toFixed(2)}
+                  </p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="text-left px-3 py-2 border-b">Date</th>
+                        <th className="text-left px-3 py-2 border-b">Task</th>
+                        <th className="text-left px-3 py-2 border-b">Bidder</th>
+                        <th className="text-left px-3 py-2 border-b">Amount</th>
+                        <th className="text-left px-3 py-2 border-b">Status</th>
+                        <th className="text-left px-3 py-2 border-b">Bid ID</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {avgBidBaseBids.map((bid) => {
+                        const task = taskById.get(bid.task_id)
+                        const bidder = userById.get(bid.user_id)
+                        return (
+                          <tr key={bid.id} className="hover:bg-gray-50">
+                            <td className="px-3 py-2 border-b whitespace-nowrap">
+                              {new Date(bid.created_at).toLocaleString()}
+                            </td>
+                            <td className="px-3 py-2 border-b">
+                              {task ? (
+                                <Link href={`/tasks/${task.id}`} className="text-primary-700 hover:underline">
+                                  {task.title || task.id}
+                                </Link>
+                              ) : (
+                                <span className="text-gray-500">{bid.task_id}</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 border-b">
+                              {bidder?.full_name || bidder?.email || bid.user_id}
+                            </td>
+                            <td className="px-3 py-2 border-b whitespace-nowrap">
+                              ${Number(bid.amount || 0).toFixed(2)}
+                            </td>
+                            <td className="px-3 py-2 border-b capitalize">{bid.status}</td>
+                            <td className="px-3 py-2 border-b font-mono text-xs">{bid.id}</td>
+                          </tr>
+                        )
+                      })}
+                      {avgBidBaseBids.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="px-3 py-4 text-center text-gray-500">
+                            No non-withdrawn bids yet.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -4885,7 +5130,7 @@ export default function SuperadminDashboard() {
                   log.recipient_email?.toLowerCase().includes(emailLogFilters.recipient.toLowerCase()) ||
                   log.recipient_name?.toLowerCase().includes(emailLogFilters.recipient.toLowerCase())
                 const subjectMatch = !emailLogFilters.subject || 
-                  log.subject?.toLowerCase().includes(emailLogFilters.subject.toLowerCase())
+                  renderEmailLogSubject(log).toLowerCase().includes(emailLogFilters.subject.toLowerCase())
                 const typeMatch = !emailLogFilters.emailType || 
                   log.email_type === emailLogFilters.emailType
                 return recipientMatch && subjectMatch && typeMatch
@@ -5096,7 +5341,7 @@ export default function SuperadminDashboard() {
                               ) : '-'}
                             </td>
                             <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-700 max-w-[22ch]">
-                              {senderProfileId ? (
+                              {senderProfileId && senderName !== 'System' ? (
                                 <Link
                                   href={`/user/${senderProfileId}`}
                                   className="text-primary-600 hover:underline block truncate"
@@ -5124,7 +5369,7 @@ export default function SuperadminDashboard() {
                               )}
                             </td>
                             <td className="px-4 py-2 text-xs text-gray-700 min-w-[240px]">
-                              <div className="break-words">{log.subject || '-'}</div>
+                              <div className="break-words">{renderEmailLogSubject(log)}</div>
                               {blockedReason && (
                                 <div className="mt-1">
                                   <span className="inline-flex items-center px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-semibold rounded">
@@ -6170,7 +6415,7 @@ export default function SuperadminDashboard() {
               log.recipient_email?.toLowerCase().includes(emailLogFilters.recipient.toLowerCase()) ||
               log.recipient_name?.toLowerCase().includes(emailLogFilters.recipient.toLowerCase())
             const subjectMatch = !emailLogFilters.subject || 
-              log.subject?.toLowerCase().includes(emailLogFilters.subject.toLowerCase())
+              renderEmailLogSubject(log).toLowerCase().includes(emailLogFilters.subject.toLowerCase())
             const typeMatch = !emailLogFilters.emailType || 
               log.email_type === emailLogFilters.emailType
             return recipientMatch && subjectMatch && typeMatch
@@ -6330,7 +6575,7 @@ export default function SuperadminDashboard() {
                         </td>
                         <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden md:table-cell max-w-[22ch]">
                           <div className="font-medium truncate max-w-[22ch]" title={getEmailLogSenderName(log)}>
-                            {senderProfileId ? (
+                            {senderProfileId && getEmailLogSenderName(log) !== 'System' ? (
                               <Link href={`/user/${senderProfileId}`} className="text-primary-600 hover:underline block truncate">
                                 {getEmailLogSenderName(log)}
                               </Link>
@@ -6351,7 +6596,7 @@ export default function SuperadminDashboard() {
                           </div>
                         </td>
                         <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm min-w-[224px]">
-                          <div className="break-words" title={log.subject}>{log.subject}</div>
+                          <div className="break-words" title={renderEmailLogSubject(log)}>{renderEmailLogSubject(log)}</div>
                         </td>
                         <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm hidden lg:table-cell max-w-[22ch]">
                           <span className="px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-800 whitespace-nowrap">
@@ -7647,7 +7892,7 @@ export default function SuperadminDashboard() {
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-gray-200">
                 <div className="flex-1">
-                  <h2 className="text-xl font-semibold text-gray-800">{viewingEmailLog.subject}</h2>
+                  <h2 className="text-xl font-semibold text-gray-800">{renderEmailLogSubject(viewingEmailLog)}</h2>
                   <div className="mt-2 text-sm text-gray-600 space-y-1">
                     <p><strong>From:</strong> {getEmailLogSenderName(viewingEmailLog)}</p>
                     <p><strong>To:</strong> {viewingEmailLog.recipient_email}</p>
@@ -7715,7 +7960,7 @@ export default function SuperadminDashboard() {
                     return (
                       <div className="bg-yellow-50 rounded-lg border border-yellow-200 p-6">
                         <p className="font-semibold mb-2 text-yellow-800">⚠️ Email HTML content not stored in log</p>
-                        <p className="text-gray-700"><strong>Subject:</strong> {viewingEmailLog.subject}</p>
+                        <p className="text-gray-700"><strong>Subject:</strong> {renderEmailLogSubject(viewingEmailLog)}</p>
                         <p className="mt-2 text-sm text-gray-600">This email was sent but the HTML content was not saved to the log.</p>
                         {viewingEmailLog.metadata && Object.keys(viewingEmailLog.metadata).length > 0 && (
                           <div className="mt-4 text-sm">
