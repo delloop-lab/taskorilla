@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import {
-  sendNewBidNotification,
-  sendBidUpdatedNotification,
+  renderEmailTemplate,
   sendBidSelectedPendingPayment,
   sendBidAcceptedNotification,
   sendBidRejectedNotification,
@@ -69,50 +68,95 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
 
     switch (type) {
-      case 'new_bid':
-        const newBidResult = await sendNewBidNotification(
+      case 'new_bid': {
+        const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin).replace(/\/$/, '')
+        const taskUrl = `${baseUrl}/tasks/${params.taskId}`
+        const variables = {
+          user_first_name: String(params.taskOwnerName || '').trim().split(/\s+/)[0] || 'there',
+          recipient_name: params.taskOwnerName || params.taskOwnerEmail || '',
+          task_title: params.taskTitle || 'your task',
+          'task title': params.taskTitle || 'your task',
+          bidder_name: params.bidderName || 'Helper',
+          bid_amount: String(params.bidAmount ?? ''),
+          bid_count: String(params.bidCount ?? 1),
+          has_multiple_bids: (Number(params.bidCount || 1) || 1) > 1 ? 'true' : 'false',
+          task_url: taskUrl,
+          task_url_html: `<a href="${taskUrl}" target="_blank" rel="noopener noreferrer">View bid</a>`,
+        }
+        const { data: template, error: templateError } = await supabase
+          .from('email_templates')
+          .select('subject, html_content')
+          .eq('template_type', 'tasker_bid_received')
+          .maybeSingle()
+
+        if (templateError || !template) {
+          throw new Error('Template not found: tasker_bid_received')
+        }
+
+        const renderedSubject = renderEmailTemplate(template.subject, variables)
+        const htmlContent = await sendTemplateEmail(
           params.taskOwnerEmail,
           params.taskOwnerName,
-          params.taskTitle,
-          params.bidderName,
-          params.bidAmount,
-          params.taskId
+          renderedSubject,
+          template.html_content,
+          variables
         )
         emailLogData = {
           recipient_email: params.taskOwnerEmail,
           recipient_name: params.taskOwnerName,
-          subject: `New bid on "${params.taskTitle}"`,
-          email_type: 'new_bid',
+          subject: renderedSubject,
+          email_type: 'template_email',
           related_task_id: params.taskId,
           metadata: {
-            taskTitle: params.taskTitle,
-            bidderName: params.bidderName,
-            bidAmount: params.bidAmount,
-            html_content: newBidResult.htmlContent,
+            template_type: 'tasker_bid_received',
+            html_content: htmlContent,
+            variables,
           },
         }
         break
+      }
 
       case 'bid_updated': {
-        const bidUpdatedResult = await sendBidUpdatedNotification(
+        const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin).replace(/\/$/, '')
+        const taskUrl = `${baseUrl}/tasks/${params.taskId}`
+        const variables = {
+          user_first_name: String(params.taskOwnerName || '').trim().split(/\s+/)[0] || 'there',
+          recipient_name: params.taskOwnerName || params.taskOwnerEmail || '',
+          task_title: params.taskTitle || 'your task',
+          'task title': params.taskTitle || 'your task',
+          bidder_name: params.bidderName || 'Helper',
+          bid_amount: String(params.bidAmount ?? ''),
+          task_url: taskUrl,
+          task_url_html: `<a href="${taskUrl}" target="_blank" rel="noopener noreferrer">View bid</a>`,
+        }
+        const { data: template, error: templateError } = await supabase
+          .from('email_templates')
+          .select('subject, html_content')
+          .eq('template_type', 'tasker_bid_updated')
+          .maybeSingle()
+
+        if (templateError || !template) {
+          throw new Error('Template not found: tasker_bid_updated')
+        }
+
+        const renderedSubject = renderEmailTemplate(template.subject, variables)
+        const htmlContent = await sendTemplateEmail(
           params.taskOwnerEmail,
           params.taskOwnerName,
-          params.taskTitle,
-          params.bidderName,
-          params.bidAmount,
-          params.taskId
+          renderedSubject,
+          template.html_content,
+          variables
         )
         emailLogData = {
           recipient_email: params.taskOwnerEmail,
           recipient_name: params.taskOwnerName,
-          subject: `Updated bid on "${params.taskTitle}"`,
-          email_type: 'bid_updated',
+          subject: renderedSubject,
+          email_type: 'template_email',
           related_task_id: params.taskId,
           metadata: {
-            taskTitle: params.taskTitle,
-            bidderName: params.bidderName,
-            bidAmount: params.bidAmount,
-            html_content: bidUpdatedResult.htmlContent,
+            template_type: 'tasker_bid_updated',
+            html_content: htmlContent,
+            variables,
           },
         }
         break

@@ -738,6 +738,7 @@ export default function TaskDetailPage() {
     setSubmittingBid(true)
     setBidSubmitStatus(t('taskDetail.submittingYourBid'))
     try {
+      let bidRecordId: string | null = null
       const { data: existingWithdrawn } = await supabase
         .from('bids')
         .select('id')
@@ -757,65 +758,50 @@ export default function TaskDetailPage() {
           })
           .eq('id', existingWithdrawn.id)
         if (error) throw error
+        bidRecordId = existingWithdrawn.id
       } else {
-        const { error } = await supabase.from('bids').insert({
-          task_id: taskId,
-          user_id: user.id,
-          amount: parseFloat(bidAmount),
-          message: bidMessage,
-          status: 'pending',
-        })
+        const { data: insertedBid, error } = await supabase
+          .from('bids')
+          .insert({
+            task_id: taskId,
+            user_id: user.id,
+            amount: parseFloat(bidAmount),
+            message: bidMessage,
+            status: 'pending',
+          })
+          .select('id')
+          .single()
         if (error) throw error
+        bidRecordId = insertedBid?.id || null
       }
 
-      // Send email notification to task owner
+      // Send template reminder notification to task owner and initialize weekly chain.
       if (task && task.user) {
         try {
           setBidSubmitStatus(t('taskDetail.bidSubmitSendingNotification'))
-          console.log('📧 Preparing to send new bid email notification...')
-          
-          // Get bidder's full name
-          const { data: bidderProfile } = await supabase
-            .from('profiles')
-            .select('full_name, email')
-            .eq('id', user.id)
-            .single()
-
-          console.log('📧 Email notification details:', {
-            taskOwnerEmail: task.user.email,
-            taskOwnerName: task.user.full_name || task.user.email,
-            taskTitle: task.title,
-            bidderName: bidderProfile?.full_name || bidderProfile?.email || user.email,
-            bidAmount: parseFloat(bidAmount),
-            taskId: taskId,
-          })
-
-          const emailResponse = await fetch('/api/send-email', {
+          const authHeaders = await getAuthHeaders()
+          const emailResponse = await fetch('/api/queue-tasker-bid-reminder', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...authHeaders },
+            credentials: 'include',
             body: JSON.stringify({
-              type: 'new_bid',
-              taskOwnerEmail: task.user.email,
-              taskOwnerName: task.user.full_name || task.user.email,
-              taskTitle: task.title,
-              bidderName: bidderProfile?.full_name || bidderProfile?.email || user.email,
-              bidAmount: parseFloat(bidAmount),
-              taskId: taskId,
+              taskId,
+              bidId: bidRecordId,
             }),
           })
 
           const emailResult = await emailResponse.json()
           if (emailResponse.ok) {
-            console.log('✅ Email notification sent successfully:', emailResult)
+            console.log('✅ Bid reminder flow processed successfully:', emailResult)
           } else {
-            console.error('❌ Email notification failed:', emailResult)
+            console.error('❌ Bid reminder flow failed:', emailResult)
           }
         } catch (emailError) {
-          console.error('❌ Error sending email notification:', emailError)
+          console.error('❌ Error processing bid reminder flow:', emailError)
           // Don't fail the bid submission if email fails
         }
       } else {
-        console.warn('⚠️ Cannot send email notification: task or task.user is missing', { task, taskUser: task?.user })
+        console.warn('⚠️ Cannot trigger bid reminder: task or task.user is missing', { task, taskUser: task?.user })
       }
 
       setBidAmount('')

@@ -8,7 +8,11 @@ import {
   buildBidWithdrawnChatMessage,
   type BidChatLocale,
 } from '@/lib/bid-chat-message'
-import { sendBidUpdatedNotification, sendBidWithdrawnByHelperNotification } from '@/lib/email'
+import {
+  renderEmailTemplate,
+  sendBidWithdrawnByHelperNotification,
+  sendTemplateEmail,
+} from '@/lib/email'
 import { formatEuro } from '@/lib/currency'
 import { logEmail } from '@/lib/email-logger'
 
@@ -16,6 +20,14 @@ const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
   process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 )
+const TASKER_BID_UPDATED_TEMPLATE = 'tasker_bid_updated'
+
+function getFirstName(input: string | null | undefined): string {
+  const raw = String(input || '').trim()
+  if (!raw) return 'there'
+  const first = raw.split(/\s+/)[0]?.trim()
+  return first || 'there'
+}
 
 export async function PATCH(
   request: NextRequest,
@@ -182,33 +194,58 @@ export async function PATCH(
     const taskOwnerEmail = ownerProfile?.email
     if (taskOwnerEmail) {
       try {
-        const bidUpdatedResult = await sendBidUpdatedNotification(
-          taskOwnerEmail,
-          ownerProfile?.full_name || taskOwnerEmail,
-          task.title || 'Task',
-          bidderProfile?.full_name || bidderProfile?.email || user.email || 'Helper',
-          amountNum,
-          taskId
-        )
-        await logEmail(
-          {
-            recipient_email: taskOwnerEmail,
-            recipient_name: ownerProfile?.full_name || taskOwnerEmail,
-            subject: `Updated bid on "${task.title || 'Task'}"`,
-            email_type: 'bid_updated',
-            status: 'sent',
-            related_task_id: taskId,
-            metadata: {
-              taskTitle: task.title,
-              bidderName: bidderProfile?.full_name || bidderProfile?.email,
-              bidAmount: amountNum,
-              html_content: bidUpdatedResult.htmlContent,
+        const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin).replace(/\/$/, '')
+        const taskUrl = `${baseUrl}/tasks/${taskId}`
+        const variables = {
+          task_title: task.title || 'your task',
+          'task title': task.title || 'your task',
+          bidder_name: bidderProfile?.full_name || bidderProfile?.email || user.email || 'Helper',
+          bid_amount: String(amountNum),
+          task_url: taskUrl,
+          task_url_html: `<a href="${taskUrl}" target="_blank" rel="noopener noreferrer">View bid</a>`,
+          user_first_name: getFirstName(ownerProfile?.full_name || taskOwnerEmail),
+          recipient_name: ownerProfile?.full_name || taskOwnerEmail,
+        }
+
+        const { data: template } = await supabaseAdmin
+          .from('email_templates')
+          .select('subject, html_content')
+          .eq('template_type', TASKER_BID_UPDATED_TEMPLATE)
+          .maybeSingle()
+
+        if (template) {
+          const renderedSubject = renderEmailTemplate(template.subject, variables)
+          const htmlContent = await sendTemplateEmail(
+            taskOwnerEmail,
+            ownerProfile?.full_name || taskOwnerEmail,
+            renderedSubject,
+            template.html_content,
+            variables
+          )
+
+          await logEmail(
+            {
+              recipient_email: taskOwnerEmail,
+              recipient_name: ownerProfile?.full_name || taskOwnerEmail,
+              subject: renderedSubject,
+              email_type: 'template_email',
+              status: 'sent',
+              related_task_id: taskId,
+              related_user_id: task.created_by,
+              metadata: {
+                template_type: TASKER_BID_UPDATED_TEMPLATE,
+                send_kind: 'rebid_event',
+                related_bid_id: bid.id,
+                html_content: htmlContent,
+                variables,
+              },
             },
-          },
-          supabase
-        )
+            supabase
+          )
+        }
+
       } catch (emailErr) {
-        console.error('[my-bid PATCH] bid_updated email failed:', emailErr)
+        console.error('[my-bid PATCH] tasker_bid_updated email failed:', emailErr)
       }
     }
 
