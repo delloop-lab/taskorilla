@@ -17,6 +17,7 @@ function AuthCodeErrorContent() {
   const [resendCooldown, setResendCooldown] = useState(0)
   const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [resendMessage, setResendMessage] = useState<string | null>(null)
+  const [isCheckingSession, setIsCheckingSession] = useState(true)
 
   useEffect(() => {
     const ctx = readSignupConfirmationContext()
@@ -27,6 +28,26 @@ function AuthCodeErrorContent() {
   }, [])
 
   useEffect(() => {
+    let mounted = true
+    const bootstrap = async () => {
+      const { data } = await supabase.auth.getSession()
+      if (!mounted) return
+      if (data.session?.user) {
+        const hasPendingTask = typeof window !== 'undefined' && localStorage.getItem('pendingTaskData')
+        const destination = hasPendingTask ? '/tasks/new' : nextPath
+        router.replace(destination)
+      } else {
+        setIsCheckingSession(false)
+      }
+    }
+    void bootstrap()
+    return () => {
+      mounted = false
+    }
+  }, [nextPath, router])
+
+  useEffect(() => {
+    if (isCheckingSession) return
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         const hasPendingTask = typeof window !== 'undefined' && localStorage.getItem('pendingTaskData')
@@ -35,7 +56,7 @@ function AuthCodeErrorContent() {
       }
     })
     return () => subscription.unsubscribe()
-  }, [nextPath, router])
+  }, [isCheckingSession, nextPath, router])
 
   useEffect(() => {
     if (resendCooldown <= 0) return
@@ -71,6 +92,10 @@ function AuthCodeErrorContent() {
     setResendStatus('sent')
     setResendMessage('Another confirmation email is on its way. Check spam and promotions folders too.')
     setResendCooldown(RESEND_COOLDOWN_SEC)
+  }
+
+  if (isCheckingSession) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
   }
 
   if (type === 'confirmation') {

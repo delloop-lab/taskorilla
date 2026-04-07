@@ -38,9 +38,32 @@ export async function GET(request: NextRequest) {
 
   // Handle PKCE code exchange (used by password recovery and other flows)
   if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const { data: exchangeData, error } = await supabase.auth.exchangeCodeForSession(code)
     
     if (!error) {
+      if (type === 'signup' || type === 'email' || nextAfterCode === nextAfterSignup) {
+        const exchangeUserId =
+          exchangeData?.user?.id || exchangeData?.session?.user?.id || null
+
+        let confirmedUserId = exchangeUserId
+        if (!confirmedUserId) {
+          const {
+            data: { user },
+          } = await supabase.auth.getUser()
+          confirmedUserId = user?.id || null
+        }
+
+        if (confirmedUserId) {
+          const welcomeResult = await queueWelcomeEmailAfterEmailConfirmation(confirmedUserId, {
+            requireRecentEmailConfirmation: type === 'email',
+          })
+          if (!welcomeResult.ok) {
+            console.error('Welcome email queue after code confirm:', welcomeResult.reason)
+          }
+        } else {
+          console.error('Welcome email queue after code confirm: no user id available')
+        }
+      }
       // If this is a recovery flow, redirect to reset-password
       if (nextAfterCode === '/reset-password') {
         return NextResponse.redirect(new URL('/reset-password?mode=recovery', requestUrl.origin))
