@@ -162,7 +162,7 @@ export function getTrialFormSchema(
                   Use our 2026 Service Price Index to find the right benchmark for your task and location.
                 </p>
                 <a
-                  href="https://taskorilla.com/help/guides/taskorilla-task-pricing-guide-portugal-2026"
+                  href="/help/guides/taskorilla-service-price-index-portugal-2026"
                   target="_blank"
                   rel="noopener noreferrer"
                   style="display: inline-block; margin-top: 10px; background: #0088CC; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 12px; padding: 8px 12px; border-radius: 8px;"

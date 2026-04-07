@@ -1274,7 +1274,7 @@ export default function NewTaskClient() {
                     <span className="font-semibold">Maximize Engagement with a Defined Budget</span><br />
                     Tasks with a clear budget receive 3x higher engagement from top-rated Helpers. Unsure of the current market rate? Consult the{' '}
                     <a
-                      href="/help/guides/taskorilla-task-pricing-guide-portugal-2026"
+                      href="/help/guides/taskorilla-service-price-index-portugal-2026"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="underline font-medium text-amber-900 hover:text-amber-700"
