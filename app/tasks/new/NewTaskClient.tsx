@@ -1239,7 +1239,7 @@ export default function NewTaskClient() {
                   <input
                     id="image-upload"
                     type="file"
-                    accept="image/*"
+                    accept="image/*,.jfif"
                     multiple
                     onChange={handleImageUpload}
                     disabled={imageUploading}
@@ -1268,17 +1268,27 @@ export default function NewTaskClient() {
                   value={formData.budget}
                   onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
                 />
-                <p className="mt-1 text-xs text-gray-500">
-                  Tasks with a defined budget receive significantly higher engagement. Not sure what to offer? Refer to the Official Portugal Pricing Standard. If left blank, your task will be listed as "Open for Bidding" to allow for custom quotes.
+                <div className="mt-3 rounded-[12px] border border-[#F6AD55] bg-[#FFFDF5] p-4 shadow-[0_4px_6px_rgba(0,0,0,0.05)]">
+                  <p className="text-xs font-semibold text-amber-800 mb-1">💡 Smart Suggestion</p>
+                  <p className="text-sm text-amber-900 leading-relaxed">
+                    <span className="font-semibold">Maximize Engagement with a Defined Budget</span><br />
+                    Tasks with a clear budget receive 3x higher engagement from top-rated Helpers. Unsure of the current market rate? Consult the{' '}
+                    <a
+                      href="/help/guides/taskorilla-task-pricing-guide-portugal-2026"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline font-medium text-amber-900 hover:text-amber-700"
+                    >
+                      2026 Service Price Index
+                    </a>{' '}
+                    to align your offer with verified national benchmarks.
+                  </p>
                   {requestedHelper && (
-                    <>
-                      <br />
-                      <span className="text-xs text-gray-500">
-                        Leave blank to receive a quote from the helper after they review the task.
-                      </span>
-                    </>
+                    <p className="mt-2 text-xs text-amber-900/90">
+                      Leave blank to receive a quote from the helper after they review the task.
+                    </p>
                   )}
-                </p>
+                </div>
               </div>
 
               {/* Category / Professional Type */}

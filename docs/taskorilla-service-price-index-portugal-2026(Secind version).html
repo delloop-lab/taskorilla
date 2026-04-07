@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Taskorilla Service Price Index - Portugal 2026 (Second Version)</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --navy: #1A2B3C;
+      --slate: #4A5568;
+      --accent: #0EA5A0;
+      --bg-soft: #F6F8FB;
+      --bg-zebra: #F9FBFD;
+      --border: #D6DEE8;
+      --ok: #0F766E;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: #fff; color: var(--slate); }
+    body { font-family: Lora, Georgia, "Times New Roman", serif; line-height: 1.6; }
+
+    h1, h2, h3, h4, .sans, .meta, .toc, th {
+      font-family: Inter, Roboto, "Segoe UI", Arial, sans-serif;
+      color: var(--navy);
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .report {
+      width: 100%;
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 0;
+      background: #fff;
+    }
+
+    .page {
+      padding: 20mm;
+    }
+
+    .cover {
+      min-height: 257mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      border-bottom: 2px solid var(--border);
+      page-break-after: always;
+    }
+
+    .logo-wrap {
+      width: 240px;
+      height: 110px;
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 24px;
+      font: 600 13px Inter, Roboto, Arial, sans-serif;
+      color: var(--slate);
+      background: #fff;
+    }
+
+    .cover h1 {
+      font-size: 44px;
+      letter-spacing: 0.2px;
+      margin-bottom: 6px;
+    }
+
+    .cover h2 {
+      font-size: 23px;
+      color: var(--accent);
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .meta {
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--navy);
+      background: #ECF3FF;
+      border: 1px solid #C7D8F5;
+      border-radius: 999px;
+      padding: 6px 12px;
+    }
+
+    .title-block h1 {
+      margin: 0;
+      font-size: 38px;
+      line-height: 1.2;
+    }
+
+    .title-block .meta-line {
+      margin-top: 8px;
+      font: 600 13px Inter, Roboto, Arial, sans-serif;
+      color: var(--slate);
+    }
+
+    .divider {
+      border-top: 1px solid var(--border);
+      margin: 16px 0 22px;
+    }
+
+    .lead p { margin: 0 0 14px; }
+
+    .callout {
+      background: var(--bg-soft);
+      border: 1px solid #DCE5F1;
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 12px 14px 12px 12px;
+      margin: 14px 0 18px;
+    }
+
+    .callout h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h2.section-title {
+      margin: 22px 0 10px;
+      font-size: 25px;
+      line-height: 1.3;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .toc {
+      background: #FBFCFE;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin: 14px 0 18px;
+    }
+    .toc h4 {
+      margin: 0 0 6px;
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      color: var(--navy);
+    }
+    .toc ol { margin: 0; padding-left: 18px; }
+    .toc li { margin: 3px 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border);
+      table-layout: fixed;
+      margin: 10px 0 14px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+      padding: 8px 10px;
+      font-size: 14px;
+      word-wrap: break-word;
+    }
+
+    thead th {
+      font-size: 13px;
+      font-weight: 700;
+      background: #EDF2F7;
+      color: var(--navy);
+    }
+
+    tbody tr:nth-child(odd) td { background: #fff; }
+    tbody tr:nth-child(even) td { background: var(--bg-zebra); }
+
+    .note-text { margin: 0 0 14px; }
+
+    .chart-container {
+      margin: 20px 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .chart-title {
+      margin: 0 0 8px;
+      font: 700 14px Inter, Roboto, Arial, sans-serif;
+      color: var(--navy);
+    }
+    .chart-container canvas {
+      width: 100% !important;
+      height: auto !important;
+      display: block;
+    }
+
+    .refs p {
+      margin: 0 0 8px;
+      font-size: 14px;
+    }
+
+    .disclaimer {
+      page-break-before: always;
+      border-top: 2px solid var(--border);
+      margin-top: 10mm;
+      padding-top: 8mm;
+    }
+
+    .footer-note {
+      margin-top: 12px;
+      font: 500 12px Inter, Roboto, Arial, sans-serif;
+      color: #64748B;
+    }
+
+    @media print {
+      @page { size: A4; margin: 20mm; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .page { padding: 0; }
+      .cover { min-height: auto; }
+      table, thead, tbody, tr, td, th {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      h1, h2, h3, h4, p, li { orphans: 3; widows: 3; }
+    }
+  </style>
+</head>
+<body>
+  <div class="report">
+    <section class="page cover">
+      <div class="logo-wrap">Taskorilla Logo Placeholder</div>
+      <h1>Taskorilla Service Price Index</h1>
+      <h2>Portugal 2026</h2>
+      <div class="meta">Q2 2026</div>
+    </section>
+
+    <section class="page">
+      <div class="title-block">
+        <h1>Taskorilla Service Price Index</h1>
+        <div class="meta-line">Ref: PT-2026-V2 | Issued: 2nd Quarter 2026</div>
+      </div>
+      <div class="divider"></div>
+
+      <div class="lead">
+        <p>
+          This document establishes the 2026 Taskorilla Service Price Index (TSPI) for the Portuguese market.
+          It serves as a non-binding benchmark for users to calibrate service expectations against verified market
+          liquidity data and national labor indices.
+        </p>
+        <p>
+          Figures are synthesized from aggregated platform transactions, regional economic fluctuations, and compliance
+          with the 2026 Portuguese self-employment (Recibos Verdes) tax framework. Typical prices are presented as gross
+          totals; individual VAT (IVA) application depends on each provider's specific tax threshold under Article 53.
+        </p>
+        <p>
+          This Index focuses on general assistance and domestic tasks. It excludes services provided by Professional Helpers
+          or certified tradespeople. Regulated activities (e.g., licensed electrical installations, structural engineering,
+          or certified medical care) are subject to independent professional rate cards, mandatory liability insurance, and
+          distinct VAT regulations under Article 151 of the PIT Code (CIRS).
+        </p>
+      </div>
+
+      <div class="callout">
+        <h3>2026 Market Commentary</h3>
+        <p>
+          "The 2026 TSPI reflects a national average increase of EUR 1.50 - EUR 3.00 per hour across manual service sectors
+          compared to 2025. This shift is primarily driven by the EUR 920 Minimum Wage adjustment and increased operational
+          costs (fuel/transport) in urban hubs like Lisbon and Braga."
+        </p>
+      </div>
+
+      <div class="chart-container">
+        <p class="chart-title">National Minimum Wage vs. TSPI Baseline (Index Marker)</p>
+        <canvas id="wageChart"></canvas>
+        <p class="footer-note" style="margin-top:8px;">
+          This TSPI baseline is an index reference only, not a recommended helper take-home wage.
+          Final rates are independently negotiated and are typically higher based on scope, travel, urgency, and skill level.
+        </p>
+      </div>
+
+      <h2 class="section-title">Regional Pricing Adjustments</h2>
+      <div class="chart-container">
+        <p class="chart-title">Regional Price Variance (%)</p>
+        <canvas id="regionalChart"></canvas>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Region type</th>
+            <th>Example locations</th>
+            <th>Typical adjustment</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Premium zones</td><td>Lisbon, Cascais, Sintra, Algarve</td><td>+15% to +25%</td></tr>
+          <tr><td>Urban standard</td><td>Porto, Braga, Coimbra, Aveiro</td><td>Standard market rates</td></tr>
+          <tr><td>Rural / Interior</td><td>Alentejo, Douro Valley, Centro</td><td>–10% to –15% (Lower than standard)</td></tr>
+        </tbody>
+      </table>
+      <p class="note-text">
+        These adjustments reflect demand, travel, local cost of living, and provider availability. All prices listed are Gross
+        (Total estimate before individual tax variations, local levies, or specific regional exemptions).
+      </p>
+
+      <div class="toc">
+        <h4>Table of Contents</h4>
+        <ol>
+          <li>Handyman (Faz-tudo)</li>
+          <li>Cleaning and Housekeeping</li>
+          <li>Gardening and Outdoor Maintenance</li>
+          <li>Furniture Assembly</li>
+          <li>Skilled Trades</li>
+          <li>Painting and Decorating</li>
+          <li>Delivery, Moving and Errands</li>
+        </ol>
+      </div>
+
+      <h2 class="section-title">1. Handyman (Faz-tudo)</h2>
+      <table>
+        <thead><tr><th>Flat-fee example</th><th>Typical price</th></tr></thead>
+        <tbody>
+          <tr><td>Small fixes (pictures, mirrors, blinds)</td><td>EUR 25-40</td></tr>
+          <tr><td>TV wall mounting</td><td>EUR 30-50</td></tr>
+          <tr><td>Shutter (Estores) repair</td><td>EUR 25-40</td></tr>
+          <tr><td>Shelf installation</td><td>EUR 30-45</td></tr>
+          <tr><td>Door / window handle repair</td><td>EUR 15-25</td></tr>
+          <tr><td>Typical PT market range</td><td>EUR 25-50 per small repair</td></tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        <h3>Note</h3>
+        <p>Handyman pricing is driven by job complexity and regional demand. No official government rate card exists; figures are market-derived.</p>
+      </div>
+
+      <h2 class="section-title">2. Cleaning and Housekeeping</h2>
+      <table>
+        <thead><tr><th>Flat-fee example</th><th>Typical price</th></tr></thead>
+        <tbody>
+          <tr><td>2-bedroom deep clean</td><td>EUR 60 - 85</td></tr>
+          <tr><td>End-of-tenancy clean</td><td>EUR 135 - 275</td></tr>
+          <tr><td>Airbnb / AL changeover</td><td>EUR 50 - 80</td></tr>
+          <tr><td>Window cleaning</td><td>EUR 20 - 35</td></tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        <h3>Note</h3>
+        <p>
+          Domestic labor benchmarks are anchored to the 2026 National Minimum Wage of EUR 920/month (~EUR 5.31/hr). VAT (IVA) is often exempt for individual providers under Article 53 (up to EUR 15,000 annual turnover), but a 23% rate typically applies when booking through specialized agencies or high-volume providers exceeding the EUR 18,750 "hard trigger."
+        </p>
+      </div>
+
+      <h2 class="section-title">3. Gardening and Outdoor Maintenance</h2>
+      <table>
+        <thead><tr><th>Flat-fee example</th><th>Typical price</th></tr></thead>
+        <tbody>
+          <tr><td>Monthly garden maintenance</td><td>EUR 120</td></tr>
+          <tr><td>Lawn mowing and edging</td><td>EUR 12-18</td></tr>
+          <tr><td>Hedge trimming and weeding</td><td>EUR 15-22</td></tr>
+          <tr><td>Pool cleaning and chemical balance</td><td>EUR 20-35</td></tr>
+          <tr><td>Irrigation repair</td><td>EUR 25-40</td></tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        <h3>Note</h3>
+        <p>Outdoor pricing can vary by access, terrain, waste removal, and distance.</p>
+      </div>
+
+      <h2 class="section-title">4. Furniture Assembly</h2>
+      <table>
+        <thead><tr><th>Flat-fee example</th><th>Typical price</th></tr></thead>
+        <tbody>
+          <tr><td>Small items</td><td>EUR 15-25</td></tr>
+          <tr><td>Medium items</td><td>EUR 35-55</td></tr>
+          <tr><td>Large items</td><td>EUR 60-150+</td></tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        <h3>Note</h3>
+        <p>Flat-fee assembly improves clarity and usually converts faster.</p>
+      </div>
+
+      <h2 class="section-title">5. Skilled Trades</h2>
+      <table>
+        <thead><tr><th>Flat-fee example</th><th>Typical price (2026 Verified)</th></tr></thead>
+        <tbody>
+          <tr><td>Emergency leak fix</td><td>EUR 75 – 125</td></tr>
+          <tr><td>Light fixture / socket replacement</td><td>EUR 35 – 55</td></tr>
+          <tr><td>Drain unblocking</td><td>EUR 45 – 70</td></tr>
+          <tr><td>Electric water heater repair</td><td>EUR 65 – 110</td></tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        <h3>Note</h3>
+        <p>
+          Final price varies by urgency, complexity, and region. Figures represent general repairs only; they exclude certified professional services governed by Article 151 (CIRS), which involve specialized licensing and higher insurance overheads.
+        </p>
+      </div>
+
+      <h2 class="section-title">6. Painting and Decorating</h2>
+      <table>
+        <thead><tr><th>Flat-fee example</th><th>Typical price</th></tr></thead>
+        <tbody>
+          <tr><td>Room painting</td><td>EUR 150-300</td></tr>
+          <tr><td>Furniture upcycling / painting</td><td>EUR 15-25</td></tr>
+          <tr><td>Small plastering / crack repair</td><td>EUR 20-30</td></tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        <h3>Note</h3>
+        <p>Material quality, prep work, and number of coats can significantly affect final pricing.</p>
+      </div>
+
+      <h2 class="section-title">7. Delivery, Moving and Errands</h2>
+      <table>
+        <thead><tr><th>Flat-fee example</th><th>Typical price</th></tr></thead>
+        <tbody>
+          <tr><td>Small van load moving</td><td>EUR 100</td></tr>
+          <tr><td>Grocery shopping and delivery</td><td>EUR 10-15</td></tr>
+          <tr><td>IKEA / hardware store pickup</td><td>EUR 20-40 flat + mileage</td></tr>
+          <tr><td>Call-out fee (Taxa de Deslocação)</td><td>EUR 15-25</td></tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        <h3>Note</h3>
+        <p>Common extras include separate material charges, holiday/Sunday surcharge (+50% to +100%), and VAT (23%) if applicable.</p>
+      </div>
+
+      <h2 class="section-title">Practical Pricing Tips</h2>
+      <div class="chart-container">
+        <p class="chart-title">Anatomy of a Task Fee (Q2 2026)</p>
+        <canvas id="costChart"></canvas>
+      </div>
+      <table>
+        <thead><tr><th>For</th><th>Recommendation</th></tr></thead>
+        <tbody>
+          <tr><td>Clients</td><td>Compare at least 2-3 bids and check what is explicitly included in scope.</td></tr>
+          <tr><td>Helpers</td><td>Flat pricing for repeatable tasks increases trust and conversion.</td></tr>
+          <tr><td>Premium zones</td><td>Book earlier; top helpers are often reserved in advance.</td></tr>
+          <tr><td>AL / Airbnb tasks</td><td>Specify cleaning, laundry, consumables, and key handover in one line item.</td></tr>
+        </tbody>
+      </table>
+
+      <p class="sans" style="font-weight: 700; color: var(--accent); margin: 8px 0 22px;">
+        Post your task now at <a href="https://taskorilla.com">taskorilla.com</a> and let helpers come to you
+      </p>
+
+      <h2 class="section-title">References</h2>
+      <div class="refs">
+        <p>Fixando, 2026. Handyman price ranges in Portugal. Available at: <a href="https://www.fixando.pt/en/handyman/preco">https://www.fixando.pt/en/handyman/preco</a> [Accessed 1 April 2026].</p>
+        <p>Zaask, 2026. Bricolage and handyman services cost examples in Portugal. Available at: <a href="https://www.zaask.pt/quanto-custa/bricolage">https://www.zaask.pt/quanto-custa/bricolage</a> [Accessed 1 April 2026].</p>
+        <p>Habitissimo, 2025. Furniture assembly pricing in Portugal. Available at: <a href="https://www.habitissimo.pt/orcamentos/montagem-de-moveis">https://www.habitissimo.pt/orcamentos/montagem-de-moveis</a> [Accessed 1 April 2026].</p>
+        <p>Quina.pt, 2026. Detailed furniture assembly cost breakdown in Portugal. Available at: <a href="https://quina.pt/montagem-de-moveis/">https://quina.pt/montagem-de-moveis/</a> [Accessed 1 April 2026].</p>
+        <p>Manofix, 2026. Professional furniture assembly costs in Portugal. Available at: <a href="https://manofix.com/en/services/furniture-assembly/country/handyman-portugal">https://manofix.com/en/services/furniture-assembly/country/handyman-portugal</a> [Accessed 1 April 2026].</p>
+        <p>Expert-Zoom, 2026. Portuguese plumbing price estimates for common tasks. Available at: <a href="https://expert-zoom.com/pt/revista/canalizador">https://expert-zoom.com/pt/revista/canalizador</a> [Accessed 1 April 2026].</p>
+        <p>SuperExpress, 2024. Example handyman pricing in Algarve/Quarteira. Available at: <a href="https://superexpress.pt/handyman-in-algarve">https://superexpress.pt/handyman-in-algarve</a> [Accessed 1 April 2026].</p>
+        <p>STAD, 2026. Serviço doméstico - direitos e salários. Available at: <a href="https://www.stad.pt/informacao-aos-trabalhadores-e-trabalhadoras-do-servico-domestico">https://www.stad.pt/informacao-aos-trabalhadores-e-trabalhadoras-do-servico-domestico</a> [Accessed 1 April 2026].</p>
+      </div>
+    </section>
+
+    <section class="page disclaimer">
+      <h2 class="section-title">Disclaimer & Terms of Use</h2>
+      <p>
+        This guide is provided for informational and benchmarking purposes only. While the 2026 Taskorilla Service Price Index (TSPI) reflects aggregated market data, it does not constitute legal, financial, or tax advice. Final service valuations are determined by independent, non-binding agreement between the User and the Service Provider based on specific project scope.
+      </p>
+      <p>
+        Taskorilla does not guarantee that these rates will reflect all individual listings, nor does it assume liability for tax obligations. Independent professionals are solely responsible for determining their VAT (IVA) status-specifically regarding the EUR15,000 exemption limit (Artigo 53) and the EUR18,750 mandatory registration trigger-and for issuing the legally required Recibo Verde (invoice) for all services rendered. Users are strongly encouraged to consult with a qualified professional regarding their specific Segurança Social and IRS obligations under the 2026 Portuguese fiscal framework.
+      </p>
+      <p class="footer-note">Taskorilla Service Price Index - PT-2026-V2</p>
+    </section>
+  </div>
+  <script>
+    const navy = '#1A2B3C';
+    const orange = '#DD6B20';
+    const green = '#2F855A';
+    const grey = '#718096';
+    const deepOrange = '#C05621';
+
+    const commonOptions = {
+      responsive: true,
+      animation: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom'
+        }
+      }
+    };
+
+    const currentYearMarkerPlugin = {
+      id: 'currentYearMarker',
+      afterDatasetsDraw(chart) {
+        const { ctx, chartArea, scales } = chart;
+        const xScale = scales.x;
+        if (!xScale || !chartArea) return;
+        const idx = chart.data.labels.indexOf('2026 (Current)');
+        if (idx < 0) return;
+        const x = xScale.getPixelForValue(idx);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(26, 43, 60, 0.22)';
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, chartArea.top);
+        ctx.lineTo(x, chartArea.bottom);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(26, 43, 60, 0.7)';
+        ctx.font = '600 11px Inter, Roboto, Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Current', x, chartArea.top - 6);
+        ctx.restore();
+      }
+    };
+
+    new Chart(document.getElementById('wageChart'), {
+      type: 'line',
+      data: {
+        labels: ['2024', '2025', '2026 (Current)', '2027 (Est)', '2028 (Target)'],
+        datasets: [
+          {
+            label: 'Minimum Wage (EUR/month)',
+            data: [820, 870, 920, 970, 1020],
+            borderColor: navy,
+            backgroundColor: navy,
+            borderWidth: 3,
+            pointRadius: 3,
+            yAxisID: 'y'
+          },
+          {
+            label: 'TSPI Baseline (Index marker, EUR/hour)',
+            data: [4.73, 5.02, 5.31, 5.60, 5.88],
+            borderColor: orange,
+            backgroundColor: orange,
+            borderWidth: 3,
+            borderDash: [8, 6],
+            pointRadius: 3,
+            yAxisID: 'y1'
+          }
+        ]
+      },
+      options: {
+        ...commonOptions,
+        aspectRatio: 2.2,
+        scales: {
+          y: {
+            title: { display: true, text: 'EUR/month' }
+          },
+          y1: {
+            position: 'right',
+            grid: { drawOnChartArea: false },
+            title: { display: true, text: 'EUR/hour' }
+          }
+        }
+      },
+      plugins: [currentYearMarkerPlugin]
+    });
+
+    new Chart(document.getElementById('regionalChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Rural / Interior', 'Urban Standard', 'Premium (Lisbon/Algarve)'],
+        datasets: [{
+          label: 'Variance (%)',
+          data: [-15, 0, 25],
+          backgroundColor: [green, grey, deepOrange]
+        }]
+      },
+      options: {
+        ...commonOptions,
+        aspectRatio: 2.4,
+        indexAxis: 'y',
+        plugins: {
+          ...commonOptions.plugins,
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            ticks: {
+              callback: (value) => value + '%'
+            }
+          }
+        }
+      }
+    });
+
+    const centerLabelPlugin = {
+      id: 'centerLabel',
+      afterDraw(chart) {
+        const { ctx } = chart;
+        const meta = chart.getDatasetMeta(0);
+        if (!meta || !meta.data || !meta.data.length) return;
+        const x = meta.data[0].x;
+        const y = meta.data[0].y;
+        ctx.save();
+        ctx.font = '700 14px Inter, Roboto, Arial, sans-serif';
+        ctx.fillStyle = navy;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Net: 70%', x, y);
+        ctx.restore();
+      }
+    };
+
+    new Chart(document.getElementById('costChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Helper Take-home', 'Fuel & Materials', 'Tax & Social Security Buffer'],
+        datasets: [{
+          data: [70, 20, 10],
+          backgroundColor: [navy, '#2B6CB0', '#E53E3E'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        ...commonOptions,
+        aspectRatio: 2.6,
+        cutout: '70%'
+      },
+      plugins: [centerLabelPlugin]
+    });
+  </script>
+</body>
+</html>

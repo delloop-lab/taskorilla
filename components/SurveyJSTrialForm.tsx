@@ -109,6 +109,7 @@ export default function SurveyJSTrialForm() {
             const storedImageDataUrl = localStorage.getItem('pendingImageDataUrl')
             if (storedImageDataUrl) {
               setImagePreviewDataUrl(storedImageDataUrl)
+              previewImageUrlRef.current = storedImageDataUrl
             }
             
             // Mark that we're creating the task
@@ -406,6 +407,33 @@ export default function SurveyJSTrialForm() {
           }
         })
         
+        const syncInlineImagePreview = (previewUrl: string | null, statusText?: string, statusColor?: string) => {
+          const preview = document.getElementById('survey-inline-preview')
+          const previewImg = document.getElementById('survey-preview-image') as HTMLImageElement | null
+          const status = document.getElementById('survey-upload-status')
+
+          if (!previewUrl) {
+            if (preview) preview.style.display = 'none'
+            return
+          }
+
+          if (preview) preview.style.display = 'block'
+          if (previewImg) previewImg.src = previewUrl
+          if (statusText && status) {
+            status.textContent = statusText
+            if (statusColor) status.style.color = statusColor
+          }
+        }
+
+        const reassertInlinePreview = (delay = 0) => {
+          setTimeout(() => {
+            const previewUrl = previewImageUrlRef.current || formDataRef.current.image || null
+            if (previewUrl) {
+              syncInlineImagePreview(previewUrl)
+            }
+          }, delay)
+        }
+
         // Handle image upload to Supabase
         const handleImageUpload = async (file: File) => {
           if (!file) return
@@ -463,6 +491,7 @@ export default function SurveyJSTrialForm() {
             
             // Also update the local preview to use the server URL
             setImagePreviewDataUrl(imageUrl)
+            syncInlineImagePreview(imageUrl, '✓ Image uploaded successfully!', '#10b981')
             
             // Update preview image ref to use the uploaded URL
             previewImageUrlRef.current = imageUrl
@@ -474,17 +503,12 @@ export default function SurveyJSTrialForm() {
               status.textContent = '✓ Image uploaded successfully!'
               status.style.color = '#10b981'
             }
-            // Don't update preview image DOM directly - React state handles it
-            // The imagePreviewDataUrl state will be updated above, which React will render
-            
           } catch (error: any) {
             // Show error state (using new element IDs)
-            const placeholder = document.getElementById('survey-upload-placeholder')
-            const preview = document.getElementById('survey-upload-preview')
+            const preview = document.getElementById('survey-inline-preview')
             const status = document.getElementById('survey-upload-status')
             
             if (preview) preview.style.display = 'none'
-            if (placeholder) placeholder.style.display = 'block'
             if (status) {
               status.textContent = error?.message || 'Upload failed - click to try again'
               status.style.color = '#ef4444'
@@ -504,6 +528,8 @@ export default function SurveyJSTrialForm() {
               const dataUrl = e.target?.result as string
               setImagePreviewDataUrl(dataUrl)
               formDataRef.current.image = dataUrl
+              previewImageUrlRef.current = dataUrl
+              syncInlineImagePreview(dataUrl, 'Uploading to server...', '#3b82f6')
               // Only set value once to prevent re-render loops
               // Don't call model.setValue here - let the upload handler set it after upload completes
             }
@@ -657,6 +683,13 @@ export default function SurveyJSTrialForm() {
               }
             }
           }, 100)
+
+          // Re-apply preview after SurveyJS re-renders the image page markup.
+          if (sender.currentPage?.name === 'imagePage') {
+            reassertInlinePreview(80)
+            reassertInlinePreview(220)
+            reassertInlinePreview(450)
+          }
           
         })
         
@@ -709,6 +742,14 @@ export default function SurveyJSTrialForm() {
           if (options.name === 'taskType') {
             updateLocationQuestionTitle(model, options.value)
             updateTitlePlaceholder(model, options.value)
+          }
+
+          // SurveyJS may re-render the image page after image value updates.
+          // Re-assert preview visibility after these internal DOM refreshes.
+          if (options.name === 'image') {
+            reassertInlinePreview(60)
+            reassertInlinePreview(180)
+            reassertInlinePreview(400)
           }
         })
         
@@ -2433,23 +2474,6 @@ export default function SurveyJSTrialForm() {
           <Survey model={surveyModel} />
         </div>
         
-        {/* React-controlled Image Preview - persists even if SurveyJS re-renders */}
-        {imagePreviewDataUrl && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-sm font-medium text-gray-700 mb-2">Image Preview:</p>
-            <img 
-              src={imagePreviewDataUrl} 
-              alt="Upload preview" 
-              className="max-w-full max-h-[300px] rounded-lg shadow-sm mx-auto"
-              style={{ display: 'block' }}
-            />
-            {uploadedImageUrl ? (
-              <p className="text-sm text-green-600 mt-2 text-center">✓ Image uploaded successfully</p>
-            ) : imageUploading ? (
-              <p className="text-sm text-blue-600 mt-2 text-center">Uploading to server...</p>
-            ) : null}
-          </div>
-        )}
       </div>
 
       {submittedData && (

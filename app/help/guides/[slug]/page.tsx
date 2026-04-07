@@ -55,10 +55,14 @@ export default function GuidePage() {
 
   // Get related FAQs from the same category in the current language
   const relatedFAQs = getFAQsByCategory(translatedGuide.category, lang).slice(0, 5)
-  const isInstitutionalPricingGuide = slug === 'taskorilla-task-pricing-guide-portugal-2026'
+  const isInstitutionalPricingGuide = guide.id === 'guide-official-pricing-portugal-2026'
 
   // Format content for better display
   const renderInlineMarkdown = (text: string) => {
+    const artigo53Tooltip =
+      "Most individual helpers earn less than €15k/year and won't charge you VAT. If they do charge VAT, it's usually because they are a high-volume professional."
+    const article151Tooltip =
+      "Article 151 (CIRS): This is the official Portuguese classification for \"High-Value Professional Activities.\" It includes regulated trades like Engineers, Certified Electricians, Architects, and Healthcare Providers. Unlike general tasks, these professionals are subject to specific \"Professional Coefficients\" for tax purposes and usually operate under mandatory professional associations (Ordem)."
     const parts = text.split(/(\[.*?\]\(.*?\))/)
     return parts.map((part, i) => {
       const linkMatch = part.match(/\[(.*?)\]\((.*?)\)/)
@@ -75,7 +79,32 @@ export default function GuidePage() {
           </a>
         )
       }
-      return <span key={i}>{part}</span>
+      const phraseParts = part.split(/(Artigo 53|Article 53|Article 151 of the PIT Code)/g)
+      return (
+        <span key={i}>
+          {phraseParts.map((chunk, j) =>
+            chunk === 'Artigo 53' || chunk === 'Article 53' ? (
+              <span
+                key={`${i}-${j}`}
+                title={artigo53Tooltip}
+                className="underline decoration-dotted cursor-help"
+              >
+                {chunk}
+              </span>
+            ) : chunk === 'Article 151 of the PIT Code' ? (
+              <span
+                key={`${i}-${j}`}
+                title={article151Tooltip}
+                className="underline decoration-dotted cursor-help"
+              >
+                {chunk}
+              </span>
+            ) : (
+              <span key={`${i}-${j}`}>{chunk}</span>
+            )
+          )}
+        </span>
+      )
     })
   }
 
@@ -95,12 +124,25 @@ export default function GuidePage() {
   const renderTable = (table: { headerCells: string[]; rows: string[][] }, key: string) => (
     <div key={key} className="overflow-x-auto print:overflow-visible print:[break-inside:avoid] print:[page-break-inside:avoid]">
       <table
-        className={`min-w-full border border-gray-200 rounded-lg text-sm print:text-xs ${
+        className={`w-full border border-gray-200 rounded-lg text-sm print:text-xs ${
+          isInstitutionalPricingGuide && table.headerCells[0]?.toLowerCase().includes('region')
+            ? 'table-fixed '
+            : ''
+        }${
           isInstitutionalPricingGuide && table.headerCells[0]?.toLowerCase().includes('region')
             ? 'border-t-2 border-b-2 border-slate-500'
             : ''
         }`}
       >
+        {table.headerCells.length === 3 &&
+          isInstitutionalPricingGuide &&
+          table.headerCells[0]?.toLowerCase().includes('region') && (
+            <colgroup>
+              <col className="w-1/3" />
+              <col className="w-1/3" />
+              <col className="w-1/3" />
+            </colgroup>
+          )}
         <thead>
           <tr className={`bg-gray-50 ${isInstitutionalPricingGuide ? 'bg-slate-50' : ''}`}>
             {table.headerCells.map((cell, i) => (
@@ -232,9 +274,12 @@ export default function GuidePage() {
         } else if (b.type === 'heading') {
           const headingText = b.value.match(/\*\*(.*?)\*\*/)?.[1] || b.value
           const remainingText = b.value.replace(/\*\*(.*?)\*\*/, '').trim()
+          const isDocumentTitleHeading =
+            isInstitutionalPricingGuide &&
+            /taskorilla service price index - portugal 2nd quarter 2026/i.test(headingText)
           introNodes.push(
             <div key={`h-${i}`} className="mb-6">
-              <h3 className={`text-xl font-bold text-gray-900 mb-3 ${isInstitutionalPricingGuide ? 'font-serif' : ''}`}>
+              <h3 className={`${isDocumentTitleHeading ? 'text-4xl md:text-5xl leading-tight' : 'text-xl'} font-bold text-gray-900 mb-3 ${isInstitutionalPricingGuide ? 'font-serif' : ''}`}>
                 {isInstitutionalPricingGuide && /regional pricing adjustments/i.test(headingText) ? (
                   <span className="inline-flex items-center gap-2">
                     <MapPin className="w-5 h-5 text-slate-700" />
@@ -281,9 +326,12 @@ export default function GuidePage() {
         } else if (b.type === 'heading') {
           const headingText = b.value.match(/\*\*(.*?)\*\*/)?.[1] || b.value
           const remainingText = b.value.replace(/\*\*(.*?)\*\*/, '').trim()
+          const isDocumentTitleHeading =
+            isInstitutionalPricingGuide &&
+            /taskorilla service price index - portugal 2nd quarter 2026/i.test(headingText)
           outroNodes.push(
             <div key={`h-${i}`} className="mb-6">
-              <h3 className={`text-xl font-bold text-gray-900 mb-3 ${isInstitutionalPricingGuide ? 'font-serif' : ''}`}>
+              <h3 className={`${isDocumentTitleHeading ? 'text-4xl md:text-5xl leading-tight' : 'text-xl'} font-bold text-gray-900 mb-3 ${isInstitutionalPricingGuide ? 'font-serif' : ''}`}>
                 {isInstitutionalPricingGuide && /regional pricing adjustments/i.test(headingText) ? (
                   <span className="inline-flex items-center gap-2">
                     <MapPin className="w-5 h-5 text-slate-700" />
@@ -462,7 +510,13 @@ export default function GuidePage() {
             <div className={`mb-8 flex print:hidden ${isInstitutionalPricingGuide ? 'justify-between items-center gap-4' : 'justify-end'}`}>
               <button
                 type="button"
-                onClick={() => window.print()}
+                onClick={() => {
+                  if (isInstitutionalPricingGuide) {
+                    window.open('/taskorilla-service-price-index-portugal-2026.html', '_blank')
+                    return
+                  }
+                  window.print()
+                }}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50"
               >
                 <Download className="w-4 h-4" />
@@ -472,10 +526,10 @@ export default function GuidePage() {
             {isInstitutionalPricingGuide && (
               <div className="mb-10 text-center border-b border-slate-200 pb-6">
                 <h2 className="text-3xl md:text-4xl font-bold text-slate-900 font-serif">
-                  Taskorilla Task Pricing Guide
+                  Taskorilla Service Price Index
                 </h2>
                 <p className="mt-2 inline-block px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-sm font-medium">
-                  Ref: PT-2026-V1 | Issued: Jan 2026
+                  Ref: PT-2026-V2 | Issued: 2nd Quarter 2026
                 </p>
               </div>
             )}

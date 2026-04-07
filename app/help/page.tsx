@@ -75,7 +75,7 @@ export default function HelpCenter() {
                 href={`/help/guides/${slugify(pricingGuideV2.title)}`}
                 className="px-6 py-3 bg-slate-700 text-white hover:bg-slate-800 rounded-lg font-medium transition-colors"
               >
-                {language === 'pt' ? '📘 Guia Oficial de Preços 2026' : '📘 Official Pricing Guide 2026'}
+                {language === 'pt' ? '📘 Guia Oficial de Preços 2026' : '📘 Taskorilla Service Price Index'}
               </Link>
             )}
             <a 

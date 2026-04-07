@@ -152,17 +152,23 @@ export function getTrialFormSchema(
             type: 'html',
             name: 'budgetHelpHtml',
             html: `
-              <div style="margin-top: 6px; line-height: 1.45;">
-                <p style="margin: 0 0 4px 0; color: #4b5563; font-size: 13px;">
-                  Tasks with a defined budget receive significantly higher engagement. Not sure what to offer?
-                  Refer to the
-                  <a href="https://taskorilla.com/help/guides/taskorilla-task-pricing-guide-portugal-2026" target="_blank" rel="noopener noreferrer" style="color: #1d4ed8; text-decoration: underline;">
-                    Official Portugal Pricing Standard
-                  </a>.
+              <div style="margin-top: 12px; padding: 14px 16px; border: 1px solid #bfdbfe; border-radius: 12px; background: #f8fbff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); line-height: 1.5;">
+                <p style="margin: 0 0 6px 0; color: #1e3a8a; font-size: 12px; font-weight: 700;">
+                  💡 Smart Suggestion
                 </p>
-                <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                  If left blank, your task will be listed as "Open for Bidding" to allow for custom quotes.
+                <p style="margin: 0; color: #1f2937; font-size: 13px;">
+                  <strong>Get 3x More Bids by Setting a Budget</strong><br />
+                  Tasks with a defined budget are prioritized by our top-rated Helpers. Not sure where to start?
+                  Use our 2026 Service Price Index to find the right benchmark for your task and location.
                 </p>
+                <a
+                  href="https://taskorilla.com/help/guides/taskorilla-task-pricing-guide-portugal-2026"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style="display: inline-block; margin-top: 10px; background: #0088CC; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 12px; padding: 8px 12px; border-radius: 8px;"
+                >
+                  View Price Index
+                </a>
               </div>
             `
           }
@@ -222,18 +228,16 @@ export function getTrialFormSchema(
             type: 'html',
             name: 'imageUploadHtml',
             html: `
-              <div class="image-upload-container" style="text-align: center; padding: 20px;">
-                <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 600; color: #374151;">Upload a photo to show the task better?</h3>
-                <p style="margin-bottom: 16px; color: #6b7280; font-size: 14px;">Optional - helps helpers understand your task</p>
-                <label for="survey-image-input" id="survey-upload-area" style="display: block; border: 2px dashed #d1d5db; border-radius: 8px; padding: 32px; cursor: pointer; transition: all 0.2s; background: #f9fafb;">
-                  <input type="file" id="survey-image-input" accept="image/*" style="display: none;" onchange="(function(input){
+              <div class="image-upload-container" style="text-align: center; padding: 20px; max-width: 500px; margin: 0 auto;">
+                <h2 style="margin: 0 0 10px 0; font-size: 28px; font-weight: 700; color: #1A2B3C; line-height: 1.2;">Show your task to get faster, more accurate quotes</h2>
+                <p style="margin: 0 0 16px 0; color: #4A5568; font-size: 14px; text-align: center;">A few clear photos help Helpers understand scope and send stronger quotes.</p>
+                <label for="survey-image-input" id="survey-upload-area" style="display: block; border: 2px dashed #d1d5db; border-radius: 10px; padding: 44px; cursor: pointer; transition: all 0.2s; background: #f9fafb;">
+                  <input type="file" id="survey-image-input" accept="image/*,.jfif" style="display: none;" onchange="(function(input){
                     if(!input.files||!input.files[0])return;
                     var file=input.files[0];
-                    var placeholder=document.getElementById('survey-upload-placeholder');
-                    var preview=document.getElementById('survey-upload-preview');
+                    var preview=document.getElementById('survey-inline-preview');
                     var previewImg=document.getElementById('survey-preview-image');
                     var status=document.getElementById('survey-upload-status');
-                    if(placeholder)placeholder.style.display='none';
                     if(preview)preview.style.display='block';
                     if(status){status.textContent='Loading preview...';status.style.color='#6b7280';}
                     var reader=new FileReader();
@@ -245,20 +249,27 @@ export function getTrialFormSchema(
                     if(window.handleSurveyImageUpload)window.handleSurveyImageUpload(input);
                   })(this)" />
                   <div id="survey-upload-placeholder">
-                    <svg style="width: 48px; height: 48px; margin: 0 auto 12px; color: #9ca3af;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg style="width: 56px; height: 56px; margin: 0 auto 14px; color: #F59E0B;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                     </svg>
-                    <p style="color: #374151; font-weight: 500; margin-bottom: 4px;">Click to upload an image</p>
-                    <p style="color: #9ca3af; font-size: 12px;">PNG, JPG, GIF up to 5MB</p>
-                  </div>
-                  <div id="survey-upload-preview" style="display: none;">
-                    <img id="survey-preview-image" alt="Uploaded preview" style="max-width: 100%; max-height: 300px; border-radius: 6px; margin-bottom: 12px;" />
-                    <p id="survey-upload-status" style="color: #10b981; font-weight: 500;">✓ Image uploaded</p>
+                    <p style="color: #1A2B3C; font-weight: 600; margin-bottom: 6px;">Click or drag photos here to upload</p>
+                    <p style="color: #64748b; font-size: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;">PNG, JPG, JFIF, GIF up to 5MB</p>
                   </div>
                 </label>
+                <div id="survey-inline-preview" style="display: none; margin-top: 16px; padding: 12px; border: 1px solid #dbeafe; border-radius: 10px; background: #f8fbff;">
+                    <img id="survey-preview-image" alt="Uploaded preview" style="max-width: 100%; max-height: 300px; border-radius: 6px; margin-bottom: 12px;" />
+                    <p id="survey-upload-status" style="color: #10b981; font-weight: 500; margin: 0;">✓ Image uploaded</p>
+                  </div>
+                <div style="margin: 24px auto 0 auto; max-width: 500px; text-align: left; padding: 14px 16px; border: 1px solid #bfdbfe; border-radius: 12px; background: #f8fbff; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                  <p style="margin: 0 0 6px 0; color: #1e3a8a; font-size: 12px; font-weight: 700;">💡 Smart Suggestion</p>
+                  <p style="margin: 0; color: #1f2937; font-size: 13px; line-height: 1.5;">
+                    <strong>Photos get you booked faster!</strong><br />
+                    Tasks with clear images receive <strong>40% more interest</strong> and significantly more accurate pricing. Show Helpers exactly what needs to be done to avoid follow-up questions and get the job done right.
+                  </p>
+                </div>
                 <style>
                   @keyframes spin { to { transform: rotate(360deg); } }
-                  #survey-upload-area:hover { border-color: #3b82f6; background: #eff6ff; }
+                  #survey-upload-area:hover { border-color: #3b82f6; background: #F7FAFC; }
                 </style>
               </div>
             `

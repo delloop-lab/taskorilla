@@ -749,10 +749,10 @@ body {
 .surveyjs-form-wrapper[data-theme="defaultV2"] .sv-root,
 .surveyjs-form-wrapper[data-theme="default"] .sv_main.sv_default_css,
 .surveyjs-form-wrapper[data-theme="default"] .sv-root {
-  --primary-color: #0185C8 !important; /* blue buttons, highlights */
+  --primary-color: #0088CC !important; /* blue buttons, highlights */
   --main-color: #FD9212 !important;    /* orange for progress, accents */
   --text-color: #333333 !important;    /* default text color */
-  --primary: #0185C8 !important;
+  --primary: #0088CC !important;
   --secondary: #FD9212 !important;
 }
 
@@ -782,11 +782,14 @@ body {
 .surveyjs-form-wrapper[data-theme="default"] .sv-footer button,
 .surveyjs-form-wrapper[data-theme="default"] input[type="button"],
 .surveyjs-form-wrapper[data-theme="default"] input[type="submit"] {
-  background-color: #0185C8 !important;
-  background: #0185C8 !important;
+  background-color: #0088CC !important;
+  background: #0088CC !important;
   color: white !important;
-  border-color: #0185C8 !important;
+  border-color: #0088CC !important;
   border-radius: 6px;
+  min-height: 52px !important;
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
   transition: all 0.2s ease;
   pointer-events: auto !important;
   touch-action: manipulation !important;
@@ -818,9 +821,9 @@ body {
 .surveyjs-form-wrapper[data-theme="default"] .sv-footer button:hover,
 .surveyjs-form-wrapper[data-theme="default"] input[type="button"]:hover,
 .surveyjs-form-wrapper[data-theme="default"] input[type="submit"]:hover {
-  background-color: #016aa0 !important;
-  background: #016aa0 !important;
-  border-color: #016aa0 !important;
+  background-color: #0077b3 !important;
+  background: #0077b3 !important;
+  border-color: #0077b3 !important;
   opacity: 0.9;
 }
 
