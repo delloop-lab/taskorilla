@@ -26,7 +26,8 @@
     "partner": "Parceiro",
     "privacyPolicy": "Política de Privacidade",
     "rights": "© 2025-2026 Taskorilla. Todos os direitos reservados. Use com responsabilidade!",
-    "termsOfService": "Termos de Serviço"
+    "termsOfService": "Termos de Serviço",
+    "blog": "Blog"
   },
   "profile": {
     "title": "Perfil",
@@ -155,15 +156,10 @@
     "avatarRemoved": "Avatar removido.",
     "errorUploadingAvatar": "Erro ao carregar avatar",
     "errorRemovingAvatar": "Erro ao remover avatar",
-    "skills": "Competências",
-    "noSkillsAdded": "Nenhuma competência adicionada",
     "selectStandardSkill": "Selecionar uma competência padrão...",
     "addCustomSkillPlaceholder": "Ou adicione uma competência personalizada e pressione Enter",
-    "servicesOffered": "Serviços Oferecidos",
-    "noServicesListed": "Nenhum serviço listado",
     "selectStandardService": "Selecionar um serviço padrão...",
     "addCustomServicePlaceholder": "Ou adicione um serviço personalizado e pressione Enter",
-    "noQualificationsListed": "Nenhuma qualificação listada",
     "noProfessionalOfferingsListed": "Nenhuma oferta profissional ou outro serviço listado",
     "addProfessionalOfferingPlaceholder": "ex: Sessões de Terapia, Passear Cães",
     "addQualificationPlaceholder": "ex: Certificação de Carpintaria, Licença de Canalização",
@@ -318,7 +314,8 @@
     "profile": "Perfil",
     "signup": "Criar Conta Grátis",
     "tasks": "TAREFAS",
-    "inbox": "Caixa de entrada"
+    "inbox": "Caixa de entrada",
+    "servicePriceIndex": "Indice de Precos de Servico"
   },
   "roles": {
     "helperDescription": "Ganhe dinheiro a ajudar outros",

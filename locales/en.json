@@ -19,14 +19,15 @@
     "yes": "Yes"
   },
   "footer": {
-    "aboutUs": "About Us",
+    "aboutUs": "About",
     "advertising": "Advertising",
     "contact": "Contact",
     "helpCenter": "Help Center",
     "partner": "Partner",
-    "privacyPolicy": "Privacy Policy",
+    "privacyPolicy": "Privacy",
     "rights": "© 2025-2026 Taskorilla. All rights reserved. Swing responsibly!",
-    "termsOfService": "Terms of Service"
+    "termsOfService": "ToS",
+    "blog": "Blog"
   },
   "profile": {
     "title": "Profile",
@@ -155,15 +156,10 @@
     "avatarRemoved": "Avatar removed.",
     "errorUploadingAvatar": "Error uploading avatar",
     "errorRemovingAvatar": "Error removing avatar",
-    "skills": "Skills",
-    "noSkillsAdded": "No skills added",
     "selectStandardSkill": "Select a standard skill...",
     "addCustomSkillPlaceholder": "Or add a custom skill and press Enter",
-    "servicesOffered": "Services Offered",
-    "noServicesListed": "No services listed",
     "selectStandardService": "Select a standard service...",
     "addCustomServicePlaceholder": "Or add a custom service and press Enter",
-    "noQualificationsListed": "No qualifications listed",
     "noProfessionalOfferingsListed": "No professional offerings or other services listed",
     "addProfessionalOfferingPlaceholder": "e.g., Therapy Sessions, Dog Walking",
     "addQualificationPlaceholder": "e.g., Carpentry Certification, Plumbing License",
@@ -318,7 +314,8 @@
     "profile": "Profile",
     "signup": "Sign Up Free",
     "tasks": "TASKS",
-    "inbox": "Inbox"
+    "inbox": "Inbox",
+    "servicePriceIndex": "Service Price Index"
   },
   "roles": {
     "helperDescription": "Earn Money Helping Others",

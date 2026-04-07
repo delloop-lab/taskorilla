@@ -94,6 +94,8 @@ export default function Footer({ variant = 'default' }: FooterProps) {
             {t('footer.partner')}
           </Link>
           <span className="text-muted-foreground/30">|</span>
+          <Link href="/blog" className="hover:text-foreground transition-colors">{t('footer.blog')}</Link>
+          <span className="text-muted-foreground/30">|</span>
           <Link href="/contact" className="hover:text-foreground transition-colors">{t('footer.contact')}</Link>
           <span className="text-muted-foreground/30">|</span>
           <a

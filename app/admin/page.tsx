@@ -1363,7 +1363,6 @@ export default function SuperadminDashboard() {
       .from('email_logs')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(1000) // Allow browsing beyond 100 in admin table
 
     if (error) {
       console.error('Error fetching email logs:', error)
