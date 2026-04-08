@@ -93,7 +93,7 @@ function RegisterContent() {
 
       if (data.session) {
         // No confirm email: queue welcome ~1h from now (confirm path queues in /auth/callback)
-        fetch('/api/schedule-welcome-email', {
+        const queueRes = await fetch('/api/schedule-welcome-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -102,7 +102,14 @@ function RegisterContent() {
             recipientName: fullName,
             relatedUserId: data.user.id,
           }),
-        }).catch(() => {})
+        }).catch((err) => {
+          console.error('schedule-welcome-email request failed:', err)
+          return null
+        })
+        if (queueRes && !queueRes.ok) {
+          const text = await queueRes.text().catch(() => '')
+          console.error('schedule-welcome-email non-OK response:', queueRes.status, text)
+        }
         router.push(redirectUrl || '/profile?setup=required')
         router.refresh()
       } else {

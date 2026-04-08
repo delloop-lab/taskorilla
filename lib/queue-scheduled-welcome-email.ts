@@ -91,6 +91,10 @@ export async function queueScheduledWelcomeEmail(params: {
   })
 
   if (insertError) {
+    // DB-level dedupe guard (partial unique index) should be treated as successful duplicate.
+    if (insertError.code === '23505') {
+      return { ok: true, skipped: 'duplicate' }
+    }
     console.error('queueScheduledWelcomeEmail insert:', insertError)
     return { ok: false, reason: 'Could not queue email' }
   }

@@ -41,7 +41,8 @@ export async function GET(request: NextRequest) {
     const { data: exchangeData, error } = await supabase.auth.exchangeCodeForSession(code)
     
     if (!error) {
-      if (type === 'signup' || type === 'email' || nextAfterCode === nextAfterSignup) {
+      const isRecoveryFlow = type === 'recovery' || nextAfterCode === '/reset-password'
+      if (!isRecoveryFlow) {
         const exchangeUserId =
           exchangeData?.user?.id || exchangeData?.session?.user?.id || null
 
@@ -55,7 +56,9 @@ export async function GET(request: NextRequest) {
 
         if (confirmedUserId) {
           const welcomeResult = await queueWelcomeEmailAfterEmailConfirmation(confirmedUserId, {
-            requireRecentEmailConfirmation: type === 'email',
+            // For explicit signup callbacks, queue directly.
+            // For ambiguous code flows, require recent confirmation to avoid stale-login enqueueing.
+            requireRecentEmailConfirmation: type !== 'signup',
           })
           if (!welcomeResult.ok) {
             console.error('Welcome email queue after code confirm:', welcomeResult.reason)
