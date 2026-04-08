@@ -54,6 +54,7 @@ export default function Navbar() {
   const [pendingReviewsCount, setPendingReviewsCount] = useState<number>(0)
   const [firstPendingReviewTaskId, setFirstPendingReviewTaskId] = useState<string | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileExpandedSection, setMobileExpandedSection] = useState<'helpers' | 'tasks' | null>(null)
   const [tasksMenuOpen, setTasksMenuOpen] = useState(false)
   const [helpersMenuOpen, setHelpersMenuOpen] = useState(false)
   const [tasksMenuTimeout, setTasksMenuTimeout] = useState<NodeJS.Timeout | null>(null)
@@ -62,6 +63,12 @@ export default function Navbar() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const taskFilter = searchParams.get('filter')
+
+  useEffect(() => {
+    if (!mobileMenuOpen) {
+      setMobileExpandedSection(null)
+    }
+  }, [mobileMenuOpen])
 
   useEffect(() => {
     // Check current user
@@ -943,27 +950,23 @@ export default function Navbar() {
                 )}
               </Link>
             )}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-gray-700 hover:text-primary-600 p-2 rounded-md"
-              aria-label="Toggle menu"
-            >
-              {mobileMenuOpen ? (
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              ) : (
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              )}
-            </button>
           </div>
         </div>
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-gray-200 py-4 flex flex-col gap-2">
+            {!user && (
+              <div className="px-4 py-2">
+                <Link
+                  href="/register"
+                  className="block bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700 text-center"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Sign Up Free
+                </Link>
+              </div>
+            )}
             {user && (
               <div className="flex items-center space-x-2 px-4 py-2">
                 <div 
@@ -987,136 +990,129 @@ export default function Navbar() {
                 </span>
               </div>
             )}
-            {/* TASKS Section */}
-            <div className="px-4 py-2 order-2">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('navbar.tasks')}</h3>
-              <Link
-                href="/tasks"
-                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t('navbar.browseTasks')}
-              </Link>
-              <Link
-                href="/become-a-helper"
-                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t('navbar.howToEarn')}
-              </Link>
-              <Link
-                href="/help"
-                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t('navbar.taskerGuidelines')}
-              </Link>
-            </div>
-
-            {/* HELPERS Section */}
+            {/* FIND HELP Section (collapsed by default; matches desktop dropdown) */}
             <div className="px-4 py-2 order-1">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('navbar.helpers')}</h3>
-              {userPaused ? (
               <button
-                onClick={() => { setMobileMenuOpen(false); setShowPausedModal(true) }}
-                className="block w-full text-left text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                type="button"
+                onClick={() => setMobileExpandedSection((prev) => (prev === 'helpers' ? null : 'helpers'))}
+                className="w-full flex items-center justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2"
               >
-                <span className="block">{t('navbar.postTask')}</span>
-                <span className="block text-xs text-gray-500">{t('navbar.workRequired')}</span>
+                <span>{t('navbar.helpers')}</span>
+                <svg className={`w-4 h-4 transition-transform ${mobileExpandedSection === 'helpers' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
               </button>
-              ) : (
-              <Link
-                href="/tasks/new"
-                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <span className="block">{t('navbar.postTask')}</span>
-                <span className="block text-xs text-gray-500">{t('navbar.workRequired')}</span>
-              </Link>
+              {mobileExpandedSection === 'helpers' && (
+                <>
+                  {userPaused ? (
+                  <button
+                    onClick={() => { setMobileMenuOpen(false); setShowPausedModal(true) }}
+                    className="block w-full text-left text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    <span className="block">{t('navbar.postTask')}</span>
+                    <span className="block text-xs text-gray-500">{t('navbar.workRequired')}</span>
+                  </button>
+                  ) : (
+                  <Link
+                    href="/tasks/new"
+                    className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <span className="block">{t('navbar.postTask')}</span>
+                    <span className="block text-xs text-gray-500">{t('navbar.workRequired')}</span>
+                  </Link>
+                  )}
+                  {userPaused ? (
+                  <button
+                    onClick={() => { setMobileMenuOpen(false); setShowPausedModal(true) }}
+                    className="block w-full text-left text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    {t('navbar.browseAllHelpers')}
+                  </button>
+                  ) : (
+                  <Link
+                    href="/helpers"
+                    className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {t('navbar.browseAllHelpers')}
+                  </Link>
+                  )}
+                  {userPaused ? (
+                  <button
+                    onClick={() => { setMobileMenuOpen(false); setShowPausedModal(true) }}
+                    className="block w-full text-left text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    {t('navbar.browseProfessionals')}
+                  </button>
+                  ) : (
+                  <Link
+                    href="/professionals"
+                    className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {t('navbar.browseProfessionals')}
+                  </Link>
+                  )}
+                  <Link
+                    href="/help"
+                    className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {t('navbar.howItWorks')}
+                  </Link>
+                </>
               )}
-              {userPaused ? (
+            </div>
+
+            {/* FIND WORK Section (collapsed by default; matches desktop dropdown) */}
+            <div className="px-4 py-2 order-2">
               <button
-                onClick={() => { setMobileMenuOpen(false); setShowPausedModal(true) }}
-                className="block w-full text-left text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                type="button"
+                onClick={() => setMobileExpandedSection((prev) => (prev === 'tasks' ? null : 'tasks'))}
+                className="w-full flex items-center justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2"
               >
-                {t('navbar.browseAllHelpers')}
+                <span>{t('navbar.tasks')}</span>
+                <svg className={`w-4 h-4 transition-transform ${mobileExpandedSection === 'tasks' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
               </button>
-              ) : (
-              <Link
-                href="/helpers"
-                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t('navbar.browseAllHelpers')}
-              </Link>
+              {mobileExpandedSection === 'tasks' && (
+                <>
+                  <Link
+                    href="/tasks"
+                    className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {t('navbar.browseTasks')}
+                  </Link>
+                  <Link
+                    href="/become-a-helper"
+                    className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {t('navbar.howToEarn')}
+                  </Link>
+                  <Link
+                    href="/help"
+                    className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {t('navbar.taskerGuidelines')}
+                  </Link>
+                </>
               )}
-              {userPaused ? (
-              <button
-                onClick={() => { setMobileMenuOpen(false); setShowPausedModal(true) }}
-                className="block w-full text-left text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
-              >
-                {t('navbar.browseProfessionals')}
-              </button>
-              ) : (
-              <Link
-                href="/professionals"
-                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t('navbar.browseProfessionals')}
-              </Link>
-              )}
+            </div>
+
+            {/* Support + Pricing links (match desktop top-level links) */}
+            <div className="px-4 py-2">
               <Link
                 href="/help"
                 className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                {t('navbar.howItWorks')}
+                {t('navbar.help')}
               </Link>
-            </div>
-
-            {/* HELP Section */}
-            <div className="px-4 py-2">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('navbar.help')}</h3>
-              <Link
-                href="/help"
-                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t('navbar.helpCenter')}
-              </Link>
-              <Link
-                href="/help/faq"
-                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t('navbar.faqs')}
-              </Link>
-              <Link
-                href="/help/guides"
-                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t('navbar.guides')}
-              </Link>
-              <a
-                href="mailto:tee@taskorilla.com?subject=Support%20Request"
-                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t('navbar.contactSupport')}
-              </a>
-              <Link
-                href="/help/guides/taskorilla-service-price-index-portugal-2026"
-                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t('navbar.servicePriceIndex')}
-              </Link>
-            </div>
-
-            {/* Pricing Link - Mobile */}
-            <div className="px-4 py-2">
               <Link
                 href="/pricing"
                 className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
@@ -1266,7 +1262,7 @@ export default function Navbar() {
           }`}
         >
           <BottomNavIcon active={isBrowseActive} pathD="M11 19a8 8 0 1 1 5.3-14l.2.2A8 8 0 0 1 11 19zm10 2-4.3-4.3" />
-          <span>Browse</span>
+          <span>See Tasks</span>
         </Link>
 
         {userPaused ? (
@@ -1277,7 +1273,7 @@ export default function Navbar() {
             }`}
           >
             <BottomNavIcon active={isPostActive} pathD="M12 3a9 9 0 1 1 0 18a9 9 0 0 1 0-18zm0 4v10M7 12h10" />
-            <span>Post Task</span>
+            <span>Post Tasks</span>
           </button>
         ) : (
           <Link
@@ -1287,7 +1283,7 @@ export default function Navbar() {
             }`}
           >
             <BottomNavIcon active={isPostActive} pathD="M12 3a9 9 0 1 1 0 18a9 9 0 0 1 0-18zm0 4v10M7 12h10" />
-            <span>Post Task</span>
+            <span>Post Tasks</span>
           </Link>
         )}
 
