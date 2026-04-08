@@ -201,7 +201,7 @@ export default function LandingV2() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-4 bg-gradient-to-br from-primary to-accent text-primary-foreground">
+      <section className="hidden md:block py-20 px-4 bg-gradient-to-br from-primary to-accent text-primary-foreground">
         <div className="container mx-auto max-w-4xl text-center space-y-8">
           <h2 className="text-4xl md:text-5xl font-bold">
             Stop stressing over tasks.

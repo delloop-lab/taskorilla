@@ -1287,7 +1287,7 @@ export default function Navbar() {
                   aria-label="Facebook"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <FaFacebook className="w-6 h-6" />
+                  <FaFacebook className="w-9 h-9" />
                 </a>
                 <a
                   href="https://www.instagram.com/taskorilla"
@@ -1297,7 +1297,7 @@ export default function Navbar() {
                   aria-label="Instagram"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <FaInstagram className="w-6 h-6" />
+                  <FaInstagram className="w-9 h-9" />
                 </a>
                 <a
                   href="https://www.tiktok.com/@taskorilla"
@@ -1307,7 +1307,7 @@ export default function Navbar() {
                   aria-label="TikTok"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <FaTiktok className="w-6 h-6" />
+                  <FaTiktok className="w-9 h-9" />
                 </a>
                 <a
                   href="https://www.youtube.com/@gettaskorilla"
@@ -1317,7 +1317,7 @@ export default function Navbar() {
                   aria-label="YouTube"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <FaYoutube className="w-6 h-6" />
+                  <FaYoutube className="w-9 h-9" />
                 </a>
               </div>
             </div>
