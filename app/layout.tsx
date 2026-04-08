@@ -5,7 +5,6 @@ import Navbar from '@/components/Navbar'
 import PausedBanner from '@/components/PausedBanner'
 import PWAHead from '@/components/PWAHead'
 import InstallPromptModal from '@/components/InstallPromptModal'
-import PreLaunchModal from '@/components/PreLaunchModal'
 import LanguageProviderWrapper from '@/components/LanguageProviderWrapper'
 import SupabasePrewarm from '@/components/SupabasePrewarm'
 import FacebookAppIdMeta from '@/components/FacebookAppIdMeta'
@@ -127,7 +126,6 @@ export default function RootLayout({
           <RouteTrafficTracker />
           <PWAHead />
           <SupabasePrewarm />
-          <PreLaunchModal />
           <InstallPromptModal />
           <div className="print:hidden">
             <Suspense fallback={<div className="h-16 bg-white shadow-sm" />}>

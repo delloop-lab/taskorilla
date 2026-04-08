@@ -3219,7 +3219,8 @@ export default function SuperadminDashboard() {
                       className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm cursor-pointer hover:bg-gray-200 select-none"
                       onClick={() => handleSort('email')}
                     >
-                      Email <SortIcon column="email" />
+                      <span className="sm:hidden">Name</span>
+                      <span className="hidden sm:inline">Email</span> <SortIcon column="email" />
                     </th>
                     <th 
                       className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden sm:table-cell cursor-pointer hover:bg-gray-200 select-none"
@@ -3275,8 +3276,11 @@ export default function SuperadminDashboard() {
                         />
                       </td>
                       <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm">
+                        <span className="sm:hidden cursor-default" title={u.full_name || undefined}>
+                          {u.full_name || 'N/A'}
+                        </span>
                         <span
-                          className="cursor-default"
+                          className="hidden sm:inline cursor-default"
                           title={u.email || undefined}
                         >
                           {u.email

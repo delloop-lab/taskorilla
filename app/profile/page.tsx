@@ -1000,12 +1000,12 @@ function ProfilePageContent() {
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">{t('profile.title')}</h1>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('profile.title')}</h1>
         {profile && profile.profile_slug && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             {(isTasker || isHelper) && (
-              <span className="text-sm font-medium text-gray-700 mr-2">
+              <span className="hidden sm:inline text-sm font-medium text-gray-700 mr-2">
                 {isHelper ? t('profile.shareProfileHelper') : t('profile.shareProfileTasker')}
               </span>
             )}
