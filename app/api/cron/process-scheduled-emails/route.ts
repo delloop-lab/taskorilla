@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { renderEmailTemplate, sendTemplateEmail } from '@/lib/email'
 import { logEmail } from '@/lib/email-logger'
 
@@ -7,6 +7,8 @@ const MAX_ATTEMPTS = 5
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 const MAX_WEEKLY_TASKER_BID_REMINDERS = 4
 const TASKER_BID_TEMPLATE = 'tasker_bid_received'
+const WELCOME_HEAL_WINDOW_MS = 7 * 24 * 60 * 60 * 1000 // only look at users from last 7 days
+const WELCOME_DELAY_MS = 60 * 60 * 1000 // 1 hour
 
 function getFirstName(input: string | null | undefined): string {
   const raw = String(input || '').trim()
@@ -27,6 +29,63 @@ function authorizeCron(request: NextRequest): boolean {
   return auth === `Bearer ${secret}`
 }
 
+/**
+ * Safety net: find confirmed users from the last 7 days who never got a
+ * welcome email queued (e.g. because the auth callback redirect was
+ * misconfigured). Auto-creates the missing scheduled_emails rows.
+ */
+async function healMissingWelcomeEmails(supabaseAdmin: SupabaseClient): Promise<number> {
+  const cutoff = new Date(Date.now() - WELCOME_HEAL_WINDOW_MS).toISOString()
+
+  const { data: users, error } = await supabaseAdmin
+    .from('profiles')
+    .select('id, full_name, is_helper, created_at')
+    .gte('created_at', cutoff)
+
+  if (error || !users?.length) return 0
+
+  const userIds = users.map((u) => u.id)
+
+  const { data: existing } = await supabaseAdmin
+    .from('scheduled_emails')
+    .select('related_user_id, template_type')
+    .in('related_user_id', userIds)
+    .in('template_type', ['tasker_welcome', 'helper_welcome'])
+
+  const hasWelcome = new Set(
+    (existing || []).map((r) => `${r.related_user_id}::${r.template_type}`)
+  )
+
+  let healed = 0
+  for (const profile of users) {
+    const templateType = profile.is_helper ? 'helper_welcome' : 'tasker_welcome'
+    if (hasWelcome.has(`${profile.id}::${templateType}`)) continue
+
+    const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(profile.id)
+    if (!authUser?.user?.email || !authUser.user.email_confirmed_at) continue
+
+    const sendAfter = new Date(
+      Math.max(
+        new Date(profile.created_at).getTime() + WELCOME_DELAY_MS,
+        Date.now()
+      )
+    ).toISOString()
+
+    const { error: insertErr } = await supabaseAdmin.from('scheduled_emails').insert({
+      send_after: sendAfter,
+      template_type: templateType,
+      recipient_email: authUser.user.email,
+      recipient_name: profile.full_name || null,
+      related_user_id: profile.id,
+    })
+
+    if (!insertErr || insertErr.code === '23505') healed += 1
+  }
+
+  if (healed > 0) console.log(`heal-welcome: queued ${healed} missing welcome emails`)
+  return healed
+}
+
 export async function GET(request: NextRequest) {
   if (!authorizeCron(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -39,6 +98,13 @@ export async function GET(request: NextRequest) {
   }
 
   const supabaseAdmin = createClient(url, serviceKey)
+
+  let healed = 0
+  try {
+    healed = await healMissingWelcomeEmails(supabaseAdmin)
+  } catch (e: any) {
+    console.error('heal-welcome error (non-fatal):', e?.message)
+  }
 
   const { data: rows, error: selectError } = await supabaseAdmin
     .from('scheduled_emails')
@@ -232,5 +298,6 @@ export async function GET(request: NextRequest) {
     processed,
     failed,
     batchSize: (rows || []).length,
+    healed,
   })
 }
