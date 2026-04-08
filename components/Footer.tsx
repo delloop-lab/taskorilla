@@ -11,18 +11,26 @@ interface FooterProps {
 
 export default function Footer({ variant = 'default' }: FooterProps) {
   const { t } = useLanguage()
-  const [version, setVersion] = useState<string>('Beta V0.0.0')
+  const [version, setVersion] = useState<string>('V0.000')
+
+  const formatVersionLabel = (rawVersion: string): string => {
+    const [majorRaw = '0', minorRaw = '0', patchRaw = '0'] = String(rawVersion || '').split('.')
+    const major = Number.parseInt(majorRaw, 10) || 0
+    const minor = Number.parseInt(minorRaw, 10) || 0
+    const patch = Number.parseInt(patchRaw, 10) || 0
+    return `V${major}.${String(minor).padStart(1, '0')}${String(patch).padStart(2, '0')}`
+  }
 
   useEffect(() => {
     const versionUrl = `/api/version?v=${Date.now()}`
     // Fetch version dynamically from API to avoid caching issues
     fetch(versionUrl, { cache: 'no-store' })
       .then(res => res.json())
-      .then(data => setVersion(`Beta V${data.version}`))
+      .then(data => setVersion(formatVersionLabel(data.version)))
       .catch(() => {
         // Fallback to static import if fetch fails
         import('@/version.json').then(versionData => {
-          setVersion(`Beta V${versionData.default.version}`)
+          setVersion(formatVersionLabel(versionData.default.version))
         })
       })
   }, [])

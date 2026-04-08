@@ -8,7 +8,7 @@ import { format } from 'date-fns'
 import Link from 'next/link'
 import { ArrowLeft, Send, Trash2, User as UserIcon } from 'lucide-react'
 import StandardModal from '@/components/StandardModal'
-import { checkForContactInfo, getRestrictionHint } from '@/lib/content-filter'
+import { checkForContactInfo, detectContentIssues } from '@/lib/content-filter'
 import { compressTaskImage } from '@/lib/image-utils'
 import { canRevealFullNameForTask, getDisplayName } from '@/lib/name-privacy'
 import { isBidUpdateSystemMessage, isBidWithdrawnSystemMessage } from '@/lib/bid-chat-message'
@@ -30,13 +30,21 @@ export default function ConversationPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [otherParticipant, setOtherParticipant] = useState<any>(null)
   const [task, setTask] = useState<any>(null)
-  const [allowCurrencyInChat, setAllowCurrencyInChat] = useState(false)
   const [currentUserPaused, setCurrentUserPaused] = useState(false)
   const [otherUserPaused, setOtherUserPaused] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [isAdminViewing, setIsAdminViewing] = useState(false)
   const [participant1, setParticipant1] = useState<any>(null)
   const [participant2, setParticipant2] = useState<any>(null)
+  const [inlineFeedback, setInlineFeedback] = useState<{
+    tone: 'error' | 'info' | 'success' | null
+    text: string
+    blocked: boolean
+  }>({
+    tone: null,
+    text: '',
+    blocked: false,
+  })
 
   const [modalState, setModalState] = useState<{
     isOpen: boolean
@@ -164,27 +172,6 @@ export default function ConversationPage() {
             setParticipant2(participantResult.data)
           }
 
-          const taskData = taskResult.data
-          if (!taskData || !isParticipant) {
-            setAllowCurrencyInChat(false)
-          } else {
-            const helperId = taskData.created_by === user.id ? participantResult.data?.id : user.id
-            if (!helperId) {
-              setAllowCurrencyInChat(false)
-            } else {
-              const { count: helperBidCount, error: bidError } = await supabase
-                .from('bids')
-                .select('id', { count: 'exact', head: true })
-                .eq('task_id', taskData.id)
-                .eq('user_id', helperId)
-
-              if (bidError) {
-                setAllowCurrencyInChat(false)
-              } else {
-                setAllowCurrencyInChat((helperBidCount || 0) > 0)
-              }
-            }
-          }
         }
       }
     } catch (error) {
@@ -369,20 +356,90 @@ export default function ConversationPage() {
   })
   const isLockedTaskConversation = task?.status === 'locked'
 
-  const getBlockReasonLabel = (detectedReason: string | null): string => {
-    if (!detectedReason) return 'This message cannot be shared yet.'
-    if (detectedReason.includes('address')) return 'Looks like an exact address.'
-    if (detectedReason.includes('phone') || detectedReason.includes('email') || detectedReason.includes('social')) {
-      return 'Looks like contact details.'
-    }
-    if (detectedReason.includes('messaging app') || detectedReason.includes('off-platform')) {
-      return 'Looks like off-platform contact details.'
-    }
-    if (detectedReason.includes('payment') || detectedReason.includes('currency')) {
-      return 'Looks like payment details.'
-    }
-    return 'This message cannot be shared yet.'
+  const helperFirstMessageExists = Boolean(
+    otherParticipant?.id && messages.some((m) => m.sender_id === otherParticipant.id)
+  )
+  const isTaskerView = Boolean(user?.id && task?.created_by === user.id)
+
+  const getInlineBlockedMessage = (rawContent: string): string => {
+    const issues = detectContentIssues(rawContent, { allowPaymentTerms: true })
+    const labels: string[] = []
+
+    const hasContact =
+      issues.containsEmail ||
+      issues.containsPhone ||
+      issues.containsSocialHandle ||
+      issues.containsMessagingApp
+    if (hasContact) labels.push(t('messages.inlineIssueContact'))
+    if (issues.containsOffPlatformIntent || issues.containsUrl) labels.push(t('messages.inlineIssueOffPlatform'))
+    if (issues.containsAddress) labels.push(t('messages.inlineIssueAddress'))
+    if (issues.containsPaymentInfo) labels.push(t('messages.inlineIssuePayment'))
+
+    const list = labels.slice(0, 4).join(', ')
+    return t('messages.inlineBlockedCombined').replace('{issues}', list || t('messages.inlineIssueGeneral'))
   }
+
+  useEffect(() => {
+    if (isAdminViewing || currentUserPaused || otherUserPaused || isLockedTaskConversation) {
+      setInlineFeedback({ tone: null, text: '', blocked: false })
+      return
+    }
+
+    const trimmed = newMessage.trim()
+    if (!trimmed) {
+      setInlineFeedback({ tone: null, text: '', blocked: false })
+      return
+    }
+
+    const timeout = setTimeout(() => {
+      // Tasker cannot send the first pre-bid message.
+      if (!canShareContact && isTaskerView && !helperFirstMessageExists) {
+        setInlineFeedback({
+          tone: 'error',
+          text: t('messages.inlineTaskerWaitHelperStart'),
+          blocked: true,
+        })
+        return
+      }
+
+      if (canShareContact) {
+        setInlineFeedback({
+          tone: 'success',
+          text: t('messages.inlineUnlockedPostPayment'),
+          blocked: false,
+        })
+        return
+      }
+
+      const check = checkForContactInfo(trimmed, { allowPaymentTerms: true })
+      if (!check.isClean) {
+        setInlineFeedback({
+          tone: 'error',
+          text: getInlineBlockedMessage(trimmed),
+          blocked: true,
+        })
+        return
+      }
+
+      setInlineFeedback({
+        tone: 'info',
+        text: t('messages.inlineAllowedPrePayment'),
+        blocked: false,
+      })
+    }, 150)
+
+    return () => clearTimeout(timeout)
+  }, [
+    newMessage,
+    canShareContact,
+    currentUserPaused,
+    helperFirstMessageExists,
+    isAdminViewing,
+    isLockedTaskConversation,
+    isTaskerView,
+    otherUserPaused,
+    t,
+  ])
 
   const tryConsumeOneTimeOverride = async (detectedReason: string | null): Promise<boolean> => {
     try {
@@ -434,9 +491,19 @@ export default function ConversationPage() {
       return
     }
 
-    // Before payment (or when task is missing), keep current safety behaviour.
+    // Tasker cannot initiate pre-bid chat; helper must send first.
+    if (!canShareContact && isTaskerView && !helperFirstMessageExists) {
+      setInlineFeedback({
+        tone: 'error',
+        text: t('messages.inlineTaskerWaitHelperStart'),
+        blocked: true,
+      })
+      return
+    }
+
+    // Inline constraint blocks should prevent submit; keep server-side safety check.
     if (!canShareContact) {
-      const contentCheck = checkForContactInfo(newMessage, { allowPaymentTerms: allowCurrencyInChat })
+      const contentCheck = checkForContactInfo(newMessage, { allowPaymentTerms: true })
       if (!contentCheck.isClean) {
         const overrideConsumed = await tryConsumeOneTimeOverride(contentCheck.detectedReason)
         if (overrideConsumed) {
@@ -460,11 +527,10 @@ export default function ConversationPage() {
             }),
           }).catch(() => {})
 
-          setModalState({
-            isOpen: true,
-            type: 'warning',
-            title: t('messages.contactInfoDetectedTitle'),
-            message: `${getBlockReasonLabel(contentCheck.detectedReason)} ${contentCheck.message} ${getRestrictionHint(contentCheck.detectedReason)}`,
+          setInlineFeedback({
+            tone: 'error',
+            text: getInlineBlockedMessage(newMessage.trim()),
+            blocked: true,
           })
           return
         }
@@ -523,6 +589,13 @@ export default function ConversationPage() {
       // Send email notification
       if (otherParticipant) {
         try {
+          const trimmedMessage = newMessage.trim()
+          const emailMessagePreview = trimmedMessage
+            ? trimmedMessage.substring(0, 100)
+            : messageImage
+            ? t('messages.photoSentPreview')
+            : t('messages.noMessagesYet')
+
           const { data: senderProfile } = await supabase
             .from('profiles')
             .select('full_name, email')
@@ -537,7 +610,7 @@ export default function ConversationPage() {
               recipientEmail: otherParticipant.email,
               recipientName: otherParticipant.full_name || otherParticipant.email,
               senderName: senderProfile?.full_name || senderProfile?.email || 'Someone',
-              messagePreview: newMessage.trim().substring(0, 100),
+              messagePreview: emailMessagePreview,
               conversationId: conversationId,
               hasImage: !!messageImage,
               bidAccepted: canShareContact,
@@ -665,7 +738,7 @@ export default function ConversationPage() {
       )}
 
       {/* Messages */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6 min-h-[400px] max-h-[600px] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6 min-h-[300px] sm:min-h-[400px] max-h-[55vh] sm:max-h-[600px] overflow-y-auto">
         {messages.length === 0 ? (
           <div className="text-center text-gray-500 py-12">
             <p>{t('messages.noMessagesYet')}</p>
@@ -922,6 +995,28 @@ export default function ConversationPage() {
                 }
               }}
             />
+            {inlineFeedback.text && (
+              <div
+                className={`mt-2 text-xs leading-5 ${
+                  inlineFeedback.tone === 'error'
+                    ? 'text-red-600'
+                    : inlineFeedback.tone === 'success'
+                    ? 'text-green-600'
+                    : 'text-gray-600'
+                }`}
+              >
+                <span>{inlineFeedback.text}</span>
+                {inlineFeedback.tone === 'error' && (
+                  <span
+                    className="ml-1 cursor-help text-gray-500"
+                    title={t('messages.inlineWhyBlockedTooltip')}
+                    aria-label={t('messages.inlineWhyBlockedTooltip')}
+                  >
+                    ?
+                  </span>
+                )}
+              </div>
+            )}
             <label className="mt-2 cursor-pointer inline-flex items-center text-sm text-gray-600 hover:text-primary-600">
               <input
                 type="file"
@@ -938,7 +1033,7 @@ export default function ConversationPage() {
           </div>
           <button
             type="submit"
-            disabled={(!newMessage.trim() && !messageImage) || sending || uploadingImage}
+            disabled={(!newMessage.trim() && !messageImage) || sending || uploadingImage || inlineFeedback.blocked}
             className="bg-primary-600 text-white px-6 py-2 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
             <Send className="w-4 h-4" />

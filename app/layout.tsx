@@ -11,6 +11,7 @@ import SupabasePrewarm from '@/components/SupabasePrewarm'
 import FacebookAppIdMeta from '@/components/FacebookAppIdMeta'
 import GoogleAnalytics from '@/components/GoogleAnalytics'
 import RouteTrafficTracker from '@/components/RouteTrafficTracker'
+import { Suspense } from 'react'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -129,10 +130,12 @@ export default function RootLayout({
           <PreLaunchModal />
           <InstallPromptModal />
           <div className="print:hidden">
-            <Navbar />
+            <Suspense fallback={<div className="h-16 bg-white shadow-sm" />}>
+              <Navbar />
+            </Suspense>
             <PausedBanner />
           </div>
-          <main className="min-h-screen bg-gray-50 print:bg-white">
+          <main className="min-h-screen bg-gray-50 print:bg-white pb-20 md:pb-0">
             {children}
           </main>
         </LanguageProviderWrapper>

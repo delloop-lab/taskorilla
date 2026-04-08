@@ -2848,11 +2848,11 @@ export default function TaskDetailPage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Bid Notification Toast */}
       {bidNotification && (
-        <div className="fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center space-x-2 animate-pulse">
+        <div className="fixed top-4 left-3 right-3 sm:left-auto sm:right-4 bg-green-600 text-white px-4 sm:px-6 py-3 rounded-lg shadow-lg z-50 flex items-center space-x-2 animate-pulse max-w-md sm:max-w-lg">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
-          <span>{bidNotification}</span>
+          <span className="truncate">{bidNotification}</span>
           <button
             onClick={() => setBidNotification(null)}
             className="ml-2 text-white hover:text-gray-200"
@@ -3040,27 +3040,10 @@ export default function TaskDetailPage() {
           </div>
         </div>
 
-        {/* Helpers must bid before messaging the tasker; other non-owners keep the previous behaviour. */}
+        {/* Helper-first pre-bid chat: helpers can initiate conversation before bidding. */}
         {user && task.user && task.created_by !== user.id && (
           <div className="mt-2 mb-6">
             {userHasHelperRole ? (
-              hasBid ? (
-                <button
-                  type="button"
-                  onClick={() => handleStartConversation(task.created_by)}
-                  className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
-                >
-                  {t('taskDetail.messageTasker')}
-                </button>
-              ) : (
-                <div className="rounded-lg border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-900 shadow-sm">
-                  <p className="font-medium text-primary-950 mb-1">{t('taskDetail.readyToTalkTitle')}</p>
-                  <p className="text-primary-900/90 leading-relaxed">
-                    {t('taskDetail.readyToTalkBody')}
-                  </p>
-                </div>
-              )
-            ) : (
               <button
                 type="button"
                 onClick={() => handleStartConversation(task.created_by)}
@@ -3068,6 +3051,13 @@ export default function TaskDetailPage() {
               >
                 {t('taskDetail.messageTasker')}
               </button>
+            ) : (
+              <div className="rounded-lg border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-900 shadow-sm">
+                <p className="font-medium text-primary-950 mb-1">{t('taskDetail.readyToTalkTitle')}</p>
+                <p className="text-primary-900/90 leading-relaxed">
+                  {t('taskDetail.readyToTalkBody')}
+                </p>
+              </div>
             )}
           </div>
         )}

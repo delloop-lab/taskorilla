@@ -17,16 +17,32 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-secondary/10 pt-14 md:pt-20 pb-8 md:pb-12 px-4">
         <div className="container mx-auto max-w-6xl relative">
-          <SocialBar className="absolute right-0 top-[-2.5rem] md:top-[-3rem] md:right-2 lg:right-0" />
+          <SocialBar className="absolute right-0 top-[-1.5rem] sm:top-[-2rem] md:top-[-3rem] md:right-2 lg:right-0" />
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="space-y-6 animate-fade-in">
-              <h1 className="text-5xl md:text-6xl font-bold text-foreground leading-tight">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground leading-tight">
                 {t('homepage.tagline')}
               </h1>
               <div className="text-xl text-muted-foreground space-y-3">
                 <p>{t('homepage.description1')}</p>
                 <p>{t('homepage.description2')}</p>
                 <p>{t('homepage.description3')}</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 pt-1">
+                <Link href="#service-cards-grid">
+                  <Button size="lg" className="w-full sm:w-auto min-w-[220px]">
+                    Find Help
+                  </Button>
+                </Link>
+                <Link href="/tasks">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full sm:w-auto min-w-[220px]"
+                  >
+                    Find Work
+                  </Button>
+                </Link>
               </div>
             </div>
             <div className="animate-fade-in">
@@ -38,12 +54,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      <ServiceCardsGrid />
+      <section id="service-cards-grid">
+        <ServiceCardsGrid />
+      </section>
 
       {/* How It Works */}
       <section className="py-16 md:py-20 px-4">
         <div className="container mx-auto max-w-6xl">
-          <h2 className="text-4xl font-bold text-center mb-16 text-foreground">
+          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12 md:mb-16 text-foreground">
             {t('landing.howItWorksTitle')}
           </h2>
           <div className="grid md:grid-cols-3 gap-8">
@@ -98,7 +116,7 @@ export default function HomePage() {
       {/* Why Use Taskorilla */}
       <section className="pt-12 md:pt-20 pb-20 px-4 bg-muted/30">
         <div className="container mx-auto max-w-6xl">
-          <h2 className="text-4xl font-bold text-center mb-16 text-foreground">
+          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12 md:mb-16 text-foreground">
             {t('landing.whyUseTitle')}
           </h2>
           
@@ -202,7 +220,7 @@ export default function HomePage() {
               <div className="absolute top-8 right-6 w-44 h-44 bg-cyan-200/40 rotate-12 rounded-2xl" />
               <div className="absolute bottom-4 right-16 w-52 h-52 bg-teal-200/35 -rotate-12 rounded-2xl" />
             </div>
-            <h2 className="text-4xl font-bold text-center mb-8 md:mb-10 text-foreground relative z-10">
+            <h2 className="text-3xl sm:text-4xl font-bold text-center mb-8 md:mb-10 text-foreground relative z-10">
               What Our Users Say
             </h2>
             <div className="grid md:grid-cols-3 gap-4 md:gap-5 relative z-10">
@@ -329,7 +347,7 @@ export default function HomePage() {
                 <img 
                   src="/images/tee_wave.png" 
                   alt="Taskorilla mascot" 
-                  className="h-56 w-56 md:h-64 md:w-64 object-contain"
+                  className="h-40 w-40 sm:h-56 sm:w-56 md:h-64 md:w-64 object-contain"
                   style={{ backgroundColor: 'transparent' }}
                 />
               </Link>
@@ -347,7 +365,7 @@ export default function HomePage() {
                 <img 
                   src="/images/tee_bum.png" 
                   alt="Tee on laptop" 
-                  className="h-[200px] w-[200px] md:h-[220px] md:w-[220px] object-contain"
+                  className="h-36 w-36 sm:h-[200px] sm:w-[200px] md:h-[220px] md:w-[220px] object-contain"
                   style={{ backgroundColor: 'transparent' }}
                 />
               </Link>

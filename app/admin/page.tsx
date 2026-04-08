@@ -18,7 +18,6 @@ import {
   Legend,
   Filler
 } from 'chart.js'
-import { getTrafficStats, getDailyTrafficSummary, getDailyTrafficStats } from '@/lib/traffic'
 import StandardModal from '@/components/StandardModal'
 import EmailTemplateManager from '@/components/EmailTemplateManager'
 import EmailTemplateEditor from '@/components/EmailTemplateEditor'
@@ -98,6 +97,8 @@ type DailyTraffic = {
   visits: number
 }
 
+type TrafficRange = '7d' | '30d' | 'last_month' | 'custom'
+
 type RevenueRange = 'day' | 'week' | 'month' | 'year' | 'all'
 
 export default function SuperadminDashboard() {
@@ -112,7 +113,11 @@ export default function SuperadminDashboard() {
   const [messages, setMessages] = useState<any[]>([])
   const [traffic, setTraffic] = useState<Traffic[]>([])
   const [dailyTraffic, setDailyTraffic] = useState<DailyTraffic[]>([])
-  const [trafficDays, setTrafficDays] = useState<number>(30)
+  const [trafficRange, setTrafficRange] = useState<TrafficRange>('30d')
+  const [trafficCustomStart, setTrafficCustomStart] = useState<string>('')
+  const [trafficCustomEnd, setTrafficCustomEnd] = useState<string>('')
+  const [trafficPage, setTrafficPage] = useState<number>(1)
+  const TRAFFIC_PAGE_SIZE = 20
   const [tab, setTab] = useState<'users' | 'tasks' | 'awaiting_payment' | 'stats' | 'revenue' | 'email' | 'matching' | 'traffic' | 'settings' | 'reports' | 'maps' | 'blog'>('users')
   const [showBidsDrilldown, setShowBidsDrilldown] = useState(false)
   const [showAcceptedBidsDrilldown, setShowAcceptedBidsDrilldown] = useState(false)
@@ -1346,16 +1351,73 @@ export default function SuperadminDashboard() {
     }
   }
 
-  async function fetchTraffic() {
-    const data = await getTrafficStats()
-    if (data) {
-      setTraffic(data)
+  async function fetchTraffic(
+    rangeParam?: TrafficRange,
+    customStartParam?: string,
+    customEndParam?: string
+  ) {
+    const effectiveRange = rangeParam ?? trafficRange
+    const effectiveCustomStart = customStartParam ?? trafficCustomStart
+    const effectiveCustomEnd = customEndParam ?? trafficCustomEnd
+
+    const today = new Date()
+    const toDateString = (d: Date) => d.toISOString().split('T')[0]
+
+    let startDate = ''
+    let endDate = toDateString(today)
+
+    if (effectiveRange === '7d') {
+      const start = new Date(today)
+      start.setDate(start.getDate() - 6)
+      startDate = toDateString(start)
+    } else if (effectiveRange === '30d') {
+      const start = new Date(today)
+      start.setDate(start.getDate() - 29)
+      startDate = toDateString(start)
+    } else if (effectiveRange === 'last_month') {
+      const firstDayCurrentMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+      const lastDayPreviousMonth = new Date(firstDayCurrentMonth.getTime() - 24 * 60 * 60 * 1000)
+      const firstDayPreviousMonth = new Date(
+        lastDayPreviousMonth.getFullYear(),
+        lastDayPreviousMonth.getMonth(),
+        1
+      )
+      startDate = toDateString(firstDayPreviousMonth)
+      endDate = toDateString(lastDayPreviousMonth)
+    } else {
+      if (!effectiveCustomStart || !effectiveCustomEnd) return
+      startDate = effectiveCustomStart
+      endDate = effectiveCustomEnd
     }
-    // Also fetch daily traffic
-    const dailyData = await getDailyTrafficSummary(trafficDays)
-    if (dailyData) {
-      setDailyTraffic(dailyData)
+
+    const { data: rows, error } = await supabase
+      .from('traffic_daily')
+      .select('page, visit_date, visits')
+      .gte('visit_date', startDate)
+      .lte('visit_date', endDate)
+
+    if (error) {
+      console.error('Error fetching traffic_daily data:', error)
+      return
     }
+
+    const aggregatedByPage: Record<string, number> = {}
+    const aggregatedByDate: Record<string, number> = {}
+    ;(rows || []).forEach((row: any) => {
+      aggregatedByPage[row.page] = (aggregatedByPage[row.page] || 0) + (row.visits || 0)
+      aggregatedByDate[row.visit_date] = (aggregatedByDate[row.visit_date] || 0) + (row.visits || 0)
+    })
+
+    const byPage = Object.entries(aggregatedByPage)
+      .map(([page, visits]) => ({ page, visits }))
+      .sort((a, b) => b.visits - a.visits)
+    setTraffic(byPage)
+
+    const byDate = Object.entries(aggregatedByDate)
+      .map(([date, visits]) => ({ date, visits }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+    setDailyTraffic(byDate)
+    setTrafficPage(1)
   }
 
   async function fetchEmailLogs() {
@@ -3603,7 +3665,7 @@ export default function SuperadminDashboard() {
                   placeholder="Search tasks by title, category, or status..."
                   value={taskSearchTerm}
                   onChange={(e) => setTaskSearchTerm(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm min-w-[300px]"
+                  className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm w-full sm:w-auto sm:min-w-[300px]"
                 />
                 {taskSearchTerm && (
                   <button
@@ -6054,6 +6116,13 @@ export default function SuperadminDashboard() {
             ? Math.max(...dailyTraffic.map(d => d.visits))
             : 0
 
+          const totalTrafficPages = Math.max(1, Math.ceil(traffic.length / TRAFFIC_PAGE_SIZE))
+          const safeTrafficPage = Math.min(Math.max(trafficPage, 1), totalTrafficPages)
+          const paginatedTraffic = traffic.slice(
+            (safeTrafficPage - 1) * TRAFFIC_PAGE_SIZE,
+            safeTrafficPage * TRAFFIC_PAGE_SIZE
+          )
+
           return (
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex justify-between items-center mb-6">
@@ -6063,23 +6132,48 @@ export default function SuperadminDashboard() {
                     Track which pages users visit most frequently. Data is collected automatically when users navigate through the site.
                   </p>
                 </div>
-                <div className="flex gap-2 items-center">
+                <div className="flex gap-2 items-center flex-wrap justify-end">
                   <select
-                    value={trafficDays}
+                    value={trafficRange}
                     onChange={(e) => {
-                      setTrafficDays(Number(e.target.value))
-                      fetchTraffic()
+                      const selectedRange = e.target.value as TrafficRange
+                      setTrafficRange(selectedRange)
+                      if (selectedRange !== 'custom') {
+                        fetchTraffic(selectedRange)
+                      }
                     }}
                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
                   >
-                    <option value={7}>Last 7 days</option>
-                    <option value={14}>Last 14 days</option>
-                    <option value={30}>Last 30 days</option>
-                    <option value={60}>Last 60 days</option>
-                    <option value={90}>Last 90 days</option>
+                    <option value="7d">Last 7 days</option>
+                    <option value="30d">Last 30 days</option>
+                    <option value="last_month">Last month</option>
+                    <option value="custom">Custom dates</option>
                   </select>
+                  {trafficRange === 'custom' && (
+                    <>
+                      <input
+                        type="date"
+                        value={trafficCustomStart}
+                        onChange={(e) => setTrafficCustomStart(e.target.value)}
+                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      />
+                      <input
+                        type="date"
+                        value={trafficCustomEnd}
+                        onChange={(e) => setTrafficCustomEnd(e.target.value)}
+                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      />
+                      <button
+                        onClick={() => fetchTraffic('custom', trafficCustomStart, trafficCustomEnd)}
+                        disabled={!trafficCustomStart || !trafficCustomEnd}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Apply Dates
+                      </button>
+                    </>
+                  )}
                   <button
-                    onClick={fetchTraffic}
+                    onClick={() => fetchTraffic()}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
                   >
                     Refresh Data
@@ -6347,7 +6441,8 @@ export default function SuperadminDashboard() {
                           </tr>
                         </thead>
                         <tbody>
-                          {traffic.map((t, index) => {
+                          {paginatedTraffic.map((t, pageIndex) => {
+                            const index = (safeTrafficPage - 1) * TRAFFIC_PAGE_SIZE + pageIndex
                             const percentage = totalVisits > 0 ? ((t.visits / totalVisits) * 100).toFixed(1) : 0
                             return (
                               <tr key={t.page} className="hover:bg-gray-50">
@@ -6391,6 +6486,31 @@ export default function SuperadminDashboard() {
                           })}
                         </tbody>
                       </table>
+                    </div>
+                    <div className="mt-4 flex items-center justify-between gap-3 flex-wrap">
+                      <p className="text-sm text-gray-600">
+                        Showing {traffic.length === 0 ? 0 : (safeTrafficPage - 1) * TRAFFIC_PAGE_SIZE + 1}
+                        {' '}to {Math.min(safeTrafficPage * TRAFFIC_PAGE_SIZE, traffic.length)} of {traffic.length} pages
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setTrafficPage((p) => Math.max(1, p - 1))}
+                          disabled={safeTrafficPage <= 1}
+                          className="px-3 py-1.5 rounded border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Previous
+                        </button>
+                        <span className="text-sm text-gray-700">
+                          Page {safeTrafficPage} of {totalTrafficPages}
+                        </span>
+                        <button
+                          onClick={() => setTrafficPage((p) => Math.min(totalTrafficPages, p + 1))}
+                          disabled={safeTrafficPage >= totalTrafficPages}
+                          className="px-3 py-1.5 rounded border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Next
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </>
@@ -6541,8 +6661,8 @@ export default function SuperadminDashboard() {
                       <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm min-w-[224px]">Subject</th>
                       <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden lg:table-cell whitespace-nowrap">Type</th>
                       <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm hidden xl:table-cell whitespace-nowrap">Error</th>
-                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm whitespace-nowrap sticky right-[80px] bg-gray-100 z-10">View</th>
-                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm whitespace-nowrap sticky right-0 bg-gray-100 z-10">Delete</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm whitespace-nowrap md:sticky md:right-[80px] bg-gray-100 z-10">View</th>
+                      <th className="border px-2 sm:px-4 py-2 text-left text-xs sm:text-sm whitespace-nowrap md:sticky md:right-0 bg-gray-100 z-10">Delete</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -6607,7 +6727,7 @@ export default function SuperadminDashboard() {
                         <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm text-red-600 hidden xl:table-cell">
                           <div className="truncate max-w-[150px]" title={log.error_message || '-'}>{log.error_message || '-'}</div>
                         </td>
-                        <td className={`border px-2 sm:px-4 py-2 text-xs sm:text-sm sticky right-[80px] z-10 ${selectedEmailLogIds.includes(log.id) ? 'bg-blue-50' : 'bg-white'}`}>
+                        <td className={`border px-2 sm:px-4 py-2 text-xs sm:text-sm md:sticky md:right-[80px] z-10 ${selectedEmailLogIds.includes(log.id) ? 'bg-blue-50' : 'bg-white'}`}>
                           <button
                             onClick={() => setViewingEmailLog(log)}
                             className="bg-blue-600 hover:bg-blue-700 text-white px-2 sm:px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 whitespace-nowrap"
@@ -6620,7 +6740,7 @@ export default function SuperadminDashboard() {
                             <span className="hidden sm:inline">View</span>
                           </button>
                         </td>
-                        <td className={`border px-2 sm:px-4 py-2 text-xs sm:text-sm sticky right-0 z-10 ${selectedEmailLogIds.includes(log.id) ? 'bg-blue-50' : 'bg-white'}`}>
+                        <td className={`border px-2 sm:px-4 py-2 text-xs sm:text-sm md:sticky md:right-0 z-10 ${selectedEmailLogIds.includes(log.id) ? 'bg-blue-50' : 'bg-white'}`}>
                           <button
                             onClick={() => setDeletingEmailLogId(log.id)}
                             className="bg-red-600 hover:bg-red-700 text-white px-2 sm:px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 whitespace-nowrap"

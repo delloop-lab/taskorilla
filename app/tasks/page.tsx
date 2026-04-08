@@ -2076,7 +2076,7 @@ function TasksPageContent() {
                   /* ACCORDION VIEW */
                   <div className="p-4 sm:p-5">
                     {showSampleSash && (
-                      <div className="absolute top-0 left-0 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[0.7875rem] font-bold px-[5.4] py-[1.8] rounded-br-lg shadow-lg z-10 transform -rotate-12 origin-top-left uppercase tracking-wider">
+                      <div className="absolute top-0 left-0 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[0.6875rem] sm:text-[0.7875rem] font-bold px-1.5 sm:px-[5.4] py-0.5 sm:py-[1.8] rounded-br-lg shadow-lg z-10 transform md:-rotate-12 origin-top-left uppercase tracking-wider">
                         {t('tasks.sample')}
                       </div>
                     )}
@@ -2095,9 +2095,9 @@ function TasksPageContent() {
                       </div>
                       <div className="min-w-0">
                         <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-0.5 break-words line-clamp-1">{task.title}</h3>
-                        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
                           <p className="text-xl sm:text-2xl font-bold text-primary-600">{task.budget ? `€${task.budget}` : t('tasks.quote')}</p>
-                          <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                          <div className="flex items-center gap-1.5 flex-wrap justify-start sm:justify-end max-w-full">
                             {isAdmin && task.hidden_by_admin && <span className="px-2 py-0.5 text-xs font-medium rounded bg-red-600 text-white whitespace-nowrap">🔒 {t('tasks.hidden')}</span>}
                             {currentUserId && task.created_by === currentUserId && filter !== 'my_bids' && <span className="px-2 py-0.5 text-xs font-medium rounded bg-red-100 text-red-700 whitespace-nowrap">{t('tasks.myTaskBadge')}</span>}
                             <span className={`px-2 py-0.5 text-xs font-medium rounded whitespace-nowrap ${task.status === 'open' ? 'bg-green-100 text-green-800' : task.status === 'pending_payment' ? 'bg-amber-100 text-amber-800' : task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : task.status === 'completed' ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800'}`}>
@@ -2151,10 +2151,12 @@ function TasksPageContent() {
                             <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Category</dt>
                             <dd className="text-gray-800 font-medium line-clamp-2 break-words">{task.sub_category_obj?.name || task.category_obj?.name || task.category || '—'}</dd>
                           </div>
-                          <div className="min-w-0">
-                            <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Bids</dt>
-                            <dd className="text-gray-800 font-medium">{(typeof (task as any).bidCount === 'number' ? (task as any).bidCount : 0)} {(task as any).bidCount === 1 ? t('tasks.bid') : t('tasks.bidPlural')}</dd>
-                          </div>
+                          {(typeof (task as any).bidCount === 'number' ? (task as any).bidCount : 0) > 0 && (
+                            <div className="min-w-0">
+                              <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Bids</dt>
+                              <dd className="text-gray-800 font-medium">{(typeof (task as any).bidCount === 'number' ? (task as any).bidCount : 0)} {(task as any).bidCount === 1 ? t('tasks.bid') : t('tasks.bidPlural')}</dd>
+                            </div>
+                          )}
                           <div className="min-w-0">
                             <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Distance</dt>
                             <dd className="text-gray-800 font-medium">{task.distance != null ? `${task.distance} km` : !currentUserId ? <span className="text-xs text-gray-400 italic">{t('tasks.loginToSeeDistance')}</span> : '—'}</dd>
@@ -2177,7 +2179,7 @@ function TasksPageContent() {
                   /* FULL VIEW - compact thumbnail layout */
                   <>
                     {showSampleSash && (
-                      <div className="absolute top-0 left-0 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[0.7875rem] font-bold px-[5.4] py-[1.8] rounded-br-lg shadow-lg z-10 transform -rotate-12 origin-top-left uppercase tracking-wider">
+                      <div className="absolute top-0 left-0 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[0.6875rem] sm:text-[0.7875rem] font-bold px-1.5 sm:px-[5.4] py-0.5 sm:py-[1.8] rounded-br-lg shadow-lg z-10 transform md:-rotate-12 origin-top-left uppercase tracking-wider">
                         {t('tasks.sample')}
                       </div>
                     )}
@@ -2200,9 +2202,9 @@ function TasksPageContent() {
                         {/* Title, price, badges */}
                         <div className="min-w-0">
                           <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-0.5 break-words line-clamp-1">{task.title}</h3>
-                          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                          <div className="flex flex-wrap items-start justify-between gap-2">
                             <p className="text-xl sm:text-2xl font-bold text-primary-600">{task.budget ? `€${task.budget}` : t('tasks.quote')}</p>
-                            <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                            <div className="flex items-center gap-1.5 flex-wrap justify-start sm:justify-end max-w-full">
                               {isAdmin && task.hidden_by_admin && (
                                 <span className="px-2 py-0.5 text-xs font-medium rounded bg-red-600 text-white whitespace-nowrap">🔒 {t('tasks.hidden')}</span>
                               )}
@@ -2252,10 +2254,12 @@ function TasksPageContent() {
                             <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Category</dt>
                             <dd className="text-gray-800 font-medium line-clamp-2 break-words">{task.sub_category_obj?.name || task.category_obj?.name || task.category || '—'}</dd>
                           </div>
-                          <div className="min-w-0">
-                            <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Bids</dt>
-                            <dd className="text-gray-800 font-medium">{(typeof (task as any).bidCount === 'number' ? (task as any).bidCount : 0)} {(task as any).bidCount === 1 ? t('tasks.bid') : t('tasks.bidPlural')}</dd>
-                          </div>
+                          {(typeof (task as any).bidCount === 'number' ? (task as any).bidCount : 0) > 0 && (
+                            <div className="min-w-0">
+                              <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Bids</dt>
+                              <dd className="text-gray-800 font-medium">{(typeof (task as any).bidCount === 'number' ? (task as any).bidCount : 0)} {(task as any).bidCount === 1 ? t('tasks.bid') : t('tasks.bidPlural')}</dd>
+                            </div>
+                          )}
                           <div className="min-w-0">
                             <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Distance</dt>
                             <dd className="text-gray-800 font-medium">{task.distance != null ? `${task.distance} km` : !currentUserId ? <span className="text-xs text-gray-400 italic">{t('tasks.loginToSeeDistance')}</span> : '—'}</dd>

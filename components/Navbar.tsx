@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { getPendingReviews } from '@/lib/review-utils'
 import { useLanguage } from '@/lib/i18n'
 import { User as UserIcon } from 'lucide-react'
@@ -12,6 +12,29 @@ import { getDisplayName } from '@/lib/name-privacy'
 // Debug logging - only in development
 const isDev = process.env.NODE_ENV === 'development'
 const debugLog = (...args: any[]) => isDev && console.log(...args)
+
+function BottomNavIcon({
+  active,
+  pathD,
+}: {
+  active: boolean
+  pathD: string
+}) {
+  return (
+    <svg
+      className={`h-5 w-5 mb-0.5 ${active ? 'text-primary-600' : 'text-gray-600'}`}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={pathD} />
+    </svg>
+  )
+}
 
 export default function Navbar() {
   const { language, setLanguage, t } = useLanguage()
@@ -33,11 +56,12 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [tasksMenuOpen, setTasksMenuOpen] = useState(false)
   const [helpersMenuOpen, setHelpersMenuOpen] = useState(false)
-  const [helpMenuOpen, setHelpMenuOpen] = useState(false)
   const [tasksMenuTimeout, setTasksMenuTimeout] = useState<NodeJS.Timeout | null>(null)
   const [helpersMenuTimeout, setHelpersMenuTimeout] = useState<NodeJS.Timeout | null>(null)
-  const [helpMenuTimeout, setHelpMenuTimeout] = useState<NodeJS.Timeout | null>(null)
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const taskFilter = searchParams.get('filter')
 
   useEffect(() => {
     // Check current user
@@ -412,9 +436,8 @@ export default function Navbar() {
     return () => {
       if (tasksMenuTimeout) clearTimeout(tasksMenuTimeout)
       if (helpersMenuTimeout) clearTimeout(helpersMenuTimeout)
-      if (helpMenuTimeout) clearTimeout(helpMenuTimeout)
     }
-  }, [tasksMenuTimeout, helpersMenuTimeout, helpMenuTimeout])
+  }, [tasksMenuTimeout, helpersMenuTimeout])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -427,6 +450,11 @@ export default function Navbar() {
 
   // Check if user has admin access
   const isAdmin = userRole === 'admin' || userRole === 'superadmin'
+  const isHomeActive = pathname === '/'
+  const isBrowseActive = pathname === '/tasks' && taskFilter !== 'my_bids'
+  const isPostActive = pathname === '/tasks/new'
+  const isMyBidsActive = pathname === '/tasks' && taskFilter === 'my_bids'
+  const isAccountActive = pathname === '/profile' || pathname.startsWith('/profile/')
 
   if (loading) {
     return (
@@ -481,6 +509,7 @@ export default function Navbar() {
             {/* TASKS Dropdown Menu */}
             <div 
               className="relative z-50"
+              style={{ order: -1 }}
               onMouseEnter={() => {
                 // Clear any pending timeout
                 if (tasksMenuTimeout) {
@@ -489,7 +518,6 @@ export default function Navbar() {
                 }
                 // Close other menus
                 setHelpersMenuOpen(false)
-                setHelpMenuOpen(false)
                 setTasksMenuOpen(true)
               }}
               onMouseLeave={() => {
@@ -500,20 +528,21 @@ export default function Navbar() {
                 setTasksMenuTimeout(timeout)
               }}
             >
-              <button
+              <Link
+                href="/tasks"
                 className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1"
               >
                 {t('navbar.tasks')}
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
-              </button>
+              </Link>
               {tasksMenuOpen && (
                 <>
                   {/* Invisible bridge area to make it easier to move mouse to submenu */}
                   <div className="absolute top-full left-0 w-full h-4" />
                   <div
-                    className="absolute top-full left-0 mt-4 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                    className="absolute top-full left-0 mt-4 w-56 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
                     onMouseEnter={() => {
                       // Keep menu open when hovering over submenu
                       if (tasksMenuTimeout) {
@@ -529,26 +558,23 @@ export default function Navbar() {
                       setTasksMenuTimeout(timeout)
                     }}
                   >
-                    {userPaused ? (
-                    <button
-                      onClick={() => { setTasksMenuOpen(false); setShowPausedModal(true) }}
-                      className="block w-full text-left px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
-                    >
-                      {t('navbar.postTask')}
-                    </button>
-                    ) : (
-                    <Link
-                      href="/tasks/new"
-                      className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
-                    >
-                      {t('navbar.postTask')}
-                    </Link>
-                    )}
                     <Link
                       href="/tasks"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
                       {t('navbar.browseTasks')}
+                    </Link>
+                    <Link
+                      href="/become-a-helper"
+                      className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
+                    >
+                      {t('navbar.howToEarn')}
+                    </Link>
+                    <Link
+                      href="/help"
+                      className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
+                    >
+                      {t('navbar.taskerGuidelines')}
                     </Link>
                   </div>
                 </>
@@ -557,6 +583,7 @@ export default function Navbar() {
             {/* HELPERS Dropdown Menu */}
             <div 
               className="relative z-50"
+              style={{ order: -2 }}
               onMouseEnter={() => {
                 // Clear any pending timeout
                 if (helpersMenuTimeout) {
@@ -565,7 +592,6 @@ export default function Navbar() {
                 }
                 // Close other menus
                 setTasksMenuOpen(false)
-                setHelpMenuOpen(false)
                 setHelpersMenuOpen(true)
               }}
               onMouseLeave={() => {
@@ -576,20 +602,21 @@ export default function Navbar() {
                 setHelpersMenuTimeout(timeout)
               }}
             >
-              <button
+              <Link
+                href="/tasks/new"
                 className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1"
               >
                 {t('navbar.helpers')}
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
-              </button>
+              </Link>
               {helpersMenuOpen && (
                 <>
                   {/* Invisible bridge area to make it easier to move mouse to submenu */}
                   <div className="absolute top-full left-0 w-full h-4 z-50" />
                   <div
-                    className="absolute top-full left-0 mt-4 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[60]"
+                    className="absolute top-full left-0 mt-4 w-56 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[60]"
                     onMouseEnter={() => {
                       // Keep menu open when hovering over submenu
                       if (helpersMenuTimeout) {
@@ -605,6 +632,23 @@ export default function Navbar() {
                       setHelpersMenuTimeout(timeout)
                     }}
                   >
+                    {userPaused ? (
+                    <button
+                      onClick={() => { setHelpersMenuOpen(false); setShowPausedModal(true) }}
+                      className="block w-full text-left px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
+                    >
+                      <span className="block">{t('navbar.postTask')}</span>
+                      <span className="block text-xs text-gray-500">{t('navbar.workRequired')}</span>
+                    </button>
+                    ) : (
+                    <Link
+                      href="/tasks/new"
+                      className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
+                    >
+                      <span className="block">{t('navbar.postTask')}</span>
+                      <span className="block text-xs text-gray-500">{t('navbar.workRequired')}</span>
+                    </Link>
+                    )}
                     {userPaused ? (
                     <button
                       onClick={() => { setHelpersMenuOpen(false); setShowPausedModal(true) }}
@@ -635,83 +679,22 @@ export default function Navbar() {
                       {t('navbar.browseProfessionals')}
                     </Link>
                     )}
-                  </div>
-                </>
-              )}
-            </div>
-            {/* HELP Dropdown Menu */}
-            <div 
-              className="relative z-50"
-              onMouseEnter={() => {
-                // Clear any pending timeout
-                if (helpMenuTimeout) {
-                  clearTimeout(helpMenuTimeout)
-                  setHelpMenuTimeout(null)
-                }
-                // Close other menus
-                setTasksMenuOpen(false)
-                setHelpersMenuOpen(false)
-                setHelpMenuOpen(true)
-              }}
-              onMouseLeave={() => {
-                // Add longer delay before closing
-                const timeout = setTimeout(() => {
-                  setHelpMenuOpen(false)
-                }, 400) // 400ms delay - gives more time to move mouse
-                setHelpMenuTimeout(timeout)
-              }}
-            >
-              <button
-                className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1"
-              >
-                {t('navbar.help')}
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {helpMenuOpen && (
-                <>
-                  {/* Invisible bridge area to make it easier to move mouse to submenu */}
-                  <div className="absolute top-full left-0 w-full h-4 z-50" />
-                  <div
-                    className="absolute top-full left-0 mt-4 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[60]"
-                    onMouseEnter={() => {
-                      // Keep menu open when hovering over submenu
-                      if (helpMenuTimeout) {
-                        clearTimeout(helpMenuTimeout)
-                        setHelpMenuTimeout(null)
-                      }
-                    }}
-                    onMouseLeave={() => {
-                      // Delay closing when leaving submenu
-                      const timeout = setTimeout(() => {
-                        setHelpMenuOpen(false)
-                      }, 400)
-                      setHelpMenuTimeout(timeout)
-                    }}
-                  >
                     <Link
                       href="/help"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
-                      {t('navbar.helpCenter')}
-                    </Link>
-                    <a
-                      href="mailto:tee@taskorilla.com?subject=Support%20Request"
-                      className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
-                    >
-                      {t('navbar.contactSupport')}
-                    </a>
-                    <Link
-                      href="/help/guides/taskorilla-service-price-index-portugal-2026"
-                      className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
-                    >
-                      {t('navbar.servicePriceIndex')}
+                      {t('navbar.howItWorks')}
                     </Link>
                   </div>
                 </>
               )}
             </div>
+            <Link
+              href="/help"
+              className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium"
+            >
+              {t('navbar.help')}
+            </Link>
             {/* Pricing Link */}
             <Link
               href="/pricing"
@@ -980,7 +963,7 @@ export default function Navbar() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 py-4 space-y-2">
+          <div className="md:hidden border-t border-gray-200 py-4 flex flex-col gap-2">
             {user && (
               <div className="flex items-center space-x-2 px-4 py-2">
                 <div 
@@ -1005,24 +988,8 @@ export default function Navbar() {
               </div>
             )}
             {/* TASKS Section */}
-            <div className="px-4 py-2">
+            <div className="px-4 py-2 order-2">
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('navbar.tasks')}</h3>
-              {userPaused ? (
-              <button
-                onClick={() => { setMobileMenuOpen(false); setShowPausedModal(true) }}
-                className="block w-full text-left text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
-              >
-                {t('navbar.postTask')}
-              </button>
-              ) : (
-              <Link
-                href="/tasks/new"
-                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t('navbar.postTask')}
-              </Link>
-              )}
               <Link
                 href="/tasks"
                 className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
@@ -1030,11 +997,43 @@ export default function Navbar() {
               >
                 {t('navbar.browseTasks')}
               </Link>
+              <Link
+                href="/become-a-helper"
+                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {t('navbar.howToEarn')}
+              </Link>
+              <Link
+                href="/help"
+                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {t('navbar.taskerGuidelines')}
+              </Link>
             </div>
 
             {/* HELPERS Section */}
-            <div className="px-4 py-2">
+            <div className="px-4 py-2 order-1">
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('navbar.helpers')}</h3>
+              {userPaused ? (
+              <button
+                onClick={() => { setMobileMenuOpen(false); setShowPausedModal(true) }}
+                className="block w-full text-left text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+              >
+                <span className="block">{t('navbar.postTask')}</span>
+                <span className="block text-xs text-gray-500">{t('navbar.workRequired')}</span>
+              </button>
+              ) : (
+              <Link
+                href="/tasks/new"
+                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span className="block">{t('navbar.postTask')}</span>
+                <span className="block text-xs text-gray-500">{t('navbar.workRequired')}</span>
+              </Link>
+              )}
               {userPaused ? (
               <button
                 onClick={() => { setMobileMenuOpen(false); setShowPausedModal(true) }}
@@ -1067,6 +1066,13 @@ export default function Navbar() {
                 {t('navbar.browseProfessionals')}
               </Link>
               )}
+              <Link
+                href="/help"
+                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {t('navbar.howItWorks')}
+              </Link>
             </div>
 
             {/* HELP Section */}
@@ -1235,6 +1241,127 @@ export default function Navbar() {
         )}
       </div>
     </nav>
+
+    {/* Mobile persistent bottom nav */}
+    <div
+      className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t border-gray-200 shadow-[0_-2px_12px_rgba(0,0,0,0.06)]"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      <div className="grid grid-cols-5 h-16">
+        <Link
+          href="/"
+          className={`flex flex-col items-center justify-center text-[11px] font-medium ${
+            isHomeActive ? 'text-primary-600' : 'text-gray-600'
+          }`}
+        >
+          <BottomNavIcon active={isHomeActive} pathD="M3 11.5L12 4l9 7.5M5 10v10h14V10" />
+          <span>Home</span>
+        </Link>
+
+        <Link
+          href="/tasks"
+          className={`flex flex-col items-center justify-center text-[11px] font-medium ${
+            isBrowseActive ? 'text-primary-600' : 'text-gray-600'
+          }`}
+        >
+          <BottomNavIcon active={isBrowseActive} pathD="M11 19a8 8 0 1 1 5.3-14l.2.2A8 8 0 0 1 11 19zm10 2-4.3-4.3" />
+          <span>Browse</span>
+        </Link>
+
+        {userPaused ? (
+          <button
+            onClick={() => setShowPausedModal(true)}
+            className={`flex flex-col items-center justify-center text-[11px] font-medium ${
+              isPostActive ? 'text-primary-600' : 'text-gray-600'
+            }`}
+          >
+            <BottomNavIcon active={isPostActive} pathD="M12 3a9 9 0 1 1 0 18a9 9 0 0 1 0-18zm0 4v10M7 12h10" />
+            <span>Post Task</span>
+          </button>
+        ) : (
+          <Link
+            href="/tasks/new"
+            className={`flex flex-col items-center justify-center text-[11px] font-medium ${
+              isPostActive ? 'text-primary-600' : 'text-gray-600'
+            }`}
+          >
+            <BottomNavIcon active={isPostActive} pathD="M12 3a9 9 0 1 1 0 18a9 9 0 0 1 0-18zm0 4v10M7 12h10" />
+            <span>Post Task</span>
+          </Link>
+        )}
+
+        {user ? (
+          userPaused ? (
+            <button
+              onClick={() => setShowPausedModal(true)}
+              className={`relative flex flex-col items-center justify-center text-[11px] font-medium ${
+                isMyBidsActive ? 'text-primary-600' : 'text-gray-600'
+              }`}
+            >
+              <BottomNavIcon active={isMyBidsActive} pathD="M4 8h16v10H4zM9 8V6h6v2M4 12h16" />
+              <span>My Bids</span>
+              {hasPendingBids && pendingBidsCount > 0 && !bidsViewed && (
+                <span className="absolute top-2 right-6 h-2 w-2 rounded-full bg-orange-500" />
+              )}
+            </button>
+          ) : (
+            <Link
+              href="/tasks?filter=my_bids"
+              onClick={() => window.dispatchEvent(new Event('bids-viewed'))}
+              className={`relative flex flex-col items-center justify-center text-[11px] font-medium ${
+                isMyBidsActive ? 'text-primary-600' : 'text-gray-600'
+              }`}
+            >
+              <BottomNavIcon active={isMyBidsActive} pathD="M4 8h16v10H4zM9 8V6h6v2M4 12h16" />
+              <span>My Bids</span>
+              {hasPendingBids && pendingBidsCount > 0 && !bidsViewed && (
+                <span className="absolute top-2 right-6 h-2 w-2 rounded-full bg-orange-500" />
+              )}
+            </Link>
+          )
+        ) : (
+          <Link
+            href="/login"
+            className="flex flex-col items-center justify-center text-[11px] font-medium text-gray-600"
+          >
+            <BottomNavIcon active={false} pathD="M4 8h16v10H4zM9 8V6h6v2M4 12h16" />
+            <span>My Bids</span>
+          </Link>
+        )}
+
+        {user ? (
+          userPaused ? (
+            <button
+              onClick={() => setShowPausedModal(true)}
+              className={`flex flex-col items-center justify-center text-[11px] font-medium ${
+                isAccountActive ? 'text-primary-600' : 'text-gray-600'
+              }`}
+            >
+              <BottomNavIcon active={isAccountActive} pathD="M12 12a4 4 0 1 0 0-8a4 4 0 0 0 0 8zm-7 8a7 7 0 0 1 14 0" />
+              <span>Account</span>
+            </button>
+          ) : (
+            <Link
+              href="/profile"
+              className={`flex flex-col items-center justify-center text-[11px] font-medium ${
+                isAccountActive ? 'text-primary-600' : 'text-gray-600'
+              }`}
+            >
+              <BottomNavIcon active={isAccountActive} pathD="M12 12a4 4 0 1 0 0-8a4 4 0 0 0 0 8zm-7 8a7 7 0 0 1 14 0" />
+              <span>Account</span>
+            </Link>
+          )
+        ) : (
+          <Link
+            href="/login"
+            className="flex flex-col items-center justify-center text-[11px] font-medium text-gray-600"
+          >
+            <BottomNavIcon active={false} pathD="M12 12a4 4 0 1 0 0-8a4 4 0 0 0 0 8zm-7 8a7 7 0 0 1 14 0" />
+            <span>Account</span>
+          </Link>
+        )}
+      </div>
+    </div>
 
     {showPausedModal && (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999]" onClick={() => setShowPausedModal(false)}>

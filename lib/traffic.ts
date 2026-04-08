@@ -56,13 +56,14 @@ export async function trackPageVisit(pageName: string) {
         .eq('id', user.id)
         .single()
 
-      // Fail-safe: if role cannot be resolved for an authenticated user,
-      // skip tracking to avoid accidentally counting admin/superadmin activity.
+      // If role lookup fails transiently, keep tracking instead of dropping
+      // legitimate user traffic. We only hard-block when role is explicitly
+      // known to be admin/superadmin.
       if (profileError) {
-        return
+        console.warn('Traffic role lookup failed; proceeding with user tracking:', profileError.message)
       }
 
-      // Skip tracking if user is admin or superadmin
+      // Skip tracking only when role is explicitly admin/superadmin
       if (profile?.role === 'admin' || profile?.role === 'superadmin') {
         return
       }

@@ -145,26 +145,47 @@ const PAYMENT_WORDS = [
   'euro', 'euros', 'centimo', 'cêntimo', 'centimos', 'cêntimos',
 ]
 
+// Payment instructions that should remain blocked even when price/currency
+// discussion is allowed in pre-payment chat.
+const DIRECT_PAYMENT_WORDS = [
+  'pay me', 'pay you', 'direct payment', 'pay directly', 'pay direct',
+  'transfer', 'wire', 'wiring', 'bank account', 'bank details',
+  'account number', 'routing number', 'sort code', 'iban', 'swift', 'bic',
+  'venmo', 'paypal', 'zelle', 'cashapp', 'cash app', 'revolut', 'wise',
+  'transferwise', 'credit card', 'debit card', 'card number',
+  'bitcoin', 'btc', 'crypto', 'cryptocurrency', 'ethereum', 'eth',
+  'mbway', 'mb way', 'multibanco', 'cash', 'numerario', 'numerário',
+  'paga me', 'paga-me', 'pagar por fora', 'pagamento por fora',
+  'pagamento direto', 'pagamento directo', 'conta bancaria', 'conta bancária',
+  'dados bancarios', 'dados bancários', 'nib',
+]
+
 // ─── Addresses / location sharing ────────────────────────────────────────────
-const ADDRESS_PATTERNS = [
-  // Portuguese street + number: "Rua da Liberdade 123", "Avenida X, 45"
-  /\b(rua|avenida|travessa|largo|praça|praca|estrada|estr\.|urbanizacao|urbanização|quinta|quintã|beco|alameda|rotunda)\s+[a-zA-ZÀ-ÿ0-9'.,\-\s]{2,60},?\s*\d{1,5}[a-zA-Z]?\b/gi,
-  // Number first + English street type: "45 King Street", "12-14 High Avenue"
-  // NOTE: Do not include "square|sq" here to avoid false positives like "30 mt sq." (area measurements).
-  /\b\d{1,5}[a-zA-Z]?\s*(?:[-/]\s*\d{1,5}[a-zA-Z]?)?\s+[a-zA-Z0-9'.,\-\s]{2,40}\b(street|road|avenue|ave|lane|ln|drive|court|crescent|close|way|place|boulevard|blvd|terrace|parkway|pkwy)\b/gi,
-  // Number first + Portuguese street type: "45 Rua X", "120 Avenida Y"
-  /\b\d{1,5}[a-zA-Z]?\s+(rua|avenida|travessa|largo|praça|praca|estrada|estr\.|alameda|beco)\s+[a-zA-ZÀ-ÿ0-9'.,\-\s]{2,40}\b/gi,
-  // Eircode-like (Ireland): A65 F4E2
+// Strong block: explicit house-number + street-shape patterns.
+const ADDRESS_NUMBER_STRONG_PATTERNS = [
+  // [number] [street-name] [street-keyword]
+  /\b\d{1,5}[a-zA-Z]?\s+(?:[a-zA-ZÀ-ÿ0-9'’.\-]+\s+){0,4}(?:st(?:\.|reet)?|street|rd(?:\.|oad)?|ave(?:\.|nue)?|av\.?|blvd(?:\.|boulevard)?|dr(?:\.|ive)?|ln(?:\.|lane)?|ct(?:\.|court)?|pl(?:\.|place)?|rua|r\.?|avenida|travessa|tv\.?|largo|lg\.?|estrada|estr\.?|alameda|beco|praça|praca)\b(?:,?\s+[a-zA-ZÀ-ÿ'’.\-]+(?:\s+[a-zA-ZÀ-ÿ'’.\-]+){0,3})?(?:,?\s*(?:\d{4}-\d{3}|[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}|[A-Z]\d{2}\s?[A-Z0-9]{4}))?/gi,
+  // [street-keyword] [street-name] [number]
+  /\b(?:st(?:\.|reet)?|street|rd(?:\.|oad)?|ave(?:\.|nue)?|av\.?|blvd(?:\.|boulevard)?|dr(?:\.|ive)?|ln(?:\.|lane)?|ct(?:\.|court)?|pl(?:\.|place)?|rua|r\.?|avenida|travessa|tv\.?|largo|lg\.?|estrada|estr\.?|alameda|beco|praça|praca)\s+(?:[a-zA-ZÀ-ÿ0-9'’.\-]+\s+){0,4}\d{1,5}[a-zA-Z]?\b(?:,?\s+[a-zA-ZÀ-ÿ'’.\-]+(?:\s+[a-zA-ZÀ-ÿ'’.\-]+){0,3})?(?:,?\s*(?:\d{4}-\d{3}|[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}|[A-Z]\d{2}\s?[A-Z0-9]{4}))?/gi,
+]
+
+// Intent-triggered block for numberless street names.
+const ADDRESS_INTENT_STREET_PATTERNS = [
+  /\b(?:my address is|address is|i live at|i live in|meet me at|come to my house|come to my home|pick me up at|drop it at|send it to|post it to|deliver to my address|morada|a minha morada|minha morada|endereço|meu endereço|moro em|moro na|vivo em|vivo na|a minha casa|vem ter comigo|encontra-me em|encontramo-nos em|passa em|entrego em|leva a)\b[\s,:-]*(?:na\s+|no\s+|em\s+|at\s+|in\s+)?(?:st(?:\.|reet)?|street|rd(?:\.|oad)?|ave(?:\.|nue)?|av\.?|blvd(?:\.|boulevard)?|dr(?:\.|ive)?|ln(?:\.|lane)?|ct(?:\.|court)?|pl(?:\.|place)?|rua|r\.?|avenida|travessa|tv\.?|largo|lg\.?|estrada|estr\.?|alameda|beco|praça|praca)\s+(?:[a-zA-ZÀ-ÿ0-9'’.\-]+\s*){1,6}\b/gi,
+]
+
+// Eircode-like (Ireland), UK postcode and PT postcode
+const ADDRESS_POSTCODE_PATTERNS = [
   /\b[a-zA-Z]\d{2}\s?[a-zA-Z0-9]{4}\b/g,
-  // UK postcode style: SW1A 1AA
   /\b[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}\b/gi,
-  // Portuguese postal code: 1234-567
   /\b\d{4}-\d{3}\b/g,
 ]
 
 const ADDRESS_INTENT_PHRASES = [
   'my address is',
   'address is',
+  'i live at',
+  'i live in',
   'come to my house',
   'come to my home',
   'meet me at',
@@ -179,6 +200,10 @@ const ADDRESS_INTENT_PHRASES = [
   'endereço',
   'meu endereço',
   'a minha casa',
+  'moro em',
+  'moro na',
+  'vivo em',
+  'vivo na',
   'vem ter comigo',
   'encontra-me em',
   'encontramo-nos em',
@@ -213,6 +238,16 @@ const OFF_PLATFORM_ESCALATION_PHRASES = [
   'fala comigo no',
   'manda mensagem no',
 ]
+
+const SAINT_STYLE_NAME_PATTERN = /\bst\.?\s+[a-zA-ZÀ-ÿ]+(?:\s+[a-zA-ZÀ-ÿ]+){0,2}\b/i
+
+function hasStrongAddressNumber(content: string): boolean {
+  return matchesAny(content, ADDRESS_NUMBER_STRONG_PATTERNS)
+}
+
+function hasIntentTriggeredStreet(content: string): boolean {
+  return matchesAny(content, ADDRESS_INTENT_STREET_PATTERNS)
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -277,10 +312,123 @@ export interface ContentFilterOptions {
   allowPaymentTerms?: boolean
 }
 
+export interface ContentIssueFlags {
+  containsEmail: boolean
+  containsPhone: boolean
+  containsPaymentInfo: boolean
+  containsAddress: boolean
+  containsUrl: boolean
+  containsSocialHandle: boolean
+  containsMessagingApp: boolean
+  containsOffPlatformIntent: boolean
+  hasForbiddenContent: boolean
+}
+
 export function hasSpacedDigitsPattern(content: string): boolean {
   if (!content || typeof content !== 'string') return false
   SPACED_DIGITS_PATTERN.lastIndex = 0
   return SPACED_DIGITS_PATTERN.test(content)
+}
+
+export function detectContentIssues(
+  content: string,
+  options: ContentFilterOptions = {}
+): ContentIssueFlags {
+  if (!content || typeof content !== 'string') {
+    return {
+      containsEmail: false,
+      containsPhone: false,
+      containsPaymentInfo: false,
+      containsAddress: false,
+      containsUrl: false,
+      containsSocialHandle: false,
+      containsMessagingApp: false,
+      containsOffPlatformIntent: false,
+      hasForbiddenContent: false,
+    }
+  }
+
+  const raw = content
+  const lower = content.toLowerCase()
+  const collapsed = collapseSpaces(lower)
+  const leetNorm = normaliseLeet(collapsed)
+
+  const containsEmail =
+    raw.includes('@') ||
+    matchesAny(raw, [EMAIL_PATTERN]) ||
+    matchesAny(raw, OBFUSCATION_PATTERNS)
+
+  const containsPhone = matchesAny(raw, PHONE_PATTERNS) || hasSpacedDigitsPattern(raw)
+  const containsUrl = matchesAny(raw, URL_PATTERNS)
+
+  SOCIAL_HANDLE_PATTERN.lastIndex = 0
+  const containsSocialHandle = SOCIAL_HANDLE_PATTERN.test(raw)
+
+  const exactApp = containsPhrase(lower, MESSAGING_APPS_EXACT)
+  let containsMessagingApp = Boolean(exactApp)
+  if (!containsMessagingApp) {
+    containsMessagingApp = FUZZY_BLOCKED_WORDS.some(
+      (word) => leetNorm.includes(word) && !lower.includes(word)
+    )
+  }
+
+  const containsOffPlatformIntent = Boolean(
+    containsPhrase(lower, OFF_PLATFORM_PHRASES) ||
+      containsPhrase(collapsed, OFF_PLATFORM_PHRASES) ||
+      containsPhrase(lower, OFF_PLATFORM_ESCALATION_PHRASES) ||
+      containsPhrase(collapsed, OFF_PLATFORM_ESCALATION_PHRASES)
+  )
+
+  const hasAreaMeasurement = AREA_MEASUREMENT_PATTERN.test(lower)
+  const hasAddressKeyword = ADDRESS_KEYWORD_PATTERN.test(lower)
+  const matchedStrongAddress = hasStrongAddressNumber(raw)
+  const matchedIntentStreet = hasIntentTriggeredStreet(raw)
+  const matchedAddressIntent = Boolean(
+    containsPhrase(lower, ADDRESS_INTENT_PHRASES) ||
+      containsPhrase(collapsed, ADDRESS_INTENT_PHRASES)
+  )
+  const saintStyleWithoutNumber = SAINT_STYLE_NAME_PATTERN.test(raw) && !/\b\d{1,5}[a-zA-Z]?\b/.test(raw)
+  const containsAddress =
+    !saintStyleWithoutNumber &&
+    (
+      matchedStrongAddress ||
+      matchedIntentStreet ||
+      // Keep legacy intent fallback for strict phrases only.
+      matchedAddressIntent ||
+      matchesAny(raw, ADDRESS_POSTCODE_PATTERNS)
+    ) &&
+    !(hasAreaMeasurement && !hasAddressKeyword)
+
+  const hasCurrencySymbol = CURRENCY_SYMBOLS.some((s) => raw.includes(s))
+  const hasCurrencyCode = CURRENCY_CODES.some((c) => new RegExp(`\\b${c}\\b`, 'i').test(raw))
+  const paymentWord = containsPhrase(lower, PAYMENT_WORDS)
+  const directPaymentWord = containsPhrase(lower, DIRECT_PAYMENT_WORDS)
+  const containsPaymentInfo = Boolean(
+    directPaymentWord ||
+      (!options.allowPaymentTerms && (hasCurrencySymbol || hasCurrencyCode || paymentWord))
+  )
+
+  const hasForbiddenContent =
+    containsEmail ||
+    containsPhone ||
+    containsUrl ||
+    containsSocialHandle ||
+    containsMessagingApp ||
+    containsOffPlatformIntent ||
+    containsAddress ||
+    containsPaymentInfo
+
+  return {
+    containsEmail,
+    containsPhone,
+    containsPaymentInfo,
+    containsAddress,
+    containsUrl,
+    containsSocialHandle,
+    containsMessagingApp,
+    containsOffPlatformIntent,
+    hasForbiddenContent,
+  }
 }
 
 const CLEAN: ContentCheckResult = {
@@ -375,6 +523,10 @@ export function checkForContactInfo(content: string, options: ContentFilterOptio
   const hasCurrencySymbol = CURRENCY_SYMBOLS.some(s => raw.includes(s))
   const hasCurrencyCode = CURRENCY_CODES.some(c => new RegExp(`\\b${c}\\b`, 'i').test(raw))
   const paymentWord = containsPhrase(lower, PAYMENT_WORDS)
+  const directPaymentWord = containsPhrase(lower, DIRECT_PAYMENT_WORDS)
+  if (directPaymentWord) {
+    return blocked({ containsPaymentInfo: true }, `direct payment instruction: ${directPaymentWord}`)
+  }
   if (!options.allowPaymentTerms && (hasCurrencySymbol || hasCurrencyCode || paymentWord)) {
     return blocked(
       { containsPaymentInfo: true },
@@ -385,13 +537,23 @@ export function checkForContactInfo(content: string, options: ContentFilterOptio
   // ── 9. Address sharing ─────────────────────────────────────────────────
   const hasAreaMeasurement = AREA_MEASUREMENT_PATTERN.test(lower)
   const hasAddressKeyword = ADDRESS_KEYWORD_PATTERN.test(lower)
-  if (matchesAny(raw, ADDRESS_PATTERNS)) {
-    // Avoid false positives such as "30 mt sq", "3 mts", "20 m2"
-    // unless an actual address keyword is also present.
+  const saintStyleWithoutNumber = SAINT_STYLE_NAME_PATTERN.test(raw) && !/\b\d{1,5}[a-zA-Z]?\b/.test(raw)
+
+  // 1) Strong number-based block first
+  if (!saintStyleWithoutNumber && hasStrongAddressNumber(raw)) {
     if (!(hasAreaMeasurement && !hasAddressKeyword)) {
-      return blocked({ containsAddress: true }, 'address pattern')
+      return blocked({ containsAddress: true }, 'address number pattern')
     }
   }
+
+  // 2) Intent-triggered numberless street-name block
+  if (!saintStyleWithoutNumber && hasIntentTriggeredStreet(raw)) {
+    if (!(hasAreaMeasurement && !hasAddressKeyword)) {
+      return blocked({ containsAddress: true }, 'address intent street pattern')
+    }
+  }
+
+  // 3) Fallback address intent checks
   const addressIntent = containsPhrase(lower, ADDRESS_INTENT_PHRASES)
   if (addressIntent) {
     if (!(hasAreaMeasurement && !hasAddressKeyword)) {
@@ -403,6 +565,10 @@ export function checkForContactInfo(content: string, options: ContentFilterOptio
     if (!(hasAreaMeasurement && !hasAddressKeyword)) {
       return blocked({ containsAddress: true }, `obfuscated address intent: ${collapsedAddressIntent}`)
     }
+  }
+
+  if (!saintStyleWithoutNumber && matchesAny(raw, ADDRESS_POSTCODE_PATTERNS)) {
+    return blocked({ containsAddress: true }, 'address postcode pattern')
   }
 
   return CLEAN
