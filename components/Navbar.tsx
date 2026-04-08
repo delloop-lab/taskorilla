@@ -1248,15 +1248,16 @@ export default function Navbar() {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="grid grid-cols-5 h-16">
-        <Link
-          href="/"
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen((prev) => !prev)}
           className={`flex flex-col items-center justify-center text-[11px] font-medium ${
-            isHomeActive ? 'text-primary-600' : 'text-gray-600'
+            mobileMenuOpen ? 'text-primary-600' : 'text-gray-600'
           }`}
         >
-          <BottomNavIcon active={isHomeActive} pathD="M3 11.5L12 4l9 7.5M5 10v10h14V10" />
-          <span>Home</span>
-        </Link>
+          <BottomNavIcon active={mobileMenuOpen} pathD="M4 7h16M4 12h16M4 17h16" />
+          <span>Menu</span>
+        </button>
 
         <Link
           href="/tasks"
