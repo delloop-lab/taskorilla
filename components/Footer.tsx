@@ -145,7 +145,6 @@ export default function Footer({ variant = 'default' }: FooterProps) {
         </div>
         <div className="flex justify-center items-center gap-2 mt-2 text-xs text-muted-foreground/70">
           <span>{t('footer.rights')}</span>
-          <span>•</span>
           <span className="font-medium">{version}</span>
         </div>
       </div>

@@ -896,50 +896,37 @@ export default function Navbar() {
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center space-x-2">
             {/* Language Switcher - Mobile (visible outside menu) */}
-            <div className="flex items-center border border-gray-300 rounded-md overflow-hidden mr-2">
+            <div className="flex items-center border border-gray-300 rounded-md overflow-hidden mr-2 bg-white">
               <button
                 onClick={(e) => {
                   e.preventDefault()
                   e.stopPropagation()
                   setLanguage('en')
                 }}
-                className={`px-1.5 py-1.5 text-xs font-medium transition-colors ${
+                className={`px-2 py-1 text-xs font-semibold transition-colors ${
                   language === 'en'
                     ? 'bg-orange-200 text-gray-900'
                     : 'text-gray-700 bg-white hover:bg-gray-50'
                 }`}
                 title={t('language.switchToEnglish')}
               >
-                <svg className="w-7 h-5" viewBox="0 0 5 3" xmlns="http://www.w3.org/2000/svg">
-                  <rect width="5" height="3" fill="#012169"/>
-                  <path d="M0,0 L5,3 M5,0 L0,3" stroke="#fff" strokeWidth="0.6"/>
-                  <path d="M0,0 L5,3 M5,0 L0,3" stroke="#C8102E" strokeWidth="0.3" strokeLinecap="round"/>
-                  <path d="M2.5,0 V3 M0,1.5 H5" stroke="#fff" strokeWidth="1"/>
-                  <path d="M2.5,0 V3 M0,1.5 H5" stroke="#C8102E" strokeWidth="0.6"/>
-                </svg>
+                EN
               </button>
-              <div className="w-px h-5 bg-gray-300" />
+              <div className="px-1 text-xs text-gray-400 select-none">|</div>
               <button
                 onClick={(e) => {
                   e.preventDefault()
                   e.stopPropagation()
                   setLanguage('pt')
                 }}
-                className={`px-1.5 py-1.5 text-xs font-medium transition-colors ${
+                className={`px-2 py-1 text-xs font-semibold transition-colors ${
                   language === 'pt'
                     ? 'bg-orange-200 text-gray-900'
                     : 'text-gray-700 bg-white hover:bg-gray-50'
                 }`}
                 title={t('language.switchToPortuguese')}
               >
-                <svg className="w-7 h-5" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
-                  <rect width="24" height="40" fill="#006600"/>
-                  <rect x="24" width="36" height="40" fill="#FF0000"/>
-                  <circle cx="24" cy="20" r="7" fill="none" stroke="#FFCC00" strokeWidth="0.8"/>
-                  <circle cx="24" cy="20" r="5.5" fill="none" stroke="#FFCC00" strokeWidth="0.6"/>
-                  <circle cx="24" cy="20" r="4" fill="#FFCC00"/>
-                  <circle cx="24" cy="20" r="2.5" fill="#FF0000"/>
-                </svg>
+                PT
               </button>
             </div>
             {user && (
@@ -977,13 +964,14 @@ export default function Navbar() {
             className={`absolute top-0 left-0 h-full w-[88%] max-w-sm bg-white border-r border-gray-200 shadow-2xl transform transition-transform duration-300 ease-out ${
               mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
             }`}
+            style={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)' }}
           >
-            <div className="h-full overflow-y-auto py-4 pb-24 flex flex-col gap-2 bg-gradient-to-b from-white to-slate-50/70">
+            <div className={`h-full overflow-y-auto py-4 pb-24 flex flex-col gap-2 bg-gradient-to-b from-white/80 to-slate-50/60 ${mobileMenuOpen ? 'mobile-drawer-open' : ''}`}>
             {!user && (
               <div className="px-4 py-2">
                 <Link
                   href="/register"
-                  className="block bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700 text-center"
+                  className="mobile-drawer-link block bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700 text-center"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Sign Up Free
@@ -1014,7 +1002,7 @@ export default function Navbar() {
               </div>
             )}
             {/* FIND HELP Section (collapsed by default; matches desktop dropdown) */}
-            <div className="px-4 py-2 order-1">
+            <div className="px-4 py-2">
               <button
                 type="button"
                 onClick={() => setMobileExpandedSection((prev) => (prev === 'helpers' ? null : 'helpers'))}
@@ -1030,32 +1018,32 @@ export default function Navbar() {
                   {userPaused ? (
                   <button
                     onClick={() => { setMobileMenuOpen(false); setShowPausedModal(true) }}
-                    className="block w-full text-left text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="mobile-drawer-link block w-full text-left text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                   >
                     <span className="block">{t('navbar.postTask')}</span>
-                    <span className="block text-xs font-medium text-gray-600">{t('navbar.workRequired')}</span>
+                    <span className="block text-sm font-medium text-gray-600">{t('navbar.workRequired')}</span>
                   </button>
                   ) : (
                   <Link
                     href="/tasks/new"
-                    className="block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <span className="block">{t('navbar.postTask')}</span>
-                    <span className="block text-xs font-medium text-gray-600">{t('navbar.workRequired')}</span>
+                    <span className="block text-sm font-medium text-gray-600">{t('navbar.workRequired')}</span>
                   </Link>
                   )}
                   {userPaused ? (
                   <button
                     onClick={() => { setMobileMenuOpen(false); setShowPausedModal(true) }}
-                    className="block w-full text-left text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="mobile-drawer-link block w-full text-left text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                   >
                     {t('navbar.browseAllHelpers')}
                   </button>
                   ) : (
                   <Link
                     href="/helpers"
-                    className="block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {t('navbar.browseAllHelpers')}
@@ -1064,14 +1052,14 @@ export default function Navbar() {
                   {userPaused ? (
                   <button
                     onClick={() => { setMobileMenuOpen(false); setShowPausedModal(true) }}
-                    className="block w-full text-left text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="mobile-drawer-link block w-full text-left text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                   >
                     {t('navbar.browseProfessionals')}
                   </button>
                   ) : (
                   <Link
                     href="/professionals"
-                    className="block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {t('navbar.browseProfessionals')}
@@ -1079,7 +1067,7 @@ export default function Navbar() {
                   )}
                   <Link
                     href="/help"
-                    className="block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {t('navbar.howItWorks')}
@@ -1089,7 +1077,7 @@ export default function Navbar() {
             </div>
 
             {/* FIND WORK Section (collapsed by default; matches desktop dropdown) */}
-            <div className="px-4 py-2 order-2">
+            <div className="px-4 py-2">
               <button
                 type="button"
                 onClick={() => setMobileExpandedSection((prev) => (prev === 'tasks' ? null : 'tasks'))}
@@ -1104,21 +1092,21 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/tasks"
-                    className="block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {t('navbar.browseTasks')}
                   </Link>
                   <Link
                     href="/become-a-helper"
-                    className="block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {t('navbar.howToEarn')}
                   </Link>
                   <Link
                     href="/help"
-                    className="block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {t('navbar.taskerGuidelines')}
@@ -1131,14 +1119,14 @@ export default function Navbar() {
             <div className="px-4 py-2">
               <Link
                 href="/help"
-                className="block text-slate-800 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 bg-white shadow-sm transition-colors"
+                className="mobile-drawer-link block text-slate-800 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 bg-white shadow-sm transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {t('navbar.help')}
               </Link>
               <Link
                 href="/pricing"
-                className="mt-2 block text-slate-800 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 bg-white shadow-sm transition-colors"
+                className="mobile-drawer-link mt-2 block text-slate-800 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 bg-white shadow-sm transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {t('navbar.price')}
@@ -1161,42 +1149,42 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/about"
-                    className="block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {t('footer.aboutUs')}
                   </Link>
                   <Link
                     href="/privacy"
-                    className="block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {t('footer.privacyPolicy')}
                   </Link>
                   <Link
                     href="/terms"
-                    className="block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {t('footer.termsOfService')}
                   </Link>
                   <Link
                     href="/advertising-opportunities"
-                    className="block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {t('footer.advertising')}
                   </Link>
                   <Link
                     href="/partnerships"
-                    className="block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {t('footer.partner')}
                   </Link>
                   <Link
                     href="/blog"
-                    className="block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {t('footer.blog')}
@@ -1208,40 +1196,51 @@ export default function Navbar() {
                   >
                     {t('footer.contact')}
                   </Link>
+                  <div className="mt-2">
+                    <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500">SOCIALS</p>
+                    <a
+                      href="https://www.facebook.com/groups/taskorilla/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Facebook
+                    </a>
+                    <a
+                      href="https://www.instagram.com/taskorilla"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Instagram
+                    </a>
+                    <a
+                      href="https://www.tiktok.com/@taskorilla"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      TikTok
+                    </a>
+                    <a
+                      href="https://www.youtube.com/@gettaskorilla"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      YouTube
+                    </a>
+                  </div>
                 </>
               )}
             </div>
 
             {user ? (
               <>
-                {userPaused ? (
-                <button
-                  onClick={() => { setMobileMenuOpen(false); setShowPausedModal(true) }}
-                  className="block w-full text-left text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  Bids
-                </button>
-                ) : (
-                <Link
-                  href="/tasks?filter=my_bids"
-                  className={`block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium ${hasPendingBids && pendingBidsCount > 0 && !bidsViewed ? 'bg-orange-50' : ''}`}
-                  onClick={(e) => {
-                    console.log('🔍 Mobile Bids link clicked, navigating to /tasks?filter=my_bids')
-                    window.dispatchEvent(new Event('bids-viewed'))
-                    setMobileMenuOpen(false)
-                  }}
-                >
-                  <span className="flex items-center gap-2">
-                    Bids
-                    {hasPendingBids && pendingBidsCount > 0 && !bidsViewed && (
-                      <span className="relative flex h-2.5 w-2.5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
-                      </span>
-                    )}
-                  </span>
-                </Link>
-                )}
                 {acceptedBidsCount > 0 && firstAcceptedTaskId && (
                   <Link
                     href={`/tasks/${firstAcceptedTaskId}`}
@@ -1253,7 +1252,7 @@ export default function Navbar() {
                 )}
                 <Link
                   href="/messages"
-                  className={`block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium ${unreadCount > 0 ? 'bg-red-50' : ''}`}
+                  className={`mobile-drawer-link block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium ${unreadCount > 0 ? 'bg-red-50' : ''}`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {unreadCount > 0
@@ -1300,7 +1299,7 @@ export default function Navbar() {
                     handleLogout()
                     setMobileMenuOpen(false)
                   }}
-                  className="block w-full text-left bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
+                  className="mobile-drawer-link inline-flex items-center justify-center self-start bg-primary-600 text-white px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-primary-700"
                 >
                   {t('navbar.logout')}
                 </button>
@@ -1309,7 +1308,7 @@ export default function Navbar() {
               <>
                 <Link
                   href="/login"
-                  className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                  className="mobile-drawer-link block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   LOGIN
@@ -1328,16 +1327,16 @@ export default function Navbar() {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="grid grid-cols-5 h-16">
-        <button
-          type="button"
-          onClick={() => setMobileMenuOpen((prev) => !prev)}
+        <Link
+          href="/"
+          onClick={() => setMobileMenuOpen(false)}
           className={`flex flex-col items-center justify-center text-[11px] font-medium ${
-            mobileMenuOpen ? 'text-primary-600' : 'text-gray-600'
+            isHomeActive ? 'text-primary-600' : 'text-gray-600'
           }`}
         >
-          <BottomNavIcon active={mobileMenuOpen} pathD="M4 7h16M4 12h16M4 17h16" />
-          <span>Menu</span>
-        </button>
+          <BottomNavIcon active={isHomeActive} pathD="M3 11.5L12 4l9 7.5M6.5 10v9h11v-9" />
+          <span>Home</span>
+        </Link>
 
         <Link
           href="/tasks"
@@ -1422,44 +1421,41 @@ export default function Navbar() {
           </Link>
         )}
 
-        {user ? (
-          userPaused ? (
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false)
-                setShowPausedModal(true)
-              }}
-              className={`flex flex-col items-center justify-center text-[11px] font-medium ${
-                isAccountActive ? 'text-primary-600' : 'text-gray-600'
-              }`}
-            >
-              <BottomNavIcon active={isAccountActive} pathD="M12 12a4 4 0 1 0 0-8a4 4 0 0 0 0 8zm-7 8a7 7 0 0 1 14 0" />
-              <span>Account</span>
-            </button>
-          ) : (
-            <Link
-              href="/profile"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`flex flex-col items-center justify-center text-[11px] font-medium ${
-                isAccountActive ? 'text-primary-600' : 'text-gray-600'
-              }`}
-            >
-              <BottomNavIcon active={isAccountActive} pathD="M12 12a4 4 0 1 0 0-8a4 4 0 0 0 0 8zm-7 8a7 7 0 0 1 14 0" />
-              <span>Account</span>
-            </Link>
-          )
-        ) : (
-          <Link
-            href="/login"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex flex-col items-center justify-center text-[11px] font-medium text-gray-600"
-          >
-            <BottomNavIcon active={false} pathD="M12 12a4 4 0 1 0 0-8a4 4 0 0 0 0 8zm-7 8a7 7 0 0 1 14 0" />
-            <span>Account</span>
-          </Link>
-        )}
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen((prev) => !prev)}
+          className={`flex flex-col items-center justify-center text-[11px] font-medium ${
+            mobileMenuOpen ? 'text-primary-600' : 'text-gray-600'
+          }`}
+        >
+          <BottomNavIcon active={mobileMenuOpen} pathD="M4 7h16M4 12h16M4 17h16" />
+          <span>Menu</span>
+        </button>
       </div>
     </div>
+
+    <style jsx global>{`
+      @keyframes drawerLinkSlideIn {
+        0% { opacity: 0; transform: translateX(-10px); }
+        100% { opacity: 1; transform: translateX(0); }
+      }
+      .mobile-drawer-open .mobile-drawer-link {
+        opacity: 0;
+        animation: drawerLinkSlideIn 280ms ease-out forwards;
+      }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(1) { animation-delay: 20ms; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(2) { animation-delay: 40ms; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(3) { animation-delay: 60ms; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(4) { animation-delay: 80ms; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(5) { animation-delay: 100ms; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(6) { animation-delay: 120ms; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(7) { animation-delay: 140ms; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(8) { animation-delay: 160ms; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(9) { animation-delay: 180ms; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(10) { animation-delay: 200ms; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(11) { animation-delay: 220ms; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(12) { animation-delay: 240ms; }
+    `}</style>
 
     {showPausedModal && (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999]" onClick={() => setShowPausedModal(false)}>

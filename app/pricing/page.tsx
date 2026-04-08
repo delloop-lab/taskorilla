@@ -330,8 +330,8 @@ export default function PricingPage() {
               <p className="font-semibold text-gray-900">Comparison Table</p>
             </div>
 
-            <div className="overflow-x-auto mt-4">
-              <table id="comparison-table-table" className="w-full border-collapse bg-white shadow-lg rounded-lg overflow-hidden comparison-table">
+            <div className="overflow-x-auto mt-4 rounded-lg border border-gray-200">
+              <table id="comparison-table-table" className="min-w-[860px] w-full border-collapse bg-white shadow-lg comparison-table text-sm">
                 <thead>
                   <tr className="bg-gray-100">
                     <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900">Platform</th>
@@ -433,52 +433,6 @@ export default function PricingPage() {
         }
         .animate-float {
           animation: float 3s ease-in-out infinite;
-        }
-        
-        /* Responsive table for mobile */
-        @media (max-width: 768px) {
-          .comparison-table, 
-          .comparison-table thead, 
-          .comparison-table tbody, 
-          .comparison-table th, 
-          .comparison-table td, 
-          .comparison-table tr {
-            display: block;
-          }
-          
-          .comparison-table thead tr {
-            display: none;
-          }
-          
-          .comparison-table tr {
-            margin-bottom: 1.2rem;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            padding: 0.5rem;
-          }
-          
-          .comparison-table td {
-            border: none;
-            padding: 0.5rem;
-            position: relative;
-            padding-left: 50%;
-            text-align: left;
-          }
-          
-          .comparison-table td:before {
-            position: absolute;
-            top: 0.5rem;
-            left: 0.5rem;
-            width: 45%;
-            padding-right: 10px;
-            white-space: nowrap;
-            font-weight: bold;
-          }
-          
-          .comparison-table td:nth-of-type(1):before { content: "Platform"; }
-          .comparison-table td:nth-of-type(2):before { content: "Tasker Cost"; }
-          .comparison-table td:nth-of-type(3):before { content: "Helper Cost / Fees"; }
-          .comparison-table td:nth-of-type(4):before { content: "Risk for Tasker / Helper"; }
         }
       `}</style>
 
