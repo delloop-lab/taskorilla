@@ -21,18 +21,26 @@ function BottomNavIcon({
   pathD: string
 }) {
   return (
-    <svg
-      className={`h-5 w-5 mb-0.5 ${active ? 'text-primary-600' : 'text-gray-600'}`}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
+    <span
+      className={`mb-0.5 flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 ${
+        active
+          ? 'bg-gradient-to-b from-orange-100 to-orange-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_2px_6px_rgba(249,115,22,0.25)]'
+          : 'bg-gradient-to-b from-slate-50 to-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_3px_rgba(15,23,42,0.12)]'
+      }`}
     >
-      <path d={pathD} />
-    </svg>
+      <svg
+        className={`h-[18px] w-[18px] ${active ? 'text-primary-600' : 'text-slate-600'}`}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d={pathD} />
+      </svg>
+    </span>
   )
 }
 
@@ -953,9 +961,24 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 py-4 flex flex-col gap-2">
+        {/* Mobile Menu Drawer */}
+        <div
+          className={`md:hidden fixed inset-0 z-[70] transition-opacity duration-300 ${
+            mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
+        >
+          <button
+            type="button"
+            aria-label="Close menu overlay"
+            onClick={() => setMobileMenuOpen(false)}
+            className="absolute inset-0 bg-black/30"
+          />
+          <div
+            className={`absolute top-0 left-0 h-full w-[88%] max-w-sm bg-white border-r border-gray-200 shadow-2xl transform transition-transform duration-300 ease-out ${
+              mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+            }`}
+          >
+            <div className="h-full overflow-y-auto py-4 pb-24 flex flex-col gap-2">
             {!user && (
               <div className="px-4 py-2">
                 <Link
@@ -1010,7 +1033,7 @@ export default function Navbar() {
                     className="block w-full text-left text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
                   >
                     <span className="block">{t('navbar.postTask')}</span>
-                    <span className="block text-xs text-gray-500">{t('navbar.workRequired')}</span>
+                    <span className="block text-sm font-medium text-gray-700">{t('navbar.workRequired')}</span>
                   </button>
                   ) : (
                   <Link
@@ -1019,7 +1042,7 @@ export default function Navbar() {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <span className="block">{t('navbar.postTask')}</span>
-                    <span className="block text-xs text-gray-500">{t('navbar.workRequired')}</span>
+                    <span className="block text-sm font-medium text-gray-700">{t('navbar.workRequired')}</span>
                   </Link>
                   )}
                   {userPaused ? (
@@ -1119,6 +1142,60 @@ export default function Navbar() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {t('navbar.price')}
+              </Link>
+            </div>
+
+            {/* Footer links mirrored in mobile pullout (kept in footer too) */}
+            <div className="px-4 py-2">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">More</h3>
+              <Link
+                href="/about"
+                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {t('footer.aboutUs')}
+              </Link>
+              <Link
+                href="/privacy"
+                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {t('footer.privacyPolicy')}
+              </Link>
+              <Link
+                href="/terms"
+                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {t('footer.termsOfService')}
+              </Link>
+              <Link
+                href="/advertising-opportunities"
+                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {t('footer.advertising')}
+              </Link>
+              <Link
+                href="/partnerships"
+                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {t('footer.partner')}
+              </Link>
+              <Link
+                href="/blog"
+                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {t('footer.blog')}
+              </Link>
+              <Link
+                href="/contact"
+                className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {t('footer.contact')}
               </Link>
             </div>
 
@@ -1222,20 +1299,13 @@ export default function Navbar() {
                   className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  {t('navbar.login')}
-                </Link>
-                <Link
-                  href="/register"
-                  className="block bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700 text-center"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {t('navbar.signup')}
+                  LOGIN
                 </Link>
               </>
             )}
+            </div>
           </div>
-        )}
-      </div>
+        </div>
     </nav>
 
     {/* Mobile persistent bottom nav */}
