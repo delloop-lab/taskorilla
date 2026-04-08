@@ -1465,25 +1465,12 @@ function TasksPageContent() {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+      <div className="mb-4">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('tasks.title')}</h1>
-        <div className="flex gap-2 sm:gap-3 flex-wrap">
-          <Link
-            href="/tasks/map"
-            className="bg-gray-600 text-white px-3 sm:px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-700"
-          >
-            {t('tasks.mapView')}
-          </Link>
-          <Link
-            href="/tasks/new"
-            className="bg-primary-600 text-white px-3 sm:px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
-          >
-            {t('tasks.postNewTask')}
-          </Link>
-        </div>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-2 sm:gap-4 items-center">
+      <div className="mb-6 flex flex-wrap gap-2 sm:gap-4 items-center justify-between">
+        <div className="flex flex-wrap gap-2 sm:gap-4 items-center">
         <button
           onClick={() => handleFilterClick('all')}
           className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium ${
@@ -1610,6 +1597,21 @@ function TasksPageContent() {
             <span className="text-sm text-gray-700">{t('tasks.filterByMySkills')}</span>
           </label>
         )}
+        </div>
+        <div className="flex gap-2 sm:gap-3 flex-wrap">
+          <Link
+            href="/tasks/new"
+            className="bg-primary-600 text-white px-3 sm:px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
+          >
+            {t('tasks.postNewTask')}
+          </Link>
+          <Link
+            href="/tasks/map"
+            className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700"
+          >
+            {t('tasks.mapView')}
+          </Link>
+        </div>
       </div>
 
       {/* Mobile Search Toggle */}

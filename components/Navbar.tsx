@@ -618,7 +618,7 @@ export default function Navbar() {
               }}
             >
               <Link
-                href="/tasks/new"
+                href="/#service-cards-grid"
                 className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1"
               >
                 {t('navbar.helpers')}
@@ -1305,6 +1305,7 @@ export default function Navbar() {
             )}
             </div>
           </div>
+        </div>
         </div>
     </nav>
 

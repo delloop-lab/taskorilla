@@ -434,8 +434,22 @@ export default function TasksMapPage() {
             {tasks.length} tasks on map{placeMarkers.length ? ` • ${placeMarkers.length} places` : ''}
           </p> */}
         </div>
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 text-sm text-gray-700">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <button
+            type="button"
+            onClick={() => {
+              const next = !showAdverts
+              setShowAdverts(next)
+              try {
+                sessionStorage.setItem('tasksMapShowAdverts', String(next))
+              } catch {}
+            }}
+            className="sm:hidden px-2.5 py-1.5 rounded-md border border-gray-300 text-xs font-medium text-gray-700 bg-white hover:bg-gray-50"
+            aria-pressed={showAdverts}
+          >
+            {showAdverts ? 'Adverts: On' : 'Adverts: Off'}
+          </button>
+          <label className="hidden sm:flex items-center gap-2 text-sm text-gray-700">
             <input
               type="checkbox"
               checked={showAdverts}
