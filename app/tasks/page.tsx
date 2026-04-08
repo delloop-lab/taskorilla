@@ -2095,7 +2095,7 @@ function TasksPageContent() {
                       >
                         <img src={task.image_url || (task.required_professions && task.required_professions.length > 0 ? '/default_task_image_pro.png' : '/default_task_image.png')} alt={task.title} className="w-full h-full object-cover" />
                       </div>
-                      <div className="min-w-0">
+                      <div className={`min-w-0 ${isNew && !isSample ? 'pr-14 sm:pr-0' : ''}`}>
                         <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-0.5 break-words line-clamp-1">{task.title}</h3>
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <p className="text-xl sm:text-2xl font-bold text-primary-600">{task.budget ? `€${task.budget}` : t('tasks.quote')}</p>
@@ -2202,7 +2202,7 @@ function TasksPageContent() {
                           <img src={task.image_url || (task.required_professions && task.required_professions.length > 0 ? '/default_task_image_pro.png' : '/default_task_image.png')} alt={task.title} className="w-full h-full object-cover" />
                         </div>
                         {/* Title, price, badges */}
-                        <div className="min-w-0">
+                        <div className={`min-w-0 ${isNew && !isSample ? 'pr-14 sm:pr-0' : ''}`}>
                           <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-0.5 break-words line-clamp-1">{task.title}</h3>
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <p className="text-xl sm:text-2xl font-bold text-primary-600">{task.budget ? `€${task.budget}` : t('tasks.quote')}</p>

@@ -8,6 +8,7 @@ import { getPendingReviews } from '@/lib/review-utils'
 import { useLanguage } from '@/lib/i18n'
 import { User as UserIcon } from 'lucide-react'
 import { getDisplayName } from '@/lib/name-privacy'
+import { FaFacebookF, FaInstagram, FaTiktok, FaYoutube } from 'react-icons/fa6'
 
 // Debug logging - only in development
 const isDev = process.env.NODE_ENV === 'development'
@@ -1196,45 +1197,6 @@ export default function Navbar() {
                   >
                     {t('footer.contact')}
                   </Link>
-                  <div className="mt-2">
-                    <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500">SOCIALS</p>
-                    <a
-                      href="https://www.facebook.com/groups/taskorilla/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Facebook
-                    </a>
-                    <a
-                      href="https://www.instagram.com/taskorilla"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Instagram
-                    </a>
-                    <a
-                      href="https://www.tiktok.com/@taskorilla"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      TikTok
-                    </a>
-                    <a
-                      href="https://www.youtube.com/@gettaskorilla"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      YouTube
-                    </a>
-                  </div>
                 </>
               )}
             </div>
@@ -1256,8 +1218,8 @@ export default function Navbar() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {unreadCount > 0
-                    ? `📩 ${t('navbar.inbox')} (${unreadCount > 99 ? '99+' : unreadCount})`
-                    : `📩 ${t('navbar.inbox')}`}
+                    ? `${t('navbar.inbox').toUpperCase()} (${unreadCount > 99 ? '99+' : unreadCount})`
+                    : `${t('navbar.inbox').toUpperCase()}`}
                 </Link>
                 {pendingReviewsCount > 0 && (
                   <Link
@@ -1275,7 +1237,7 @@ export default function Navbar() {
                     onClick={() => setMobileMenuOpen(false)}
                     style={{ color: '#8B4513' }}
                   >
-                    Admin
+                  ADMIN
                   </Link>
                 )}
                 {userPaused ? (
@@ -1283,7 +1245,7 @@ export default function Navbar() {
                   onClick={() => { setMobileMenuOpen(false); setShowPausedModal(true) }}
                   className="block w-full text-left text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
                 >
-                  {t('navbar.profile')}
+                  {t('navbar.profile').toUpperCase()}
                 </button>
                 ) : (
                 <Link
@@ -1291,7 +1253,7 @@ export default function Navbar() {
                   className="block text-gray-700 hover:text-primary-600 px-4 py-2 rounded-md text-sm font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  {t('navbar.profile')}
+                  {t('navbar.profile').toUpperCase()}
                 </Link>
                 )}
                 <button
@@ -1299,7 +1261,7 @@ export default function Navbar() {
                     handleLogout()
                     setMobileMenuOpen(false)
                   }}
-                  className="mobile-drawer-link inline-flex items-center justify-center self-start bg-primary-600 text-white px-3 py-1.5 rounded-md text-xs font-semibold hover:bg-primary-700"
+                  className="mobile-drawer-link inline-flex items-center justify-center self-center bg-red-600 text-white px-3 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wide hover:bg-red-700"
                 >
                   {t('navbar.logout')}
                 </button>
@@ -1315,6 +1277,50 @@ export default function Navbar() {
                 </Link>
               </>
             )}
+            <div className="mt-4 border-t border-slate-200 pt-3 px-4">
+              <div className="flex items-center justify-center gap-4">
+                <a
+                  href="https://www.facebook.com/groups/taskorilla/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mobile-drawer-link inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-blue-600 border border-slate-200 shadow-sm hover:bg-blue-50 transition-colors"
+                  aria-label="Facebook"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <FaFacebookF className="h-4 w-4" />
+                </a>
+                <a
+                  href="https://www.instagram.com/taskorilla"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mobile-drawer-link inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-pink-600 border border-slate-200 shadow-sm hover:bg-pink-50 transition-colors"
+                  aria-label="Instagram"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <FaInstagram className="h-4 w-4" />
+                </a>
+                <a
+                  href="https://www.tiktok.com/@taskorilla"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mobile-drawer-link inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-900 border border-slate-200 shadow-sm hover:bg-slate-100 transition-colors"
+                  aria-label="TikTok"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <FaTiktok className="h-4 w-4" />
+                </a>
+                <a
+                  href="https://www.youtube.com/@gettaskorilla"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mobile-drawer-link inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-red-600 border border-slate-200 shadow-sm hover:bg-red-50 transition-colors"
+                  aria-label="YouTube"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <FaYoutube className="h-4 w-4" />
+                </a>
+              </div>
+            </div>
             </div>
           </div>
         </div>
