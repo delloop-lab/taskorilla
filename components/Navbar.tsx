@@ -8,7 +8,7 @@ import { getPendingReviews } from '@/lib/review-utils'
 import { useLanguage } from '@/lib/i18n'
 import { User as UserIcon } from 'lucide-react'
 import { getDisplayName } from '@/lib/name-privacy'
-import { FaFacebookF, FaInstagram, FaTiktok, FaYoutube } from 'react-icons/fa6'
+import { FaFacebook, FaInstagram, FaTiktok, FaYoutube } from 'react-icons/fa6'
 
 // Debug logging - only in development
 const isDev = process.env.NODE_ENV === 'development'
@@ -998,16 +998,16 @@ export default function Navbar() {
                   )}
                 </div>
                 <span className="text-sm font-semibold text-blue-600">
-                  {getDisplayName({ fullName: profileName, email: user?.email, revealFull: false })}
+                  {getDisplayName({ fullName: profileName, email: user?.email, revealFull: true })}
                 </span>
               </div>
             )}
             {/* FIND HELP Section (collapsed by default; matches desktop dropdown) */}
-            <div className="px-4 py-2">
+            <div className="px-4 py-1">
               <button
                 type="button"
                 onClick={() => setMobileExpandedSection((prev) => (prev === 'helpers' ? null : 'helpers'))}
-                className="w-full flex items-center justify-between text-sm font-semibold text-slate-800 uppercase tracking-wide mb-2 rounded-xl px-3 py-2 bg-white border border-slate-200 shadow-sm"
+                className={`w-full flex items-center justify-between text-sm font-semibold text-slate-800 uppercase tracking-wide rounded-xl px-3 py-2 bg-white border border-slate-200 shadow-sm ${mobileExpandedSection === 'helpers' ? 'mb-2' : 'mb-0'}`}
               >
                 <span>{t('navbar.helpers')}</span>
                 <svg className={`w-4 h-4 transition-transform ${mobileExpandedSection === 'helpers' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1078,11 +1078,11 @@ export default function Navbar() {
             </div>
 
             {/* FIND WORK Section (collapsed by default; matches desktop dropdown) */}
-            <div className="px-4 py-2">
+            <div className="px-4 py-1">
               <button
                 type="button"
                 onClick={() => setMobileExpandedSection((prev) => (prev === 'tasks' ? null : 'tasks'))}
-                className="w-full flex items-center justify-between text-sm font-semibold text-slate-800 uppercase tracking-wide mb-2 rounded-xl px-3 py-2 bg-white border border-slate-200 shadow-sm"
+                className={`w-full flex items-center justify-between text-sm font-semibold text-slate-800 uppercase tracking-wide rounded-xl px-3 py-2 bg-white border border-slate-200 shadow-sm ${mobileExpandedSection === 'tasks' ? 'mb-2' : 'mb-0'}`}
               >
                 <span>{t('navbar.tasks')}</span>
                 <svg className={`w-4 h-4 transition-transform ${mobileExpandedSection === 'tasks' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1117,7 +1117,7 @@ export default function Navbar() {
             </div>
 
             {/* Support + Pricing links (match desktop top-level links) */}
-            <div className="px-4 py-2">
+            <div className="px-4 py-1">
               <Link
                 href="/help"
                 className="mobile-drawer-link block text-slate-800 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 bg-white shadow-sm transition-colors"
@@ -1127,7 +1127,7 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/pricing"
-                className="mobile-drawer-link mt-2 block text-slate-800 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 bg-white shadow-sm transition-colors"
+                className="mobile-drawer-link mt-1 block text-slate-800 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 bg-white shadow-sm transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {t('navbar.price')}
@@ -1164,35 +1164,35 @@ export default function Navbar() {
                   </Link>
                   <Link
                     href="/terms"
-                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {t('footer.termsOfService')}
                   </Link>
                   <Link
                     href="/advertising-opportunities"
-                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {t('footer.advertising')}
                   </Link>
                   <Link
                     href="/partnerships"
-                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {t('footer.partner')}
                   </Link>
                   <Link
                     href="/blog"
-                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {t('footer.blog')}
                   </Link>
                   <Link
                     href="/contact"
-                    className="block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-xs font-medium transition-colors"
+                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {t('footer.contact')}
@@ -1283,41 +1283,41 @@ export default function Navbar() {
                   href="https://www.facebook.com/groups/taskorilla/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mobile-drawer-link inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-blue-600 border border-slate-200 shadow-sm hover:bg-blue-50 transition-colors"
+                  className="mobile-drawer-link text-blue-600 hover:text-blue-700 transition-colors inline-flex items-center"
                   aria-label="Facebook"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <FaFacebookF className="h-4 w-4" />
+                  <FaFacebook className="w-6 h-6" />
                 </a>
                 <a
                   href="https://www.instagram.com/taskorilla"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mobile-drawer-link inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-pink-600 border border-slate-200 shadow-sm hover:bg-pink-50 transition-colors"
+                  className="mobile-drawer-link text-pink-600 hover:text-pink-700 transition-colors inline-flex items-center"
                   aria-label="Instagram"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <FaInstagram className="h-4 w-4" />
+                  <FaInstagram className="w-6 h-6" />
                 </a>
                 <a
                   href="https://www.tiktok.com/@taskorilla"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mobile-drawer-link inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-900 border border-slate-200 shadow-sm hover:bg-slate-100 transition-colors"
+                  className="mobile-drawer-link text-black hover:text-gray-800 dark:text-gray-100 dark:hover:text-white transition-colors inline-flex items-center"
                   aria-label="TikTok"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <FaTiktok className="h-4 w-4" />
+                  <FaTiktok className="w-6 h-6" />
                 </a>
                 <a
                   href="https://www.youtube.com/@gettaskorilla"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mobile-drawer-link inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-red-600 border border-slate-200 shadow-sm hover:bg-red-50 transition-colors"
+                  className="mobile-drawer-link text-red-600 hover:text-red-700 transition-colors inline-flex items-center"
                   aria-label="YouTube"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <FaYoutube className="h-4 w-4" />
+                  <FaYoutube className="w-6 h-6" />
                 </a>
               </div>
             </div>
@@ -1442,25 +1442,25 @@ export default function Navbar() {
 
     <style jsx global>{`
       @keyframes drawerLinkSlideIn {
-        0% { opacity: 0; transform: translateX(-10px); }
+        0% { opacity: 0; transform: translateX(14px); }
         100% { opacity: 1; transform: translateX(0); }
       }
       .mobile-drawer-open .mobile-drawer-link {
         opacity: 0;
         animation: drawerLinkSlideIn 280ms ease-out forwards;
       }
-      .mobile-drawer-open .mobile-drawer-link:nth-of-type(1) { animation-delay: 20ms; }
-      .mobile-drawer-open .mobile-drawer-link:nth-of-type(2) { animation-delay: 40ms; }
-      .mobile-drawer-open .mobile-drawer-link:nth-of-type(3) { animation-delay: 60ms; }
-      .mobile-drawer-open .mobile-drawer-link:nth-of-type(4) { animation-delay: 80ms; }
-      .mobile-drawer-open .mobile-drawer-link:nth-of-type(5) { animation-delay: 100ms; }
-      .mobile-drawer-open .mobile-drawer-link:nth-of-type(6) { animation-delay: 120ms; }
-      .mobile-drawer-open .mobile-drawer-link:nth-of-type(7) { animation-delay: 140ms; }
-      .mobile-drawer-open .mobile-drawer-link:nth-of-type(8) { animation-delay: 160ms; }
-      .mobile-drawer-open .mobile-drawer-link:nth-of-type(9) { animation-delay: 180ms; }
-      .mobile-drawer-open .mobile-drawer-link:nth-of-type(10) { animation-delay: 200ms; }
-      .mobile-drawer-open .mobile-drawer-link:nth-of-type(11) { animation-delay: 220ms; }
-      .mobile-drawer-open .mobile-drawer-link:nth-of-type(12) { animation-delay: 240ms; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(1) { animation-delay: 0.05s; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(2) { animation-delay: 0.10s; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(3) { animation-delay: 0.15s; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(4) { animation-delay: 0.20s; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(5) { animation-delay: 0.25s; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(6) { animation-delay: 0.30s; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(7) { animation-delay: 0.35s; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(8) { animation-delay: 0.40s; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(9) { animation-delay: 0.45s; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(10) { animation-delay: 0.50s; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(11) { animation-delay: 0.55s; }
+      .mobile-drawer-open .mobile-drawer-link:nth-of-type(12) { animation-delay: 0.60s; }
     `}</style>
 
     {showPausedModal && (
