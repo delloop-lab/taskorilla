@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar'
 import PausedBanner from '@/components/PausedBanner'
 import PWAHead from '@/components/PWAHead'
 import InstallPromptModal from '@/components/InstallPromptModal'
+import ServiceWorkerUpdatePrompt from '@/components/ServiceWorkerUpdatePrompt'
 import LanguageProviderWrapper from '@/components/LanguageProviderWrapper'
 import SupabasePrewarm from '@/components/SupabasePrewarm'
 import FacebookAppIdMeta from '@/components/FacebookAppIdMeta'
@@ -127,6 +128,7 @@ export default function RootLayout({
           <PWAHead />
           <SupabasePrewarm />
           <InstallPromptModal />
+          <ServiceWorkerUpdatePrompt />
           <div className="print:hidden">
             <Suspense fallback={<div className="h-16 bg-white shadow-sm" />}>
               <Navbar />
