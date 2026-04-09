@@ -1469,11 +1469,11 @@ function TasksPageContent() {
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('tasks.title')}</h1>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-2 sm:gap-4 items-center justify-between">
-        <div className="flex flex-wrap gap-2 sm:gap-4 items-center">
+      <div className="mb-6 flex flex-col gap-3 sm:gap-4">
+        <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
         <button
           onClick={() => handleFilterClick('all')}
-          className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium ${
+          className={`px-3 sm:px-4 py-2 rounded-md text-sm font-medium min-h-[40px] ${
             filter === 'all'
               ? 'bg-primary-600 text-white'
               : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -1492,7 +1492,7 @@ function TasksPageContent() {
         <button
           onClick={() => handleFilterClick('open')}
           title={t('tasks.stillTakingBids')}
-          className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium ${
+          className={`px-3 sm:px-4 py-2 rounded-md text-sm font-medium min-h-[40px] ${
             filter === 'open'
               ? 'bg-primary-600 text-white'
               : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -1512,7 +1512,7 @@ function TasksPageContent() {
           <button
             onClick={() => handleFilterClick('my_tasks')}
             title={t('tasks.yourTasks')}
-            className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium ${
+            className={`px-3 sm:px-4 py-2 rounded-md text-sm font-medium min-h-[40px] ${
               filter === 'my_tasks'
                 ? 'bg-primary-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -1538,7 +1538,7 @@ function TasksPageContent() {
             }
           }}
           title={t('tasks.lastTwoWeeks')}
-          className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium ${
+          className={`px-3 sm:px-4 py-2 rounded-md text-sm font-medium min-h-[40px] ${
             filter === 'new'
               ? 'bg-primary-600 text-white'
               : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -1558,7 +1558,7 @@ function TasksPageContent() {
           <button
             onClick={() => handleFilterClick('my_bids')}
             title={t('tasks.allBids')}
-            className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium ${
+            className={`px-3 sm:px-4 py-2 rounded-md text-sm font-medium min-h-[40px] ${
               filter === 'my_bids'
                 ? 'bg-primary-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -1576,7 +1576,7 @@ function TasksPageContent() {
           </button>
         )}
         {currentUserId && (
-          <label className="ml-4 flex items-center gap-2 cursor-pointer">
+          <label className="ml-0 sm:ml-2 flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
               checked={showArchived}
@@ -1587,7 +1587,7 @@ function TasksPageContent() {
           </label>
         )}
         {currentUserId && userSkills.length > 0 && (
-          <label className="ml-4 flex items-center gap-2 cursor-pointer">
+          <label className="ml-0 sm:ml-2 flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
               checked={filterBySkills}
@@ -1598,16 +1598,16 @@ function TasksPageContent() {
           </label>
         )}
         </div>
-        <div className="flex gap-2 sm:gap-3 flex-wrap">
+        <div className="grid grid-cols-2 sm:flex gap-2 sm:gap-3 w-full sm:w-auto">
           <Link
             href="/tasks/new"
-            className="bg-primary-600 text-white px-3 sm:px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
+            className="bg-primary-600 text-white px-3 sm:px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700 text-center whitespace-nowrap"
           >
             {t('tasks.postNewTask')}
           </Link>
           <Link
             href="/tasks/map"
-            className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700"
+            className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 text-center whitespace-nowrap"
           >
             {t('tasks.mapView')}
           </Link>
@@ -1851,8 +1851,8 @@ function TasksPageContent() {
 
       {/* View toggle and results count */}
       {tasks.length > 0 && (
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3 flex-wrap">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             {loading ? (
               <p className="text-sm text-gray-500 flex items-center gap-2">
                 <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
@@ -1873,7 +1873,7 @@ function TasksPageContent() {
                 type="button"
                 onClick={handleLoadAllRemaining}
                 disabled={isLoadingMore}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors inline-flex items-center gap-2 ${
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start ${
                   isLoadingMore
                     ? 'bg-primary-400 text-white cursor-not-allowed'
                     : 'bg-primary-600 text-white hover:bg-primary-700'
@@ -1889,7 +1889,7 @@ function TasksPageContent() {
               </button>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-end sm:self-auto">
             <span className="text-sm text-gray-500 hidden sm:inline">{t('tasks.view')}:</span>
             <div className="flex bg-gray-100 rounded-lg p-1">
               <button
