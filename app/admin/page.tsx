@@ -101,6 +101,29 @@ type TrafficRange = '7d' | '30d' | 'last_month' | 'custom'
 
 type RevenueRange = 'day' | 'week' | 'month' | 'year' | 'all'
 
+type WelcomeEmailAttempt = {
+  id: string
+  created_at: string
+  related_user_id: string | null
+  recipient_email: string | null
+  template_type: string | null
+  source: string
+  ok: boolean
+  skipped_reason: string | null
+  error_reason: string | null
+  meta: Record<string, unknown> | null
+}
+
+type MissingWelcomeQueueRow = {
+  user_id: string
+  email: string | null
+  user_created_at: string
+  email_confirmed_at: string
+  latest_scheduled_email_at: string | null
+  latest_successful_attempt_at: string | null
+  welcome_rows_count: number
+}
+
 export default function SuperadminDashboard() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -222,6 +245,11 @@ export default function SuperadminDashboard() {
   const [showEmailLogsSection, setShowEmailLogsSection] = useState(false)
   const [emailLogsPage, setEmailLogsPage] = useState(1)
   const EMAIL_LOGS_PAGE_SIZE = 25
+  const [welcomeAuditLoading, setWelcomeAuditLoading] = useState(false)
+  const [welcomeAuditError, setWelcomeAuditError] = useState<string | null>(null)
+  const [welcomeAttemptFilter, setWelcomeAttemptFilter] = useState('')
+  const [welcomeAttempts, setWelcomeAttempts] = useState<WelcomeEmailAttempt[]>([])
+  const [missingWelcomeQueueRows, setMissingWelcomeQueueRows] = useState<MissingWelcomeQueueRow[]>([])
 
   useEffect(() => {
     setEmailLogsPage(1)
@@ -533,6 +561,7 @@ export default function SuperadminDashboard() {
   useEffect(() => {
     if (tab === 'email') {
       fetchEmailTemplates()
+      fetchWelcomeEmailObservability()
     }
     if (tab === 'maps' && !loadingMapMarkers && mapMarkers.length === 0) {
       fetchMapMarkers()
@@ -1431,6 +1460,37 @@ export default function SuperadminDashboard() {
     } else if (data) {
       setEmailLogs(data)
     }
+  }
+
+  async function fetchWelcomeEmailObservability() {
+    setWelcomeAuditLoading(true)
+    setWelcomeAuditError(null)
+
+    const attemptsPromise = supabase
+      .from('welcome_email_attempts')
+      .select('id, created_at, related_user_id, recipient_email, template_type, source, ok, skipped_reason, error_reason, meta')
+      .order('created_at', { ascending: false })
+      .limit(100)
+
+    const missingPromise = supabase
+      .from('confirmed_users_missing_welcome_queue')
+      .select('user_id, email, user_created_at, email_confirmed_at, latest_scheduled_email_at, latest_successful_attempt_at, welcome_rows_count')
+      .order('email_confirmed_at', { ascending: false })
+      .limit(100)
+
+    const [{ data: attemptsData, error: attemptsError }, { data: missingData, error: missingError }] =
+      await Promise.all([attemptsPromise, missingPromise])
+
+    if (attemptsError || missingError) {
+      setWelcomeAuditError(attemptsError?.message || missingError?.message || 'Failed to load welcome observability data.')
+      if (attemptsError) console.error('Error fetching welcome_email_attempts:', attemptsError)
+      if (missingError) console.error('Error fetching confirmed_users_missing_welcome_queue:', missingError)
+    } else {
+      setWelcomeAttempts((attemptsData || []) as WelcomeEmailAttempt[])
+      setMissingWelcomeQueueRows((missingData || []) as MissingWelcomeQueueRow[])
+    }
+
+    setWelcomeAuditLoading(false)
   }
 
   function looksLikeEmail(value: string): boolean {
@@ -4797,6 +4857,134 @@ export default function SuperadminDashboard() {
         {/* Email Tab */}
         {tab === 'email' && (
           <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6 w-full space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">Welcome Email Observability</h3>
+                  <p className="text-xs text-gray-500">
+                    View queue attempts and confirmed users still missing a welcome queue row.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={fetchWelcomeEmailObservability}
+                  disabled={welcomeAuditLoading}
+                  className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 disabled:opacity-60 text-xs sm:text-sm rounded-md font-medium text-gray-800"
+                >
+                  {welcomeAuditLoading ? 'Refreshing...' : 'Refresh'}
+                </button>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  value={welcomeAttemptFilter}
+                  onChange={(e) => setWelcomeAttemptFilter(e.target.value)}
+                  placeholder="Filter attempts by email or user id..."
+                  className="w-full sm:w-96 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <div className="text-xs text-gray-500 self-center">
+                  Attempts: {welcomeAttempts.length} | Missing queue users: {missingWelcomeQueueRows.length}
+                </div>
+              </div>
+
+              {welcomeAuditError && (
+                <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+                  {welcomeAuditError}
+                </p>
+              )}
+
+              <div>
+                <h4 className="text-xs font-semibold text-gray-800 mb-2">Latest Queue Attempts</h4>
+                <div className="overflow-x-auto border border-gray-200 rounded">
+                  <table className="min-w-full text-xs">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-2 py-2 text-left">When</th>
+                        <th className="px-2 py-2 text-left">Recipient</th>
+                        <th className="px-2 py-2 text-left">User</th>
+                        <th className="px-2 py-2 text-left">Template</th>
+                        <th className="px-2 py-2 text-left">Source</th>
+                        <th className="px-2 py-2 text-left">Result</th>
+                        <th className="px-2 py-2 text-left">Reason</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {welcomeAttempts
+                        .filter((row) => {
+                          const needle = welcomeAttemptFilter.trim().toLowerCase()
+                          if (!needle) return true
+                          return (
+                            (row.recipient_email || '').toLowerCase().includes(needle) ||
+                            (row.related_user_id || '').toLowerCase().includes(needle)
+                          )
+                        })
+                        .map((row) => (
+                          <tr key={row.id} className="border-t border-gray-100">
+                            <td className="px-2 py-2 whitespace-nowrap text-gray-700">{new Date(row.created_at).toLocaleString()}</td>
+                            <td className="px-2 py-2 text-gray-900">{row.recipient_email || '—'}</td>
+                            <td className="px-2 py-2 text-gray-700 font-mono">{row.related_user_id || '—'}</td>
+                            <td className="px-2 py-2 text-gray-700">{row.template_type || '—'}</td>
+                            <td className="px-2 py-2 text-gray-700">{row.source || 'unknown'}</td>
+                            <td className="px-2 py-2">
+                              <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${row.ok ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                {row.ok ? 'ok' : 'failed'}
+                              </span>
+                            </td>
+                            <td className="px-2 py-2 text-gray-700">{row.skipped_reason || row.error_reason || '—'}</td>
+                          </tr>
+                        ))}
+                      {welcomeAttempts.length === 0 && !welcomeAuditLoading && (
+                        <tr>
+                          <td colSpan={7} className="px-2 py-3 text-center text-gray-500">
+                            No welcome email attempt rows found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-semibold text-gray-800 mb-2">Confirmed Users Missing Welcome Queue</h4>
+                <div className="overflow-x-auto border border-gray-200 rounded">
+                  <table className="min-w-full text-xs">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-2 py-2 text-left">Email</th>
+                        <th className="px-2 py-2 text-left">User Id</th>
+                        <th className="px-2 py-2 text-left">Confirmed At</th>
+                        <th className="px-2 py-2 text-left">User Created</th>
+                        <th className="px-2 py-2 text-left">Latest Attempt</th>
+                        <th className="px-2 py-2 text-left">Queue Rows</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {missingWelcomeQueueRows.map((row) => (
+                        <tr key={row.user_id} className="border-t border-gray-100">
+                          <td className="px-2 py-2 text-gray-900">{row.email || '—'}</td>
+                          <td className="px-2 py-2 text-gray-700 font-mono">{row.user_id}</td>
+                          <td className="px-2 py-2 text-gray-700 whitespace-nowrap">{new Date(row.email_confirmed_at).toLocaleString()}</td>
+                          <td className="px-2 py-2 text-gray-700 whitespace-nowrap">{new Date(row.user_created_at).toLocaleString()}</td>
+                          <td className="px-2 py-2 text-gray-700 whitespace-nowrap">
+                            {row.latest_successful_attempt_at ? new Date(row.latest_successful_attempt_at).toLocaleString() : '—'}
+                          </td>
+                          <td className="px-2 py-2 text-gray-700">{row.welcome_rows_count}</td>
+                        </tr>
+                      ))}
+                      {missingWelcomeQueueRows.length === 0 && !welcomeAuditLoading && (
+                        <tr>
+                          <td colSpan={6} className="px-2 py-3 text-center text-gray-500">
+                            No confirmed users currently missing a welcome queue row.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
 
             {/* SMS Test */}
             <div className="bg-white rounded-lg shadow p-4 sm:p-6 w-full space-y-4">

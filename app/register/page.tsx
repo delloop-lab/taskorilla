@@ -98,6 +98,7 @@ function RegisterContent() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             templateType: 'tasker_welcome',
+            source: 'register',
             recipientEmail: email,
             recipientName: fullName,
             relatedUserId: data.user.id,

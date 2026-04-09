@@ -1,15 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import {
   queueScheduledWelcomeEmail,
+  type QueueWelcomeSource,
   type WelcomeTemplateType,
 } from '@/lib/queue-scheduled-welcome-email'
 
 const ALLOWED_TEMPLATES = ['tasker_welcome', 'helper_welcome'] as const
+const ALLOWED_SOURCES = ['register', 'become_helper', 'unknown'] as const
 
 function parseTemplateType(raw: unknown): WelcomeTemplateType | null {
   if (typeof raw !== 'string') return null
   const t = raw.trim()
   return (ALLOWED_TEMPLATES as readonly string[]).includes(t) ? (t as WelcomeTemplateType) : null
+}
+
+function parseSource(raw: unknown): QueueWelcomeSource {
+  if (typeof raw !== 'string') return 'unknown'
+  const source = raw.trim()
+  return (ALLOWED_SOURCES as readonly string[]).includes(source)
+    ? (source as QueueWelcomeSource)
+    : 'unknown'
 }
 
 /**
@@ -24,12 +34,15 @@ export async function POST(request: NextRequest) {
     const recipientName = typeof body?.recipientName === 'string' ? body.recipientName.trim() : ''
     const relatedUserId = typeof body?.relatedUserId === 'string' ? body.relatedUserId.trim() : ''
     const templateType = parseTemplateType(body?.templateType) ?? 'tasker_welcome'
+    const source = parseSource(body?.source)
 
     const result = await queueScheduledWelcomeEmail({
       recipientEmail,
       recipientName,
       relatedUserId,
       templateType,
+      source,
+      meta: { route: '/api/schedule-welcome-email' },
       enforceRecentProfile: true,
     })
 

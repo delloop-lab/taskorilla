@@ -55,10 +55,27 @@ export async function GET(request: NextRequest) {
         }
 
         if (confirmedUserId) {
+          console.info('welcome_queue_attempt', {
+            userId: confirmedUserId,
+            flow: 'code_exchange',
+            type,
+            requireRecentEmailConfirmation: type !== 'signup',
+          })
           const welcomeResult = await queueWelcomeEmailAfterEmailConfirmation(confirmedUserId, {
             // For explicit signup callbacks, queue directly.
             // For ambiguous code flows, require recent confirmation to avoid stale-login enqueueing.
             requireRecentEmailConfirmation: type !== 'signup',
+            source: 'auth_callback',
+            meta: {
+              callbackFlow: 'code_exchange',
+              callbackType: type || null,
+            },
+          })
+          console.info('welcome_queue_result', {
+            userId: confirmedUserId,
+            flow: 'code_exchange',
+            type,
+            ...welcomeResult,
           })
           if (!welcomeResult.ok) {
             console.error('Welcome email queue after code confirm:', welcomeResult.reason)
@@ -98,8 +115,24 @@ export async function GET(request: NextRequest) {
         data: { user },
       } = await supabase.auth.getUser()
       if (user?.id) {
+        console.info('welcome_queue_attempt', {
+          userId: user.id,
+          flow: 'token_signup',
+          type,
+        })
         const welcomeResult = await queueWelcomeEmailAfterEmailConfirmation(user.id, {
           requireRecentEmailConfirmation: false,
+          source: 'auth_callback',
+          meta: {
+            callbackFlow: 'token_signup',
+            callbackType: type || null,
+          },
+        })
+        console.info('welcome_queue_result', {
+          userId: user.id,
+          flow: 'token_signup',
+          type,
+          ...welcomeResult,
         })
         if (!welcomeResult.ok) {
           console.error('Welcome email queue after email confirm:', welcomeResult.reason)
@@ -148,10 +181,27 @@ export async function GET(request: NextRequest) {
           data: { user },
         } = await supabase.auth.getUser()
         if (user?.id) {
+          console.info('welcome_queue_attempt', {
+            userId: user.id,
+            flow: 'token_hash',
+            type,
+            requireRecentEmailConfirmation: type === 'email',
+          })
           // `type=email` is the usual Supabase confirm link; guard so stale magic-link logins
           // do not enqueue a welcome. `type=signup` is explicit signup confirmation.
           const welcomeResult = await queueWelcomeEmailAfterEmailConfirmation(user.id, {
             requireRecentEmailConfirmation: type === 'email',
+            source: 'auth_callback',
+            meta: {
+              callbackFlow: 'token_hash',
+              callbackType: type || null,
+            },
+          })
+          console.info('welcome_queue_result', {
+            userId: user.id,
+            flow: 'token_hash',
+            type,
+            ...welcomeResult,
           })
           if (!welcomeResult.ok) {
             console.error('Welcome email queue after email confirm:', welcomeResult.reason)
