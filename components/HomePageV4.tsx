@@ -380,7 +380,9 @@ export default function HomePageV4() {
         </div>
       </section>
 
-      <Footer />
+      <div className="bg-white">
+        <Footer />
+      </div>
     </div>
   )
 }
