@@ -412,6 +412,34 @@
     ]
   },
   {
+    "id": "guide-quick-start-tasker",
+    "category": "Primeiros Passos",
+    "type": "guide",
+    "title": "Início Rápido para Requisitantes",
+    "content": "**Passo 1: Crie a sua conta**\n\nRegiste-se, confirme o email e complete os dados básicos do perfil.\n\n**Passo 2: Publique uma tarefa**\n\nClique em 'Publicar Nova Tarefa' e adicione um título claro, descrição, localização e data.\n\n**Passo 3: Reveja e compare propostas**\n\nPode receber várias propostas. Compare preço, perfil, avaliações e mensagens.\n\nNo pré-pagamento, o chat é iniciado pelo Ajudante. Antes da confirmação do pagamento, são permitidos escopo, prazo e intervalo de preço, mas são bloqueados contactos diretos, moradas exatas, links externos e instruções de pagamento direto. Após pagamento confirmado, estas restrições são removidas.\n\n**Passo 4: Conclua o acordo de dupla confirmação**\n\nEscolha a proposta que pretende. O Ajudante precisa de confirmar a tarefa. Só depois das duas confirmações a tarefa fica oficialmente acordada.\n\n**Passo 5: Pague com segurança**\n\nConclua o pagamento no Taskorilla. O Ajudante só é instruído a iniciar o trabalho após confirmação do pagamento.\n\n**Passo 6: Concluir e avaliar**\n\nQuando o trabalho terminar, confirme a conclusão e deixe uma avaliação.",
+    "tags": [
+      "início rápido",
+      "requisitante",
+      "publicar tarefa",
+      "dupla confirmação",
+      "primeiros passos"
+    ]
+  },
+  {
+    "id": "guide-quick-start-helper",
+    "category": "Guia do Ajudante",
+    "type": "guide",
+    "title": "Início Rápido para Ajudantes",
+    "content": "**Passo 1: Complete o seu perfil de Ajudante**\n\nAdicione competências, serviços, disponibilidade e foto para gerar confiança.\n\n**Passo 2: Explore tarefas**\n\nUse filtros de categoria, distância e orçamento para encontrar tarefas relevantes.\n\n**Passo 3: Envie e refine a sua proposta**\n\nVários ajudantes podem propor para a mesma tarefa. Envie o seu preço final e uma mensagem profissional curta com disponibilidade e abordagem.\n\nO Ajudante pode iniciar chat pré-proposta. Antes do pagamento confirmado, mantenha a conversa focada em escopo, prazos e expectativa de preço. Contactos, moradas exatas, links externos e instruções de pagamento direto ficam bloqueados até ao pagamento.\n\n**Passo 4: Conclua a dupla confirmação**\n\nSe o requisitante selecionar a sua proposta, confirme a tarefa quando solicitado. Só então a tarefa fica oficialmente acordada.\n\n**Passo 5: Aguarde confirmação de pagamento**\n\nNão inicie o trabalho antes de o pagamento estar confirmado e a tarefa passar para 'Em Progresso'.\n\n**Passo 6: Termine com qualidade**\n\nAdicione atualizações se necessário, marque a tarefa como concluída e peça avaliação para fortalecer a sua reputação.",
+    "tags": [
+      "início rápido",
+      "ajudante",
+      "propostas",
+      "dupla confirmação",
+      "trabalhar como ajudante"
+    ]
+  },
+  {
     "id": "guide-payments",
     "category": "Guia de Pagamento",
     "type": "guide",

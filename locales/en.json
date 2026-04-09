@@ -247,7 +247,9 @@
     "description3": "Big jobs, small jobs, or anything in between, find trusted helpers or professionals, or offer your skills, and get results quickly and safely.",
     "postTask": "Post a Task for Free",
     "postTaskSubtitle": "Get help to get things done locally!",
-    "tagline": "Brainy. Brawny. Brilliant."
+    "tagline": "Brainy. Brawny. Brilliant.",
+    "findHelpCta": "Find Help",
+    "findWorkCta": "Find Work"
   },
   "landing": {
     "brainyBrawnyText": "Skilled, reliable, and clever. Our helpers tackle tasks big and small, from everyday errands to professional services. Show off your skills, services, or professional role, earn badges, collect reviews, and get noticed.",
@@ -312,14 +314,96 @@
     "myTasks": "My Tasks",
     "pendingReviews": "Pending Reviews",
     "postTask": "Post a Task",
+    "postTasks": "Post Tasks",
     "price": "PRICING",
     "profile": "Profile",
     "signup": "Sign Up Free",
+    "signupTooltip": "Taskorilla is free to join, no credit card needed, no other tricky stuff!",
     "taskerGuidelines": "Helper Guidelines",
     "tasks": "FIND WORK",
+    "home": "Home",
+    "menu": "Menu",
+    "seeTasks": "See Tasks",
+    "myBids": "My Bids",
+    "seeHelpers": "See Helpers",
+    "findHelpers": "Find Helpers",
     "inbox": "Inbox",
     "servicePriceIndex": "Service Price Index",
     "workRequired": "(Get a job done)"
+  },
+  "serviceGrid": {
+    "title": "What do you need help with?",
+    "subtitle": "Tap a card to start — we'll prefill your task for you.",
+    "customTask": {
+      "title": "I need help with...",
+      "subtitle": "Create your own custom task and details."
+    },
+    "becomeHelper": {
+      "title": "I want to become a Taskorilla Helper",
+      "subtitle": "Join our community of experts and start earning on your own schedule."
+    },
+    "cards": {
+      "cleaner": {
+        "title": "I need a cleaner",
+        "subtitle": "Keep your home spotless",
+        "prefillTitle": "I need a cleaner to ",
+        "prefillCategory": "Cleaning & Home Care"
+      },
+      "plumber": {
+        "title": "I need a plumber",
+        "subtitle": "Fix leaks & taps fast",
+        "prefillTitle": "I need a plumber to ",
+        "prefillCategory": "Electrical & Plumbing"
+      },
+      "handyman": {
+        "title": "I need a handyman",
+        "subtitle": "Small jobs, big help",
+        "prefillTitle": "I need a handyman to ",
+        "prefillCategory": "Furniture Assembly & DIY"
+      },
+      "furnitureMoved": {
+        "title": "I need furniture moved",
+        "subtitle": "Help with heavy lifting",
+        "prefillTitle": "I need furniture moved to ",
+        "prefillCategory": "Moving & Lifting Help"
+      },
+      "gardener": {
+        "title": "I need a gardener",
+        "subtitle": "Lawn & garden care",
+        "prefillTitle": "I need a gardener to ",
+        "prefillCategory": "Gardening & Outdoor Maintenance"
+      },
+      "professional": {
+        "title": "I need a professional",
+        "subtitle": "Get insights fast",
+        "prefillTitle": "I need a professional to ",
+        "prefillCategory": "Business professionals"
+      },
+      "assembleFurniture": {
+        "title": "Assemble furniture",
+        "subtitle": "Flat-pack? No problem",
+        "prefillTitle": "I need furniture assembled — ",
+        "prefillCategory": "Furniture Assembly & DIY"
+      },
+      "electrician": {
+        "title": "I need an electrician",
+        "subtitle": "Wiring, sockets & more",
+        "prefillTitle": "I need an electrician to ",
+        "prefillCategory": "Electrical & Plumbing"
+      },
+      "generalAssistance": {
+        "title": "I need general assistance",
+        "subtitle": "In-person or remote errands, admin",
+        "prefillTitle": "I need general assistance with ",
+        "prefillCategory": "Errands & Deliveries"
+      },
+      "techSupport": {
+        "title": "I need tech support",
+        "subtitle": "Expert help with devices",
+        "prefillTitle": "I need tech support with ",
+        "prefillCategory": "Tech Help & Setup"
+      }
+    }
   },
   "roles": {
     "helperDescription": "Earn Money Helping Others",

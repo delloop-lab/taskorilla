@@ -25,7 +25,7 @@
     "helpCenter": "Centro de Ajuda",
     "partner": "Parceiro",
     "privacyPolicy": "Política de Privacidade",
-    "rights": "© 2025-2026 Taskorilla. Todos os direitos reservados. Use com responsabilidade!",
+    "rights": "© 2025-2026 Taskorilla. Todos os direitos reservados.",
     "termsOfService": "Termos de Serviço",
     "blog": "Blog"
   },
@@ -247,7 +247,9 @@
     "description3": "Tarefas grandes, pequenas ou pelo meio, encontre ajudantes de confiança ou profissionais, ou ofereça os seus serviços, e obtenha resultados de forma rápida e segura.",
     "postTask": "Publicar Tarefa Gratuitamente",
     "postTaskSubtitle": "Obtenha ajuda local para concluir o que precisa!",
-    "tagline": "Brilhante. Bravo. Breve."
+    "tagline": "Brilhante. Bravo. Breve.",
+    "findHelpCta": "Encontrar Ajuda",
+    "findWorkCta": "Encontrar Trabalho"
   },
   "landing": {
     "brainyBrawnyText": "Competentes, fiáveis e espertos. Ajudantes que tratam de tudo, desde tarefas do dia a dia até serviços profissionais. Mostre as suas competências, ganhe medalhas, receba avaliações e ganhe visibilidade.",
@@ -312,14 +314,96 @@
     "myTasks": "As minhas Tarefas",
     "pendingReviews": "Avaliações Pendentes",
     "postTask": "Publicar Tarefa",
+    "postTasks": "Publicar Tarefas",
     "price": "CUSTO",
     "profile": "Perfil",
     "signup": "Criar Conta Grátis",
+    "signupTooltip": "A Taskorilla é grátis para aderir, sem cartão de crédito e sem truques!",
     "taskerGuidelines": "Diretrizes do Ajudante",
     "tasks": "Encontrar Trabalho",
+    "home": "Início",
+    "menu": "Menu",
+    "seeTasks": "Ver Tarefas",
+    "myBids": "As Minhas Propostas",
+    "seeHelpers": "Ver Ajudantes",
+    "findHelpers": "Encontrar Ajudantes",
     "inbox": "Caixa de entrada",
     "servicePriceIndex": "Indice de Precos de Servico",
     "workRequired": "(Trabalho Necessário)"
+  },
+  "serviceGrid": {
+    "title": "Com que precisa de ajuda?",
+    "subtitle": "Toque num cartão para começar — vamos pré-preencher a sua tarefa.",
+    "customTask": {
+      "title": "Preciso de ajuda com...",
+      "subtitle": "Crie a sua própria tarefa personalizada e detalhes."
+    },
+    "becomeHelper": {
+      "title": "Quero tornar-me um Ajudante Taskorilla",
+      "subtitle": "Junte-se à nossa comunidade de especialistas e comece a ganhar no seu próprio horário."
+    },
+    "cards": {
+      "cleaner": {
+        "title": "Preciso de uma empregada de limpeza",
+        "subtitle": "Mantenha a sua casa impecável",
+        "prefillTitle": "Preciso de uma empregada de limpeza para ",
+        "prefillCategory": "Limpeza e Cuidados da Casa"
+      },
+      "plumber": {
+        "title": "Preciso de um canalizador",
+        "subtitle": "Repare fugas e torneiras rapidamente",
+        "prefillTitle": "Preciso de um canalizador para ",
+        "prefillCategory": "Eletricidade e Canalização"
+      },
+      "handyman": {
+        "title": "Preciso de um faz-tudo",
+        "subtitle": "Pequenos trabalhos, grande ajuda",
+        "prefillTitle": "Preciso de um faz-tudo para ",
+        "prefillCategory": "Montagem de Móveis e DIY"
+      },
+      "furnitureMoved": {
+        "title": "Preciso de mover móveis",
+        "subtitle": "Ajuda com cargas pesadas",
+        "prefillTitle": "Preciso de mover móveis para ",
+        "prefillCategory": "Mudanças e Ajuda com Cargas"
+      },
+      "gardener": {
+        "title": "Preciso de um jardineiro",
+        "subtitle": "Relvado e cuidado do jardim",
+        "prefillTitle": "Preciso de um jardineiro para ",
+        "prefillCategory": "Jardinagem e Manutenção Exterior"
+      },
+      "professional": {
+        "title": "Preciso de um profissional",
+        "subtitle": "Obtenha orientação rapidamente",
+        "prefillTitle": "Preciso de um profissional para ",
+        "prefillCategory": "Profissionais de Negócios"
+      },
+      "assembleFurniture": {
+        "title": "Montar móveis",
+        "subtitle": "Flat-pack? Sem problema",
+        "prefillTitle": "Preciso de montar móveis — ",
+        "prefillCategory": "Montagem de Móveis e DIY"
+      },
+      "electrician": {
+        "title": "Preciso de um eletricista",
+        "subtitle": "Cablagem, tomadas e mais",
+        "prefillTitle": "Preciso de um eletricista para ",
+        "prefillCategory": "Eletricidade e Canalização"
+      },
+      "generalAssistance": {
+        "title": "Preciso de assistência geral",
+        "subtitle": "Recados presenciais ou remotos, administração",
+        "prefillTitle": "Preciso de assistência geral com ",
+        "prefillCategory": "Recados e Entregas"
+      },
+      "techSupport": {
+        "title": "Preciso de suporte técnico",
+        "subtitle": "Ajuda especializada com dispositivos",
+        "prefillTitle": "Preciso de suporte técnico com ",
+        "prefillCategory": "Ajuda e Configuração Técnica"
+      }
+    }
   },
   "roles": {
     "helperDescription": "Ganhe dinheiro a ajudar outros",
