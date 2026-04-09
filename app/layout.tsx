@@ -133,7 +133,7 @@ export default function RootLayout({
             </Suspense>
             <PausedBanner />
           </div>
-          <main className="min-h-screen bg-gray-50 print:bg-white pb-20 md:pb-0">
+          <main className="min-h-screen bg-gray-50 print:bg-white pt-16 md:pt-0">
             {children}
           </main>
         </LanguageProviderWrapper>

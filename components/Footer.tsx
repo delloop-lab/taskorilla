@@ -87,7 +87,7 @@ export default function Footer({ variant = 'default' }: FooterProps) {
   return (
     <footer className="py-4 px-4 bg-muted/50 border-t border-border">
       <div className="container mx-auto max-w-6xl">
-        <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+        <div className="hidden md:flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
           <Link href="/about" className="hover:text-foreground transition-colors">{t('footer.aboutUs')}</Link>
           <span className="text-muted-foreground/30">|</span>
           <Link href="/privacy" className="hover:text-foreground transition-colors">{t('footer.privacyPolicy')}</Link>

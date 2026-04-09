@@ -308,7 +308,7 @@ export default function TaskDetailPage() {
     if (user) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('is_helper, is_paused, postcode, country')
+        .select('is_helper, is_paused, postcode, country, role')
         .eq('id', user.id)
         .single()
       setUserProfile(profile)
@@ -2752,6 +2752,10 @@ export default function TaskDetailPage() {
   const isTaskOwner = user && task.created_by === user.id
   const hasBid = user && bids.some(bid => bid.user_id === user.id && bid.status !== 'withdrawn')
   const userHasHelperRole = userProfile?.is_helper === true
+  const userCanMessageTaskerAsHelper =
+    userHasHelperRole ||
+    userProfile?.role === 'admin' ||
+    userProfile?.role === 'superadmin'
   const myPendingBid = user
     ? bids.find((bid) => bid.user_id === user.id && bid.status === 'pending')
     : undefined
@@ -3043,7 +3047,7 @@ export default function TaskDetailPage() {
         {/* Helper-first pre-bid chat: helpers can initiate conversation before bidding. */}
         {user && task.user && task.created_by !== user.id && (
           <div className="mt-2 mb-6">
-            {userHasHelperRole ? (
+            {userCanMessageTaskerAsHelper ? (
               <button
                 type="button"
                 onClick={() => handleStartConversation(task.created_by)}

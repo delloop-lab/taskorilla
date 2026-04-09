@@ -87,6 +87,7 @@ function ProfilePageContent() {
   const [preferredMaxDistanceKm, setPreferredMaxDistanceKm] = useState('')
   const [emailPreference, setEmailPreference] = useState<'instant' | 'daily' | 'weekly'>('instant')
   const [smsOptOut, setSmsOptOut] = useState(false)
+  const isSetupRequired = setupRequired && !isTasker
   const [languages, setLanguages] = useState<string[]>([])
   const [iban, setIban] = useState('')
   const [paypalEmail, setPaypalEmail] = useState('')
@@ -282,7 +283,7 @@ function ProfilePageContent() {
       if (data && !isProfileComplete(data)) {
         setShowSetupModal(true)
         // Auto-enable editing if setup is required
-        if (setupRequired) {
+        if (isSetupRequired) {
           setEditing(true)
         }
       }
@@ -825,7 +826,7 @@ function ProfilePageContent() {
           if (isProfileComplete(updatedData)) {
             setShowSetupModal(false)
             // If they came from setup flow, redirect to tasks after a short delay
-            if (setupRequired) {
+            if (isSetupRequired) {
               setTimeout(() => {
                 router.push('/tasks')
                 router.refresh()
@@ -833,7 +834,7 @@ function ProfilePageContent() {
             }
           } else {
             // Profile still incomplete - show modal again if setup is required
-            if (setupRequired) {
+            if (isSetupRequired) {
               setShowSetupModal(true)
             }
           }
@@ -951,7 +952,7 @@ function ProfilePageContent() {
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6 mx-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-gray-900">{t('profile.completeProfile')}</h2>
-              {!setupRequired && (
+              {!isSetupRequired && (
                 <button
                   onClick={() => setShowSetupModal(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -965,7 +966,7 @@ function ProfilePageContent() {
             </div>
             <div className="mb-4">
               <p className="text-gray-700 mb-3">
-                {setupRequired 
+                {isSetupRequired 
                   ? t('profile.completeProfileRequired')
                   : t('profile.completeProfileMissing')}
               </p>
@@ -974,7 +975,7 @@ function ProfilePageContent() {
                   <li key={field}>{field}</li>
                 ))}
               </ul>
-              {setupRequired && (
+              {isSetupRequired && (
                 <p className="text-sm text-gray-500 italic">
                   {t('profile.completeProfileCannotAccess')}
                 </p>
@@ -983,7 +984,7 @@ function ProfilePageContent() {
             <div className="flex justify-end">
               <button
                 onClick={() => {
-                  if (!setupRequired) {
+                  if (!isSetupRequired) {
                     setShowSetupModal(false)
                   } else {
                     // Close modal and enable editing so user can fill in the form
@@ -993,7 +994,7 @@ function ProfilePageContent() {
                 }}
                 className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
-                {setupRequired ? t('profile.completeProfileButton') : t('profile.ok')}
+                {isSetupRequired ? t('profile.completeProfileButton') : t('profile.ok')}
               </button>
             </div>
           </div>

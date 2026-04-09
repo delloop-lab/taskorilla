@@ -6,6 +6,7 @@ import Footer from '@/components/Footer'
 import { MapPin, Mail, Phone, Facebook, Instagram, Loader2 } from 'lucide-react'
 import { FaTiktok, FaYoutube } from 'react-icons/fa6'
 import { supabase } from '@/lib/supabase'
+import { useLanguage } from '@/lib/i18n'
 
 const TILE_COUNT = 5
 const SLOT_HEIGHT = 56 // px – height of each tile and row
@@ -33,6 +34,8 @@ const sampleDistinctNonTeeOffsets = (count: number) => {
 }
 
 function TeeSlotCaptcha({ onValidChange }: TeeSlotCaptchaProps) {
+  const { language } = useLanguage()
+  const isPt = language === 'pt'
   // Deterministic initial icons so server and client match for hydration,
   // while still showing different symbols in each box.
   const [reelOffsets, setReelOffsets] = useState<number[]>(() =>
@@ -165,7 +168,7 @@ function TeeSlotCaptcha({ onValidChange }: TeeSlotCaptchaProps) {
       playSuccessSound()
     } else {
       setTeeRevealed(false)
-      setLocalError("Nope, that's not Tee!")
+      setLocalError(isPt ? 'Ops, esse não é o Tee!' : "Nope, that's not Tee!")
       onValidChange?.(false)
     }
   }
@@ -183,7 +186,7 @@ function TeeSlotCaptcha({ onValidChange }: TeeSlotCaptchaProps) {
         type="button"
         onClick={() => handleTileClick(reelIndex)}
         className="flex flex-col items-center justify-center rounded-2xl border px-2 py-3 text-center text-xs font-medium transition-all border-gray-200 bg-gray-50 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
-        aria-label="Captcha slot reel"
+        aria-label={isPt ? 'Rolo do captcha' : 'Captcha slot reel'}
       >
         <div className="relative w-14 h-16 flex items-center justify-center overflow-hidden rounded-2xl bg-white">
           {isSelectedWrong && (
@@ -209,7 +212,7 @@ function TeeSlotCaptcha({ onValidChange }: TeeSlotCaptchaProps) {
 
   return (
     <div className="space-y-2">
-      <p className="text-sm font-medium text-gray-800">Friendly check</p>
+      <p className="text-sm font-medium text-gray-800">{isPt ? 'Verificação rápida' : 'Friendly check'}</p>
 
       <div className="mt-1 space-y-3">
         <div className="grid grid-cols-5 gap-3">
@@ -221,15 +224,15 @@ function TeeSlotCaptcha({ onValidChange }: TeeSlotCaptchaProps) {
             type="button"
             onClick={startSpin}
             disabled={spinning}
-            className="inline-flex items-center justify-center px-3 py-1.5 rounded-full bg-primary-600 text-white text-xs font-semibold shadow-sm hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center px-3 py-1.5 rounded-full bg-red-600 text-white text-xs font-semibold shadow-lg shadow-red-400/60 hover:bg-red-700 animate-[pulse_650ms_ease-in-out_infinite] disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {spinning ? 'Spinning…' : 'Spin'}
+            {spinning ? (isPt ? 'A girar…' : 'Spinning…') : (isPt ? 'Girar' : 'Spin')}
           </button>
 
           {teeRevealed && !localError ? (
             <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700">
               <span className="text-xs leading-none">✓</span>
-              <span>Great, you&apos;re good to go!</span>
+              <span>{isPt ? 'Perfeito, está tudo certo!' : 'Great, you&apos;re good to go!'}</span>
             </span>
           ) : localError ? (
             <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-red-700 max-w-[220px]">
@@ -237,7 +240,7 @@ function TeeSlotCaptcha({ onValidChange }: TeeSlotCaptchaProps) {
               <span className="leading-snug">{localError}</span>
             </span>
           ) : (
-            <span className="text-[11px] text-gray-500">Find Tee to confirm you’re human.</span>
+            <span className="text-[11px] text-gray-500">{isPt ? 'Encontre o Tee para confirmar que é humano.' : 'Find Tee to confirm you’re human.'}</span>
           )}
         </div>
       </div>
@@ -246,6 +249,8 @@ function TeeSlotCaptcha({ onValidChange }: TeeSlotCaptchaProps) {
 }
 
 export default function ContactPage() {
+  const { language } = useLanguage()
+  const isPt = language === 'pt'
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
@@ -300,12 +305,12 @@ export default function ContactPage() {
     setSuccess(null)
 
     if (!captchaValid) {
-      setError('Please find Tee to confirm you’re human.')
+      setError(isPt ? 'Encontre o Tee para confirmar que é humano.' : 'Please find Tee to confirm you’re human.')
       return
     }
 
     if (!firstName.trim() || !lastName.trim() || !email.trim() || !subject.trim() || !message.trim()) {
-      setError('Please fill in all required fields.')
+      setError(isPt ? 'Preencha todos os campos obrigatórios.' : 'Please fill in all required fields.')
       return
     }
 
@@ -345,17 +350,17 @@ export default function ContactPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || 'Failed to send message. Please try again.')
+        throw new Error(data.error || (isPt ? 'Falha ao enviar a mensagem. Tente novamente.' : 'Failed to send message. Please try again.'))
       }
 
-      setSuccess('Thanks! Tee has received your message and will get back to you shortly.')
+      setSuccess(isPt ? 'Obrigado! O Tee recebeu a sua mensagem e irá responder em breve.' : 'Thanks! Tee has received your message and will get back to you shortly.')
       setFirstName('')
       setLastName('')
       setEmail('')
       setSubject('')
       setMessage('')
     } catch (err: any) {
-      setError(err.message || 'Something went wrong. Please try again.')
+      setError(err.message || (isPt ? 'Algo correu mal. Tente novamente.' : 'Something went wrong. Please try again.'))
     } finally {
       setSubmitting(false)
     }
@@ -369,16 +374,17 @@ export default function ContactPage() {
             href="/"
             className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 mb-4"
           >
-            <span className="mr-1">←</span> Back to Home
+            <span className="mr-1">←</span> {isPt ? 'Voltar ao Início' : 'Back to Home'}
           </Link>
 
           <div className="max-w-3xl mb-8">
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3">
-              Contact Us
+              {isPt ? 'Contacte-nos' : 'Contact Us'}
             </h1>
             <p className="text-gray-700 text-base sm:text-lg leading-relaxed">
-              We’d love to hear from you! Whether it’s questions, feedback, or partnership inquiries,
-              fill out the form below and we’ll get back to you as soon as possible.
+              {isPt
+                ? 'Gostávamos de ouvir de si! Quer sejam dúvidas, feedback ou propostas de parceria, preencha o formulário abaixo e responderemos o mais rapidamente possível.'
+                : 'We’d love to hear from you! Whether it’s questions, feedback, or partnership inquiries, fill out the form below and we’ll get back to you as soon as possible.'}
             </p>
           </div>
 
@@ -386,7 +392,7 @@ export default function ContactPage() {
             {/* Contact form */}
             <section className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 sm:p-6 space-y-4">
               <h2 className="text-lg font-semibold text-gray-900">
-                Send us a message
+                {isPt ? 'Envie-nos uma mensagem' : 'Send us a message'}
               </h2>
 
               {error && (
@@ -404,7 +410,7 @@ export default function ContactPage() {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      First Name
+                      {isPt ? 'Primeiro Nome' : 'First Name'}
                     </label>
                     <input
                       type="text"
@@ -417,7 +423,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Last Name
+                      {isPt ? 'Último Nome' : 'Last Name'}
                     </label>
                     <input
                       type="text"
@@ -432,7 +438,7 @@ export default function ContactPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email Address
+                    {isPt ? 'Endereço de Email' : 'Email Address'}
                   </label>
                   <input
                     type="email"
@@ -446,7 +452,7 @@ export default function ContactPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Subject
+                    {isPt ? 'Assunto' : 'Subject'}
                   </label>
                   <input
                     type="text"
@@ -459,7 +465,7 @@ export default function ContactPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Message
+                    {isPt ? 'Mensagem' : 'Message'}
                   </label>
                   <textarea
                     value={message}
@@ -482,7 +488,7 @@ export default function ContactPage() {
                     {submitting && (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden="true" />
                     )}
-                    {submitting ? 'Sending...' : 'Send Message'}
+                    {submitting ? (isPt ? 'A enviar...' : 'Sending...') : (isPt ? 'Enviar Mensagem' : 'Send Message')}
                   </button>
                 </div>
               </form>
@@ -492,7 +498,7 @@ export default function ContactPage() {
             <section className="space-y-4">
               <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 sm:p-6 space-y-4">
                 <h2 className="text-lg font-semibold text-gray-900">
-                  Contact details
+                  {isPt ? 'Detalhes de contacto' : 'Contact details'}
                 </h2>
                 <div className="space-y-3 text-sm text-gray-700">
                   <div className="flex items-start gap-3">
@@ -501,21 +507,30 @@ export default function ContactPage() {
                       <p className="font-medium text-gray-900">Taskorilla HQ</p>
                       <p>202/1101 Hay Street</p>
                       <p>Western Australia 6005</p>
+                      <a
+                        href="mailto:hq@taskorilla.com"
+                        className="text-primary-700 hover:text-primary-800 break-all"
+                      >
+                        hq@taskorilla.com
+                      </a>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <MapPin className="w-5 h-5 text-primary-600 mt-0.5" />
                     <div>
                       <p className="font-medium text-gray-900">Taskorilla Europe</p>
-                      <p>Apartado 682</p>
-                      <p>EC Lagos 8600-999</p>
-                      <p>Portugal</p>
+                      <a
+                        href="mailto:portugal@taskorilla.com"
+                        className="text-primary-700 hover:text-primary-800 break-all"
+                      >
+                        portugal@taskorilla.com
+                      </a>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <Mail className="w-5 h-5 text-primary-600 mt-0.5" />
                     <div>
-                      <p className="font-medium text-gray-900">Email</p>
+                      <p className="font-medium text-gray-900">{isPt ? 'Email do Site' : 'Site Email'}</p>
                       <a
                         href="mailto:tee@taskorilla.com"
                         className="text-primary-700 hover:text-primary-800 break-all"
@@ -528,7 +543,7 @@ export default function ContactPage() {
 
                 <div className="pt-3 border-t border-gray-100 space-y-2">
                   <p className="text-sm font-medium text-gray-900">
-                    Connect with us
+                    {isPt ? 'Siga-nos' : 'Connect with us'}
                   </p>
                   <div className="flex items-center gap-3">
                     <a

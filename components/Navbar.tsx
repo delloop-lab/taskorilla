@@ -64,6 +64,7 @@ export default function Navbar() {
   const [firstPendingReviewTaskId, setFirstPendingReviewTaskId] = useState<string | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileExpandedSection, setMobileExpandedSection] = useState<'helpers' | 'tasks' | 'more' | null>(null)
+  const [mobileQuickNavAtTop, setMobileQuickNavAtTop] = useState(false)
   const [tasksMenuOpen, setTasksMenuOpen] = useState(false)
   const [helpersMenuOpen, setHelpersMenuOpen] = useState(false)
   const [tasksMenuTimeout, setTasksMenuTimeout] = useState<NodeJS.Timeout | null>(null)
@@ -78,6 +79,16 @@ export default function Navbar() {
       setMobileExpandedSection(null)
     }
   }, [mobileMenuOpen])
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Header height is h-16 (64px). Pin quick-nav to top after crossing it.
+      setMobileQuickNavAtTop(window.scrollY > 64)
+    }
+    handleScroll()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   useEffect(() => {
     // Check current user
@@ -470,7 +481,12 @@ export default function Navbar() {
   const isBrowseActive = pathname === '/tasks' && taskFilter !== 'my_bids'
   const isPostActive = pathname === '/tasks/new'
   const isMyBidsActive = pathname === '/tasks' && taskFilter === 'my_bids'
+  const isHelpersActive = pathname === '/helpers'
   const isAccountActive = pathname === '/profile' || pathname.startsWith('/profile/')
+  const translatedFindHelpers = t('navbar.findHelpers')
+  const findHelpersLabel = translatedFindHelpers === 'navbar.findHelpers'
+    ? (language === 'pt' ? 'Encontrar Ajudantes' : 'Find Helpers')
+    : translatedFindHelpers
 
   if (loading) {
     return (
@@ -496,8 +512,9 @@ export default function Navbar() {
               <Link
                 href="/register"
                 className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
+                title={t('navbar.signupTooltip')}
               >
-                Sign Up Free
+                {t('navbar.signup')}
               </Link>
             </div>
           </div>
@@ -658,7 +675,7 @@ export default function Navbar() {
                     </button>
                     ) : (
                     <Link
-                      href="/tasks/new"
+                      href="/#service-cards-grid"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
                       <span className="block">{t('navbar.postTask')}</span>
@@ -887,8 +904,9 @@ export default function Navbar() {
                 <Link
                   href="/register"
                   className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700"
+                  title={t('navbar.signupTooltip')}
                 >
-                  Sign Up Free
+                  {t('navbar.signup')}
                 </Link>
               </>
             )}
@@ -930,6 +948,31 @@ export default function Navbar() {
                 PT
               </button>
             </div>
+            {!user ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-gray-400 select-none">|</span>
+                <Link
+                  href="/login"
+                  className="text-xs font-semibold text-gray-700 hover:text-primary-600 transition-colors"
+                >
+                  Log In
+                </Link>
+                <Link
+                  href="/register"
+                  className="px-2.5 py-1 text-xs font-semibold rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+                  title={t('navbar.signupTooltip')}
+                >
+                  {t('navbar.signup')}
+                </Link>
+              </div>
+            ) : (
+              <button
+                onClick={handleLogout}
+                className="px-2.5 py-1 text-xs font-semibold rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors"
+              >
+                LOG OUT
+              </button>
+            )}
             {user && (
               <Link
                 href="/messages"
@@ -974,8 +1017,9 @@ export default function Navbar() {
                   href="/register"
                   className="mobile-drawer-link block bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700 text-center"
                   onClick={() => setMobileMenuOpen(false)}
+                  title={t('navbar.signupTooltip')}
                 >
-                  Sign Up Free
+                  {t('navbar.signup')}
                 </Link>
               </div>
             )}
@@ -1327,10 +1371,11 @@ export default function Navbar() {
         </div>
     </nav>
 
-    {/* Mobile persistent bottom nav */}
+    {/* Mobile persistent top nav */}
     <div
-      className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t border-gray-200 shadow-[0_-2px_12px_rgba(0,0,0,0.06)]"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      className={`md:hidden fixed inset-x-0 z-40 bg-orange-100 border-b border-orange-200 shadow-[0_2px_10px_rgba(0,0,0,0.06)] transition-all duration-200 ${
+        mobileQuickNavAtTop ? 'top-0' : 'top-16'
+      }`}
     >
       <div className="grid grid-cols-5 h-16">
         <Link
@@ -1341,7 +1386,7 @@ export default function Navbar() {
           }`}
         >
           <BottomNavIcon active={isHomeActive} pathD="M3 11.5L12 4l9 7.5M6.5 10v9h11v-9" />
-          <span>Home</span>
+          <span>{t('navbar.home')}</span>
         </Link>
 
         <Link
@@ -1352,34 +1397,8 @@ export default function Navbar() {
           }`}
         >
           <BottomNavIcon active={isBrowseActive} pathD="M11 19a8 8 0 1 1 5.3-14l.2.2A8 8 0 0 1 11 19zm10 2-4.3-4.3" />
-          <span>See Tasks</span>
+          <span>{t('navbar.seeTasks')}</span>
         </Link>
-
-        {userPaused ? (
-          <button
-            onClick={() => {
-              setMobileMenuOpen(false)
-              setShowPausedModal(true)
-            }}
-            className={`flex flex-col items-center justify-center text-[11px] font-medium ${
-              isPostActive ? 'text-primary-600' : 'text-gray-600'
-            }`}
-          >
-            <BottomNavIcon active={isPostActive} pathD="M12 3a9 9 0 1 1 0 18a9 9 0 0 1 0-18zm0 4v10M7 12h10" />
-            <span>Post Tasks</span>
-          </button>
-        ) : (
-          <Link
-            href="/tasks/new"
-            onClick={() => setMobileMenuOpen(false)}
-            className={`flex flex-col items-center justify-center text-[11px] font-medium ${
-              isPostActive ? 'text-primary-600' : 'text-gray-600'
-            }`}
-          >
-            <BottomNavIcon active={isPostActive} pathD="M12 3a9 9 0 1 1 0 18a9 9 0 0 1 0-18zm0 4v10M7 12h10" />
-            <span>Post Tasks</span>
-          </Link>
-        )}
 
         {user ? (
           userPaused ? (
@@ -1388,29 +1407,28 @@ export default function Navbar() {
                 setMobileMenuOpen(false)
                 setShowPausedModal(true)
               }}
-              className={`relative flex flex-col items-center justify-center text-[11px] font-medium ${
-                isMyBidsActive ? 'text-primary-600' : 'text-gray-600'
+              className={`relative flex flex-col items-center justify-center text-[10px] leading-tight text-center font-medium px-1 ${
+                isHelpersActive ? 'text-primary-600' : 'text-gray-600'
               }`}
             >
-              <BottomNavIcon active={isMyBidsActive} pathD="M4 8h16v10H4zM9 8V6h6v2M4 12h16" />
-              <span>My Bids</span>
+              <BottomNavIcon active={isHelpersActive} pathD="M4 8h16v10H4zM9 8V6h6v2M4 12h16" />
+              <span>{findHelpersLabel}</span>
               {hasPendingBids && pendingBidsCount > 0 && !bidsViewed && (
                 <span className="absolute top-2 right-6 h-2 w-2 rounded-full bg-orange-500" />
               )}
             </button>
           ) : (
             <Link
-              href="/tasks?filter=my_bids"
+              href="/helpers"
               onClick={() => {
                 setMobileMenuOpen(false)
-                window.dispatchEvent(new Event('bids-viewed'))
               }}
-              className={`relative flex flex-col items-center justify-center text-[11px] font-medium ${
-                isMyBidsActive ? 'text-primary-600' : 'text-gray-600'
+              className={`relative flex flex-col items-center justify-center text-[10px] leading-tight text-center font-medium px-1 ${
+                isHelpersActive ? 'text-primary-600' : 'text-gray-600'
               }`}
             >
-              <BottomNavIcon active={isMyBidsActive} pathD="M4 8h16v10H4zM9 8V6h6v2M4 12h16" />
-              <span>My Bids</span>
+              <BottomNavIcon active={isHelpersActive} pathD="M4 8h16v10H4zM9 8V6h6v2M4 12h16" />
+              <span>{findHelpersLabel}</span>
               {hasPendingBids && pendingBidsCount > 0 && !bidsViewed && (
                 <span className="absolute top-2 right-6 h-2 w-2 rounded-full bg-orange-500" />
               )}
@@ -1418,14 +1436,25 @@ export default function Navbar() {
           )
         ) : (
           <Link
-            href="/login"
+            href="/helpers"
             onClick={() => setMobileMenuOpen(false)}
-            className="flex flex-col items-center justify-center text-[11px] font-medium text-gray-600"
+            className="flex flex-col items-center justify-center text-[10px] leading-tight text-center font-medium text-gray-600 px-1"
           >
             <BottomNavIcon active={false} pathD="M4 8h16v10H4zM9 8V6h6v2M4 12h16" />
-            <span>My Bids</span>
+            <span>{findHelpersLabel}</span>
           </Link>
         )}
+
+        <Link
+          href="/#service-cards-grid"
+          onClick={() => setMobileMenuOpen(false)}
+          className={`flex flex-col items-center justify-center text-[11px] font-medium ${
+            isPostActive ? 'text-primary-600' : 'text-gray-600'
+          }`}
+        >
+          <BottomNavIcon active={isPostActive} pathD="M12 3a9 9 0 1 1 0 18a9 9 0 0 1 0-18zm0 4v10M7 12h10" />
+          <span>{t('navbar.postTasks')}</span>
+        </Link>
 
         <button
           type="button"
@@ -1435,7 +1464,7 @@ export default function Navbar() {
           }`}
         >
           <BottomNavIcon active={mobileMenuOpen} pathD="M4 7h16M4 12h16M4 17h16" />
-          <span>Menu</span>
+          <span>{t('navbar.menu')}</span>
         </button>
       </div>
     </div>

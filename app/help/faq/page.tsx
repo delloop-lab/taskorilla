@@ -63,7 +63,7 @@ export default function FAQPage() {
               {t('help.viewAllGuides')}
             </Link>
             <a 
-              href="mailto:tee@taskorilla.com"
+              href="mailto:support@taskorilla.com?subject=Support%20Request"
               className="px-6 py-3 border-2 border-primary text-primary rounded-lg font-medium hover:bg-primary hover:text-white transition-colors"
             >
               {t('help.contactSupport')}

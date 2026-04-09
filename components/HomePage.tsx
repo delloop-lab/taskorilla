@@ -31,7 +31,7 @@ export default function HomePage() {
               <div className="flex flex-col sm:flex-row gap-3 pt-1">
                 <Link href="#service-cards-grid">
                   <Button size="lg" className="w-full sm:w-auto min-w-[220px]">
-                    Find Help
+                    {t('homepage.findHelpCta')}
                   </Button>
                 </Link>
                 <Link href="/tasks">
@@ -40,7 +40,7 @@ export default function HomePage() {
                     variant="outline"
                     className="w-full sm:w-auto min-w-[220px]"
                   >
-                    Find Work
+                    {t('homepage.findWorkCta')}
                   </Button>
                 </Link>
               </div>
@@ -339,7 +339,7 @@ export default function HomePage() {
       </section>
 
       {/* CTA */}
-      <section className="py-4 px-4 bg-gradient-to-br from-primary to-accent text-primary-foreground">
+      <section className="hidden md:block py-4 px-4 bg-gradient-to-br from-primary to-accent text-primary-foreground">
         <div className="container mx-auto max-w-6xl">
           <div className="grid md:grid-cols-3 gap-2 items-center">
             <div className="flex justify-center md:justify-end order-2 md:order-1">

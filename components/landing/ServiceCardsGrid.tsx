@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ServiceCard } from '@/components/landing/ServiceCard'
+import { useLanguage } from '@/lib/i18n'
 
 type CardItem = {
   emoji: string
@@ -10,104 +11,106 @@ type CardItem = {
   prefillCategory?: string
 }
 
-const CARDS: CardItem[] = [
-  {
-    emoji: '🧹',
-    title: 'I need a cleaner',
-    subtitle: 'Keep your home spotless',
-    prefillTaskType: 'helper',
-    prefillTitle: 'I need a cleaner to ',
-    prefillCategory: 'Cleaning & Home Care',
-  },
-  {
-    emoji: '🔧',
-    title: 'I need a plumber',
-    subtitle: 'Fix leaks & taps fast',
-    prefillTaskType: 'helper',
-    prefillTitle: 'I need a plumber to ',
-    prefillCategory: 'Electrical & Plumbing',
-  },
-  {
-    emoji: '🛠️',
-    title: 'I need a handyman',
-    subtitle: 'Small jobs, big help',
-    prefillTaskType: 'helper',
-    prefillTitle: 'I need a handyman to ',
-    prefillCategory: 'Furniture Assembly & DIY',
-  },
-  {
-    emoji: '🛋️',
-    title: 'I need furniture moved',
-    subtitle: 'Help with heavy lifting',
-    prefillTaskType: 'helper',
-    prefillTitle: 'I need furniture moved to ',
-    prefillCategory: 'Moving & Lifting Help',
-  },
-  {
-    emoji: '🌿',
-    title: 'I need a gardener',
-    subtitle: 'Lawn & garden care',
-    prefillTaskType: 'helper',
-    prefillTitle: 'I need a gardener to ',
-    prefillCategory: 'Gardening & Outdoor Maintenance',
-  },
-  {
-    emoji: '📊',
-    title: 'I need a professional',
-    subtitle: 'Get insights fast',
-    prefillTaskType: 'professional',
-    prefillTitle: 'I need a professional to ',
-    prefillCategory: 'Business professionals',
-  },
-  {
-    emoji: '🪑',
-    title: 'Assemble furniture',
-    subtitle: 'Flat-pack? No problem',
-    prefillTaskType: 'helper',
-    prefillTitle: 'I need furniture assembled — ',
-    prefillCategory: 'Furniture Assembly & DIY',
-  },
-  {
-    emoji: '⚡',
-    title: 'I need an electrician',
-    subtitle: 'Wiring, sockets & more',
-    prefillTaskType: 'helper',
-    prefillTitle: 'I need an electrician to ',
-    prefillCategory: 'Electrical & Plumbing',
-  },
-  {
-    emoji: '📋',
-    title: 'I need general assistance',
-    subtitle: 'In-person or remote errands, admin',
-    prefillTaskType: 'helper',
-    prefillTitle: 'I need general assistance with ',
-    prefillCategory: 'Errands & Deliveries',
-  },
-  {
-    emoji: '💻',
-    title: 'I need tech support',
-    subtitle: 'Expert help with devices',
-    prefillTaskType: 'helper',
-    prefillTitle: 'I need tech support with ',
-    prefillCategory: 'Tech Help & Setup',
-  },
-]
-
 export function ServiceCardsGrid() {
+  const { t } = useLanguage()
+
+  const cards: CardItem[] = [
+    {
+      emoji: '🧹',
+      title: t('serviceGrid.cards.cleaner.title'),
+      subtitle: t('serviceGrid.cards.cleaner.subtitle'),
+      prefillTaskType: 'helper',
+      prefillTitle: t('serviceGrid.cards.cleaner.prefillTitle'),
+      prefillCategory: t('serviceGrid.cards.cleaner.prefillCategory'),
+    },
+    {
+      emoji: '🔧',
+      title: t('serviceGrid.cards.plumber.title'),
+      subtitle: t('serviceGrid.cards.plumber.subtitle'),
+      prefillTaskType: 'helper',
+      prefillTitle: t('serviceGrid.cards.plumber.prefillTitle'),
+      prefillCategory: t('serviceGrid.cards.plumber.prefillCategory'),
+    },
+    {
+      emoji: '🛠️',
+      title: t('serviceGrid.cards.handyman.title'),
+      subtitle: t('serviceGrid.cards.handyman.subtitle'),
+      prefillTaskType: 'helper',
+      prefillTitle: t('serviceGrid.cards.handyman.prefillTitle'),
+      prefillCategory: t('serviceGrid.cards.handyman.prefillCategory'),
+    },
+    {
+      emoji: '🛋️',
+      title: t('serviceGrid.cards.furnitureMoved.title'),
+      subtitle: t('serviceGrid.cards.furnitureMoved.subtitle'),
+      prefillTaskType: 'helper',
+      prefillTitle: t('serviceGrid.cards.furnitureMoved.prefillTitle'),
+      prefillCategory: t('serviceGrid.cards.furnitureMoved.prefillCategory'),
+    },
+    {
+      emoji: '🌿',
+      title: t('serviceGrid.cards.gardener.title'),
+      subtitle: t('serviceGrid.cards.gardener.subtitle'),
+      prefillTaskType: 'helper',
+      prefillTitle: t('serviceGrid.cards.gardener.prefillTitle'),
+      prefillCategory: t('serviceGrid.cards.gardener.prefillCategory'),
+    },
+    {
+      emoji: '📊',
+      title: t('serviceGrid.cards.professional.title'),
+      subtitle: t('serviceGrid.cards.professional.subtitle'),
+      prefillTaskType: 'professional',
+      prefillTitle: t('serviceGrid.cards.professional.prefillTitle'),
+      prefillCategory: t('serviceGrid.cards.professional.prefillCategory'),
+    },
+    {
+      emoji: '🪑',
+      title: t('serviceGrid.cards.assembleFurniture.title'),
+      subtitle: t('serviceGrid.cards.assembleFurniture.subtitle'),
+      prefillTaskType: 'helper',
+      prefillTitle: t('serviceGrid.cards.assembleFurniture.prefillTitle'),
+      prefillCategory: t('serviceGrid.cards.assembleFurniture.prefillCategory'),
+    },
+    {
+      emoji: '⚡',
+      title: t('serviceGrid.cards.electrician.title'),
+      subtitle: t('serviceGrid.cards.electrician.subtitle'),
+      prefillTaskType: 'helper',
+      prefillTitle: t('serviceGrid.cards.electrician.prefillTitle'),
+      prefillCategory: t('serviceGrid.cards.electrician.prefillCategory'),
+    },
+    {
+      emoji: '📋',
+      title: t('serviceGrid.cards.generalAssistance.title'),
+      subtitle: t('serviceGrid.cards.generalAssistance.subtitle'),
+      prefillTaskType: 'helper',
+      prefillTitle: t('serviceGrid.cards.generalAssistance.prefillTitle'),
+      prefillCategory: t('serviceGrid.cards.generalAssistance.prefillCategory'),
+    },
+    {
+      emoji: '💻',
+      title: t('serviceGrid.cards.techSupport.title'),
+      subtitle: t('serviceGrid.cards.techSupport.subtitle'),
+      prefillTaskType: 'helper',
+      prefillTitle: t('serviceGrid.cards.techSupport.prefillTitle'),
+      prefillCategory: t('serviceGrid.cards.techSupport.prefillCategory'),
+    },
+  ]
+
   return (
     <section className="py-10 md:py-14 px-4 bg-white">
       <div className="container mx-auto max-w-4xl">
         <div className="mb-8 text-center">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900">What do you need help with?</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{t('serviceGrid.title')}</h2>
           <p className="mt-2 text-sm md:text-base text-gray-500">
-            Tap a card to start — we'll prefill your task for you.
+            {t('serviceGrid.subtitle')}
           </p>
         </div>
 
         {/* Outer card container matching reference image */}
         <div className="bg-[#ececec] rounded-2xl p-4 md:p-6 shadow-sm">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {CARDS.map((card) => {
+            {cards.map((card) => {
               const href = `/tasks/new?formType=quick&prefill=1&prefillTaskType=${card.prefillTaskType}&prefillTitle=${encodeURIComponent(card.prefillTitle)}${card.prefillCategory ? `&prefillCategory=${encodeURIComponent(card.prefillCategory)}` : ''}`
               return (
                 <ServiceCard
@@ -129,8 +132,8 @@ export function ServiceCardsGrid() {
                 ✏️
               </span>
               <div className="min-w-0">
-                <p className="text-[15px] font-bold text-gray-900 leading-snug">I need help with...</p>
-                <p className="text-[13px] text-gray-500 mt-0.5">Create your own custom task and details.</p>
+                <p className="text-[15px] font-bold text-gray-900 leading-snug">{t('serviceGrid.customTask.title')}</p>
+                <p className="text-[13px] text-gray-500 mt-0.5">{t('serviceGrid.customTask.subtitle')}</p>
               </div>
             </Link>
 
@@ -143,8 +146,8 @@ export function ServiceCardsGrid() {
                 🤝
               </span>
               <div className="min-w-0">
-                <p className="text-[15px] font-bold text-blue-900 leading-snug">I want to become a Taskorilla Helper</p>
-                <p className="text-[13px] text-blue-600/80 mt-0.5">Join our community of experts and start earning on your own schedule.</p>
+                <p className="text-[15px] font-bold text-blue-900 leading-snug">{t('serviceGrid.becomeHelper.title')}</p>
+                <p className="text-[13px] text-blue-600/80 mt-0.5">{t('serviceGrid.becomeHelper.subtitle')}</p>
               </div>
             </Link>
           </div>

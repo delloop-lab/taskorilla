@@ -113,9 +113,9 @@ export default function ConversationPage() {
         .eq('id', user.id)
         .single()
       setCurrentUserPaused(profile?.is_paused === true)
-      if (profile?.role === 'admin' || profile?.role === 'superadmin') {
-        setIsAdminViewing(true)
-      }
+      // Do not force admin audit mode just because the user is admin.
+      // Audit mode is enabled only when viewing a conversation they are not a participant in.
+      setIsAdminViewing(false)
     }
   }
 
@@ -170,6 +170,10 @@ export default function ConversationPage() {
             setIsAdminViewing(true)
             setParticipant1(participant1Result.data)
             setParticipant2(participantResult.data)
+          } else {
+            setIsAdminViewing(false)
+            setParticipant1(null)
+            setParticipant2(null)
           }
 
         }
