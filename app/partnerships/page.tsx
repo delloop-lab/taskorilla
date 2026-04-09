@@ -7,42 +7,46 @@ import { FaLinkedinIn } from 'react-icons/fa6'
 
 export default function PartnershipsPage() {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#F8F9FA] bg-[radial-gradient(#c9d2dc_0.8px,transparent_0.8px)] [background-size:16px_16px]">
       <main className="flex-1">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-          <Link
-            href="/"
-            className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 mb-4"
-          >
-            <span className="mr-1">←</span> Back to Home
-          </Link>
+        <section className="bg-[#F8F9FA] px-4 py-8 sm:py-12 md:py-16 relative overflow-hidden">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_45%),radial-gradient(circle_at_bottom_left,rgba(249,115,22,0.10),transparent_40%)]" />
+          <div className="max-w-5xl mx-auto relative z-10">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-3 sm:mb-4 md:mb-6 transition-colors text-xs sm:text-sm md:text-base"
+            >
+              <span>←</span> Back to Home
+            </Link>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 mb-3 sm:mb-4">
+              Run Taskorilla in Your Country
+              <span className="block text-primary-700 text-2xl sm:text-3xl mt-1">
+                Partnerships for local operators.
+              </span>
+            </h1>
 
-          {/* Hero */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Run Taskorilla in Your Country
-            <span className="block text-primary-600 text-2xl sm:text-3xl mt-1">
-              Partnerships for local operators.
-            </span>
-          </h1>
-
-          <div className="space-y-3 text-gray-700 leading-relaxed max-w-3xl">
-            <p>
-              Taskorilla was born global.
-            </p>
-            <p>
-              We are looking for experienced, driven operators to launch and grow the platform in new markets.
-            </p>
-            <p>
-              If you understand your local market, know how to build partnerships, and want to create a scalable
-              marketplace business, this may be for you.
-            </p>
+            <div className="space-y-3 text-gray-700 leading-relaxed max-w-3xl text-base sm:text-lg">
+              <p>
+                Taskorilla was born global.
+              </p>
+              <p>
+                We are looking for experienced, driven operators to launch and grow the platform in new markets.
+              </p>
+              <p>
+                If you understand your local market, know how to build partnerships, and want to create a scalable
+                marketplace business, this may be for you.
+              </p>
+            </div>
           </div>
+        </section>
+
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
 
           {/* What Is This Opportunity */}
-          <div className="mt-8 grid md:grid-cols-2 gap-6">
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 space-y-4">
+          <div className="mt-8 grid md:grid-cols-2 gap-5">
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="rounded-full bg-primary-50 text-primary-600 p-2">
+                <div className="rounded-full bg-gray-100 text-primary-600 p-2">
                   <Globe2 className="w-5 h-5" />
                 </div>
                 <h2 className="text-lg font-semibold text-gray-900">
@@ -81,9 +85,9 @@ export default function PartnershipsPage() {
             </div>
 
             {/* Why Taskorilla */}
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 space-y-4">
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="rounded-full bg-emerald-50 text-emerald-600 p-2">
+                <div className="rounded-full bg-gray-100 text-emerald-600 p-2">
                   <Users className="w-5 h-5" />
                 </div>
                 <h2 className="text-lg font-semibold text-gray-900">
@@ -98,7 +102,7 @@ export default function PartnershipsPage() {
                 By operating Taskorilla in your country, you are not just building a business. You are supporting the
                 local economy and helping skilled people earn fairly while solving real problems for customers.
               </p>
-              <div className="bg-gray-50 border border-dashed border-gray-200 rounded-lg p-4 text-sm text-gray-700 space-y-2">
+              <div className="bg-[#F8F9FA] border border-gray-200 rounded-xl p-4 text-sm text-gray-700 space-y-2">
                 <p className="font-semibold text-gray-900">The model is lean.</p>
                 <ul className="list-disc pl-5 space-y-1">
                   <li>No inventory.</li>
@@ -113,10 +117,10 @@ export default function PartnershipsPage() {
           </div>
 
           {/* Who we are looking for & The Model */}
-          <div className="mt-8 grid md:grid-cols-2 gap-6">
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 space-y-4">
+          <div className="mt-8 grid md:grid-cols-2 gap-5">
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="rounded-full bg-amber-50 text-amber-600 p-2">
+                <div className="rounded-full bg-gray-100 text-amber-600 p-2">
                   <Users className="w-5 h-5" />
                 </div>
                 <h2 className="text-lg font-semibold text-gray-900">
@@ -136,14 +140,14 @@ export default function PartnershipsPage() {
                 <li>Be able to build and manage relationships</li>
                 <li>Be prepared to commit time and effort</li>
               </ul>
-              <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-md px-3 py-2 mt-1">
+              <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mt-1">
                 This is not suited to someone looking for a passive income stream.
               </p>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 space-y-4">
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="rounded-full bg-indigo-50 text-indigo-600 p-2">
+                <div className="rounded-full bg-gray-100 text-indigo-600 p-2">
                   <TrendingUp className="w-5 h-5" />
                 </div>
                 <h2 className="text-lg font-semibold text-gray-900">
@@ -170,9 +174,9 @@ export default function PartnershipsPage() {
           </div>
 
           {/* Interested? */}
-          <div className="mt-10 bg-primary-50 border border-primary-100 rounded-2xl px-5 sm:px-8 py-6 sm:py-8 space-y-5">
+          <div className="mt-10 bg-[#eef4fa] border border-[#d9e3eb] rounded-2xl px-5 sm:px-8 py-6 sm:py-8 space-y-5 shadow-sm">
             <div className="flex items-center gap-3 mb-1">
-              <div className="rounded-full bg-primary-100 text-primary-700 p-2">
+              <div className="rounded-full bg-white text-primary-700 p-2 border border-gray-200">
                 <Rocket className="w-5 h-5" />
               </div>
               <h2 className="text-xl font-semibold text-gray-900">

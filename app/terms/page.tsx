@@ -151,21 +151,26 @@ export default function TermsPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <main className="flex-1">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <Link
-            href="/"
-            className="text-primary-600 hover:text-primary-700 mb-6 inline-block"
-          >
-            {backText}
-          </Link>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            {titleText}
-          </h1>
-          <p className="text-gray-600 mb-8">{lastUpdatedText}: {lastUpdated}</p>
+        <section className="bg-[#F8F9FA] px-4 py-8 sm:py-12 md:py-16 relative overflow-hidden">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_45%),radial-gradient(circle_at_bottom_left,rgba(249,115,22,0.10),transparent_40%)]" />
+          <div className="max-w-4xl mx-auto relative z-10">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-3 sm:mb-4 md:mb-6 transition-colors text-xs sm:text-sm md:text-base"
+            >
+              {backText}
+            </Link>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 mb-3 sm:mb-4">
+              {titleText}
+            </h1>
+            <p className="text-sm sm:text-base md:text-lg text-gray-600 mb-4">{lastUpdatedText}: {lastUpdated}</p>
+            <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed">
+              {introText}
+            </p>
+          </div>
+        </section>
 
-          <p className="text-gray-700 mb-8">
-            {introText}
-          </p>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
           <div className="space-y-6">
             {sections.map(({ title, content }) => (

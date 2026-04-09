@@ -10,39 +10,43 @@ export default function AdvertisingOpportunitiesPage() {
   const isPt = language === 'pt'
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#F8F9FA] bg-[radial-gradient(#c9d2dc_0.8px,transparent_0.8px)] [background-size:16px_16px]">
       <main className="flex-1">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-          <Link
-            href="/"
-            className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 mb-4"
-          >
-            <span className="mr-1">←</span> {isPt ? 'Voltar ao Início' : 'Back to Home'}
-          </Link>
+        <section className="bg-[#F8F9FA] px-4 py-8 sm:py-12 md:py-16 relative overflow-hidden">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_45%),radial-gradient(circle_at_bottom_left,rgba(249,115,22,0.10),transparent_40%)]" />
+          <div className="max-w-5xl mx-auto relative z-10">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-3 sm:mb-4 md:mb-6 transition-colors text-xs sm:text-sm md:text-base"
+            >
+              <span>←</span> {isPt ? 'Voltar ao Início' : 'Back to Home'}
+            </Link>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 mb-3 sm:mb-4">
+              {isPt ? 'Publicidade' : 'Advertising'}
+              <span className="block text-primary-700 text-2xl sm:text-3xl mt-1">
+                {isPt ? 'Coloque o seu negócio no mapa da Taskorilla.' : 'Put your business on the Taskorilla map.'}
+              </span>
+            </h1>
 
-          {/* Hero */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            {isPt ? 'Publicidade' : 'Advertising'}
-            <span className="block text-primary-600 text-2xl sm:text-3xl mt-1">
-              {isPt ? 'Coloque o seu negócio no mapa da Taskorilla.' : 'Put your business on the Taskorilla map.'}
-            </span>
-          </h1>
-
-          <div className="space-y-3 text-gray-700 leading-relaxed max-w-3xl">
-            <p>
-              {isPt
-                ? 'Quer que o seu negócio seja visto por pessoas locais que estão ativamente ligadas a oportunidades perto de si? A vista de mapa da Taskorilla coloca a sua marca exatamente onde as pessoas interagem com a comunidade.'
-                : 'Want your business to be seen by locals who are actively connecting with opportunities nearby? Taskorilla’s map view puts your brand exactly where people are engaging with their community.'}
-            </p>
-            <p>
-              {isPt
-                ? 'Os nossos Ajudantes usam o mapa para descobrir tarefas e experiências à sua volta, e agora o seu negócio pode fazer parte dessa rede dinâmica. Isto não é apenas visibilidade, é uma forma de envolver um público ativo, móvel e pronto para interagir.'
-                : 'Our Helpers use the map to discover tasks and experiences around them and now your business can be part of that dynamic network. This isn’t just visibility, it’s a way to engage with an audience that’s active, mobile and ready to interact.'}
-            </p>
+            <div className="space-y-3 text-gray-700 leading-relaxed max-w-3xl text-base sm:text-lg">
+              <p>
+                {isPt
+                  ? 'Quer que o seu negócio seja visto por pessoas locais que estão ativamente ligadas a oportunidades perto de si? A vista de mapa da Taskorilla coloca a sua marca exatamente onde as pessoas interagem com a comunidade.'
+                  : 'Want your business to be seen by locals who are actively connecting with opportunities nearby? Taskorilla’s map view puts your brand exactly where people are engaging with their community.'}
+              </p>
+              <p>
+                {isPt
+                  ? 'Os nossos Ajudantes usam o mapa para descobrir tarefas e experiências à sua volta, e agora o seu negócio pode fazer parte dessa rede dinâmica. Isto não é apenas visibilidade, é uma forma de envolver um público ativo, móvel e pronto para interagir.'
+                  : 'Our Helpers use the map to discover tasks and experiences around them and now your business can be part of that dynamic network. This isn’t just visibility, it’s a way to engage with an audience that’s active, mobile and ready to interact.'}
+              </p>
+            </div>
           </div>
+        </section>
+
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
 
           {/* Who this is for */}
-          <div className="mt-6 bg-white border border-gray-200 rounded-xl shadow-sm p-4 sm:p-5">
+          <div className="mt-6 bg-white border border-gray-200 rounded-2xl shadow-sm p-4 sm:p-5">
             <h2 className="text-sm font-semibold text-gray-900 mb-3">
               {isPt ? 'Ideal para' : 'Ideal for'}
             </h2>
@@ -60,13 +64,13 @@ export default function AdvertisingOpportunitiesPage() {
           </div>
 
           {/* Main content: benefits + map preview */}
-          <div className="mt-10 grid lg:grid-cols-2 gap-10 items-stretch">
+          <div className="mt-10 grid lg:grid-cols-2 gap-8 items-stretch">
             <section>
               <h2 className="text-2xl font-semibold text-gray-900">
                 {isPt ? 'Por que anunciar connosco?' : 'Why advertise with us?'}
               </h2>
               <div className="mt-5 space-y-4 text-gray-700">
-                <div className="flex items-start gap-3 bg-white border border-gray-100 rounded-lg p-4 shadow-sm">
+                <div className="flex items-start gap-3 bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
                   <div className="mt-1 text-primary-600">
                     <MapPin className="w-6 h-6" />
                   </div>
@@ -80,7 +84,7 @@ export default function AdvertisingOpportunitiesPage() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 bg-white border border-gray-100 rounded-lg p-4 shadow-sm">
+                <div className="flex items-start gap-3 bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
                   <div className="mt-1 text-amber-600">
                     <Users className="w-6 h-6" />
                   </div>
@@ -94,7 +98,7 @@ export default function AdvertisingOpportunitiesPage() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 bg-white border border-gray-100 rounded-lg p-4 shadow-sm">
+                <div className="flex items-start gap-3 bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
                   <div className="mt-1 text-emerald-600">
                     <Target className="w-6 h-6" />
                   </div>
@@ -108,7 +112,7 @@ export default function AdvertisingOpportunitiesPage() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 bg-white border border-gray-100 rounded-lg p-4 shadow-sm">
+                <div className="flex items-start gap-3 bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
                   <div className="mt-1 text-blue-600">
                     <Link2 className="w-6 h-6" />
                   </div>
@@ -128,7 +132,7 @@ export default function AdvertisingOpportunitiesPage() {
               <p className="text-gray-700 mb-3 text-sm font-medium">
                 {isPt ? 'Pré-visualização de como aparece no mapa:' : 'Here’s a preview of what it looks like on the map:'}
               </p>
-              <div className="border border-gray-200 rounded-xl bg-white shadow-lg overflow-hidden flex-1 min-h-[280px]">
+              <div className="border border-gray-200 rounded-2xl bg-white shadow-sm overflow-hidden flex-1 min-h-[280px]">
                 <img
                   src="/map.png"
                   alt={isPt ? 'Exemplo do mapa Taskorilla com marcadores' : 'Example of Taskorilla map with markers'}
@@ -142,7 +146,7 @@ export default function AdvertisingOpportunitiesPage() {
           </div>
 
           {/* Call to action */}
-          <div className="mt-10 bg-primary-50 border border-primary-100 rounded-2xl px-5 sm:px-8 py-6 sm:py-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="mt-10 bg-[#eef4fa] border border-[#d9e3eb] rounded-2xl px-5 sm:px-8 py-6 sm:py-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-sm">
             <div className="space-y-2 text-gray-800 max-w-xl">
               <h3 className="text-lg font-semibold text-gray-900">
                 {isPt ? 'Pronto para colocar o seu negócio no mapa?' : 'Ready to put your business on the map?'}

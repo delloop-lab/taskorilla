@@ -50,12 +50,12 @@ export default function HomePageV4() {
         <div className="container mx-auto max-w-6xl relative">
           <SocialBar className="absolute right-0 top-[-1.5rem] sm:top-[-2rem] md:top-[-3rem] md:right-2 lg:right-0" />
           {/* Mobile asymmetric mascot peek */}
-          <div className="pointer-events-none absolute -right-5 top-10 z-20 md:hidden">
+          <div className="pointer-events-none absolute -right-6 top-6 z-20 md:hidden">
             <img
               src="/images/gorilla-mascot-newer.png"
               alt=""
               aria-hidden="true"
-              className="h-32 w-32 object-contain drop-shadow-sm"
+              className="h-44 w-44 object-contain drop-shadow-sm"
             />
           </div>
           <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -69,7 +69,7 @@ export default function HomePageV4() {
               <p className="max-w-2xl text-lg sm:text-xl md:text-2xl leading-relaxed text-muted-foreground">
                 Post a task for free and get offers from trusted local helpers. Pay only when the job is done.
               </p>
-              <div className="flex flex-col sm:flex-row gap-3 pt-1">
+              <div className="flex flex-col items-center justify-center gap-3 pt-1 sm:flex-row sm:items-stretch sm:justify-start">
                 <Link href="/tasks/new">
                   <Button size="lg" className="w-full sm:w-auto min-w-[220px]">
                     Post a Task
@@ -139,7 +139,7 @@ export default function HomePageV4() {
               const isOpen = openWhyCard === item.id
               return (
                 <Card key={item.id} className="self-start rounded-2xl border border-gray-200 bg-white shadow-sm">
-                  <CardContent className="p-5">
+                  <CardContent className="p-4 md:p-5">
                     <button
                       type="button"
                       onClick={() => setOpenWhyCard(isOpen ? null : item.id)}
@@ -148,10 +148,10 @@ export default function HomePageV4() {
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <h3 className="text-xl font-semibold text-foreground">
+                          <h3 className="text-lg md:text-xl font-semibold text-foreground">
                             {item.title}
                           </h3>
-                          <p className="mt-1 min-h-[60px] text-muted-foreground">{item.summary}</p>
+                          <p className="mt-1 md:min-h-[60px] text-sm md:text-base text-muted-foreground">{item.summary}</p>
                         </div>
                         <ChevronDown
                           className={`mt-1 h-5 w-5 flex-shrink-0 text-gray-500 transition-transform ${
@@ -210,7 +210,7 @@ export default function HomePageV4() {
               const isOpen = openHowItWorks === item.id
               return (
                 <Card key={item.id} className="self-start rounded-2xl border border-gray-200 bg-white shadow-sm">
-                  <CardContent className="p-5">
+                  <CardContent className="p-4 md:p-5">
                     <button
                       type="button"
                       onClick={() => setOpenHowItWorks(isOpen ? null : item.id)}
@@ -219,13 +219,13 @@ export default function HomePageV4() {
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-base">
+                          <span className="inline-flex h-7 w-7 md:h-8 md:w-8 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-sm md:text-base">
                             {item.icon}
                           </span>
-                          <h3 className="mt-3 text-xl font-semibold text-foreground">
+                          <h3 className="mt-2 text-lg md:text-xl font-semibold text-foreground">
                             {item.title}
                           </h3>
-                          <p className="mt-1 whitespace-pre-line text-muted-foreground">{item.summary}</p>
+                          <p className="mt-1 whitespace-pre-line text-sm md:text-base text-muted-foreground">{item.summary}</p>
                         </div>
                         <ChevronDown
                           className={`mt-1 h-5 w-5 flex-shrink-0 text-gray-500 transition-transform ${
@@ -366,13 +366,13 @@ export default function HomePageV4() {
       {/* Final CTA */}
       <section className="py-6 md:py-8 px-4">
         <div className="container mx-auto max-w-6xl">
-          <div className="rounded-2xl border border-[#d9e3eb] bg-[#eef4fa] px-6 py-10 text-center shadow-sm">
-            <h2 className="text-4xl font-bold tracking-tight text-gray-900">
+          <div className="rounded-2xl border border-[#d9e3eb] bg-[#eef4fa] px-5 py-7 md:px-6 md:py-10 text-center shadow-sm">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">
               Stop waiting. Get it done.
             </h2>
             <Link
               href="/tasks/new"
-              className="mt-6 inline-flex items-center justify-center rounded-xl bg-primary-600 px-6 py-3 text-base font-semibold text-white shadow-md shadow-primary-600/25 transition hover:bg-primary-700"
+              className="mt-4 md:mt-6 inline-flex items-center justify-center rounded-xl bg-primary-600 px-6 py-2.5 md:py-3 text-base font-semibold text-white shadow-md shadow-primary-600/25 transition hover:bg-primary-700"
             >
               Post a Task
             </Link>

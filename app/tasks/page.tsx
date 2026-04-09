@@ -1469,7 +1469,7 @@ function TasksPageContent() {
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('tasks.title')}</h1>
       </div>
 
-      <div className="mb-6 flex flex-col gap-3 sm:gap-4">
+      <div className="mb-6 flex flex-wrap items-center gap-2 sm:gap-3">
         <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
         <button
           onClick={() => handleFilterClick('all')}
@@ -1598,7 +1598,7 @@ function TasksPageContent() {
           </label>
         )}
         </div>
-        <div className="grid grid-cols-2 sm:flex gap-2 sm:gap-3 w-full sm:w-auto">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Link
             href="/tasks/new"
             className="bg-primary-600 text-white px-3 sm:px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700 text-center whitespace-nowrap"

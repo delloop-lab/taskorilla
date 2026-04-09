@@ -369,24 +369,29 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <main className="flex-1">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-          <Link
-            href="/"
-            className="inline-flex items-center text-sm text-primary-600 hover:text-primary-700 mb-4"
-          >
-            <span className="mr-1">←</span> {isPt ? 'Voltar ao Início' : 'Back to Home'}
-          </Link>
-
-          <div className="max-w-3xl mb-8">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3">
-              {isPt ? 'Contacte-nos' : 'Contact Us'}
-            </h1>
-            <p className="text-gray-700 text-base sm:text-lg leading-relaxed">
-              {isPt
-                ? 'Gostávamos de ouvir de si! Quer sejam dúvidas, feedback ou propostas de parceria, preencha o formulário abaixo e responderemos o mais rapidamente possível.'
-                : 'We’d love to hear from you! Whether it’s questions, feedback, or partnership inquiries, fill out the form below and we’ll get back to you as soon as possible.'}
-            </p>
+        <section className="bg-[#F8F9FA] px-4 py-8 sm:py-12 md:py-16 relative overflow-hidden">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_45%),radial-gradient(circle_at_bottom_left,rgba(249,115,22,0.10),transparent_40%)]" />
+          <div className="max-w-5xl mx-auto relative z-10">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-3 sm:mb-4 md:mb-6 transition-colors text-xs sm:text-sm md:text-base"
+            >
+              <span>←</span> {isPt ? 'Voltar ao Início' : 'Back to Home'}
+            </Link>
+            <div className="max-w-3xl">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 mb-3">
+                {isPt ? 'Contacte-nos' : 'Contact Us'}
+              </h1>
+              <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed">
+                {isPt
+                  ? 'Gostávamos de ouvir de si! Quer sejam dúvidas, feedback ou propostas de parceria, preencha o formulário abaixo e responderemos o mais rapidamente possível.'
+                  : 'We’d love to hear from you! Whether it’s questions, feedback, or partnership inquiries, fill out the form below and we’ll get back to you as soon as possible.'}
+              </p>
+            </div>
           </div>
+        </section>
+
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
 
           <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.3fr)] items-start">
             {/* Contact form */}

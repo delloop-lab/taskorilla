@@ -28,9 +28,6 @@ function HeroSection() {
     <SectionContainer className="pt-12 sm:pt-16">
       <div className="mx-auto grid max-w-6xl items-center gap-8 md:grid-cols-2 md:gap-10">
         <div className="space-y-6">
-          <p className="inline-flex rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold tracking-wide text-orange-700 shadow-sm">
-            Trusted local marketplace
-          </p>
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-gray-900">
             Get things done in Portugal. Fast.
           </h1>

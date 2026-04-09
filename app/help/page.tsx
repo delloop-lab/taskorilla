@@ -35,18 +35,12 @@ export default function HelpCenter() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary to-accent text-white py-16 px-4">
-        <div className="container mx-auto max-w-6xl">
+      <section className="bg-[#F8F9FA] py-12 md:py-16 px-4 relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_45%),radial-gradient(circle_at_bottom_left,rgba(249,115,22,0.10),transparent_40%)]" />
+        <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-4 mb-4">
-              <h1 className="text-5xl font-bold">{t('help.heroTitle')}</h1>
-              <img 
-                src="/images/tee_on_fence.png" 
-                alt="Tee on fence" 
-                className="w-[200px]"
-              />
-            </div>
-            <p className="text-xl opacity-90 mb-8">
+            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-gray-900 mb-4">{t('help.heroTitle')}</h1>
+            <p className="text-lg sm:text-xl text-gray-600 mb-8">
               {t('help.findAnswers')}
             </p>
           </div>

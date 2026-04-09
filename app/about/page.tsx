@@ -30,20 +30,21 @@ export default function AboutPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#F8F9FA] bg-[radial-gradient(#c9d2dc_0.8px,transparent_0.8px)] [background-size:16px_16px]">
       {/* Header */}
-      <section className="bg-gradient-to-br from-primary to-accent text-white py-8 sm:py-12 md:py-16 px-4 relative overflow-hidden">
+      <section className="bg-[#F8F9FA] py-8 sm:py-12 md:py-16 px-4 relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_45%),radial-gradient(circle_at_bottom_left,rgba(249,115,22,0.10),transparent_40%)]" />
         <div className="container mx-auto max-w-4xl relative z-10">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-3 sm:mb-4 md:mb-6 transition-colors text-xs sm:text-sm md:text-base"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-3 sm:mb-4 md:mb-6 transition-colors text-xs sm:text-sm md:text-base"
           >
             {content.backText}
           </Link>
           <div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 md:mb-6">{content.title}</h1>
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold mb-3 sm:mb-4 opacity-95">{content.introHeading}</h2>
-            <p className="text-sm sm:text-base md:text-lg lg:text-xl opacity-90 leading-relaxed">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-gray-900 mb-3 sm:mb-4 md:mb-6">{content.title}</h1>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-gray-900 mb-3 sm:mb-4">{content.introHeading}</h2>
+            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 leading-relaxed">
               {content.intro}
             </p>
           </div>
@@ -132,31 +133,31 @@ export default function AboutPage() {
 
           <div className="relative mb-6 md:mb-8">
             {/* TEE Fun Facts Profile Card */}
-            <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl shadow-sm p-4 sm:p-6 md:p-8 w-full">
-              <h3 className="text-xl sm:text-2xl font-bold text-amber-900 mb-4">Fun Facts About TEE</h3>
+            <div className="bg-[#F8F9FA] border border-[#d9e3eb] rounded-2xl shadow-sm p-4 sm:p-6 md:p-8 w-full">
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Fun Facts About TEE</h3>
               <div className="space-y-3 text-sm sm:text-base text-gray-800">
                 <p>
-                  <span className="font-semibold text-amber-900">Favorite Snack:</span>{' '}
+                  <span className="font-semibold text-gray-900">Favorite Snack:</span>{' '}
                   Local Honey crisp apples (he’s a big fan of supporting our neighborhood orchards).
                 </p>
                 <p>
-                  <span className="font-semibold text-amber-900">Hidden Talent:</span>{' '}
+                  <span className="font-semibold text-gray-900">Hidden Talent:</span>{' '}
                   He can assemble a flat-pack bookshelf in record time without ever looking at the instructions, and he never has "leftover" screws.
                 </p>
                 <p>
-                  <span className="font-semibold text-amber-900">Pet Peeve:</span>{' '}
+                  <span className="font-semibold text-gray-900">Pet Peeve:</span>{' '}
                   High-pitched, frantic twitching bunnies. He prefers the sound of a job well done.
                 </p>
                 <p>
-                  <span className="font-semibold text-amber-900">Workout Routine:</span>{' '}
+                  <span className="font-semibold text-gray-900">Workout Routine:</span>{' '}
                   Carrying all the groceries in just one trip.
                 </p>
                 <p>
-                  <span className="font-semibold text-amber-900">Community Spirit:</span>{' '}
+                  <span className="font-semibold text-gray-900">Community Spirit:</span>{' '}
                   TEE has a "silent policy", he’s a man of few words, but he’s always the first to show up when a neighbor needs a heavy lift.
                 </p>
                 <p>
-                  <span className="font-semibold text-amber-900">Current Goal:</span>{' '}
+                  <span className="font-semibold text-gray-900">Current Goal:</span>{' '}
                   Making sure every Helper in the community feels as strong and steady as a silverback.
                 </p>
               </div>
