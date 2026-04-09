@@ -15,10 +15,12 @@ function NewTaskPageLoading() {
 
 export default function NewTaskPage() {
   return (
-    <Suspense fallback={<NewTaskPageLoading />}>
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-0 pb-8">
-        <FormTypeSelector />
-      </div>
-    </Suspense>
+    <div className="min-h-screen bg-[#F8F9FA] bg-[radial-gradient(#c9d2dc_0.8px,transparent_0.8px)] [background-size:16px_16px]">
+      <Suspense fallback={<NewTaskPageLoading />}>
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-0 pb-8">
+          <FormTypeSelector />
+        </div>
+      </Suspense>
+    </div>
   )
 }

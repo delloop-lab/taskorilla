@@ -187,30 +187,33 @@ export default function HelperOnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#F8F9FA] bg-[radial-gradient(#c9d2dc_0.8px,transparent_0.8px)] [background-size:16px_16px]">
 
       {/* Hero */}
-      <section className="bg-gradient-to-br from-primary to-accent text-white py-8 sm:py-12 md:py-16 px-4 relative overflow-hidden">
+      <section className="bg-[#F8F9FA] py-8 sm:py-12 md:py-16 px-4 relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_45%),radial-gradient(circle_at_bottom_left,rgba(249,115,22,0.10),transparent_40%)]" />
         <div className="container mx-auto max-w-4xl relative z-10">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-4 md:mb-6 transition-colors text-sm"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 md:mb-6 transition-colors text-sm"
           >
             ← {isPt ? 'Voltar ao Início' : 'Back to Home'}
           </Link>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>
-              <div className="text-5xl mb-4">🤝</div>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3">
+              <p className="inline-flex rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold tracking-wide text-orange-700 shadow-sm mb-4">
+                {isPt ? 'Junte-se como Ajudante' : 'Join as a Helper'}
+              </p>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3">
                 {isPt ? 'Torne-se um Ajudante Taskorilla' : 'Become a Taskorilla Helper'}
               </h1>
-              <p className="text-lg sm:text-xl opacity-90 max-w-xl">
+              <p className="text-lg sm:text-xl text-gray-700 max-w-xl">
                 {isPt ? 'Ajude pessoas, ganhe dinheiro e trabalhe no seu horário. Comece por criar a sua conta.' : 'Help people, earn money, and work on your schedule. Start by creating your account.'}
               </p>
             </div>
             <a
               href="#register"
-              className="inline-flex items-center justify-center gap-2 bg-white text-primary font-bold px-6 py-3 rounded-xl shadow hover:shadow-md hover:-translate-y-0.5 transition-all text-base whitespace-nowrap self-start md:self-center flex-shrink-0"
+              className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-bold px-6 py-3 rounded-xl shadow hover:shadow-md hover:-translate-y-0.5 transition-all text-base whitespace-nowrap self-start md:self-center flex-shrink-0"
             >
               {isPt ? 'Começar →' : 'Get Started →'}
             </a>
@@ -241,26 +244,26 @@ export default function HelperOnboardingPage() {
           </div>
 
           {/* Benefits */}
-          <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-6 md:p-8">
-            <h2 className="text-xl md:text-2xl font-bold text-blue-900 mb-5">{isPt ? 'Porque tornar-se Ajudante?' : 'Why become a Helper?'}</h2>
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 md:p-8">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-5">{isPt ? 'Porque tornar-se Ajudante?' : 'Why become a Helper?'}</h2>
             <ul className="space-y-3 mb-5">
               {BENEFITS.map((benefit) => (
                 <li key={benefit} className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-blue-800 text-sm sm:text-base">{benefit}</span>
+                  <CheckCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <span className="text-gray-700 text-sm sm:text-base">{benefit}</span>
                 </li>
               ))}
             </ul>
             <Link
               href="/help/category/helper-guide"
-              className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-medium text-primary-700 hover:text-primary-800 hover:underline transition-colors"
             >
               📖 {isPt ? 'Ler o Guia Completo do Ajudante →' : 'Read the full Helper Guide →'}
             </Link>
           </div>
 
           {/* Registration Form */}
-          <div id="register" className="bg-white rounded-xl shadow-sm p-6 md:p-8 max-w-md mx-auto w-full scroll-mt-8">
+          <div id="register" className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 md:p-8 max-w-md mx-auto w-full scroll-mt-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-1">{isPt ? 'Crie a Sua Conta de Ajudante' : 'Create Your Helper Account'}</h2>
             <p className="text-gray-500 text-sm mb-6">
               {isPt ? 'Já tem conta?' : 'Already have an account?'}{' '}

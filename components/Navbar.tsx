@@ -736,53 +736,37 @@ export default function Navbar() {
               {t('navbar.price')}
             </Link>
             {/* Language Switcher */}
-            <div className="flex items-center border border-gray-300 rounded-md overflow-hidden">
+            <div className="flex items-center border border-gray-300 rounded-md overflow-hidden bg-white">
               <button
                 onClick={(e) => {
                   e.preventDefault()
                   e.stopPropagation()
-                  console.log('Language switch clicked: EN')
                   setLanguage('en')
                 }}
-                className={`px-1.5 py-1.5 text-sm font-medium transition-colors ${
+                className={`px-2 py-1.5 text-xs font-semibold transition-colors ${
                   language === 'en'
                     ? 'bg-orange-200 text-gray-900'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    : 'text-gray-700 bg-white hover:bg-gray-50'
                 }`}
                 title={t('language.switchToEnglish')}
               >
-                <svg className="w-8 h-6" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
-                  {/* United Kingdom flag - Union Jack */}
-                  <rect width="60" height="40" fill="#012169" />
-                  <path d="M0,0 L60,40 M60,0 L0,40" stroke="#FFFFFF" strokeWidth="8" />
-                  <path d="M0,0 L60,40 M60,0 L0,40" stroke="#C8102E" strokeWidth="5" />
-                  <path d="M30,0 V40 M0,20 H60" stroke="#FFFFFF" strokeWidth="12" />
-                  <path d="M30,0 V40 M0,20 H60" stroke="#C8102E" strokeWidth="7" />
-                </svg>
+                EN
               </button>
-              <div className="w-px h-6 bg-gray-300" />
+              <div className="px-1 text-xs text-gray-400 select-none">|</div>
               <button
                 onClick={(e) => {
                   e.preventDefault()
                   e.stopPropagation()
-                  console.log('Language switch clicked: PT')
                   setLanguage('pt')
                 }}
-                className={`px-1.5 py-1.5 text-sm font-medium transition-colors ${
+                className={`px-2 py-1.5 text-xs font-semibold transition-colors ${
                   language === 'pt'
                     ? 'bg-orange-200 text-gray-900'
-                    : 'text-gray-700 hover:bg-gray-100'
+                    : 'text-gray-700 bg-white hover:bg-gray-50'
                 }`}
                 title={t('language.switchToPortuguese')}
               >
-                <svg className="w-8 h-6" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
-                  <rect width="24" height="40" fill="#006600"/>
-                  <rect x="24" width="36" height="40" fill="#FF0000"/>
-                  <circle cx="24" cy="20" r="7" fill="none" stroke="#FFCC00" strokeWidth="0.8"/>
-                  <circle cx="24" cy="20" r="5.5" fill="none" stroke="#FFCC00" strokeWidth="0.6"/>
-                  <circle cx="24" cy="20" r="4" fill="#FFCC00"/>
-                  <circle cx="24" cy="20" r="2.5" fill="#FF0000"/>
-                </svg>
+                PT
               </button>
             </div>
             {user ? (
