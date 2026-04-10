@@ -163,6 +163,23 @@ export async function trackPageVisit(pageName: string) {
         console.error('Error calling increment_traffic_daily:', rpcError)
       }
     }
+
+    // Per-user audit trail (logged-in, non-admin only — same gate as above)
+    if (user) {
+      const pageKey = pageName.length > 200 ? pageName.slice(0, 200) : pageName
+      const { error: visitErr } = await supabase.from('user_page_visits').insert({
+        user_id: user.id,
+        page: pageKey,
+      })
+      if (visitErr) {
+        const msg = visitErr.message || ''
+        const missing =
+          msg.includes('user_page_visits') ||
+          msg.includes('does not exist') ||
+          msg.includes('schema cache')
+        if (!missing) console.warn('user_page_visits insert:', msg)
+      }
+    }
   } catch (error) {
     console.error('Error tracking page visit:', error)
   }

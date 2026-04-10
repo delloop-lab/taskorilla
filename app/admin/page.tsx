@@ -97,7 +97,54 @@ type DailyTraffic = {
   visits: number
 }
 
-type TrafficRange = '7d' | '30d' | 'last_month' | 'custom'
+type TrafficRange = 'today' | '7d' | '30d' | 'last_month' | 'custom'
+
+type UserPageVisitRow = {
+  id: string
+  user_id: string
+  page: string
+  visited_at: string
+  profiles: { full_name: string | null; email: string | null } | null
+}
+
+function computeTrafficDateRange(
+  effectiveRange: TrafficRange,
+  effectiveCustomStart: string,
+  effectiveCustomEnd: string
+): { startDate: string; endDate: string } | null {
+  const today = new Date()
+  const toDateString = (d: Date) => d.toISOString().split('T')[0]
+  let startDate = ''
+  let endDate = toDateString(today)
+
+  if (effectiveRange === 'today') {
+    startDate = toDateString(today)
+    endDate = toDateString(today)
+  } else if (effectiveRange === '7d') {
+    const start = new Date(today)
+    start.setDate(start.getDate() - 6)
+    startDate = toDateString(start)
+  } else if (effectiveRange === '30d') {
+    const start = new Date(today)
+    start.setDate(start.getDate() - 29)
+    startDate = toDateString(start)
+  } else if (effectiveRange === 'last_month') {
+    const firstDayCurrentMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+    const lastDayPreviousMonth = new Date(firstDayCurrentMonth.getTime() - 24 * 60 * 60 * 1000)
+    const firstDayPreviousMonth = new Date(
+      lastDayPreviousMonth.getFullYear(),
+      lastDayPreviousMonth.getMonth(),
+      1
+    )
+    startDate = toDateString(firstDayPreviousMonth)
+    endDate = toDateString(lastDayPreviousMonth)
+  } else {
+    if (!effectiveCustomStart || !effectiveCustomEnd) return null
+    startDate = effectiveCustomStart
+    endDate = effectiveCustomEnd
+  }
+  return { startDate, endDate }
+}
 
 type RevenueRange = 'day' | 'week' | 'month' | 'year' | 'all'
 
@@ -140,6 +187,8 @@ export default function SuperadminDashboard() {
   const [trafficCustomStart, setTrafficCustomStart] = useState<string>('')
   const [trafficCustomEnd, setTrafficCustomEnd] = useState<string>('')
   const [trafficPage, setTrafficPage] = useState<number>(1)
+  const [userPageVisits, setUserPageVisits] = useState<UserPageVisitRow[]>([])
+  const [userPageVisitsLoading, setUserPageVisitsLoading] = useState(false)
   const TRAFFIC_PAGE_SIZE = 20
   const [tab, setTab] = useState<'users' | 'tasks' | 'awaiting_payment' | 'stats' | 'revenue' | 'email' | 'matching' | 'traffic' | 'settings' | 'reports' | 'maps' | 'blog'>('users')
   const [showBidsDrilldown, setShowBidsDrilldown] = useState(false)
@@ -1380,6 +1429,36 @@ export default function SuperadminDashboard() {
     }
   }
 
+  async function fetchUserPageVisits(startDate: string, endDate: string) {
+    setUserPageVisitsLoading(true)
+    const { data, error } = await supabase
+      .from('user_page_visits')
+      .select('id, user_id, page, visited_at, profiles(full_name, email)')
+      .gte('visited_at', `${startDate}T00:00:00.000Z`)
+      .lte('visited_at', `${endDate}T23:59:59.999Z`)
+      .order('visited_at', { ascending: false })
+      .limit(500)
+
+    setUserPageVisitsLoading(false)
+    if (error) {
+      console.error('Error fetching user_page_visits:', error)
+      setUserPageVisits([])
+      return
+    }
+    const rows = (data || []).map((row: any) => {
+      const p = row.profiles
+      const profile = Array.isArray(p) ? p[0] ?? null : p
+      return {
+        id: row.id,
+        user_id: row.user_id,
+        page: row.page,
+        visited_at: row.visited_at,
+        profiles: profile as { full_name: string | null; email: string | null } | null,
+      } as UserPageVisitRow
+    })
+    setUserPageVisits(rows)
+  }
+
   async function fetchTraffic(
     rangeParam?: TrafficRange,
     customStartParam?: string,
@@ -1389,35 +1468,9 @@ export default function SuperadminDashboard() {
     const effectiveCustomStart = customStartParam ?? trafficCustomStart
     const effectiveCustomEnd = customEndParam ?? trafficCustomEnd
 
-    const today = new Date()
-    const toDateString = (d: Date) => d.toISOString().split('T')[0]
-
-    let startDate = ''
-    let endDate = toDateString(today)
-
-    if (effectiveRange === '7d') {
-      const start = new Date(today)
-      start.setDate(start.getDate() - 6)
-      startDate = toDateString(start)
-    } else if (effectiveRange === '30d') {
-      const start = new Date(today)
-      start.setDate(start.getDate() - 29)
-      startDate = toDateString(start)
-    } else if (effectiveRange === 'last_month') {
-      const firstDayCurrentMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-      const lastDayPreviousMonth = new Date(firstDayCurrentMonth.getTime() - 24 * 60 * 60 * 1000)
-      const firstDayPreviousMonth = new Date(
-        lastDayPreviousMonth.getFullYear(),
-        lastDayPreviousMonth.getMonth(),
-        1
-      )
-      startDate = toDateString(firstDayPreviousMonth)
-      endDate = toDateString(lastDayPreviousMonth)
-    } else {
-      if (!effectiveCustomStart || !effectiveCustomEnd) return
-      startDate = effectiveCustomStart
-      endDate = effectiveCustomEnd
-    }
+    const bounds = computeTrafficDateRange(effectiveRange, effectiveCustomStart, effectiveCustomEnd)
+    if (!bounds) return
+    const { startDate, endDate } = bounds
 
     const { data: rows, error } = await supabase
       .from('traffic_daily')
@@ -1427,6 +1480,7 @@ export default function SuperadminDashboard() {
 
     if (error) {
       console.error('Error fetching traffic_daily data:', error)
+      setUserPageVisits([])
       return
     }
 
@@ -1447,6 +1501,7 @@ export default function SuperadminDashboard() {
       .sort((a, b) => a.date.localeCompare(b.date))
     setDailyTraffic(byDate)
     setTrafficPage(1)
+    await fetchUserPageVisits(startDate, endDate)
   }
 
   async function fetchEmailLogs() {
@@ -6322,6 +6377,11 @@ export default function SuperadminDashboard() {
                   <h2 className="text-2xl font-bold mb-2">Page Traffic Analytics</h2>
                   <p className="text-gray-600 text-sm">
                     Track which pages users visit most frequently. Data is collected automatically when users navigate through the site.
+                    <span className="block mt-2 text-gray-700">
+                      <span className="font-medium">Note:</span> Page views are not counted for users whose profile role is{' '}
+                      <span className="font-medium">admin</span> or <span className="font-medium">superadmin</span>, so those
+                      sessions are excluded from the totals below.
+                    </span>
                   </p>
                 </div>
                 <div className="flex gap-2 items-center flex-wrap justify-end">
@@ -6336,6 +6396,7 @@ export default function SuperadminDashboard() {
                     }}
                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
                   >
+                    <option value="today">Today</option>
                     <option value="7d">Last 7 days</option>
                     <option value="30d">Last 30 days</option>
                     <option value="last_month">Last month</option>
@@ -6370,6 +6431,49 @@ export default function SuperadminDashboard() {
                   >
                     Refresh Data
                   </button>
+                </div>
+              </div>
+
+              <div className="mb-8 border border-gray-200 rounded-lg overflow-hidden">
+                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900">Logged-in page views (detail)</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Up to 500 most recent events in the selected date range. Admin and superadmin sessions are not logged
+                    (same as aggregate totals).
+                  </p>
+                </div>
+                <div className="p-4 overflow-x-auto">
+                  {userPageVisitsLoading ? (
+                    <p className="text-sm text-gray-500">Loading…</p>
+                  ) : userPageVisits.length === 0 ? (
+                    <p className="text-sm text-gray-500">No logged-in visits in this range.</p>
+                  ) : (
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200 text-left text-gray-600">
+                          <th className="py-2 pr-4 font-medium">Time (UTC)</th>
+                          <th className="py-2 pr-4 font-medium">User</th>
+                          <th className="py-2 pr-4 font-medium">Page</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {userPageVisits.map((row) => (
+                          <tr key={row.id} className="border-b border-gray-100">
+                            <td className="py-2 pr-4 text-gray-800 whitespace-nowrap">
+                              {new Date(row.visited_at).toISOString().replace('T', ' ').slice(0, 19)}
+                            </td>
+                            <td className="py-2 pr-4">
+                              <div className="text-gray-900">{row.profiles?.full_name || '—'}</div>
+                              <div className="text-xs text-gray-500 font-mono break-all">
+                                {row.profiles?.email || row.user_id}
+                              </div>
+                            </td>
+                            <td className="py-2 pr-4 text-gray-800">{formatPageName(row.page)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               </div>
 
