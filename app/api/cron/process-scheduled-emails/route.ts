@@ -86,7 +86,16 @@ async function healMissingWelcomeEmails(supabaseAdmin: SupabaseClient): Promise<
   return healed
 }
 
+/** Vercel Cron uses GET; some external schedulers use POST — support both. */
+export async function POST(request: NextRequest) {
+  return runProcessScheduledEmails(request)
+}
+
 export async function GET(request: NextRequest) {
+  return runProcessScheduledEmails(request)
+}
+
+async function runProcessScheduledEmails(request: NextRequest) {
   if (!authorizeCron(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
