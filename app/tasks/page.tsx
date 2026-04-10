@@ -158,6 +158,7 @@ function TasksPageContent() {
   const { users: userRatings, loading: ratingsLoading } = useUserRatings()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
+  const [isApplyingFilters, setIsApplyingFilters] = useState(false)
   const [filter, setFilter] = useState<FilterType>('all') // Default to All Tasks
   const [pendingFilter, setPendingFilter] = useState<FilterType | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -769,9 +770,8 @@ function TasksPageContent() {
       
       // Apply client-side filters
       if (filterBySkills && userSkills.length > 0) {
-        tasksWithProfiles = tasksWithProfiles.filter(task => 
-          !task.required_skills || task.required_skills.length === 0 || (task as any).matchesSkills
-        )
+        // Strict mode: only show tasks that explicitly require skills matching the user's skills.
+        tasksWithProfiles = tasksWithProfiles.filter(task => (task as any).matchesSkills)
       }
       
       if (maxDistance && userLocation) {
@@ -1179,6 +1179,7 @@ function TasksPageContent() {
   // Use debouncing to prevent rapid reloads when user is typing/selecting
   useEffect(() => {
     if (!sessionReady || !initialLoadDoneRef.current) return
+    setIsApplyingFilters(true)
     
     // Clear any pending reload
     if (loadTimeoutRef.current) {
@@ -1190,13 +1191,16 @@ function TasksPageContent() {
       if (process.env.NODE_ENV === 'development') {
         debugLog(`🔄 Filter parameters changed, reloading with filter: ${filter}`)
       }
-      loadTasks(filter)
+      void loadTasks(filter).finally(() => {
+        setIsApplyingFilters(false)
+      })
     }, 500) // 500ms debounce for filter changes
 
     return () => {
       if (loadTimeoutRef.current) {
         clearTimeout(loadTimeoutRef.current)
       }
+      setIsApplyingFilters(false)
     }
   }, [
     selectedCategory,
@@ -1366,30 +1370,33 @@ function TasksPageContent() {
 
   if (loading && tasks.length === 0) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header skeleton */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
-          <div className="flex gap-2">
-            <div className="h-10 bg-gray-200 rounded w-24 animate-pulse"></div>
-            <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
+      <div className="min-h-screen bg-[#F8F9FA] bg-[radial-gradient(#c9d2dc_0.8px,transparent_0.8px)] [background-size:16px_16px]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header skeleton */}
+          <div className="flex justify-between items-center mb-6">
+            <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
+            <div className="flex gap-2">
+              <div className="h-10 bg-gray-200 rounded w-24 animate-pulse"></div>
+              <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
+            </div>
           </div>
+          
+          {/* Filter tabs skeleton */}
+          <div className="flex gap-2 mb-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-10 bg-gray-200 rounded w-24 animate-pulse"></div>
+            ))}
+          </div>
+          
+          {/* Task cards skeleton */}
+          <TaskSkeletonGrid />
         </div>
-        
-        {/* Filter tabs skeleton */}
-        <div className="flex gap-2 mb-6">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-10 bg-gray-200 rounded w-24 animate-pulse"></div>
-          ))}
-        </div>
-        
-        {/* Task cards skeleton */}
-        <TaskSkeletonGrid />
       </div>
     )
   }
 
   return (
+    <div className="min-h-screen bg-[#F8F9FA] bg-[radial-gradient(#c9d2dc_0.8px,transparent_0.8px)] [background-size:16px_16px]">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       
       {/* Pending Reviews Banner */}
@@ -1613,6 +1620,15 @@ function TasksPageContent() {
           </Link>
         </div>
       </div>
+      {(loading || isApplyingFilters) && (
+        <div className="mb-4 inline-flex items-center gap-2 rounded-md border border-primary-200 bg-primary-50 px-3 py-2 text-sm text-primary-700">
+          <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+            <path d="M22 12a10 10 0 00-10-10" stroke="currentColor" strokeWidth="3" className="opacity-90" />
+          </svg>
+          <span>Applying filters...</span>
+        </div>
+      )}
 
       {/* Mobile Search Toggle */}
       <div className="md:hidden mb-4">
@@ -1928,7 +1944,14 @@ function TasksPageContent() {
       <div className={`grid gap-4 sm:gap-6 ${viewMode === 'compact' ? 'md:grid-cols-2 lg:grid-cols-3' : viewMode === 'accordion' ? 'grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-2'}`}>
         {tasks.length === 0 && !loading ? (
           <div className="col-span-full text-center py-12 text-gray-500">
-            {t('tasks.noTasksFound')}
+            <p className="text-base font-semibold text-gray-700">{t('tasks.noTasksFoundTitle')}</p>
+            <p className="mt-2 text-sm">{t('tasks.noTasksFoundHint')}</p>
+            <Link
+              href="/tasks?filter=all"
+              className="mt-3 inline-block text-sm font-medium text-primary-600 hover:text-primary-700"
+            >
+              {t('tasks.viewAllTasksCta')}
+            </Link>
           </div>
         ) : (
           tasks.map((task) => {
@@ -2301,7 +2324,7 @@ function TasksPageContent() {
           })
         )}
       </div>
-      {!loading && lastRawCount >= queryLimit && (
+      {!loading && tasks.length > 0 && lastRawCount >= queryLimit && (
         <div className="mt-6 flex justify-center">
           <button
             type="button"
@@ -2323,7 +2346,7 @@ function TasksPageContent() {
           </button>
         </div>
       )}
-      {!loading && totalAvailableCount !== null && (
+      {!loading && tasks.length > 0 && totalAvailableCount !== null && (
         <p className="mt-3 text-center text-sm text-gray-600">
           {`${tasks.length} from ${Math.max(tasks.length, totalAvailableCount)} total tasks.`}
         </p>
@@ -2382,6 +2405,7 @@ function TasksPageContent() {
           onReportSubmitted={() => {}}
         />
       )}
+    </div>
     </div>
   )
 }

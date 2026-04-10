@@ -132,7 +132,7 @@ export function ServiceCardsGrid({ integrated = false, polka = false }: ServiceC
 
             {/* Tee mascot card */}
             <Link
-              href="/about"
+              href="/about#tee-intro"
               className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white px-4 py-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 cursor-pointer"
             >
               <span className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-white" aria-hidden="true">

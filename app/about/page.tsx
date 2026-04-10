@@ -94,103 +94,106 @@ export default function AboutPage() {
             </div>
           </div>
 
-          {/* TEE Section */}
-          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 md:p-8 mb-6 md:mb-8">
-            <div className="flex flex-col md:flex-row gap-4 md:gap-6 lg:gap-8 items-start md:items-center">
-              <div className="flex items-start gap-3 sm:gap-4 flex-1">
-                <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-primary" />
+          {/* Unified TEE Section */}
+          <section id="tee-intro" className="mb-6 md:mb-8 rounded-2xl border border-[#d9e3eb] bg-white shadow-sm p-4 sm:p-6 md:p-8">
+            <h3 className="mb-4 text-xl sm:text-2xl font-bold text-gray-900">
+              {language === 'pt' ? 'Tudo Sobre o TEE' : 'All About TEE'}
+            </h3>
+
+            <div className="space-y-4">
+              <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+                <div className="flex flex-col md:flex-row gap-4 md:gap-6 lg:gap-8 items-start md:items-center">
+                  <div className="flex items-start gap-3 sm:gap-4 flex-1">
+                    <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed whitespace-pre-line">
+                        {content.teeText}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="w-40 h-40 sm:w-44 sm:h-44 md:w-48 md:h-48 lg:w-56 lg:h-56 flex-shrink-0 mx-auto md:mx-0 order-first md:order-last relative">
+                    <Image
+                      src="/images/gorilla-mascot-newer.png"
+                      alt="TEE the gorilla mascot"
+                      width={192}
+                      height={192}
+                      className="object-contain w-full h-full md:hidden"
+                      priority
+                    />
+                    <Image
+                      src="/images/tee-peeking.png"
+                      alt="TEE the gorilla mascot peeking around a corner"
+                      width={192}
+                      height={192}
+                      className="object-contain w-full h-full hidden md:block"
+                      priority
+                    />
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed whitespace-pre-line">
-                    {content.teeText}
+              </div>
+
+              <div className="relative rounded-xl border border-[#d9e3eb] bg-[#F8F9FA] p-4 sm:p-6 md:p-8">
+                <h4 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Fun Facts About TEE</h4>
+                <div className="space-y-3 text-sm sm:text-base text-gray-800">
+                  <p>
+                    <span className="font-semibold text-gray-900">Favorite Snack:</span>{' '}
+                    Local Honey crisp apples (he’s a big fan of supporting our neighborhood orchards).
+                  </p>
+                  <p>
+                    <span className="font-semibold text-gray-900">Hidden Talent:</span>{' '}
+                    He can assemble a flat-pack bookshelf in record time without ever looking at the instructions, and he never has "leftover" screws.
+                  </p>
+                  <p>
+                    <span className="font-semibold text-gray-900">Pet Peeve:</span>{' '}
+                    High-pitched, frantic twitching bunnies. He prefers the sound of a job well done.
+                  </p>
+                  <p>
+                    <span className="font-semibold text-gray-900">Workout Routine:</span>{' '}
+                    Carrying all the groceries in just one trip.
+                  </p>
+                  <p>
+                    <span className="font-semibold text-gray-900">Community Spirit:</span>{' '}
+                    TEE has a "silent policy", he’s a man of few words, but he’s always the first to show up when a neighbor needs a heavy lift.
+                  </p>
+                  <p>
+                    <span className="font-semibold text-gray-900">Current Goal:</span>{' '}
+                    Making sure every Helper in the community feels as strong and steady as a silverback.
                   </p>
                 </div>
-              </div>
-              {/* TEE on the right */}
-              <div className="w-40 h-40 sm:w-44 sm:h-44 md:w-48 md:h-48 lg:w-56 lg:h-56 flex-shrink-0 mx-auto md:mx-0 order-first md:order-last relative">
-                {/* Mobile image */}
+
                 <Image
-                  src="/images/gorilla-mascot-newer.png"
-                  alt="TEE the gorilla mascot"
-                  width={192}
-                  height={192}
-                  className="object-contain w-full h-full md:hidden"
-                  priority
+                  src="/images/bunny.png"
+                  alt="Decorative bunny"
+                  width={280}
+                  height={280}
+                  className="hidden lg:block absolute right-3 bottom-3 w-14 h-14 md:w-20 md:h-20 object-contain opacity-25 pointer-events-none"
                 />
-                {/* Desktop image */}
-                <Image
-                  src="/images/tee-peeking.png"
-                  alt="TEE the gorilla mascot peeking around a corner"
-                  width={192}
-                  height={192}
-                  className="object-contain w-full h-full hidden md:block"
-                  priority
-                />
+                <div className="lg:hidden mt-2 flex justify-end">
+                  <Image
+                    src="/images/bunny.png"
+                    alt="Decorative bunny"
+                    width={280}
+                    height={280}
+                    className="w-14 h-14 sm:w-16 sm:h-16 object-contain opacity-25"
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 bg-white p-2 sm:p-3">
+                <div className="flex justify-center">
+                  <Image
+                    src="/images/tee_id.png"
+                    alt="TEE ID"
+                    width={240}
+                    height={240}
+                    className="h-auto w-full max-w-[320px] sm:max-w-[420px] md:max-w-[520px] object-contain"
+                  />
+                </div>
               </div>
             </div>
-          </div>
-
-          <div className="relative mb-6 md:mb-8">
-            {/* TEE Fun Facts Profile Card */}
-            <div className="bg-[#F8F9FA] border border-[#d9e3eb] rounded-2xl shadow-sm p-4 sm:p-6 md:p-8 w-full">
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Fun Facts About TEE</h3>
-              <div className="space-y-3 text-sm sm:text-base text-gray-800">
-                <p>
-                  <span className="font-semibold text-gray-900">Favorite Snack:</span>{' '}
-                  Local Honey crisp apples (he’s a big fan of supporting our neighborhood orchards).
-                </p>
-                <p>
-                  <span className="font-semibold text-gray-900">Hidden Talent:</span>{' '}
-                  He can assemble a flat-pack bookshelf in record time without ever looking at the instructions, and he never has "leftover" screws.
-                </p>
-                <p>
-                  <span className="font-semibold text-gray-900">Pet Peeve:</span>{' '}
-                  High-pitched, frantic twitching bunnies. He prefers the sound of a job well done.
-                </p>
-                <p>
-                  <span className="font-semibold text-gray-900">Workout Routine:</span>{' '}
-                  Carrying all the groceries in just one trip.
-                </p>
-                <p>
-                  <span className="font-semibold text-gray-900">Community Spirit:</span>{' '}
-                  TEE has a "silent policy", he’s a man of few words, but he’s always the first to show up when a neighbor needs a heavy lift.
-                </p>
-                <p>
-                  <span className="font-semibold text-gray-900">Current Goal:</span>{' '}
-                  Making sure every Helper in the community feels as strong and steady as a silverback.
-                </p>
-              </div>
-            </div>
-
-            <Image
-              src="/images/bunny.png"
-              alt="Decorative bunny"
-              width={280}
-              height={280}
-              className="hidden lg:block absolute right-3 bottom-3 w-14 h-14 md:w-20 md:h-20 object-contain opacity-25 pointer-events-none"
-            />
-            <div className="lg:hidden mt-2 flex justify-end">
-              <Image
-                src="/images/bunny.png"
-                alt="Decorative bunny"
-                width={280}
-                height={280}
-                className="w-14 h-14 sm:w-16 sm:h-16 object-contain opacity-25"
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-center -mt-12 md:-mt-16 mb-6 md:mb-8">
-            <Image
-              src="/images/tee_id.png"
-              alt="TEE ID"
-              width={240}
-              height={240}
-              className="w-96 h-96 sm:w-[30rem] sm:h-[30rem] md:w-[36rem] md:h-[36rem] object-contain"
-            />
-          </div>
-
+          </section>
         </div>
       </main>
 

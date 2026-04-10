@@ -60,9 +60,6 @@ export default function HomePageV4() {
           </div>
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="space-y-6 pr-24 md:pr-0 animate-fade-in">
-              <p className="inline-flex rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold tracking-wide text-orange-700 shadow-sm">
-                Trusted local marketplace
-              </p>
               <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-foreground leading-[0.98]">
                 Get things done in Portugal. Fast.
               </h1>
@@ -70,7 +67,7 @@ export default function HomePageV4() {
                 Post a task for free and get offers from trusted local helpers. Pay only when the job is done.
               </p>
               <div className="flex flex-col items-center justify-center gap-3 pt-1 sm:flex-row sm:items-stretch sm:justify-start">
-                <Link href="/tasks/new">
+                <Link href="#service-cards-grid">
                   <Button size="lg" className="w-full sm:w-auto min-w-[220px]">
                     Post a Task
                   </Button>
@@ -371,7 +368,7 @@ export default function HomePageV4() {
               Stop waiting. Get it done.
             </h2>
             <Link
-              href="/tasks/new"
+              href="#service-cards-grid"
               className="mt-4 md:mt-6 inline-flex items-center justify-center rounded-xl bg-primary-600 px-6 py-2.5 md:py-3 text-base font-semibold text-white shadow-md shadow-primary-600/25 transition hover:bg-primary-700"
             >
               Post a Task

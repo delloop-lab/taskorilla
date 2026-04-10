@@ -95,12 +95,16 @@ function AuthCodeErrorContent() {
   }
 
   if (isCheckingSession) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] bg-[radial-gradient(#c9d2dc_0.8px,transparent_0.8px)] [background-size:16px_16px]">
+        Loading...
+      </div>
+    )
   }
 
   if (type === 'confirmation') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] bg-[radial-gradient(#c9d2dc_0.8px,transparent_0.8px)] [background-size:16px_16px] py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8 text-center">
           <div>
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
@@ -175,7 +179,7 @@ function AuthCodeErrorContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] bg-[radial-gradient(#c9d2dc_0.8px,transparent_0.8px)] [background-size:16px_16px] py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 text-center">
         <div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
@@ -200,7 +204,7 @@ function AuthCodeErrorContent() {
 
 export default function AuthCodeError() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] bg-[radial-gradient(#c9d2dc_0.8px,transparent_0.8px)] [background-size:16px_16px]">Loading...</div>}>
       <AuthCodeErrorContent />
     </Suspense>
   )

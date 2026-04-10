@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import NewTaskClient from './NewTaskClient'
 import SurveyJSTrialForm from '@/components/SurveyJSTrialForm'
 import { useLanguage } from '@/lib/i18n'
@@ -39,91 +40,48 @@ export default function FormTypeSelector() {
       {/* Background color above Form Type box */}
       <div className="h-[10px] bg-gray-100 mb-0"></div>
 
-      {/* Form Type Selector - Step 1 */}
-      <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="text-center md:text-left">
-            <p className="text-sm font-semibold text-gray-800">
-              {t('formType.stepTitle')}
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              {t('formType.stepSubtitle')}
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-            {/* Quick Button */}
-            <button
-              type="button"
-              onClick={() => setFormType('quick')}
-              className={`relative flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                formType === 'quick'
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              <span>{t('formType.quick')}</span>
-              <div className="relative group">
-                <svg
-                  className={`w-4 h-4 ${
-                    formType === 'quick' ? 'text-white' : 'text-gray-500'
-                  }`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                  {t('formType.quickTooltip')}
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
-                    <div className="border-4 border-transparent border-t-gray-900"></div>
-                  </div>
-                </div>
-              </div>
-            </button>
+      {/* Form Type Selector - Card UI */}
+      <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="mb-4">
+          <p className="text-base font-semibold text-gray-900">How do you want to start?</p>
+          <p className="mt-1 text-xs text-gray-500">You can switch anytime</p>
+        </div>
 
-            {/* Full Button */}
-            <button
-              type="button"
-              onClick={() => setFormType('full')}
-              style={formType === 'full' ? { backgroundColor: '#F99723' } : {}}
-              className={`relative flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                formType === 'full'
-                  ? 'text-white hover:opacity-90'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              <span>{t('formType.full')}</span>
-              <div className="relative group">
-                <svg
-                  className={`w-4 h-4 ${
-                    formType === 'full' ? 'text-white' : 'text-gray-500'
-                  }`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                  {t('formType.fullTooltip')}
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
-                    <div className="border-4 border-transparent border-t-gray-900"></div>
-                  </div>
-                </div>
-              </div>
-            </button>
-          </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => setFormType('quick')}
+            className={`group w-full rounded-xl border p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+              formType === 'quick'
+                ? 'border-primary-500 bg-primary-50/60'
+                : 'border-gray-200 bg-white'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="text-base font-semibold text-gray-900">Quick</h3>
+              <span className="rounded-full bg-primary-100 px-2 py-0.5 text-[11px] font-semibold text-primary-700">
+                Recommended
+              </span>
+            </div>
+            <p className="mt-2 text-sm text-gray-600">
+              Just the essentials. Done in under a minute.
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setFormType('full')}
+            className={`group w-full rounded-xl border p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+              formType === 'full'
+                ? 'border-primary-500 bg-primary-50/60'
+                : 'border-gray-200 bg-white'
+            }`}
+          >
+            <h3 className="text-base font-semibold text-gray-900">Full</h3>
+            <p className="mt-2 text-sm text-gray-600">
+              Add more detail for better matches.
+            </p>
+          </button>
         </div>
       </div>
 
@@ -133,6 +91,20 @@ export default function FormTypeSelector() {
       ) : (
         <NewTaskClient />
       )}
+
+      {/* Quick task browsing callout */}
+      <div className="mt-6 rounded-xl border border-primary-200 bg-gradient-to-r from-white via-primary-50/40 to-orange-50/40 p-4 shadow-sm">
+        <p className="text-sm font-semibold text-gray-900">Want a faster way?</p>
+        <p className="mt-1 text-sm text-gray-600">
+          Skip the form and choose a task in seconds.
+        </p>
+        <Link
+          href="/#service-cards-grid"
+          className="mt-3 inline-flex items-center gap-2 rounded-md bg-primary-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700"
+        >
+          👉 Browse common tasks
+        </Link>
+      </div>
     </div>
   )
 }

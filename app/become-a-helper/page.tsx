@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Card, CardContent } from '@/components/ui/card'
 import { CheckCircle } from 'lucide-react'
-import Footer from '@/components/Footer'
 import { saveSignupConfirmationContext } from '@/lib/signup-confirmation-context'
 import { useLanguage } from '@/lib/i18n'
 
@@ -115,12 +114,12 @@ export default function HelperOnboardingPage() {
     }
 
     if (data.user) {
-      const foundingBadges = ['Founding Tasker', 'Founding Helper']
+      const foundingBadges = ['Founding Helper']
       await supabase
         .from('profiles')
         .update({
           terms_accepted_at: new Date().toISOString(),
-          is_tasker: true,
+          is_tasker: false,
           is_helper: true,
           badges: foundingBadges,
         })
@@ -416,7 +415,6 @@ export default function HelperOnboardingPage() {
         </div>
       )}
 
-      <Footer />
     </div>
   )
 }
