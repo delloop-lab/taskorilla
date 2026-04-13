@@ -497,7 +497,7 @@ export default function Navbar() {
               <img 
                 src="/images/taskorilla_header_logo.png" 
                 alt="Taskorilla" 
-                className="h-[40px] object-contain"
+                className="h-[32px] sm:h-[40px] object-contain"
                 style={{ backgroundColor: 'transparent' }}
               />
             </Link>
@@ -532,7 +532,7 @@ export default function Navbar() {
               <img 
                 src="/images/taskorilla_header_logo.png" 
                 alt="Taskorilla" 
-                className="h-[40px] object-contain"
+                className="h-[32px] sm:h-[40px] object-contain"
                 style={{ backgroundColor: 'transparent' }}
               />
             </Link>
@@ -897,9 +897,9 @@ export default function Navbar() {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center space-x-2">
+          <div className="md:hidden flex items-center space-x-2 pr-1">
             {/* Language Switcher - Mobile (visible outside menu) */}
-            <div className="flex items-center border border-gray-300 rounded-md overflow-hidden mr-2 bg-white">
+            <div className="flex items-center border border-gray-300 rounded-md overflow-hidden mr-1 bg-white">
               <button
                 onClick={(e) => {
                   e.preventDefault()
@@ -933,17 +933,17 @@ export default function Navbar() {
               </button>
             </div>
             {!user ? (
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-gray-400 select-none">|</span>
+              <div className="flex items-center gap-2">
                 <Link
                   href="/login"
-                  className="text-xs font-semibold text-gray-700 hover:text-primary-600 transition-colors"
+                  className="text-[10px] leading-none font-semibold text-gray-700 hover:text-primary-600 transition-colors text-center"
                 >
-                  Log In
+                  <span className="block">LOG</span>
+                  <span className="block">IN</span>
                 </Link>
                 <Link
                   href="/register"
-                  className="px-2.5 py-1 text-xs font-semibold rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+                  className="px-1.5 py-0.5 text-[10px] leading-tight font-semibold rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors"
                   title={t('navbar.signupTooltip')}
                 >
                   {t('navbar.signup')}
@@ -999,7 +999,7 @@ export default function Navbar() {
               <div className="px-4 py-2">
                 <Link
                   href="/register"
-                  className="mobile-drawer-link block bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700 text-center"
+                  className="mobile-drawer-link block bg-primary-600 text-white px-3 py-1.5 rounded-md text-xs font-medium hover:bg-primary-700 text-center"
                   onClick={() => setMobileMenuOpen(false)}
                   title={t('navbar.signupTooltip')}
                 >
