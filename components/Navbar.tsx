@@ -23,14 +23,14 @@ function BottomNavIcon({
 }) {
   return (
     <span
-      className={`mb-0.5 flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 ${
+      className={`mb-0.5 flex h-7 w-7 items-center justify-center rounded-full transition-all duration-200 ${
         active
           ? 'bg-gradient-to-b from-orange-100 to-orange-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_2px_6px_rgba(249,115,22,0.25)]'
           : 'bg-gradient-to-b from-slate-50 to-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_3px_rgba(15,23,42,0.12)]'
       }`}
     >
       <svg
-        className={`h-[18px] w-[18px] ${active ? 'text-primary-600' : 'text-slate-600'}`}
+        className={`h-4 w-4 ${active ? 'text-primary-600' : 'text-slate-600'}`}
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -497,7 +497,7 @@ export default function Navbar() {
               <img 
                 src="/images/taskorilla_header_logo.png" 
                 alt="Taskorilla" 
-                className="h-[32px] sm:h-[40px] object-contain"
+                className="h-[40px] object-contain"
                 style={{ backgroundColor: 'transparent' }}
               />
             </Link>
@@ -532,7 +532,7 @@ export default function Navbar() {
               <img 
                 src="/images/taskorilla_header_logo.png" 
                 alt="Taskorilla" 
-                className="h-[32px] sm:h-[40px] object-contain"
+                className="h-[40px] object-contain"
                 style={{ backgroundColor: 'transparent' }}
               />
             </Link>
@@ -897,9 +897,9 @@ export default function Navbar() {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center space-x-2 pr-1">
+          <div className="md:hidden ml-auto flex w-full items-center justify-end space-x-3 pr-3">
             {/* Language Switcher - Mobile (visible outside menu) */}
-            <div className="flex items-center border border-gray-300 rounded-md overflow-hidden mr-1 bg-white">
+            <div className="flex items-center border border-gray-300 rounded-md overflow-hidden mr-2 bg-white">
               <button
                 onClick={(e) => {
                   e.preventDefault()
@@ -952,15 +952,16 @@ export default function Navbar() {
             ) : (
               <button
                 onClick={handleLogout}
-                className="px-2.5 py-1 text-xs font-semibold rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors"
+                className="px-1 text-[10px] leading-none font-semibold text-gray-700 hover:text-primary-600 transition-colors text-center"
               >
-                LOG OUT
+                <span className="block">LOG</span>
+                <span className="block">OUT</span>
               </button>
             )}
             {user && (
               <Link
                 href="/messages"
-                className="text-gray-700 hover:text-primary-600 p-2 rounded-md relative"
+                className="text-gray-700 hover:text-primary-600 p-2.5 rounded-md relative"
                 aria-label={t('navbar.inbox')}
               >
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1361,11 +1362,11 @@ export default function Navbar() {
         mobileQuickNavAtTop ? 'top-0' : 'top-16'
       }`}
     >
-      <div className="grid grid-cols-5 h-16">
+      <div className="grid grid-cols-5 h-[70px] px-1">
         <Link
           href="/"
           onClick={() => setMobileMenuOpen(false)}
-          className={`flex flex-col items-center justify-center text-[11px] font-medium ${
+          className={`flex flex-col items-center justify-center gap-1 text-[11px] font-medium px-1 ${
             isHomeActive ? 'text-primary-600' : 'text-gray-600'
           }`}
         >
@@ -1376,7 +1377,7 @@ export default function Navbar() {
         <Link
           href="/tasks"
           onClick={() => setMobileMenuOpen(false)}
-          className={`flex flex-col items-center justify-center text-[11px] font-medium ${
+          className={`flex flex-col items-center justify-center gap-1 text-[11px] font-medium px-1 ${
             isBrowseActive ? 'text-primary-600' : 'text-gray-600'
           }`}
         >
@@ -1391,15 +1392,12 @@ export default function Navbar() {
                 setMobileMenuOpen(false)
                 setShowPausedModal(true)
               }}
-              className={`relative flex flex-col items-center justify-center text-[10px] leading-tight text-center font-medium px-1 ${
+              className={`relative flex flex-col items-center justify-center gap-1 text-[10px] leading-tight text-center font-medium px-1.5 ${
                 isHelpersActive ? 'text-primary-600' : 'text-gray-600'
               }`}
             >
               <BottomNavIcon active={isHelpersActive} pathD="M4 8h16v10H4zM9 8V6h6v2M4 12h16" />
               <span>{findHelpersLabel}</span>
-              {hasPendingBids && pendingBidsCount > 0 && !bidsViewed && (
-                <span className="absolute top-2 right-6 h-2 w-2 rounded-full bg-orange-500" />
-              )}
             </button>
           ) : (
             <Link
@@ -1407,22 +1405,19 @@ export default function Navbar() {
               onClick={() => {
                 setMobileMenuOpen(false)
               }}
-              className={`relative flex flex-col items-center justify-center text-[10px] leading-tight text-center font-medium px-1 ${
+              className={`relative flex flex-col items-center justify-center gap-1 text-[10px] leading-tight text-center font-medium px-1.5 ${
                 isHelpersActive ? 'text-primary-600' : 'text-gray-600'
               }`}
             >
               <BottomNavIcon active={isHelpersActive} pathD="M4 8h16v10H4zM9 8V6h6v2M4 12h16" />
               <span>{findHelpersLabel}</span>
-              {hasPendingBids && pendingBidsCount > 0 && !bidsViewed && (
-                <span className="absolute top-2 right-6 h-2 w-2 rounded-full bg-orange-500" />
-              )}
             </Link>
           )
         ) : (
           <Link
             href="/helpers"
             onClick={() => setMobileMenuOpen(false)}
-            className="flex flex-col items-center justify-center text-[10px] leading-tight text-center font-medium text-gray-600 px-1"
+            className="flex flex-col items-center justify-center gap-1 text-[10px] leading-tight text-center font-medium text-gray-600 px-1.5"
           >
             <BottomNavIcon active={false} pathD="M4 8h16v10H4zM9 8V6h6v2M4 12h16" />
             <span>{findHelpersLabel}</span>
@@ -1432,7 +1427,7 @@ export default function Navbar() {
         <Link
           href="/#service-cards-grid"
           onClick={() => setMobileMenuOpen(false)}
-          className={`flex flex-col items-center justify-center text-[11px] font-medium ${
+          className={`flex flex-col items-center justify-center gap-1 text-[11px] font-medium px-1 ${
             isPostActive ? 'text-primary-600' : 'text-gray-600'
           }`}
         >
@@ -1443,12 +1438,15 @@ export default function Navbar() {
         <button
           type="button"
           onClick={() => setMobileMenuOpen((prev) => !prev)}
-          className={`flex flex-col items-center justify-center text-[11px] font-medium ${
+          className={`relative flex flex-col items-center justify-center gap-1 text-[11px] font-medium px-1 ${
             mobileMenuOpen ? 'text-primary-600' : 'text-gray-600'
           }`}
         >
           <BottomNavIcon active={mobileMenuOpen} pathD="M4 7h16M4 12h16M4 17h16" />
           <span>{t('navbar.menu')}</span>
+          {hasPendingBids && pendingBidsCount > 0 && !bidsViewed && (
+            <span className="absolute top-2 right-5 h-2 w-2 rounded-full bg-orange-500" />
+          )}
         </button>
       </div>
     </div>
