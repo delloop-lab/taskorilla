@@ -959,8 +959,13 @@ function TasksPageContent() {
         })
       }
       
-      // Sort
+      // Sort: tasks with a budget first, then date-desc within each group.
       tasksWithProfiles.sort((a, b) => {
+        const aHasBudget = typeof a.budget === 'number' && a.budget > 0
+        const bHasBudget = typeof b.budget === 'number' && b.budget > 0
+        if (aHasBudget !== bHasBudget) {
+          return aHasBudget ? -1 : 1
+        }
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       })
       
