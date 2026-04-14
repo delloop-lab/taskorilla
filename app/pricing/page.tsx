@@ -1,10 +1,12 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
 import { useLanguage } from '@/lib/i18n'
 
 export default function PricingPage() {
   const { language } = useLanguage()
+  const [expandedPlatforms, setExpandedPlatforms] = useState<Record<string, boolean>>({})
 
   const content = {
     en: {
@@ -186,6 +188,108 @@ export default function PricingPage() {
   }
 
   const t = content[language as keyof typeof content]
+  const marketplaceData = [
+    {
+      platform: 'Taskorilla',
+      clientModel: 'Free to post. Pay only when task is completed.',
+      providerModel: 'Commission on completed task + small platform fee on completion.',
+      monetisation: 'Success-based commission model',
+      risk: 'Low',
+      feesSummary: 'Free posting. Costs apply only after successful completion.',
+      modelType: 'Commission',
+      keyTakeaway: 'Pay linked to outcomes rather than lead access.',
+    },
+    {
+      platform: 'Airtasker',
+      clientModel: 'Free to post. Some booking or assignment fees may apply depending on region.',
+      providerModel: 'Service fee on completed work (varies by category and reputation tier).',
+      monetisation: 'Hybrid service fee model',
+      risk: 'Medium',
+      feesSummary: 'Potential booking/assignment fees and provider service fees.',
+      modelType: 'Hybrid',
+      keyTakeaway: 'Fee exposure varies by geography, category, and tier.',
+    },
+    {
+      platform: 'TaskRabbit',
+      clientModel: 'Booking price includes platform service fees.',
+      providerModel: 'Platform fees applied to completed bookings (structure varies by region).',
+      monetisation: 'Service fee + booking fee model',
+      risk: 'Medium',
+      feesSummary: 'Platform fees are embedded in booking flows.',
+      modelType: 'Service fee',
+      keyTakeaway: 'Users pay through booking-linked fee structures.',
+    },
+    {
+      platform: 'Thumbtack',
+      clientModel: 'Free to request quotes from professionals.',
+      providerModel: 'Pay-per-lead model (cost per customer introduction).',
+      monetisation: 'Lead generation model',
+      risk: 'High',
+      feesSummary: 'Providers pay for customer introductions.',
+      modelType: 'Lead-based',
+      keyTakeaway: 'Spend can occur before any confirmed work.',
+    },
+    {
+      platform: 'Handy',
+      clientModel: 'Clients pay upfront for booked services.',
+      providerModel: 'Platform deducts commission from provider earnings.',
+      monetisation: 'Commission on completed services',
+      risk: 'Medium',
+      feesSummary: 'Upfront client payment with provider commission deductions.',
+      modelType: 'Commission',
+      keyTakeaway: 'Revenue share is taken from completed service earnings.',
+    },
+    {
+      platform: 'Fiverr',
+      clientModel: 'Clients pay upfront when ordering services.',
+      providerModel: 'Platform commission on completed earnings.',
+      monetisation: 'Transaction commission model',
+      risk: 'Medium',
+      feesSummary: 'Upfront purchasing plus provider-side commission.',
+      modelType: 'Commission',
+      keyTakeaway: 'Transaction-based model centered on completed orders.',
+    },
+    {
+      platform: 'Zaask',
+      clientModel: 'Free to request quotes from professionals.',
+      providerModel: 'Pay-per-lead or credit-based system depending on usage.',
+      monetisation: 'Lead / credit-based model',
+      risk: 'High',
+      feesSummary: 'Providers may spend via lead or credit packages.',
+      modelType: 'Lead-based',
+      keyTakeaway: 'Cost is tied to visibility/access, not guaranteed jobs.',
+    },
+    {
+      platform: 'StarOfService',
+      clientModel: 'Free to browse and request services.',
+      providerModel: 'Providers pay for leads or visibility credits.',
+      monetisation: 'Lead + visibility model',
+      risk: 'High',
+      feesSummary: 'Monetisation relies on paid leads and visibility.',
+      modelType: 'Lead-based',
+      keyTakeaway: 'Exposure spend can happen without confirmed conversion.',
+    },
+    {
+      platform: 'OLX',
+      clientModel: 'Free classifieds posting.',
+      providerModel: 'No platform commission (optional paid visibility tools).',
+      monetisation: 'Advertising / listing model',
+      risk: 'High',
+      feesSummary: 'Core listings are free; optional paid visibility upsells.',
+      modelType: 'Listing',
+      keyTakeaway: 'Low platform control over transaction outcomes.',
+    },
+    {
+      platform: 'Facebook Marketplace',
+      clientModel: 'Free to list and contact sellers.',
+      providerModel: 'No platform commission on transactions.',
+      monetisation: 'Indirect advertising ecosystem',
+      risk: 'High',
+      feesSummary: 'No direct transaction fee model for marketplace exchanges.',
+      modelType: 'Advertising',
+      keyTakeaway: 'Transactions run outside platform protections.',
+    },
+  ]
   return (
     <div className="min-h-screen bg-[#F8F9FA] bg-[radial-gradient(#c9d2dc_0.8px,transparent_0.8px)] [background-size:16px_16px]">
       {/* Hero Section */}
@@ -309,7 +413,67 @@ export default function PricingPage() {
             on the underlying pricing model so you can understand who pays, when, and how risk is distributed.
           </p>
 
-          <div className="mt-6 overflow-x-auto rounded-xl border border-gray-200 bg-white">
+          <div className="mt-6 md:hidden space-y-4">
+            {marketplaceData.map((row) => {
+              const isOpen = Boolean(expandedPlatforms[row.platform])
+              const riskClass =
+                row.risk === 'Low' ? 'bg-emerald-100 text-emerald-800' :
+                row.risk === 'Medium' ? 'bg-amber-100 text-amber-800' :
+                'bg-rose-100 text-rose-800'
+              const modelClass =
+                row.modelType === 'Commission' ? 'bg-blue-100 text-blue-800' :
+                row.modelType === 'Hybrid' || row.modelType === 'Service fee' ? 'bg-indigo-100 text-indigo-800' :
+                row.modelType === 'Lead-based' ? 'bg-orange-100 text-orange-800' :
+                'bg-slate-100 text-slate-800'
+
+              return (
+                <div key={`mobile-${row.platform}`} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-base font-bold text-gray-900">{row.platform}</h3>
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${riskClass}`}>
+                      {row.risk}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-gray-700">{row.feesSummary}</p>
+                  <div className="mt-2">
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${modelClass}`}>
+                      {row.modelType}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-gray-600">{row.keyTakeaway}</p>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedPlatforms((prev) => ({ ...prev, [row.platform]: !prev[row.platform] }))
+                    }
+                    className="mt-3 text-sm font-medium text-blue-600 hover:text-blue-800 underline"
+                  >
+                    {isOpen ? 'Show less' : 'Show more'}
+                  </button>
+
+                  {isOpen && (
+                    <div className="mt-3 space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm">
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-gray-500">Client pricing model</p>
+                        <p className="text-gray-800">{row.clientModel}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-gray-500">Provider pricing model</p>
+                        <p className="text-gray-800">{row.providerModel}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-gray-500">Monetisation model</p>
+                        <p className="text-gray-800">{row.monetisation}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="mt-6 hidden md:block overflow-x-auto rounded-xl border border-gray-200 bg-white">
             <table id="comparison-table-table" className="min-w-full border-collapse text-sm">
               <thead>
                 <tr className="bg-gray-100">
@@ -321,78 +485,7 @@ export default function PricingPage() {
                 </tr>
               </thead>
               <tbody>
-                {[
-                  {
-                    platform: 'Taskorilla',
-                    clientModel: 'Free to post. Pay only when task is completed.',
-                    providerModel: 'Commission on completed task + small platform fee on completion.',
-                    monetisation: 'Success-based commission model',
-                    risk: 'Low',
-                  },
-                  {
-                    platform: 'Airtasker',
-                    clientModel: 'Free to post. Some booking or assignment fees may apply depending on region.',
-                    providerModel: 'Service fee on completed work (varies by category and reputation tier).',
-                    monetisation: 'Hybrid service fee model',
-                    risk: 'Medium',
-                  },
-                  {
-                    platform: 'TaskRabbit',
-                    clientModel: 'Booking price includes platform service fees.',
-                    providerModel: 'Platform fees applied to completed bookings (structure varies by region).',
-                    monetisation: 'Service fee + booking fee model',
-                    risk: 'Medium',
-                  },
-                  {
-                    platform: 'Thumbtack',
-                    clientModel: 'Free to request quotes from professionals.',
-                    providerModel: 'Pay-per-lead model (cost per customer introduction).',
-                    monetisation: 'Lead generation model',
-                    risk: 'High',
-                  },
-                  {
-                    platform: 'Handy',
-                    clientModel: 'Clients pay upfront for booked services.',
-                    providerModel: 'Platform deducts commission from provider earnings.',
-                    monetisation: 'Commission on completed services',
-                    risk: 'Medium',
-                  },
-                  {
-                    platform: 'Fiverr',
-                    clientModel: 'Clients pay upfront when ordering services.',
-                    providerModel: 'Platform commission on completed earnings.',
-                    monetisation: 'Transaction commission model',
-                    risk: 'Medium',
-                  },
-                  {
-                    platform: 'Zaask',
-                    clientModel: 'Free to request quotes from professionals.',
-                    providerModel: 'Pay-per-lead or credit-based system depending on usage.',
-                    monetisation: 'Lead / credit-based model',
-                    risk: 'High',
-                  },
-                  {
-                    platform: 'StarOfService',
-                    clientModel: 'Free to browse and request services.',
-                    providerModel: 'Providers pay for leads or visibility credits.',
-                    monetisation: 'Lead + visibility model',
-                    risk: 'High',
-                  },
-                  {
-                    platform: 'OLX',
-                    clientModel: 'Free classifieds posting.',
-                    providerModel: 'No platform commission (optional paid visibility tools).',
-                    monetisation: 'Advertising / listing model',
-                    risk: 'High',
-                  },
-                  {
-                    platform: 'Facebook Marketplace',
-                    clientModel: 'Free to list and contact sellers.',
-                    providerModel: 'No platform commission on transactions.',
-                    monetisation: 'Indirect advertising ecosystem',
-                    risk: 'High',
-                  },
-                ].map((row, index) => {
+                {marketplaceData.map((row, index) => {
                   const riskClass =
                     row.risk === 'Low' ? 'bg-emerald-100 text-emerald-800' :
                     row.risk === 'Medium' ? 'bg-amber-100 text-amber-800' :
