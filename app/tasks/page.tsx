@@ -2191,10 +2191,6 @@ function TasksPageContent() {
                             <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Distance</dt>
                             <dd className="text-gray-800 font-medium">{task.distance != null ? `${task.distance} km` : !currentUserId ? <span className="text-xs text-gray-400 italic">{t('tasks.loginToSeeDistance')}</span> : '—'}</dd>
                           </div>
-                          <div className="min-w-0 sm:col-span-2">
-                            <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">{t('tasks.due')}</dt>
-                            <dd className="text-gray-800 font-medium">{task.due_date ? (() => { try { return format(new Date(task.due_date), 'MMM d, yyyy') } catch { return t('tasks.invalidDate') } })() : '—'}</dd>
-                          </div>
                         </dl>
                         {currentUserId && task.created_by !== currentUserId && (
                           <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setReportTargetId(task.id); setReportTargetName(task.title); setReportType('task'); setReportModalOpen(true) }} className="mt-2 flex items-center gap-1.5 text-red-600 hover:text-red-700 font-medium text-sm">
@@ -2294,11 +2290,7 @@ function TasksPageContent() {
                             <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">Distance</dt>
                             <dd className="text-gray-800 font-medium">{task.distance != null ? `${task.distance} km` : !currentUserId ? <span className="text-xs text-gray-400 italic">{t('tasks.loginToSeeDistance')}</span> : '—'}</dd>
                           </div>
-                          <div className="min-w-0 sm:col-span-2 flex items-center justify-between gap-2 flex-wrap">
-                            <div>
-                              <dt className="text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">{t('tasks.due')}</dt>
-                              <dd className="text-gray-800 font-medium">{task.due_date ? (() => { try { return format(new Date(task.due_date), 'MMM d, yyyy') } catch (e) { return t('tasks.invalidDate') } })() : '—'}</dd>
-                            </div>
+                          <div className="min-w-0 sm:col-span-2 flex items-center justify-end gap-2 flex-wrap">
                             <div className="flex items-center gap-3 flex-wrap">
                               {task.willing_to_help && (
                                 <div className="flex items-center gap-1 text-primary-600">
