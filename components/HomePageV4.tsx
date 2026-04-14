@@ -9,9 +9,10 @@ import Footer from '@/components/Footer'
 import { useLanguage } from '@/lib/i18n'
 import { SocialBar } from '@/components/SocialBar'
 import { ServiceCardsGrid } from '@/components/landing/ServiceCardsGrid'
+import HomeTaskTicker from '@/components/HomeTaskTicker'
 
 export default function HomePageV4() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const [openHowItWorks, setOpenHowItWorks] = useState<number | null>(null)
   const [openWhyCard, setOpenWhyCard] = useState<number | null>(null)
   const stripDashes = (value: string) => value.replace(/[-–—]/g, ' ').replace(/\s{2,}/g, ' ').trim()
@@ -48,7 +49,7 @@ export default function HomePageV4() {
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-12 pb-4 md:pt-16 md:pb-8 px-4">
         <div className="container mx-auto max-w-6xl relative">
-          <SocialBar className="absolute right-0 top-[-1.5rem] sm:top-[-2rem] md:top-[-3rem] md:right-2 lg:right-0" />
+          <SocialBar className="hidden sm:flex absolute right-0 top-[-1.5rem] sm:top-[-2rem] md:top-[-3rem] md:right-2 lg:right-0" />
           {/* Mobile asymmetric mascot peek */}
           <div className="pointer-events-none absolute -right-6 top-6 z-20 md:hidden">
             <img
@@ -59,26 +60,37 @@ export default function HomePageV4() {
             />
           </div>
           <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6 pr-24 md:pr-0 animate-fade-in">
-              <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-foreground leading-[0.98]">
-                Get things done in Portugal. Fast.
-              </h1>
-              <p className="max-w-2xl text-lg sm:text-xl md:text-2xl leading-relaxed text-muted-foreground">
-                Post a task for free and get offers from trusted local helpers. Pay only when the job is done.
-              </p>
+            <div className="space-y-6 animate-fade-in">
+              <div className="pr-24 md:pr-0">
+                <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-foreground leading-[0.98]">
+                  Get things done in Portugal. Fast.
+                </h1>
+                <p className="max-w-2xl text-lg sm:text-xl md:text-2xl leading-relaxed text-muted-foreground">
+                  Post a task for free and get offers from trusted local helpers. Pay them only when the job is done.
+                </p>
+              </div>
               <div className="flex flex-col items-center justify-center gap-3 pt-1 sm:flex-row sm:items-stretch sm:justify-start">
                 <Link href="#service-cards-grid">
                   <Button size="lg" className="w-full sm:w-auto min-w-[220px]">
                     Post a Task
                   </Button>
                 </Link>
-                <Link href="/become-a-helper">
+                <Link href="/tasks" className="sm:hidden">
                   <Button
                     size="lg"
                     variant="outline"
                     className="w-full sm:w-auto min-w-[220px] bg-white border-gray-300 text-foreground hover:bg-gray-100"
                   >
-                    Earn Money as a Helper
+                    <span>{language === 'pt' ? 'Ver Tarefas' : 'Browse Tasks'}</span>
+                  </Button>
+                </Link>
+                <Link href="/become-a-helper" className="hidden sm:block">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full sm:w-auto min-w-[220px] bg-white border-gray-300 text-foreground hover:bg-gray-100"
+                  >
+                    <span>{language === 'pt' ? 'Ganhe Dinheiro como Ajudante' : 'Earn Money as a Helper'}</span>
                   </Button>
                 </Link>
               </div>
@@ -98,6 +110,8 @@ export default function HomePageV4() {
           </div>
         </div>
       </section>
+
+      <HomeTaskTicker />
 
       <section id="service-cards-grid">
         <ServiceCardsGrid polka />

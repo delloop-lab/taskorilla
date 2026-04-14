@@ -565,7 +565,7 @@ export default function Navbar() {
                 href="/tasks"
                 className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1"
               >
-                {t('navbar.tasks')}
+                {t('navbar.browseTasks')}
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -639,7 +639,7 @@ export default function Navbar() {
                 href="/tasks/new"
                 className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1"
               >
-                {t('navbar.helpers')}
+                {t('navbar.postTasks')}
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -671,7 +671,6 @@ export default function Navbar() {
                       className="block w-full text-left px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
                       <span className="block">{t('navbar.postTask')}</span>
-                      <span className="block text-xs text-gray-500">{t('navbar.workRequired')}</span>
                     </button>
                     ) : (
                     <Link
@@ -679,7 +678,6 @@ export default function Navbar() {
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
                       <span className="block">{t('navbar.postTask')}</span>
-                      <span className="block text-xs text-gray-500">{t('navbar.workRequired')}</span>
                     </Link>
                     )}
                     {userPaused ? (
@@ -1038,7 +1036,7 @@ export default function Navbar() {
                 onClick={() => setMobileExpandedSection((prev) => (prev === 'helpers' ? null : 'helpers'))}
                 className={`w-full flex items-center justify-between text-sm font-semibold text-slate-800 uppercase tracking-wide rounded-xl px-3 py-2 bg-white border border-slate-200 shadow-sm ${mobileExpandedSection === 'helpers' ? 'mb-2' : 'mb-0'}`}
               >
-                <span>{t('navbar.helpers')}</span>
+                <span>{t('navbar.postTasks')}</span>
                 <svg className={`w-4 h-4 transition-transform ${mobileExpandedSection === 'helpers' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -1051,7 +1049,6 @@ export default function Navbar() {
                     className="mobile-drawer-link block w-full text-left text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                   >
                     <span className="block">{t('navbar.postTask')}</span>
-                    <span className="block text-sm font-medium text-gray-600">{t('navbar.workRequired')}</span>
                   </button>
                   ) : (
                   <Link
@@ -1060,7 +1057,6 @@ export default function Navbar() {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <span className="block">{t('navbar.postTask')}</span>
-                    <span className="block text-sm font-medium text-gray-600">{t('navbar.workRequired')}</span>
                   </Link>
                   )}
                   {userPaused ? (
@@ -1113,7 +1109,7 @@ export default function Navbar() {
                 onClick={() => setMobileExpandedSection((prev) => (prev === 'tasks' ? null : 'tasks'))}
                 className={`w-full flex items-center justify-between text-sm font-semibold text-slate-800 uppercase tracking-wide rounded-xl px-3 py-2 bg-white border border-slate-200 shadow-sm ${mobileExpandedSection === 'tasks' ? 'mb-2' : 'mb-0'}`}
               >
-                <span>{t('navbar.tasks')}</span>
+                <span>{t('navbar.browseTasks')}</span>
                 <svg className={`w-4 h-4 transition-transform ${mobileExpandedSection === 'tasks' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>

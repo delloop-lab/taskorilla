@@ -299,7 +299,7 @@
     "bidsOnYourTasks": "Bids on your tasks",
     "browseAllHelpers": "Browse Helpers",
     "browseProfessionals": "Browse Professionals",
-    "browseTasks": "Browse Local Tasks (Find Jobs)",
+    "browseTasks": "Browse Tasks",
     "blog": "Blog",
     "contactSupport": "Contact Support",
     "faqs": "FAQs",
@@ -406,10 +406,10 @@
     }
   },
   "roles": {
-    "helperDescription": "Earn Money Helping Others",
+    "helperDescription": "Become a Helper",
     "helperText": "Pick up tasks that fit your skills, submit bids, and earn money while helping others.",
     "helperTitle": "HELPER",
-    "taskerDescription": "Post Your Task, Free and Easy",
+    "taskerDescription": "Become a Tasker",
     "taskerText": "Share what you need done and get it handled quickly.",
     "taskerTitle": "TASKER"
   },

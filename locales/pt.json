@@ -299,7 +299,7 @@
     "bidsOnYourTasks": "Propostas nas suas tarefas",
     "browseAllHelpers": "Ver Ajudantes",
     "browseProfessionals": "Ver Profissionais",
-    "browseTasks": "Ver Tarefas Locais (Trabalhos)",
+    "browseTasks": "Ver Tarefas",
     "blog": "Blog",
     "contactSupport": "Contactar Suporte",
     "faqs": "Perguntas Frequentes",
@@ -406,10 +406,10 @@
     }
   },
   "roles": {
-    "helperDescription": "Ganhe dinheiro a ajudar outros",
+    "helperDescription": "Tornar-se Ajudante",
     "helperText": "Escolha tarefas que correspondam às suas competências, envie propostas e ganhe enquanto ajuda.",
     "helperTitle": "AJUDANTE",
-    "taskerDescription": "Publique a sua tarefa, simples e grátis",
+    "taskerDescription": "Tornar-se Tasker",
     "taskerText": "Partilhe o que precisa de fazer e resolva tudo rapidamente.",
     "taskerTitle": "UTILIZADOR"
   },

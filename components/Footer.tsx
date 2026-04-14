@@ -143,6 +143,44 @@ export default function Footer({ variant = 'default' }: FooterProps) {
             <FaYoutube className="w-4 h-4 sm:w-5 sm:h-5" />
           </a>
         </div>
+        <div className="md:hidden flex justify-center items-center gap-4 mt-2">
+          <a
+            href="https://www.facebook.com/groups/taskorilla/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-700 transition-colors inline-flex items-center"
+            aria-label="Follow us on Facebook"
+          >
+            <FaFacebookF className="w-5 h-5" />
+          </a>
+          <a
+            href="https://www.instagram.com/taskorilla"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-pink-600 hover:text-pink-700 transition-colors inline-flex items-center"
+            aria-label="Follow us on Instagram"
+          >
+            <FaInstagram className="w-5 h-5" />
+          </a>
+          <a
+            href="https://www.tiktok.com/@taskorilla"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-black hover:text-gray-800 dark:text-gray-100 dark:hover:text-white transition-colors inline-flex items-center"
+            aria-label="Follow us on TikTok"
+          >
+            <FaTiktok className="w-5 h-5" />
+          </a>
+          <a
+            href="https://www.youtube.com/@gettaskorilla"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-red-600 hover:text-red-700 transition-colors inline-flex items-center"
+            aria-label="Follow us on YouTube"
+          >
+            <FaYoutube className="w-5 h-5" />
+          </a>
+        </div>
         <div className="flex justify-center items-center gap-2 mt-2 text-xs text-muted-foreground/70">
           <span>{t('footer.rights')}</span>
           <span className="font-medium">{version}</span>
