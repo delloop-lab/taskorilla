@@ -345,7 +345,7 @@ export default function PricingPage() {
             </div>
             <div className="text-center">
               <Link
-                href="/tasks/new"
+                href="/#service-cards-grid"
                 className="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg text-base font-bold hover:bg-blue-700 transition-all duration-200 hover:-translate-y-1"
               >
                 {t.postTaskBtn}
