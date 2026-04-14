@@ -417,12 +417,16 @@ export default function PricingPage() {
                 a: 'Only after a task is successfully completed.',
               },
               {
-                q: 'Do helpers pay to bid?',
+                q: 'Do Helpers pay to bid.',
                 a: 'No. Bidding and messaging are completely free.',
               },
               {
                 q: 'When is the 10% commission charged to the Helper?',
                 a: 'Only when a task is completed and payment is made.',
+              },
+              {
+                q: 'What is a Tasker and a Helper?',
+                a: 'A Tasker is someone who needs something done and posts the job. A Helper is someone who gets paid to do the work. Simple: one asks, one does.',
               },
             ].map((item) => (
               <details key={item.q} className="rounded-xl border border-gray-200 bg-gray-50/70 px-4 py-3">
