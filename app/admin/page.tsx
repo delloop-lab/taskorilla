@@ -198,6 +198,8 @@ export default function SuperadminDashboard() {
   const [userPageVisitsLoading, setUserPageVisitsLoading] = useState(false)
   const [anonPageVisits, setAnonPageVisits] = useState<AnonPageVisitRow[]>([])
   const [anonPageVisitsLoading, setAnonPageVisitsLoading] = useState(false)
+  const [showAllUserTrafficDays, setShowAllUserTrafficDays] = useState(false)
+  const [showAllAnonTrafficDays, setShowAllAnonTrafficDays] = useState(false)
   const TRAFFIC_PAGE_SIZE = 20
   const [tab, setTab] = useState<'users' | 'tasks' | 'awaiting_payment' | 'stats' | 'revenue' | 'email' | 'matching' | 'traffic' | 'settings' | 'reports' | 'maps' | 'blog'>('users')
   const [showBidsDrilldown, setShowBidsDrilldown] = useState(false)
@@ -6528,6 +6530,8 @@ export default function SuperadminDashboard() {
             const [bd, bm, by] = b.split('/').map(Number)
             return Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad)
           })
+          const visibleUserDayKeys = showAllUserTrafficDays ? userDayKeys : userDayKeys.slice(0, 2)
+          const visibleAnonDayKeys = showAllAnonTrafficDays ? anonDayKeys : anonDayKeys.slice(0, 2)
 
           return (
             <div className="bg-white rounded-lg shadow p-6">
@@ -6608,7 +6612,7 @@ export default function SuperadminDashboard() {
                     <p className="text-sm text-gray-500">No logged-in visits in this range.</p>
                   ) : (
                     <div className="space-y-2">
-                      {userDayKeys.map((day) => (
+                      {visibleUserDayKeys.map((day) => (
                         <div key={day} className="space-y-2 rounded-lg border border-gray-300 bg-gray-50/70 p-3">
                           <div className="text-sm font-bold uppercase tracking-wide text-gray-800">{day}</div>
                           {userSessionsByDay[day].map((item, index) => (
@@ -6661,6 +6665,17 @@ export default function SuperadminDashboard() {
                           ))}
                         </div>
                       ))}
+                      {userDayKeys.length > 2 && (
+                        <div className="pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setShowAllUserTrafficDays((prev) => !prev)}
+                            className="text-sm font-medium text-blue-600 hover:text-blue-800 underline"
+                          >
+                            {showAllUserTrafficDays ? 'Show fewer days' : `Show more days (${userDayKeys.length - 2} more)`}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -6682,7 +6697,7 @@ export default function SuperadminDashboard() {
                     </p>
                   ) : (
                     <div className="space-y-2">
-                      {anonDayKeys.map((day) => (
+                      {visibleAnonDayKeys.map((day) => (
                         <div key={day} className="space-y-2 rounded-lg border border-gray-300 bg-gray-50/70 p-3">
                           <div className="text-sm font-bold uppercase tracking-wide text-gray-800">{day}</div>
                           {anonSessionsByDay[day].map((item, index) => (
@@ -6734,6 +6749,17 @@ export default function SuperadminDashboard() {
                           ))}
                         </div>
                       ))}
+                      {anonDayKeys.length > 2 && (
+                        <div className="pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setShowAllAnonTrafficDays((prev) => !prev)}
+                            className="text-sm font-medium text-blue-600 hover:text-blue-800 underline"
+                          >
+                            {showAllAnonTrafficDays ? 'Show fewer days' : `Show more days (${anonDayKeys.length - 2} more)`}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

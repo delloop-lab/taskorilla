@@ -186,6 +186,79 @@ export default function PricingPage() {
   }
 
   const t = content[language as keyof typeof content]
+  const comparisonRows = [
+    {
+      platform: 'Taskorilla',
+      posterCost: t.taskorilla.posterCost,
+      helperCost: t.taskorilla.helperCost,
+      risk: t.taskorilla.risk,
+      riskClass: 'text-emerald-700',
+      highlight: true,
+    },
+    {
+      platform: 'Airtasker',
+      posterCost: t.competitors.airtasker.posterCost,
+      helperCost: t.competitors.airtasker.helperCost,
+      risk: t.competitors.airtasker.risk,
+      riskClass: 'text-amber-600',
+    },
+    {
+      platform: 'TaskRabbit',
+      posterCost: t.competitors.taskrabbit.posterCost,
+      helperCost: t.competitors.taskrabbit.helperCost,
+      risk: t.competitors.taskrabbit.risk,
+      riskClass: 'text-amber-600',
+    },
+    {
+      platform: 'Thumbtack',
+      posterCost: t.competitors.thumbtack.posterCost,
+      helperCost: t.competitors.thumbtack.helperCost,
+      risk: t.competitors.thumbtack.risk,
+      riskClass: 'text-amber-600',
+    },
+    {
+      platform: 'Handy',
+      posterCost: t.competitors.handy.posterCost,
+      helperCost: t.competitors.handy.helperCost,
+      risk: t.competitors.handy.risk,
+      riskClass: 'text-amber-600',
+    },
+    {
+      platform: 'Fiverr',
+      posterCost: t.competitors.fiverr.posterCost,
+      helperCost: t.competitors.fiverr.helperCost,
+      risk: t.competitors.fiverr.risk,
+      riskClass: 'text-amber-600',
+    },
+    {
+      platform: 'Zaask',
+      posterCost: t.competitors.zaask.posterCost,
+      helperCost: t.competitors.zaask.helperCost,
+      risk: t.competitors.zaask.risk,
+      riskClass: 'text-amber-600',
+    },
+    {
+      platform: 'Star of Service',
+      posterCost: t.competitors.starofservice.posterCost,
+      helperCost: t.competitors.starofservice.helperCost,
+      risk: t.competitors.starofservice.risk,
+      riskClass: 'text-amber-600',
+    },
+    {
+      platform: 'OLX',
+      posterCost: t.competitors.olx.posterCost,
+      helperCost: t.competitors.olx.helperCost,
+      risk: t.competitors.olx.risk,
+      riskClass: 'text-rose-600',
+    },
+    {
+      platform: 'Facebook',
+      posterCost: t.competitors.facebook.posterCost,
+      helperCost: t.competitors.facebook.helperCost,
+      risk: t.competitors.facebook.risk,
+      riskClass: 'text-rose-600',
+    },
+  ]
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] bg-[radial-gradient(#c9d2dc_0.8px,transparent_0.8px)] [background-size:16px_16px]">
@@ -294,6 +367,24 @@ export default function PricingPage() {
 
         {/* Taskorilla vs Competitors Table */}
         <div id="comparison-table" className="mb-16">
+          <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50/60 p-4 md:p-5">
+            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">The Roles in Taskorilla</h3>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-4 shadow-sm">
+                <p className="text-sm text-blue-900">
+                  <strong className="inline-block px-2 py-0.5 rounded bg-blue-100 border border-blue-200 mr-1">Tasker</strong>
+                  - the person posting a task. They need something done.
+                </p>
+              </div>
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 shadow-sm">
+                <p className="text-sm text-emerald-900">
+                  <strong className="inline-block px-2 py-0.5 rounded bg-emerald-100 border border-emerald-200 mr-1">Helper</strong>
+                  - the person doing the task and completing the work.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <details className="group bg-white rounded-2xl border border-gray-200 shadow-sm p-5 md:p-8">
             <summary className="list-none flex cursor-pointer items-center justify-between gap-3 text-2xl md:text-3xl font-bold text-gray-900">
               <span>{t.compareTitle}</span>
@@ -304,19 +395,33 @@ export default function PricingPage() {
               {t.compareSubtitle}
             </p>
 
-            <div className="mt-6 grid gap-3 md:grid-cols-2">
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">Role</p>
-                <p className="text-sm text-gray-800"><strong>Tasker</strong> - the person posting a task because they need something done.</p>
-              </div>
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">Role</p>
-                <p className="text-sm text-gray-800"><strong>Helper</strong> - the person doing the task and completing the work.</p>
-              </div>
+            <div className="mt-6 md:hidden space-y-3">
+              {comparisonRows.map((row) => (
+                <div
+                  key={`mobile-${row.platform}`}
+                  className={`rounded-xl border p-4 ${row.highlight ? 'border-emerald-300 bg-emerald-50/60' : 'border-gray-200 bg-white'}`}
+                >
+                  <h4 className="text-base font-bold text-gray-900 mb-2">{row.platform}</h4>
+                  <dl className="space-y-2 text-sm">
+                    <div>
+                      <dt className="text-xs uppercase tracking-wide text-gray-500">{t.tableHeaders.posterCost}</dt>
+                      <dd className="text-gray-800">{row.posterCost}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs uppercase tracking-wide text-gray-500">{t.tableHeaders.helperCost}</dt>
+                      <dd className="text-gray-800">{row.helperCost}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs uppercase tracking-wide text-gray-500">{t.tableHeaders.risk}</dt>
+                      <dd className={`font-semibold ${row.riskClass}`}>{row.risk}</dd>
+                    </div>
+                  </dl>
+                </div>
+              ))}
             </div>
 
-            <div className="mt-6 overflow-x-auto rounded-xl border border-gray-200 bg-white">
-              <table id="comparison-table-table" className="min-w-[860px] w-full border-collapse comparison-table text-sm">
+            <div className="mt-6 hidden md:block rounded-xl border border-gray-200 bg-white">
+              <table id="comparison-table-table" className="w-full border-collapse comparison-table text-sm">
                 <thead>
                   <tr className="bg-gray-100">
                     <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900">{t.tableHeaders.platform}</th>
@@ -326,66 +431,21 @@ export default function PricingPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="bg-emerald-50 border-l-4 border-l-emerald-600 hover:bg-emerald-100 transition-colors">
-                    <td className="border border-gray-300 px-3 py-3 font-bold">Taskorilla</td>
-                    <td className="border border-gray-300 px-3 py-3">{t.taskorilla.posterCost}</td>
-                    <td className="border border-gray-300 px-3 py-3">{t.taskorilla.helperCost}</td>
-                    <td className="border border-gray-300 px-3 py-3 font-semibold text-emerald-700">{t.taskorilla.risk}</td>
-                  </tr>
-                  <tr className="even:bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <td className="border border-gray-300 px-3 py-3 font-bold">Airtasker</td>
-                    <td className="border border-gray-300 px-3 py-3">{t.competitors.airtasker.posterCost}</td>
-                    <td className="border border-gray-300 px-3 py-3">{t.competitors.airtasker.helperCost}</td>
-                    <td className="border border-gray-300 px-3 py-3 font-semibold text-amber-600">{t.competitors.airtasker.risk}</td>
-                  </tr>
-                  <tr className="even:bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <td className="border border-gray-300 px-3 py-3 font-bold">TaskRabbit</td>
-                    <td className="border border-gray-300 px-3 py-3">{t.competitors.taskrabbit.posterCost}</td>
-                    <td className="border border-gray-300 px-3 py-3">{t.competitors.taskrabbit.helperCost}</td>
-                    <td className="border border-gray-300 px-3 py-3 font-semibold text-amber-600">{t.competitors.taskrabbit.risk}</td>
-                  </tr>
-                  <tr className="even:bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <td className="border border-gray-300 px-3 py-3 font-bold">Thumbtack</td>
-                    <td className="border border-gray-300 px-3 py-3">{t.competitors.thumbtack.posterCost}</td>
-                    <td className="border border-gray-300 px-3 py-3">{t.competitors.thumbtack.helperCost}</td>
-                    <td className="border border-gray-300 px-3 py-3 font-semibold text-amber-600">{t.competitors.thumbtack.risk}</td>
-                  </tr>
-                  <tr className="even:bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <td className="border border-gray-300 px-3 py-3 font-bold">Handy</td>
-                    <td className="border border-gray-300 px-3 py-3">{t.competitors.handy.posterCost}</td>
-                    <td className="border border-gray-300 px-3 py-3">{t.competitors.handy.helperCost}</td>
-                    <td className="border border-gray-300 px-3 py-3 font-semibold text-amber-600">{t.competitors.handy.risk}</td>
-                  </tr>
-                  <tr className="even:bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <td className="border border-gray-300 px-3 py-3 font-bold">Fiverr</td>
-                    <td className="border border-gray-300 px-3 py-3">{t.competitors.fiverr.posterCost}</td>
-                    <td className="border border-gray-300 px-3 py-3">{t.competitors.fiverr.helperCost}</td>
-                    <td className="border border-gray-300 px-3 py-3 font-semibold text-amber-600">{t.competitors.fiverr.risk}</td>
-                  </tr>
-                  <tr className="even:bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <td className="border border-gray-300 px-3 py-3 font-bold">Zaask</td>
-                    <td className="border border-gray-300 px-3 py-3">{t.competitors.zaask.posterCost}</td>
-                    <td className="border border-gray-300 px-3 py-3">{t.competitors.zaask.helperCost}</td>
-                    <td className="border border-gray-300 px-3 py-3 font-semibold text-amber-600">{t.competitors.zaask.risk}</td>
-                  </tr>
-                  <tr className="even:bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <td className="border border-gray-300 px-3 py-3 font-bold">Star of Service</td>
-                    <td className="border border-gray-300 px-3 py-3">{t.competitors.starofservice.posterCost}</td>
-                    <td className="border border-gray-300 px-3 py-3">{t.competitors.starofservice.helperCost}</td>
-                    <td className="border border-gray-300 px-3 py-3 font-semibold text-amber-600">{t.competitors.starofservice.risk}</td>
-                  </tr>
-                  <tr className="even:bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <td className="border border-gray-300 px-3 py-3 font-bold">OLX</td>
-                    <td className="border border-gray-300 px-3 py-3">{t.competitors.olx.posterCost}</td>
-                    <td className="border border-gray-300 px-3 py-3">{t.competitors.olx.helperCost}</td>
-                    <td className="border border-gray-300 px-3 py-3 font-semibold text-rose-600">{t.competitors.olx.risk}</td>
-                  </tr>
-                  <tr className="even:bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <td className="border border-gray-300 px-3 py-3 font-bold">Facebook</td>
-                    <td className="border border-gray-300 px-3 py-3">{t.competitors.facebook.posterCost}</td>
-                    <td className="border border-gray-300 px-3 py-3">{t.competitors.facebook.helperCost}</td>
-                    <td className="border border-gray-300 px-3 py-3 font-semibold text-rose-600">{t.competitors.facebook.risk}</td>
-                  </tr>
+                  {comparisonRows.map((row, index) => (
+                    <tr
+                      key={row.platform}
+                      className={
+                        row.highlight
+                          ? 'bg-emerald-50 border-l-4 border-l-emerald-600 hover:bg-emerald-100 transition-colors'
+                          : `${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-gray-100 transition-colors`
+                      }
+                    >
+                      <td className="border border-gray-300 px-3 py-3 font-bold">{row.platform}</td>
+                      <td className="border border-gray-300 px-3 py-3">{row.posterCost}</td>
+                      <td className="border border-gray-300 px-3 py-3">{row.helperCost}</td>
+                      <td className={`border border-gray-300 px-3 py-3 font-semibold ${row.riskClass}`}>{row.risk}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
