@@ -38,6 +38,23 @@ export function normalizePageName(pathname: string): string {
   return normalized || 'home'
 }
 
+function getAnonymousVisitorId(): string | null {
+  try {
+    if (typeof window === 'undefined') return null
+    const key = 'anon_visitor_id'
+    const existing = window.localStorage.getItem(key)
+    if (existing) return existing
+    const generated =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `anon_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+    window.localStorage.setItem(key, generated)
+    return generated
+  } catch {
+    return null
+  }
+}
+
 /**
  * Track a page visit
  * @param pageName - The name/identifier of the page (e.g., 'home', 'tasks', 'profile')
@@ -178,6 +195,24 @@ export async function trackPageVisit(pageName: string) {
           msg.includes('does not exist') ||
           msg.includes('schema cache')
         if (!missing) console.warn('user_page_visits insert:', msg)
+      }
+    } else {
+      // Optional anonymous audit trail for traffic diagnostics.
+      const visitorId = getAnonymousVisitorId()
+      if (visitorId) {
+        const pageKey = pageName.length > 200 ? pageName.slice(0, 200) : pageName
+        const { error: anonErr } = await supabase.from('anon_page_visits').insert({
+          visitor_id: visitorId,
+          page: pageKey,
+        })
+        if (anonErr) {
+          const msg = anonErr.message || ''
+          const missing =
+            msg.includes('anon_page_visits') ||
+            msg.includes('does not exist') ||
+            msg.includes('schema cache')
+          if (!missing) console.warn('anon_page_visits insert:', msg)
+        }
       }
     }
   } catch (error) {

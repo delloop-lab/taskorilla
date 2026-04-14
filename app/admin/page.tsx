@@ -107,6 +107,13 @@ type UserPageVisitRow = {
   profiles: { full_name: string | null; email: string | null } | null
 }
 
+type AnonPageVisitRow = {
+  id: string
+  visitor_id: string
+  page: string
+  visited_at: string
+}
+
 function computeTrafficDateRange(
   effectiveRange: TrafficRange,
   effectiveCustomStart: string,
@@ -189,6 +196,8 @@ export default function SuperadminDashboard() {
   const [trafficPage, setTrafficPage] = useState<number>(1)
   const [userPageVisits, setUserPageVisits] = useState<UserPageVisitRow[]>([])
   const [userPageVisitsLoading, setUserPageVisitsLoading] = useState(false)
+  const [anonPageVisits, setAnonPageVisits] = useState<AnonPageVisitRow[]>([])
+  const [anonPageVisitsLoading, setAnonPageVisitsLoading] = useState(false)
   const TRAFFIC_PAGE_SIZE = 20
   const [tab, setTab] = useState<'users' | 'tasks' | 'awaiting_payment' | 'stats' | 'revenue' | 'email' | 'matching' | 'traffic' | 'settings' | 'reports' | 'maps' | 'blog'>('users')
   const [showBidsDrilldown, setShowBidsDrilldown] = useState(false)
@@ -318,6 +327,39 @@ export default function SuperadminDashboard() {
   const [alertViaEmail, setAlertViaEmail] = useState(true)
   const [alertViaSms, setAlertViaSms] = useState(false)
   const [alertSending, setAlertSending] = useState(false)
+
+  const formatAdminDateTime = (value: string | null | undefined) => {
+    if (!value) return '—'
+    const d = new Date(value)
+    if (Number.isNaN(d.getTime())) return '—'
+    const day = String(d.getUTCDate()).padStart(2, '0')
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0')
+    const year = d.getUTCFullYear()
+    const hours = String(d.getUTCHours()).padStart(2, '0')
+    const minutes = String(d.getUTCMinutes()).padStart(2, '0')
+    return `${day}/${month}/${year}, ${hours}:${minutes}`
+  }
+
+  const formatAdminDate = (value: string | null | undefined) => {
+    if (!value) return '—'
+    const d = new Date(value)
+    if (Number.isNaN(d.getTime())) return '—'
+    const day = String(d.getUTCDate()).padStart(2, '0')
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0')
+    const year = d.getUTCFullYear()
+    return `${day}/${month}/${year}`
+  }
+
+  const formatDuration = (ms: number) => {
+    if (!Number.isFinite(ms) || ms <= 0) return '0s'
+    const totalSeconds = Math.floor(ms / 1000)
+    const hours = Math.floor(totalSeconds / 3600)
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
+    const seconds = totalSeconds % 60
+    if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`
+    if (minutes > 0) return `${minutes}m ${seconds}s`
+    return `${seconds}s`
+  }
   const [alertMessage, setAlertMessage] = useState<{ ok: boolean; msg: string } | null>(null)
   const [managingBadgesFor, setManagingBadgesFor] = useState<User | null>(null)
   const [selectedBadges, setSelectedBadges] = useState<string[]>([])
@@ -1459,6 +1501,25 @@ export default function SuperadminDashboard() {
     setUserPageVisits(rows)
   }
 
+  async function fetchAnonPageVisits(startDate: string, endDate: string) {
+    setAnonPageVisitsLoading(true)
+    const { data, error } = await supabase
+      .from('anon_page_visits')
+      .select('id, visitor_id, page, visited_at')
+      .gte('visited_at', `${startDate}T00:00:00.000Z`)
+      .lte('visited_at', `${endDate}T23:59:59.999Z`)
+      .order('visited_at', { ascending: false })
+      .limit(500)
+
+    setAnonPageVisitsLoading(false)
+    if (error) {
+      console.error('Error fetching anon_page_visits:', error)
+      setAnonPageVisits([])
+      return
+    }
+    setAnonPageVisits((data || []) as AnonPageVisitRow[])
+  }
+
   async function fetchTraffic(
     rangeParam?: TrafficRange,
     customStartParam?: string,
@@ -1481,6 +1542,7 @@ export default function SuperadminDashboard() {
     if (error) {
       console.error('Error fetching traffic_daily data:', error)
       setUserPageVisits([])
+      setAnonPageVisits([])
       return
     }
 
@@ -1501,7 +1563,10 @@ export default function SuperadminDashboard() {
       .sort((a, b) => a.date.localeCompare(b.date))
     setDailyTraffic(byDate)
     setTrafficPage(1)
-    await fetchUserPageVisits(startDate, endDate)
+    await Promise.all([
+      fetchUserPageVisits(startDate, endDate),
+      fetchAnonPageVisits(startDate, endDate),
+    ])
   }
 
   async function fetchEmailLogs() {
@@ -6369,6 +6434,100 @@ export default function SuperadminDashboard() {
             (safeTrafficPage - 1) * TRAFFIC_PAGE_SIZE,
             safeTrafficPage * TRAFFIC_PAGE_SIZE
           )
+          const SESSION_GAP_MS = 30 * 60 * 1000
+          const splitIntoSessions = <T extends { visited_at: string }>(items: T[]): T[][] => {
+            if (items.length === 0) return []
+            const sortedAsc = [...items].sort(
+              (a, b) => new Date(a.visited_at).getTime() - new Date(b.visited_at).getTime()
+            )
+            const sessions: T[][] = []
+            let current: T[] = [sortedAsc[0]]
+            for (let i = 1; i < sortedAsc.length; i += 1) {
+              const prevTs = new Date(sortedAsc[i - 1].visited_at).getTime()
+              const currTs = new Date(sortedAsc[i].visited_at).getTime()
+              if (currTs - prevTs > SESSION_GAP_MS) {
+                sessions.push(current)
+                current = [sortedAsc[i]]
+              } else {
+                current.push(sortedAsc[i])
+              }
+            }
+            sessions.push(current)
+            return sessions
+          }
+          const userSessions = Object.values(
+            userPageVisits.reduce((acc, row) => {
+              const key = row.user_id
+              if (!acc[key]) {
+                acc[key] = {
+                  userId: row.user_id,
+                  name: row.profiles?.full_name || 'Unknown user',
+                  emailOrId: row.profiles?.email || row.user_id,
+                  visits: [] as UserPageVisitRow[],
+                }
+              }
+              acc[key].visits.push(row)
+              return acc
+            }, {} as Record<string, { userId: string; name: string; emailOrId: string; visits: UserPageVisitRow[] }>)
+          )
+            .flatMap((group) =>
+              splitIntoSessions(group.visits).map((session, index) => ({
+                key: `${group.userId}-session-${index}`,
+                userId: group.userId,
+                name: group.name,
+                emailOrId: group.emailOrId,
+                session,
+                start: session[0]?.visited_at,
+                end: session[session.length - 1]?.visited_at,
+              }))
+            )
+            .sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime())
+
+          const anonSessions = Object.values(
+            anonPageVisits.reduce((acc, row) => {
+              const key = row.visitor_id
+              if (!acc[key]) {
+                acc[key] = {
+                  visitorId: row.visitor_id,
+                  visits: [] as AnonPageVisitRow[],
+                }
+              }
+              acc[key].visits.push(row)
+              return acc
+            }, {} as Record<string, { visitorId: string; visits: AnonPageVisitRow[] }>)
+          )
+            .flatMap((group) =>
+              splitIntoSessions(group.visits).map((session, index) => ({
+                key: `${group.visitorId}-session-${index}`,
+                visitorId: group.visitorId,
+                session,
+                start: session[0]?.visited_at,
+                end: session[session.length - 1]?.visited_at,
+              }))
+            )
+            .sort((a, b) => new Date(b.start).getTime() - new Date(a.start).getTime())
+          const userSessionsByDay = userSessions.reduce((acc, session) => {
+            const dayKey = formatAdminDate(session.start)
+            if (!acc[dayKey]) acc[dayKey] = []
+            acc[dayKey].push(session)
+            return acc
+          }, {} as Record<string, typeof userSessions>)
+          const anonSessionsByDay = anonSessions.reduce((acc, session) => {
+            const dayKey = formatAdminDate(session.start)
+            if (!acc[dayKey]) acc[dayKey] = []
+            acc[dayKey].push(session)
+            return acc
+          }, {} as Record<string, typeof anonSessions>)
+          const userDayKeys = Object.keys(userSessionsByDay).sort((a, b) => {
+            const [ad, am, ay] = a.split('/').map(Number)
+            const [bd, bm, by] = b.split('/').map(Number)
+            return Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad)
+          })
+          const anonDayKeys = Object.keys(anonSessionsByDay).sort((a, b) => {
+            const [ad, am, ay] = a.split('/').map(Number)
+            const [bd, bm, by] = b.split('/').map(Number)
+            return Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad)
+          })
 
           return (
             <div className="bg-white rounded-lg shadow p-6">
@@ -6438,41 +6597,144 @@ export default function SuperadminDashboard() {
                 <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900">Logged-in page views (detail)</h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    Up to 500 most recent events in the selected date range. Admin and superadmin sessions are not logged
-                    (same as aggregate totals).
+                    Session-level view in arrival order. Click a session to expand exact page sequence (no aggregation).
+                    Admin and superadmin sessions are not logged.
                   </p>
                 </div>
                 <div className="p-4 overflow-x-auto">
                   {userPageVisitsLoading ? (
                     <p className="text-sm text-gray-500">Loading…</p>
-                  ) : userPageVisits.length === 0 ? (
+                  ) : userSessions.length === 0 ? (
                     <p className="text-sm text-gray-500">No logged-in visits in this range.</p>
                   ) : (
-                    <table className="min-w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-gray-200 text-left text-gray-600">
-                          <th className="py-2 pr-4 font-medium">Time (UTC)</th>
-                          <th className="py-2 pr-4 font-medium">User</th>
-                          <th className="py-2 pr-4 font-medium">Page</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {userPageVisits.map((row) => (
-                          <tr key={row.id} className="border-b border-gray-100">
-                            <td className="py-2 pr-4 text-gray-800 whitespace-nowrap">
-                              {new Date(row.visited_at).toISOString().replace('T', ' ').slice(0, 19)}
-                            </td>
-                            <td className="py-2 pr-4">
-                              <div className="text-gray-900">{row.profiles?.full_name || '—'}</div>
-                              <div className="text-xs text-gray-500 font-mono break-all">
-                                {row.profiles?.email || row.user_id}
+                    <div className="space-y-2">
+                      {userDayKeys.map((day) => (
+                        <div key={day} className="space-y-2 rounded-lg border border-gray-300 bg-gray-50/70 p-3">
+                          <div className="text-sm font-bold uppercase tracking-wide text-gray-800">{day}</div>
+                          {userSessionsByDay[day].map((item, index) => (
+                            <details
+                              key={item.key}
+                              className={`border border-gray-200 rounded-lg ${index % 2 === 1 ? 'bg-gray-50/70' : 'bg-white'}`}
+                            >
+                              <summary className="cursor-pointer list-none px-3 py-2 hover:bg-gray-50">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div>
+                                    <div className="text-gray-900 font-medium">{item.name}</div>
+                                    <div className="text-xs text-gray-500 font-mono break-all">{item.emailOrId}</div>
+                                    <div className="text-xs text-gray-500 mt-0.5">{formatAdminDateTime(item.start)}</div>
+                                  </div>
+                                  <span className="text-xs text-gray-600 font-semibold bg-gray-100 px-2 py-1 rounded">
+                                    {item.session.length} events
+                                  </span>
+                                </div>
+                              </summary>
+                              <div className="px-3 pb-3 overflow-x-auto">
+                                <table className="min-w-full table-fixed text-sm">
+                                  <thead>
+                                    <tr className="border-b border-gray-200 text-left text-gray-600">
+                                      <th className="w-48 py-2 pr-4 font-medium">Time (UTC)</th>
+                                      <th className="py-2 pr-4 font-medium">Page</th>
+                                      <th className="w-28 py-2 pr-0 font-medium">Time Spent</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {item.session.map((visit, index) => {
+                                      const nextVisit = item.session[index + 1]
+                                      const spentMs = nextVisit
+                                        ? new Date(nextVisit.visited_at).getTime() - new Date(visit.visited_at).getTime()
+                                        : null
+                                      return (
+                                        <tr
+                                          key={visit.id}
+                                          className={`border-b border-gray-100 ${index % 2 === 1 ? 'bg-gray-50/70' : 'bg-white'}`}
+                                        >
+                                          <td className="w-48 py-2 pr-4 text-gray-800 whitespace-nowrap">{formatAdminDateTime(visit.visited_at)}</td>
+                                          <td className="py-2 pr-4 text-gray-800 break-words">{formatPageName(visit.page)}</td>
+                                          <td className="w-28 py-2 pr-0 text-gray-700 whitespace-nowrap">{spentMs == null ? '—' : formatDuration(spentMs)}</td>
+                                        </tr>
+                                      )
+                                    })}
+                                  </tbody>
+                                </table>
                               </div>
-                            </td>
-                            <td className="py-2 pr-4 text-gray-800">{formatPageName(row.page)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                            </details>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-8 border border-gray-200 rounded-lg overflow-hidden">
+                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900">Anonymous page views (detail)</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Session-level view in arrival order for anonymous visitors. Click a session to expand exact page sequence.
+                  </p>
+                </div>
+                <div className="p-4 overflow-x-auto">
+                  {anonPageVisitsLoading ? (
+                    <p className="text-sm text-gray-500">Loading…</p>
+                  ) : anonSessions.length === 0 ? (
+                    <p className="text-sm text-gray-500">
+                      No anonymous visits found in this range. If this stays empty, run `supabase/add_anon_page_visits.sql`.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {anonDayKeys.map((day) => (
+                        <div key={day} className="space-y-2 rounded-lg border border-gray-300 bg-gray-50/70 p-3">
+                          <div className="text-sm font-bold uppercase tracking-wide text-gray-800">{day}</div>
+                          {anonSessionsByDay[day].map((item, index) => (
+                            <details
+                              key={item.key}
+                              className={`border border-gray-200 rounded-lg ${index % 2 === 1 ? 'bg-gray-50/70' : 'bg-white'}`}
+                            >
+                              <summary className="cursor-pointer list-none px-3 py-2 hover:bg-gray-50">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div>
+                                    <div className="text-gray-900 font-medium break-all">Visitor {item.visitorId}</div>
+                                    <div className="text-xs text-gray-500 mt-0.5">{formatAdminDateTime(item.start)}</div>
+                                  </div>
+                                  <span className="text-xs text-gray-600 font-semibold bg-gray-100 px-2 py-1 rounded">
+                                    {item.session.length} events
+                                  </span>
+                                </div>
+                              </summary>
+                              <div className="px-3 pb-3 overflow-x-auto">
+                                <table className="min-w-full table-fixed text-sm">
+                                  <thead>
+                                    <tr className="border-b border-gray-200 text-left text-gray-600">
+                                      <th className="w-48 py-2 pr-4 font-medium">Time (UTC)</th>
+                                      <th className="py-2 pr-4 font-medium">Page</th>
+                                      <th className="w-28 py-2 pr-0 font-medium">Time Spent</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {item.session.map((visit, index) => {
+                                      const nextVisit = item.session[index + 1]
+                                      const spentMs = nextVisit
+                                        ? new Date(nextVisit.visited_at).getTime() - new Date(visit.visited_at).getTime()
+                                        : null
+                                      return (
+                                        <tr
+                                          key={visit.id}
+                                          className={`border-b border-gray-100 ${index % 2 === 1 ? 'bg-gray-50/70' : 'bg-white'}`}
+                                        >
+                                          <td className="w-48 py-2 pr-4 text-gray-800 whitespace-nowrap">{formatAdminDateTime(visit.visited_at)}</td>
+                                          <td className="py-2 pr-4 text-gray-800 break-words">{formatPageName(visit.page)}</td>
+                                          <td className="w-28 py-2 pr-0 text-gray-700 whitespace-nowrap">{spentMs == null ? '—' : formatDuration(spentMs)}</td>
+                                        </tr>
+                                      )
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </details>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>
