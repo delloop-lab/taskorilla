@@ -31,7 +31,7 @@ export default function PricingPage() {
       helpersDesc1: "Signing up and bidding on tasks is <strong>always free</strong>. Add your skills, browse tasks, bid, and chat, no cost.",
       helpersDesc2: "When a task is completed and you're paid, Taskorilla takes a <strong>10% commission</strong> from the agreed task price.",
       helpersDesc3: "If your bid is not accepted, <strong>you pay nothing</strong>.",
-      helpersEx1: "Task agreed €50 → completed → you get €45 (10% commission €5)",
+      helpersEx1: "Task agreed €50 → completed → you get €45",
       helpersEx2: "Task agreed €20 → cancelled → you get €0, commission €0",
       helpersEx3: "Multiple bids → commission only on completed tasks",
       startHelpingBtn: "Start Earning Today",
@@ -386,7 +386,7 @@ export default function PricingPage() {
             </div>
             <div className="text-center">
               <Link
-                href="/register"
+                href="/become-a-helper"
                 className="inline-block bg-green-600 text-white px-8 py-3 rounded-lg text-base font-bold hover:bg-green-700 transition-all duration-200 hover:-translate-y-1"
               >
                 {t.startHelpingBtn}
@@ -395,12 +395,53 @@ export default function PricingPage() {
           </div>
         </div>
 
+        {/* FAQs */}
+        <section className="mb-16 bg-white rounded-2xl border border-gray-200 shadow-sm p-5 md:p-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-5">FAQs</h2>
+          <div className="space-y-3">
+            {[
+              {
+                q: 'Do I pay to post a task?',
+                a: 'No. Posting is always free.',
+              },
+              {
+                q: 'What if no one accepts my task?',
+                a: 'You pay nothing.',
+              },
+              {
+                q: 'What if the task isn’t completed?',
+                a: 'You pay nothing.',
+              },
+              {
+                q: 'When do I pay the €2 fee?',
+                a: 'Only after a task is successfully completed.',
+              },
+              {
+                q: 'Do helpers pay to bid?',
+                a: 'No. Bidding and messaging are completely free.',
+              },
+              {
+                q: 'When is the 10% commission charged to the Helper?',
+                a: 'Only when a task is completed and payment is made.',
+              },
+            ].map((item) => (
+              <details key={item.q} className="rounded-xl border border-gray-200 bg-gray-50/70 px-4 py-3">
+                <summary className="cursor-pointer list-none font-semibold text-gray-900 flex items-center justify-between gap-3">
+                  <span>{item.q}</span>
+                  <span className="text-gray-400">▼</span>
+                </summary>
+                <p className="mt-2 text-sm text-gray-700">{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
         {/* Marketplace Pricing Comparison */}
         <div id="comparison-table" className="mb-16 bg-white rounded-2xl border border-gray-200 shadow-sm p-5 md:p-8">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
             How marketplace pricing actually works
           </h2>
-          <p className="mt-1 text-xs md:text-sm text-gray-500">Data as at April 14th 26</p>
+          <p className="mt-1 text-xs md:text-sm text-gray-500">As at 14/04/26</p>
           <p className="mt-3 text-sm md:text-base text-gray-700">
             Most platforms in this space don&apos;t have fixed pricing. Instead, they use a mix of service fees, commissions,
             lead charges, or visibility models that vary by category, location, and demand.
