@@ -186,80 +186,6 @@ export default function PricingPage() {
   }
 
   const t = content[language as keyof typeof content]
-  const comparisonRows = [
-    {
-      platform: 'Taskorilla',
-      posterCost: t.taskorilla.posterCost,
-      helperCost: t.taskorilla.helperCost,
-      risk: t.taskorilla.risk,
-      riskClass: 'text-emerald-700',
-      highlight: true,
-    },
-    {
-      platform: 'Airtasker',
-      posterCost: t.competitors.airtasker.posterCost,
-      helperCost: t.competitors.airtasker.helperCost,
-      risk: t.competitors.airtasker.risk,
-      riskClass: 'text-amber-600',
-    },
-    {
-      platform: 'TaskRabbit',
-      posterCost: t.competitors.taskrabbit.posterCost,
-      helperCost: t.competitors.taskrabbit.helperCost,
-      risk: t.competitors.taskrabbit.risk,
-      riskClass: 'text-amber-600',
-    },
-    {
-      platform: 'Thumbtack',
-      posterCost: t.competitors.thumbtack.posterCost,
-      helperCost: t.competitors.thumbtack.helperCost,
-      risk: t.competitors.thumbtack.risk,
-      riskClass: 'text-amber-600',
-    },
-    {
-      platform: 'Handy',
-      posterCost: t.competitors.handy.posterCost,
-      helperCost: t.competitors.handy.helperCost,
-      risk: t.competitors.handy.risk,
-      riskClass: 'text-amber-600',
-    },
-    {
-      platform: 'Fiverr',
-      posterCost: t.competitors.fiverr.posterCost,
-      helperCost: t.competitors.fiverr.helperCost,
-      risk: t.competitors.fiverr.risk,
-      riskClass: 'text-amber-600',
-    },
-    {
-      platform: 'Zaask',
-      posterCost: t.competitors.zaask.posterCost,
-      helperCost: t.competitors.zaask.helperCost,
-      risk: t.competitors.zaask.risk,
-      riskClass: 'text-amber-600',
-    },
-    {
-      platform: 'Star of Service',
-      posterCost: t.competitors.starofservice.posterCost,
-      helperCost: t.competitors.starofservice.helperCost,
-      risk: t.competitors.starofservice.risk,
-      riskClass: 'text-amber-600',
-    },
-    {
-      platform: 'OLX',
-      posterCost: t.competitors.olx.posterCost,
-      helperCost: t.competitors.olx.helperCost,
-      risk: t.competitors.olx.risk,
-      riskClass: 'text-rose-600',
-    },
-    {
-      platform: 'Facebook',
-      posterCost: t.competitors.facebook.posterCost,
-      helperCost: t.competitors.facebook.helperCost,
-      risk: t.competitors.facebook.risk,
-      riskClass: 'text-rose-600',
-    },
-  ]
-
   return (
     <div className="min-h-screen bg-[#F8F9FA] bg-[radial-gradient(#c9d2dc_0.8px,transparent_0.8px)] [background-size:16px_16px]">
       {/* Hero Section */}
@@ -365,105 +291,160 @@ export default function PricingPage() {
           </div>
         </div>
 
-        {/* Taskorilla vs Competitors Table */}
-        <div id="comparison-table" className="mb-16">
-          <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50/60 p-4 md:p-5">
-            <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-3">The Roles in Taskorilla</h3>
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-4 shadow-sm">
-                <p className="text-sm text-blue-900">
-                  <strong className="inline-block px-2 py-0.5 rounded bg-blue-100 border border-blue-200 mr-1">Tasker</strong>
-                  - the person posting a task. They need something done.
-                </p>
-              </div>
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 shadow-sm">
-                <p className="text-sm text-emerald-900">
-                  <strong className="inline-block px-2 py-0.5 rounded bg-emerald-100 border border-emerald-200 mr-1">Helper</strong>
-                  - the person doing the task and completing the work.
-                </p>
-              </div>
-            </div>
+        {/* Marketplace Pricing Comparison */}
+        <div id="comparison-table" className="mb-16 bg-white rounded-2xl border border-gray-200 shadow-sm p-5 md:p-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
+            How marketplace pricing actually works
+          </h2>
+          <p className="mt-3 text-sm md:text-base text-gray-700">
+            Most platforms in this space don&apos;t have fixed pricing. Instead, they use a mix of service fees, commissions,
+            lead charges, or visibility models that vary by category, location, and demand.
+          </p>
+          <p className="mt-2 text-sm md:text-base text-gray-700">
+            This comparison shows how each platform typically makes money, not exact pricing.
+          </p>
+
+          <p className="mt-5 text-sm text-gray-600">
+            Fees in marketplace platforms are dynamic and can change by region, service type, and user tier. This table focuses
+            on the underlying pricing model so you can understand who pays, when, and how risk is distributed.
+          </p>
+
+          <div className="mt-6 overflow-x-auto rounded-xl border border-gray-200 bg-white">
+            <table id="comparison-table-table" className="min-w-full border-collapse text-sm">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900">Platform</th>
+                  <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900">Client pricing model</th>
+                  <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900">Provider pricing model</th>
+                  <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900">Monetisation model</th>
+                  <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900">Risk level</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  {
+                    platform: 'Taskorilla',
+                    clientModel: 'Free to post. Pay only when task is completed.',
+                    providerModel: 'Commission on completed task + small platform fee on completion.',
+                    monetisation: 'Success-based commission model',
+                    risk: 'Low',
+                  },
+                  {
+                    platform: 'Airtasker',
+                    clientModel: 'Free to post. Some booking or assignment fees may apply depending on region.',
+                    providerModel: 'Service fee on completed work (varies by category and reputation tier).',
+                    monetisation: 'Hybrid service fee model',
+                    risk: 'Medium',
+                  },
+                  {
+                    platform: 'TaskRabbit',
+                    clientModel: 'Booking price includes platform service fees.',
+                    providerModel: 'Platform fees applied to completed bookings (structure varies by region).',
+                    monetisation: 'Service fee + booking fee model',
+                    risk: 'Medium',
+                  },
+                  {
+                    platform: 'Thumbtack',
+                    clientModel: 'Free to request quotes from professionals.',
+                    providerModel: 'Pay-per-lead model (cost per customer introduction).',
+                    monetisation: 'Lead generation model',
+                    risk: 'High',
+                  },
+                  {
+                    platform: 'Handy',
+                    clientModel: 'Clients pay upfront for booked services.',
+                    providerModel: 'Platform deducts commission from provider earnings.',
+                    monetisation: 'Commission on completed services',
+                    risk: 'Medium',
+                  },
+                  {
+                    platform: 'Fiverr',
+                    clientModel: 'Clients pay upfront when ordering services.',
+                    providerModel: 'Platform commission on completed earnings.',
+                    monetisation: 'Transaction commission model',
+                    risk: 'Medium',
+                  },
+                  {
+                    platform: 'Zaask',
+                    clientModel: 'Free to request quotes from professionals.',
+                    providerModel: 'Pay-per-lead or credit-based system depending on usage.',
+                    monetisation: 'Lead / credit-based model',
+                    risk: 'High',
+                  },
+                  {
+                    platform: 'StarOfService',
+                    clientModel: 'Free to browse and request services.',
+                    providerModel: 'Providers pay for leads or visibility credits.',
+                    monetisation: 'Lead + visibility model',
+                    risk: 'High',
+                  },
+                  {
+                    platform: 'OLX',
+                    clientModel: 'Free classifieds posting.',
+                    providerModel: 'No platform commission (optional paid visibility tools).',
+                    monetisation: 'Advertising / listing model',
+                    risk: 'High',
+                  },
+                  {
+                    platform: 'Facebook Marketplace',
+                    clientModel: 'Free to list and contact sellers.',
+                    providerModel: 'No platform commission on transactions.',
+                    monetisation: 'Indirect advertising ecosystem',
+                    risk: 'High',
+                  },
+                ].map((row, index) => {
+                  const riskClass =
+                    row.risk === 'Low' ? 'bg-emerald-100 text-emerald-800' :
+                    row.risk === 'Medium' ? 'bg-amber-100 text-amber-800' :
+                    'bg-rose-100 text-rose-800'
+                  return (
+                    <tr key={row.platform} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="border border-gray-300 px-3 py-3 font-semibold text-gray-900">{row.platform}</td>
+                      <td className="border border-gray-300 px-3 py-3 text-gray-800">{row.clientModel}</td>
+                      <td className="border border-gray-300 px-3 py-3 text-gray-800">{row.providerModel}</td>
+                      <td className="border border-gray-300 px-3 py-3 text-gray-800">{row.monetisation}</td>
+                      <td className="border border-gray-300 px-3 py-3">
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${riskClass}`}>
+                          {row.risk}
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
 
-          <details className="group bg-white rounded-2xl border border-gray-200 shadow-sm p-5 md:p-8">
-            <summary className="list-none flex cursor-pointer items-center justify-between gap-3 text-2xl md:text-3xl font-bold text-gray-900">
-              <span>{t.compareTitle}</span>
-              <span className="text-lg text-gray-400 transition-transform group-open:rotate-180">▼</span>
-            </summary>
+          <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4 md:p-5">
+            <h3 className="font-semibold text-gray-900 mb-2">Important notes</h3>
+            <ul className="list-disc pl-5 space-y-1.5 text-sm text-gray-600">
+              <li>Pricing varies significantly by country, category, and demand.</li>
+              <li>Some platforms apply dynamic fees based on user activity, reputation, or service type.</li>
+              <li>Lead-based platforms charge for access to customers, not guaranteed work.</li>
+              <li>Commission-based platforms charge only when a transaction is completed.</li>
+              <li>Classified platforms provide no payment protection or transaction control.</li>
+            </ul>
+          </div>
 
-            <p className="mt-4 text-sm md:text-base text-gray-600">
-              {t.compareSubtitle}
+          <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 md:p-5">
+            <h3 className="font-semibold text-gray-900 mb-2">How risk is defined</h3>
+            <ul className="space-y-1.5 text-sm text-gray-600">
+              <li><span className="font-medium text-gray-800">Low risk:</span> Payment only occurs after successful completion of work.</li>
+              <li><span className="font-medium text-gray-800">Medium risk:</span> Fees apply at booking or completion, with some variability.</li>
+              <li><span className="font-medium text-gray-800">High risk:</span> Payment is required for leads or exposure, with no guarantee of work.</li>
+            </ul>
+          </div>
+
+          <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 md:p-5">
+            <h3 className="font-semibold text-gray-900 mb-2">Disclaimer</h3>
+            <p className="text-xs md:text-sm text-gray-500">
+              This comparison is a simplified overview of marketplace pricing models based on publicly available platform structures.
             </p>
-
-            <div className="mt-6 md:hidden space-y-3">
-              {comparisonRows.map((row) => (
-                <div
-                  key={`mobile-${row.platform}`}
-                  className={`rounded-xl border p-4 ${row.highlight ? 'border-emerald-300 bg-emerald-50/60' : 'border-gray-200 bg-white'}`}
-                >
-                  <h4 className="text-base font-bold text-gray-900 mb-2">{row.platform}</h4>
-                  <dl className="space-y-2 text-sm">
-                    <div>
-                      <dt className="text-xs uppercase tracking-wide text-gray-500">{t.tableHeaders.posterCost}</dt>
-                      <dd className="text-gray-800">{row.posterCost}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs uppercase tracking-wide text-gray-500">{t.tableHeaders.helperCost}</dt>
-                      <dd className="text-gray-800">{row.helperCost}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs uppercase tracking-wide text-gray-500">{t.tableHeaders.risk}</dt>
-                      <dd className={`font-semibold ${row.riskClass}`}>{row.risk}</dd>
-                    </div>
-                  </dl>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6 hidden md:block rounded-xl border border-gray-200 bg-white">
-              <table id="comparison-table-table" className="w-full border-collapse comparison-table text-sm">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900">{t.tableHeaders.platform}</th>
-                    <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900">{t.tableHeaders.posterCost}</th>
-                    <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900">{t.tableHeaders.helperCost}</th>
-                    <th className="border border-gray-300 px-3 py-3 text-left font-bold text-gray-900">{t.tableHeaders.risk}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {comparisonRows.map((row, index) => (
-                    <tr
-                      key={row.platform}
-                      className={
-                        row.highlight
-                          ? 'bg-emerald-50 border-l-4 border-l-emerald-600 hover:bg-emerald-100 transition-colors'
-                          : `${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-gray-100 transition-colors`
-                      }
-                    >
-                      <td className="border border-gray-300 px-3 py-3 font-bold">{row.platform}</td>
-                      <td className="border border-gray-300 px-3 py-3">{row.posterCost}</td>
-                      <td className="border border-gray-300 px-3 py-3">{row.helperCost}</td>
-                      <td className={`border border-gray-300 px-3 py-3 font-semibold ${row.riskClass}`}>{row.risk}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4 md:p-5 space-y-3">
-              <p className="font-semibold text-gray-900">Key Points</p>
-              <p className="text-sm md:text-base text-gray-700">
-                Taskorilla&apos;s double handshake system guarantees safety: both Tasker and Helper must confirm before work begins,
-                and payment is only released once the task is completed.
-              </p>
-              <p className="text-sm md:text-base text-gray-700">
-                Fees and policies on other platforms vary and may expose Taskers or Helpers to risk.
-              </p>
-              <p className="text-gray-600 text-xs sm:text-sm">
-                <strong>Disclaimer:</strong> All comparisons are based on publicly available information as of January 2026. Taskorilla is not affiliated with or endorsed by any of the platforms mentioned. Fees and policies may change over time. E&amp;OE
-              </p>
-            </div>
-          </details>
+            <p className="mt-2 text-xs md:text-sm text-gray-500">
+              Actual fees may vary by region, service category, user tier, promotions, and platform updates. This table is intended
+              for informational purposes only and should not be treated as exact pricing data.
+            </p>
+          </div>
         </div>
       </div>
     </div>
