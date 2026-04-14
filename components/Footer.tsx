@@ -12,6 +12,7 @@ interface FooterProps {
 export default function Footer({ variant = 'default' }: FooterProps) {
   const { t } = useLanguage()
   const [version, setVersion] = useState<string>('V0.000')
+  const mobileRights = t('footer.rights').replace(/\s*Swing responsibly!?/i, '')
 
   const formatVersionLabel = (rawVersion: string): string => {
     const [majorRaw = '0', minorRaw = '0', patchRaw = '0'] = String(rawVersion || '').split('.')
@@ -182,7 +183,8 @@ export default function Footer({ variant = 'default' }: FooterProps) {
           </a>
         </div>
         <div className="flex justify-center items-center gap-2 mt-2 text-xs text-muted-foreground/70">
-          <span>{t('footer.rights')}</span>
+          <span className="hidden md:inline">{t('footer.rights')}</span>
+          <span className="md:hidden">{mobileRights}</span>
           <span className="font-medium">{version}</span>
         </div>
       </div>
