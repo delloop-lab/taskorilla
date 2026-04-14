@@ -400,6 +400,7 @@ export default function PricingPage() {
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
             How marketplace pricing actually works
           </h2>
+          <p className="mt-1 text-xs md:text-sm text-gray-500">Data as at April 14th 26</p>
           <p className="mt-3 text-sm md:text-base text-gray-700">
             Most platforms in this space don&apos;t have fixed pricing. Instead, they use a mix of service fees, commissions,
             lead charges, or visibility models that vary by category, location, and demand.
