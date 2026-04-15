@@ -153,6 +153,7 @@ export interface Message {
   receiver_id: string
   content: string
   image_url?: string | null // Optional image attachment
+  location_link?: string | null // Optional structured Google Maps link
   created_at: string
   is_read?: boolean
   /** Sender soft-deleted; both sides see a placeholder */

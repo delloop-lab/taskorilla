@@ -8,7 +8,7 @@ import { format } from 'date-fns'
 import Link from 'next/link'
 import { ArrowLeft, Send, Trash2, User as UserIcon } from 'lucide-react'
 import StandardModal from '@/components/StandardModal'
-import { checkForContactInfo, detectContentIssues } from '@/lib/content-filter'
+import { checkForContactInfo, detectContentIssues, extractAllowedGoogleMapsUrl } from '@/lib/content-filter'
 import { compressTaskImage } from '@/lib/image-utils'
 import { canRevealFullNameForTask, getDisplayName } from '@/lib/name-privacy'
 import { isBidUpdateSystemMessage, isBidWithdrawnSystemMessage } from '@/lib/bid-chat-message'
@@ -57,6 +57,9 @@ export default function ConversationPage() {
     title: '',
     message: '',
   })
+
+  const isGoogleMapsLink = (url: string) =>
+    /https?:\/\/(?:www\.)?(?:google\.com\/maps|maps\.google\.com|maps\.app\.goo\.gl|goo\.gl\/maps)(?:[/?#].*)?$/i.test(url)
 
   useEffect(() => {
     checkUser()
@@ -546,16 +549,34 @@ export default function ConversationPage() {
       const receiverId = conversation.participant1_id === user.id
         ? conversation.participant2_id
         : conversation.participant1_id
+      const trimmedMessage = newMessage.trim()
+      const locationLink = extractAllowedGoogleMapsUrl(trimmedMessage)
+      const insertPayload = {
+        conversation_id: conversationId,
+        sender_id: user.id,
+        receiver_id: receiverId,
+        content: trimmedMessage || '',
+        image_url: messageImage || null,
+        location_link: locationLink,
+      }
 
-      const { error } = await supabase
+      let { error } = await supabase
         .from('messages')
-        .insert({
-          conversation_id: conversationId,
-          sender_id: user.id,
-          receiver_id: receiverId,
-          content: newMessage.trim() || '',
-          image_url: messageImage || null,
-        })
+        .insert(insertPayload)
+
+      // Backward compatibility for DBs where location_link migration is not yet applied.
+      if (error && error.message?.toLowerCase().includes('location_link')) {
+        const retry = await supabase
+          .from('messages')
+          .insert({
+            conversation_id: conversationId,
+            sender_id: user.id,
+            receiver_id: receiverId,
+            content: trimmedMessage || '',
+            image_url: messageImage || null,
+          })
+        error = retry.error
+      }
 
       if (error) throw error
 
@@ -593,7 +614,6 @@ export default function ConversationPage() {
       // Send email notification
       if (otherParticipant) {
         try {
-          const trimmedMessage = newMessage.trim()
           const emailMessagePreview = trimmedMessage
             ? trimmedMessage.substring(0, 100)
             : messageImage
@@ -844,10 +864,10 @@ export default function ConversationPage() {
                         />
                       </div>
                     )}
-                    {message.content && (() => {
+                    {(message.content || message.location_link) && (() => {
                       // Better URL regex that captures URLs more reliably
                       const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/gi
-                      const parts = []
+                      const parts: Array<{ type: 'text' | 'url' | 'location_link'; content: string }> = []
                       let lastIndex = 0
                       let match
                       
@@ -864,9 +884,10 @@ export default function ConversationPage() {
                           }
                         }
                         // Add URL
+                        const matchedUrl = match[0]
                         parts.push({
-                          type: 'url',
-                          content: match[0]
+                          type: isGoogleMapsLink(matchedUrl) ? 'location_link' : 'url',
+                          content: matchedUrl
                         })
                         lastIndex = urlRegex.lastIndex
                       }
@@ -883,16 +904,46 @@ export default function ConversationPage() {
                       }
                       
                       // If no URLs found, just show the content
-                      if (parts.length === 0) {
+                      if (parts.length === 0 && message.content) {
                         parts.push({
                           type: 'text',
                           content: message.content
+                        })
+                      }
+
+                      // If message has a structured location link not present in text, render it inline.
+                      if (
+                        message.location_link &&
+                        !parts.some((part) => part.content === message.location_link)
+                      ) {
+                        parts.unshift({
+                          type: 'location_link',
+                          content: message.location_link,
                         })
                       }
                       
                       return (
                         <>
                           {parts.map((part, idx) => {
+                            if (part.type === 'location_link') {
+                              return (
+                                <a
+                                  key={idx}
+                                  href={part.content}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className={`inline-flex flex-col mt-1 mb-1 text-sm leading-tight ${
+                                    isOwnMessage
+                                      ? 'text-primary-50 hover:text-white'
+                                      : 'text-primary-700 hover:text-primary-800'
+                                  }`}
+                                >
+                                  <span className="font-medium">📍 Location pin</span>
+                                  <span className="underline">View on Google Maps</span>
+                                </a>
+                              )
+                            }
+
                             if (part.type === 'url') {
                               const isTaskUrl = part.content.includes('/tasks/')
                               const buttonText = isTaskUrl ? 'View Task' : 'Open Link'

@@ -35,6 +35,10 @@ const URL_PATTERNS = [
   /[a-zA-Z0-9-]+\s+dot\s+(com|net|org|io|co|me|info|app|dev|pt|uk|ie)\b/gi,
 ]
 
+// Allowed map links (pins/routes) that should not be treated as off-platform links.
+const GOOGLE_MAPS_ALLOWLIST_PATTERN =
+  /https?:\/\/(?:www\.)?(?:google\.com\/maps|maps\.google\.com|maps\.app\.goo\.gl|goo\.gl\/maps)[^\s]*/gi
+
 // ─── Social handles ──────────────────────────────────────────────────────────
 // @ followed by a username-like string (but not email – emails already caught)
 const SOCIAL_HANDLE_PATTERN = /@[a-zA-Z_][a-zA-Z0-9_.]{1,30}\b/g
@@ -280,6 +284,18 @@ function matchesAny(text: string, patterns: RegExp[]): boolean {
   return patterns.some(p => { p.lastIndex = 0; return p.test(text) })
 }
 
+function stripAllowedMapUrls(text: string): string {
+  if (!text) return text
+  return text.replace(GOOGLE_MAPS_ALLOWLIST_PATTERN, ' ')
+}
+
+export function extractAllowedGoogleMapsUrl(text: string): string | null {
+  if (!text || typeof text !== 'string') return null
+  GOOGLE_MAPS_ALLOWLIST_PATTERN.lastIndex = 0
+  const match = GOOGLE_MAPS_ALLOWLIST_PATTERN.exec(text)
+  return match?.[0] || null
+}
+
 function containsPhrase(normalised: string, phrases: string[]): string | null {
   for (const phrase of phrases) {
     if (phrase.includes(' ')) {
@@ -348,8 +364,8 @@ export function detectContentIssues(
     }
   }
 
-  const raw = content
-  const lower = content.toLowerCase()
+  const raw = stripAllowedMapUrls(content)
+  const lower = raw.toLowerCase()
   const collapsed = collapseSpaces(lower)
   const leetNorm = normaliseLeet(collapsed)
 
@@ -455,8 +471,9 @@ function blocked(overrides: Partial<ContentCheckResult>, reason: string): Conten
 export function checkForContactInfo(content: string, options: ContentFilterOptions = {}): ContentCheckResult {
   if (!content || typeof content !== 'string') return CLEAN
 
-  const raw = content
-  const lower = content.toLowerCase()
+  // Allowlisted Google Maps URLs are stripped before all blocking checks.
+  const raw = stripAllowedMapUrls(content)
+  const lower = raw.toLowerCase()
 
   // ── 1. Email ────────────────────────────────────────────────────────────
   if (raw.includes('@')) {
