@@ -114,6 +114,29 @@ type AnonPageVisitRow = {
   visited_at: string
 }
 
+type PrebidImageMessage = {
+  id: string
+  conversation_id: string
+  image_url: string | null
+  content: string | null
+  created_at: string
+}
+
+type MessageImageReplacementLog = {
+  id: string
+  message_id: string | null
+  conversation_id: string | null
+  email_log_id: string | null
+  original_image_url: string
+  replacement_image_url: string
+  reason: string | null
+  replaced_by: string | null
+  created_at: string
+}
+
+const DEFAULT_PREBID_REPLACEMENT_REASON =
+  'Contacting or sharing addressed or contact details outside Taskorilla is not permitted until a bid has been accepted. However, you can discuss the general area where you or the task is located. You can also share photos of the task or location to help move things forward.'
+
 function computeTrafficDateRange(
   effectiveRange: TrafficRange,
   effectiveCustomStart: string,
@@ -286,6 +309,14 @@ export default function SuperadminDashboard() {
   const [sendingEmail, setSendingEmail] = useState(false)
   const [selectedUserForEmail, setSelectedUserForEmail] = useState<string>('')
   const [viewingEmailLog, setViewingEmailLog] = useState<any | null>(null)
+  const [prebidReplaceLog, setPrebidReplaceLog] = useState<any | null>(null)
+  const [prebidImagesLoading, setPrebidImagesLoading] = useState(false)
+  const [prebidImages, setPrebidImages] = useState<PrebidImageMessage[]>([])
+  const [selectedPrebidMessageId, setSelectedPrebidMessageId] = useState<string>('')
+  const [replacementReason, setReplacementReason] = useState<string>(DEFAULT_PREBID_REPLACEMENT_REASON)
+  const [replacingPrebidImage, setReplacingPrebidImage] = useState(false)
+  const [replacementHistoryLoading, setReplacementHistoryLoading] = useState(false)
+  const [replacementHistory, setReplacementHistory] = useState<MessageImageReplacementLog[]>([])
   // Free-form email mode toggle
   const [freeFormEmailMode, setFreeFormEmailMode] = useState(false)
   const [freeFormRecipient, setFreeFormRecipient] = useState<string>('')
@@ -314,6 +345,15 @@ export default function SuperadminDashboard() {
   useEffect(() => {
     setEmailLogsPage(1)
   }, [emailLogFilters.recipient, emailLogFilters.subject, emailLogFilters.emailType, showEmailLogsSection])
+
+  useEffect(() => {
+    if (!viewingEmailLog) {
+      setReplacementHistory([])
+      setReplacementHistoryLoading(false)
+      return
+    }
+    loadReplacementHistoryForLog(viewingEmailLog)
+  }, [viewingEmailLog])
   const [smsTestPhone, setSmsTestPhone] = useState('')
   const [smsTestLoading, setSmsTestLoading] = useState(false)
   const [smsTestResult, setSmsTestResult] = useState<{ ok: boolean; msg: string } | null>(null)
@@ -1581,6 +1621,139 @@ export default function SuperadminDashboard() {
       console.error('Error fetching email logs:', error)
     } else if (data) {
       setEmailLogs(data)
+    }
+  }
+
+  async function loadPrebidImagesForConversation(conversationId: string) {
+    setPrebidImagesLoading(true)
+    setSelectedPrebidMessageId('')
+    setPrebidImages([])
+
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('id, conversation_id, image_url, content, created_at')
+        .eq('conversation_id', conversationId)
+        .not('image_url', 'is', null)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setPrebidImages((data || []) as PrebidImageMessage[])
+    } catch (error: any) {
+      console.error('Error loading pre-bid images:', error)
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to load conversation images: ' + (error?.message || 'Unknown error'),
+      })
+    } finally {
+      setPrebidImagesLoading(false)
+    }
+  }
+
+  async function openPrebidReplacementPicker(log: any) {
+    const conversationId = log?.metadata?.conversationId
+    if (!conversationId) {
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Missing Conversation',
+        message: 'This email log does not include a conversation ID, so image replacement cannot be started.',
+      })
+      return
+    }
+
+    setPrebidReplaceLog(log)
+    setReplacementReason(DEFAULT_PREBID_REPLACEMENT_REASON)
+    await loadPrebidImagesForConversation(conversationId)
+  }
+
+  async function loadReplacementHistoryForLog(log: any) {
+    if (!log?.id) {
+      setReplacementHistory([])
+      return
+    }
+    setReplacementHistoryLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('message_image_replacements')
+        .select('id, message_id, conversation_id, email_log_id, original_image_url, replacement_image_url, reason, replaced_by, created_at')
+        .eq('email_log_id', log.id)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setReplacementHistory((data || []) as MessageImageReplacementLog[])
+    } catch (error: any) {
+      console.error('Error loading image replacement history:', error)
+      setReplacementHistory([])
+    } finally {
+      setReplacementHistoryLoading(false)
+    }
+  }
+
+  async function replaceSelectedPrebidImage() {
+    if (!prebidReplaceLog?.id) return
+    if (!selectedPrebidMessageId) {
+      setModalState({
+        isOpen: true,
+        type: 'warning',
+        title: 'Select an Image',
+        message: 'Please select the exact message image you want to replace.',
+      })
+      return
+    }
+
+    setReplacingPrebidImage(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error('Not authenticated')
+      }
+
+      const response = await fetch('/api/admin/replace-prebid-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          messageId: selectedPrebidMessageId,
+          emailLogId: prebidReplaceLog.id,
+          reason: replacementReason.trim() || null,
+          replaceAllConversationImages: true,
+        }),
+      })
+
+      const result = await response.json()
+      if (!response.ok) {
+        const details = typeof result?.details === 'string' ? ` (${result.details})` : ''
+        throw new Error((result?.error || 'Failed to replace image') + details)
+      }
+
+      await fetchEmailLogs()
+      await loadPrebidImagesForConversation(prebidReplaceLog.metadata?.conversationId)
+      if (viewingEmailLog?.id === prebidReplaceLog.id) {
+        await loadReplacementHistoryForLog(prebidReplaceLog)
+      }
+
+      setSelectedPrebidMessageId('')
+      setModalState({
+        isOpen: true,
+        type: 'success',
+        title: 'Image Replaced',
+        message: 'The selected pre-bid image was replaced and the action has been logged.',
+      })
+    } catch (error: any) {
+      console.error('Error replacing pre-bid image:', error)
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to replace image: ' + (error?.message || 'Unknown error'),
+      })
+    } finally {
+      setReplacingPrebidImage(false)
     }
   }
 
@@ -5777,6 +5950,16 @@ export default function SuperadminDashboard() {
                                 >
                                   View
                                 </button>
+                                {isPreBidImage && log.metadata?.conversationId && (
+                                  <button
+                                    type="button"
+                                    onClick={() => openPrebidReplacementPicker(log)}
+                                    className="text-amber-700 hover:text-amber-900"
+                                    title="Replace pre-bid image"
+                                  >
+                                    Replace image
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => setDeletingEmailLogId(log.id)}
@@ -8191,6 +8374,127 @@ export default function SuperadminDashboard() {
           </div>
         )}
 
+        {/* Replace Pre-bid Image Modal */}
+        {prebidReplaceLog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+              <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Replace pre-bid image</h2>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Select one image from this conversation. On confirm, all non-placeholder images in this same conversation are replaced with <code>/images/image_replaced_violation.png</code>.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setPrebidReplaceLog(null)
+                    setPrebidImages([])
+                    setSelectedPrebidMessageId('')
+                    setReplacementReason(DEFAULT_PREBID_REPLACEMENT_REASON)
+                  }}
+                  className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                  title="Close"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="p-4 overflow-auto space-y-4">
+                {prebidImagesLoading ? (
+                  <p className="text-sm text-gray-600">Loading conversation images...</p>
+                ) : prebidImages.length === 0 ? (
+                  <div className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                    No message images found for this conversation.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {prebidImages.map((msg) => {
+                      const isSelected = selectedPrebidMessageId === msg.id
+                      const isAlreadyPlaceholder = msg.image_url === '/images/image_replaced_violation.png'
+                      return (
+                        <label
+                          key={msg.id}
+                          className={`block rounded-lg border p-3 cursor-pointer ${
+                            isSelected ? 'border-primary-500 bg-primary-50' : 'border-gray-200 bg-white'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <input
+                              type="radio"
+                              name="selectedPrebidMessage"
+                              checked={isSelected}
+                              onChange={() => setSelectedPrebidMessageId(msg.id)}
+                              className="mt-1"
+                              disabled={isAlreadyPlaceholder}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 mb-2">
+                                <span>{new Date(msg.created_at).toLocaleString()}</span>
+                                {isAlreadyPlaceholder && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">
+                                    Already replaced
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-700 mb-2 break-all">{msg.image_url}</div>
+                              {msg.image_url && (
+                                <img
+                                  src={msg.image_url}
+                                  alt="Message attachment preview"
+                                  className="max-h-44 rounded border border-gray-200 object-contain bg-gray-50"
+                                />
+                              )}
+                              {msg.content && (
+                                <p className="mt-2 text-xs text-gray-700 whitespace-pre-wrap">{msg.content}</p>
+                              )}
+                            </div>
+                          </div>
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Reason (optional)
+                  </label>
+                  <textarea
+                    value={replacementReason}
+                    onChange={(e) => setReplacementReason(e.target.value)}
+                    rows={3}
+                    placeholder="Add an admin note for the replacement log..."
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-gray-200 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPrebidReplaceLog(null)
+                    setPrebidImages([])
+                    setSelectedPrebidMessageId('')
+                    setReplacementReason(DEFAULT_PREBID_REPLACEMENT_REASON)
+                  }}
+                  className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={replaceSelectedPrebidImage}
+                  disabled={replacingPrebidImage || !selectedPrebidMessageId}
+                  className="px-4 py-2 rounded-md bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {replacingPrebidImage ? 'Replacing...' : 'Replace with violation image'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Delete Email Log Confirmation Modal */}
         {deletingEmailLogId && (
           <StandardModal
@@ -8607,15 +8911,59 @@ export default function SuperadminDashboard() {
                     }`}>{viewingEmailLog.status}</span></p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setViewingEmailLog(null)}
-                  className="ml-4 text-gray-400 hover:text-gray-600 text-2xl font-bold"
-                  title="Close"
-                >
-                  ×
-                </button>
+                <div className="ml-4 flex items-center gap-3">
+                  {viewingEmailLog.email_type === 'new_message' &&
+                    viewingEmailLog.metadata?.hasImage === true &&
+                    viewingEmailLog.metadata?.bidAccepted !== true &&
+                    viewingEmailLog.metadata?.conversationId && (
+                      <button
+                        type="button"
+                        onClick={() => openPrebidReplacementPicker(viewingEmailLog)}
+                        className="px-3 py-1.5 rounded-md bg-amber-100 text-amber-800 hover:bg-amber-200 text-xs font-semibold"
+                      >
+                        Replace pre-bid image
+                      </button>
+                    )}
+                  <button
+                    onClick={() => setViewingEmailLog(null)}
+                    className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                    title="Close"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
               
+              {/* Replacement History */}
+              <div className="px-6 pt-4">
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                  <h3 className="text-sm font-semibold text-gray-800 mb-2">Image replacement log</h3>
+                  {replacementHistoryLoading ? (
+                    <p className="text-xs text-gray-500">Loading replacement history...</p>
+                  ) : replacementHistory.length === 0 ? (
+                    <p className="text-xs text-gray-500">No image replacement logged for this email yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {replacementHistory.map((entry) => (
+                        <div key={entry.id} className="rounded border border-gray-200 bg-white p-2 text-xs text-gray-700">
+                          <p><strong>When:</strong> {new Date(entry.created_at).toLocaleString()}</p>
+                          <p><strong>Original:</strong> <span className="break-all">{entry.original_image_url}</span></p>
+                          <p><strong>Replaced with:</strong> <span className="break-all">{entry.replacement_image_url}</span></p>
+                          <div className="mt-2">
+                            <img
+                              src={entry.replacement_image_url}
+                              alt="Replacement moderation image"
+                              className="max-h-28 rounded border border-gray-200 bg-gray-50 object-contain"
+                            />
+                          </div>
+                          {entry.reason && <p><strong>Reason:</strong> {entry.reason}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Email Content */}
               <div className="flex-1 overflow-auto p-6 bg-gray-50">
                 {(() => {
