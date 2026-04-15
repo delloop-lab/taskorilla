@@ -19,6 +19,10 @@ import UserRatingsDisplay from '@/components/UserRatingsDisplay'
 import { compressAvatar } from '@/lib/image-utils'
 import { useLanguage } from '@/lib/i18n'
 import { formatRate } from '@/lib/currency'
+import { checkForContactInfo } from '@/lib/content-filter'
+
+const BIO_CONTACT_BLOCK_MESSAGE =
+  'Please do not share contact details in your profile. These are shared securely once a job is confirmed.'
 
 // AppUser interface that extends User and includes all properties used in this component
 interface AppUser extends User {
@@ -113,6 +117,14 @@ function ProfilePageContent() {
     totalTasks: number
   }>({ tasks: [], totalEarnings: 0, paidEarnings: 0, pendingEarnings: 0, totalTasks: 0 })
   const [earningsExpanded, setEarningsExpanded] = useState(false)
+
+  const liveBioCheck = bio.trim()
+    ? checkForContactInfo(bio.trim(), { allowPaymentTerms: true })
+    : null
+  const bioRestrictionMessage =
+    liveBioCheck && !liveBioCheck.isClean
+      ? BIO_CONTACT_BLOCK_MESSAGE
+      : null
   
   // Payments state for taskers
   const [payments, setPayments] = useState<{
@@ -628,6 +640,13 @@ function ProfilePageContent() {
       }
       if (trimmedBio.length < 50) {
         setErrorMessage('Bio must be at least 50 characters long')
+        return
+      }
+
+      // Apply the same contact/off-platform block used in task messaging.
+      const bioCheck = checkForContactInfo(trimmedBio, { allowPaymentTerms: true })
+      if (!bioCheck.isClean) {
+        setErrorMessage(BIO_CONTACT_BLOCK_MESSAGE)
         return
       }
 
@@ -1621,6 +1640,11 @@ function ProfilePageContent() {
                   <p className={`mt-1 text-xs ${bio.trim().length < 50 ? 'text-red-600' : 'text-gray-500'}`}>
                     {t('profile.bioCharacters').replace('{count}', bio.trim().length.toString())}{bio.trim().length < 50 && ` ${t('profile.bioMoreRequired').replace('{count}', (50 - bio.trim().length).toString())}`}
                   </p>
+                  {bioRestrictionMessage && (
+                    <p className="mt-1 text-xs text-red-600 font-medium">
+                      {bioRestrictionMessage}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <p className="text-gray-700 whitespace-pre-line">
@@ -2674,7 +2698,7 @@ function ProfilePageContent() {
               <div className="flex space-x-3 pt-4 border-t mt-6">
                 <button
                   onClick={handleUpdateProfile}
-                  disabled={!isTasker && !isHelper}
+                  disabled={(!isTasker && !isHelper) || !!bioRestrictionMessage}
                   className="bg-primary-600 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {t('profile.saveChanges')}
