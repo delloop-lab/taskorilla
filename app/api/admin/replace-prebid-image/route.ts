@@ -28,18 +28,23 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json().catch(() => null)
     const messageId = typeof body?.messageId === 'string' ? body.messageId : null
+    const messageIds = Array.isArray(body?.messageIds)
+      ? body.messageIds.filter((id: unknown): id is string => typeof id === 'string' && id.trim().length > 0)
+      : []
     const emailLogId = typeof body?.emailLogId === 'string' ? body.emailLogId : null
     const reason = typeof body?.reason === 'string' && body.reason.trim() ? body.reason.trim() : null
     const replaceAllConversationImages = body?.replaceAllConversationImages !== false
 
-    if (!messageId || !emailLogId) {
-      return NextResponse.json({ error: 'messageId and emailLogId are required' }, { status: 400 })
+    if ((!messageId && messageIds.length === 0) || !emailLogId) {
+      return NextResponse.json({ error: 'messageId/messageIds and emailLogId are required' }, { status: 400 })
     }
+
+    const sourceMessageId = messageId || messageIds[0]
 
     const { data: messageRow, error: messageError } = await supabase
       .from('messages')
       .select('id, conversation_id, image_url')
-      .eq('id', messageId)
+      .eq('id', sourceMessageId)
       .single()
 
     if (messageError || !messageRow) {
@@ -85,8 +90,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const requestedIdSet = new Set(messageIds.length > 0 ? messageIds : [sourceMessageId])
     const targetRowsRaw = (candidateRows || []).filter((row: any) => {
-      if (!replaceAllConversationImages) return row.id === messageId
+      if (!replaceAllConversationImages) return requestedIdSet.has(row.id)
       return row.image_url && row.image_url !== VIOLATION_IMAGE_URL
     })
 
@@ -180,8 +186,8 @@ export async function POST(request: NextRequest) {
         ...existingMetadata,
         html_content: patchedHtml,
         imageReplacement: {
-          mode: replaceAllConversationImages ? 'all_conversation_images' : 'single_image',
-          sourceMessageId: messageId,
+          mode: replaceAllConversationImages ? 'all_conversation_images' : 'multi_selected_images',
+          sourceMessageId: sourceMessageId,
           replacedMessageIds: targetMessageIds,
           replacementImageUrl: VIOLATION_IMAGE_URL,
           replacedAt: (auditRows && auditRows[0]?.created_at) || new Date().toISOString(),

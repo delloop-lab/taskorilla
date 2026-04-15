@@ -312,9 +312,10 @@ export default function SuperadminDashboard() {
   const [prebidReplaceLog, setPrebidReplaceLog] = useState<any | null>(null)
   const [prebidImagesLoading, setPrebidImagesLoading] = useState(false)
   const [prebidImages, setPrebidImages] = useState<PrebidImageMessage[]>([])
-  const [selectedPrebidMessageId, setSelectedPrebidMessageId] = useState<string>('')
+  const [selectedPrebidMessageIds, setSelectedPrebidMessageIds] = useState<string[]>([])
   const [replacementReason, setReplacementReason] = useState<string>(DEFAULT_PREBID_REPLACEMENT_REASON)
   const [replacingPrebidImage, setReplacingPrebidImage] = useState(false)
+  const [replaceAllConversationImages, setReplaceAllConversationImages] = useState(false)
   const [replacementHistoryLoading, setReplacementHistoryLoading] = useState(false)
   const [replacementHistory, setReplacementHistory] = useState<MessageImageReplacementLog[]>([])
   // Free-form email mode toggle
@@ -1626,7 +1627,7 @@ export default function SuperadminDashboard() {
 
   async function loadPrebidImagesForConversation(conversationId: string) {
     setPrebidImagesLoading(true)
-    setSelectedPrebidMessageId('')
+    setSelectedPrebidMessageIds([])
     setPrebidImages([])
 
     try {
@@ -1666,6 +1667,7 @@ export default function SuperadminDashboard() {
 
     setPrebidReplaceLog(log)
     setReplacementReason(DEFAULT_PREBID_REPLACEMENT_REASON)
+    setReplaceAllConversationImages(false)
     await loadPrebidImagesForConversation(conversationId)
   }
 
@@ -1694,12 +1696,12 @@ export default function SuperadminDashboard() {
 
   async function replaceSelectedPrebidImage() {
     if (!prebidReplaceLog?.id) return
-    if (!selectedPrebidMessageId) {
+    if (!replaceAllConversationImages && selectedPrebidMessageIds.length === 0) {
       setModalState({
         isOpen: true,
         type: 'warning',
-        title: 'Select an Image',
-        message: 'Please select the exact message image you want to replace.',
+        title: 'Select Image(s)',
+        message: 'Please select one or more images to replace, or enable "Replace all images in this conversation".',
       })
       return
     }
@@ -1718,10 +1720,11 @@ export default function SuperadminDashboard() {
           'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          messageId: selectedPrebidMessageId,
+          messageId: selectedPrebidMessageIds[0] || prebidImages[0]?.id || null,
+          messageIds: selectedPrebidMessageIds,
           emailLogId: prebidReplaceLog.id,
           reason: replacementReason.trim() || null,
-          replaceAllConversationImages: true,
+          replaceAllConversationImages: replaceAllConversationImages,
         }),
       })
 
@@ -1737,7 +1740,7 @@ export default function SuperadminDashboard() {
         await loadReplacementHistoryForLog(prebidReplaceLog)
       }
 
-      setSelectedPrebidMessageId('')
+      setSelectedPrebidMessageIds([])
       setModalState({
         isOpen: true,
         type: 'success',
@@ -8382,15 +8385,16 @@ export default function SuperadminDashboard() {
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">Replace pre-bid image</h2>
                   <p className="text-xs text-gray-600 mt-1">
-                    Select one image from this conversation. On confirm, all non-placeholder images in this same conversation are replaced with <code>/images/image_replaced_violation.png</code>.
+                    Choose one or more images to replace, or toggle full-conversation replacement.
                   </p>
                 </div>
                 <button
                   onClick={() => {
                     setPrebidReplaceLog(null)
                     setPrebidImages([])
-                    setSelectedPrebidMessageId('')
+                    setSelectedPrebidMessageIds([])
                     setReplacementReason(DEFAULT_PREBID_REPLACEMENT_REASON)
+                    setReplaceAllConversationImages(false)
                   }}
                   className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
                   title="Close"
@@ -8408,8 +8412,32 @@ export default function SuperadminDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-3 rounded border border-gray-200 bg-gray-50 p-2">
+                      <label className="inline-flex items-center gap-2 text-xs text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={replaceAllConversationImages}
+                          onChange={(e) => setReplaceAllConversationImages(e.target.checked)}
+                        />
+                        Replace all images in this conversation
+                      </label>
+                      {!replaceAllConversationImages && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const selectableIds = prebidImages
+                              .filter((img) => img.image_url !== '/images/image_replaced_violation.png')
+                              .map((img) => img.id)
+                            setSelectedPrebidMessageIds(selectableIds)
+                          }}
+                          className="px-2 py-1 rounded border border-gray-300 text-xs text-gray-700 hover:bg-white"
+                        >
+                          Select all shown
+                        </button>
+                      )}
+                    </div>
                     {prebidImages.map((msg) => {
-                      const isSelected = selectedPrebidMessageId === msg.id
+                      const isSelected = selectedPrebidMessageIds.includes(msg.id)
                       const isAlreadyPlaceholder = msg.image_url === '/images/image_replaced_violation.png'
                       return (
                         <label
@@ -8420,12 +8448,17 @@ export default function SuperadminDashboard() {
                         >
                           <div className="flex items-start gap-3">
                             <input
-                              type="radio"
-                              name="selectedPrebidMessage"
+                              type="checkbox"
                               checked={isSelected}
-                              onChange={() => setSelectedPrebidMessageId(msg.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedPrebidMessageIds((prev) => Array.from(new Set([...prev, msg.id])))
+                                } else {
+                                  setSelectedPrebidMessageIds((prev) => prev.filter((id) => id !== msg.id))
+                                }
+                              }}
                               className="mt-1"
-                              disabled={isAlreadyPlaceholder}
+                              disabled={isAlreadyPlaceholder || replaceAllConversationImages}
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex flex-wrap items-center gap-2 text-xs text-gray-600 mb-2">
@@ -8475,8 +8508,9 @@ export default function SuperadminDashboard() {
                   onClick={() => {
                     setPrebidReplaceLog(null)
                     setPrebidImages([])
-                    setSelectedPrebidMessageId('')
+                    setSelectedPrebidMessageIds([])
                     setReplacementReason(DEFAULT_PREBID_REPLACEMENT_REASON)
+                    setReplaceAllConversationImages(false)
                   }}
                   className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
                 >
@@ -8485,7 +8519,7 @@ export default function SuperadminDashboard() {
                 <button
                   type="button"
                   onClick={replaceSelectedPrebidImage}
-                  disabled={replacingPrebidImage || !selectedPrebidMessageId}
+                  disabled={replacingPrebidImage || (!replaceAllConversationImages && selectedPrebidMessageIds.length === 0)}
                   className="px-4 py-2 rounded-md bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {replacingPrebidImage ? 'Replacing...' : 'Replace with violation image'}
