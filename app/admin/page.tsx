@@ -135,7 +135,7 @@ type MessageImageReplacementLog = {
 }
 
 const DEFAULT_PREBID_REPLACEMENT_REASON =
-  'Contacting or sharing addressed or contact details outside Taskorilla is not permitted until a bid has been accepted. However, you can discuss the general area where you or the task is located. You can also share photos of the task or location to help move things forward.'
+  'Contacting or sharing contact details outside Taskorilla is not permitted until a bid has been accepted. However, you can discuss the general area where you or the task is located. You can also share photos of the task to help move things forward.'
 
 function computeTrafficDateRange(
   effectiveRange: TrafficRange,
@@ -5861,6 +5861,7 @@ export default function SuperadminDashboard() {
                       <tbody className="bg-white divide-y divide-gray-200">
                         {paginatedEmailLogs.map((log) => {
                           const isPreBidImage = log.email_type === 'new_message' && log.metadata?.hasImage === true && log.metadata?.bidAccepted !== true
+                          const isImageReplaced = Boolean(log.metadata?.imageReplacement)
                           const blockedReason = log.email_type === 'message_blocked_pre_bid'
                             ? (log.metadata?.blockedReason || null)
                             : null
@@ -5941,6 +5942,11 @@ export default function SuperadminDashboard() {
                               {blockedReason && (
                                 <span className="ml-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded">
                                   🚫 PRE-BID BLOCKED
+                                </span>
+                              )}
+                              {isImageReplaced && (
+                                <span className="ml-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded">
+                                  ✅ IMAGE REPLACED
                                 </span>
                               )}
                             </td>
@@ -8943,6 +8949,14 @@ export default function SuperadminDashboard() {
                       viewingEmailLog.status === 'failed' ? 'text-red-600' :
                       'text-yellow-600'
                     }`}>{viewingEmailLog.status}</span></p>
+                    {viewingEmailLog.metadata?.imageReplacement && (
+                      <p>
+                        <strong>Image moderation:</strong>{' '}
+                        <span className="inline-flex items-center px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[11px] font-semibold rounded">
+                          IMAGE REPLACED
+                        </span>
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="ml-4 flex items-center gap-3">
