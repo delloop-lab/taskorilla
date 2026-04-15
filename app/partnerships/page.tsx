@@ -140,9 +140,14 @@ export default function PartnershipsPage() {
                 <li>Be able to build and manage relationships</li>
                 <li>Be prepared to commit time and effort</li>
               </ul>
-              <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mt-1">
-                This is not suited to someone looking for a passive income stream.
-              </p>
+              <div className="mt-1 rounded-xl border border-primary-200 bg-primary-50/60 px-3.5 py-3">
+                <p className="flex items-start gap-2.5 text-sm text-primary-900 leading-relaxed">
+                  <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700 text-[11px] font-bold">
+                    i
+                  </span>
+                  <span>This is not suited to someone looking for a passive income stream.</span>
+                </p>
+              </div>
             </div>
 
             <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 space-y-4">

@@ -101,9 +101,14 @@ export default function HowBidsWorkModal({ isOpen, onClose }: HowBidsWorkModalPr
             </p>
           </div>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-md px-3 py-2.5">
-            <p className="text-sm text-amber-800 leading-relaxed">
-              <span className="font-semibold">{t('bidding.tipLabel')}</span> {t('bidding.tipBody')}
+          <div className="rounded-xl border border-primary-200 bg-primary-50/60 px-3.5 py-3">
+            <p className="flex items-start gap-2.5 text-sm text-primary-900 leading-relaxed">
+              <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700 text-[11px] font-bold">
+                i
+              </span>
+              <span>
+                <span className="font-semibold">{t('bidding.tipLabel')}</span> {t('bidding.tipBody')}
+              </span>
             </p>
           </div>
         </div>

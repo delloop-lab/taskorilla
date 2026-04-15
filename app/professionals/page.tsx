@@ -205,7 +205,7 @@ export default function ProfessionalsPage() {
       <Link
         key={helper.id}
         href={`/user/${helper.profile_slug || helper.id}`}
-        className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+        className="overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-sm transition-shadow hover:shadow-md"
       >
         <div className="p-6">
           <div className="flex items-center gap-4 mb-4">
@@ -377,7 +377,7 @@ export default function ProfessionalsPage() {
 
         {/* Filters */}
         {showFilters && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="mb-6 rounded-2xl border border-slate-200 bg-white/95 p-6 shadow-sm">
             <div className="space-y-4">
               {/* Search */}
               <div>
@@ -456,7 +456,7 @@ export default function ProfessionalsPage() {
 
         {/* Professionals Grouped by Category */}
         {sortedHelpers.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
+          <div className="rounded-2xl border border-slate-200 bg-white/95 p-12 text-center shadow-sm">
             <p className="text-gray-600 text-lg">{t('professionals.noProfessionalsFound')}</p>
             <button
               onClick={() => {
@@ -492,7 +492,7 @@ export default function ProfessionalsPage() {
               if (categoryHelpers.length === 0) return null
               
               return (
-                <div key={category.name} className="bg-white rounded-lg shadow-md p-6">
+                <div key={category.name} className="rounded-2xl border border-slate-200 bg-white/95 p-6 shadow-sm">
                   <h2 className="text-2xl font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200">
                     {category.name}
                   </h2>

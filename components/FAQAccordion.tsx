@@ -45,7 +45,7 @@ export default function FAQAccordion({ items, defaultOpen = null }: FAQAccordion
         <div 
           key={item.id}
           id={item.id}
-          className="border border-gray-200 rounded-lg overflow-hidden hover:border-primary/30 transition-colors scroll-mt-20"
+          className="scroll-mt-20 overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-sm transition-colors hover:border-primary/30"
         >
           <button
             onClick={() => toggleItem(item.id)}

@@ -296,7 +296,7 @@ export default function BrowseHelpersPage() {
 
         {/* Filters */}
         {showFilters && (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="mb-6 rounded-2xl border border-slate-200 bg-white/95 p-6 shadow-sm">
           <div className="space-y-4">
             {/* Search */}
             <div>
@@ -419,7 +419,7 @@ export default function BrowseHelpersPage() {
 
         {/* Helpers Grid */}
         {filteredHelpers.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
+          <div className="rounded-2xl border border-slate-200 bg-white/95 p-12 text-center shadow-sm">
             <p className="text-gray-600 text-lg">No helpers found matching your criteria.</p>
             <button
               onClick={() => {
@@ -445,7 +445,7 @@ export default function BrowseHelpersPage() {
               <Link
                 key={helper.id}
                 href={`/user/${helper.profile_slug || helper.id}`}
-                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                className="overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-sm transition-shadow hover:shadow-md"
               >
                 <div className="p-6">
                   {/* Avatar & Name */}

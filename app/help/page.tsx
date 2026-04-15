@@ -164,7 +164,7 @@ export default function HelpCenter() {
               <Link 
                 key={faq.id}
                 href={`/help/faq#${faq.id}`} 
-                className="block p-6 border-2 border-gray-200 rounded-lg hover:border-primary hover:shadow-md transition-all"
+                className="block rounded-2xl border border-slate-200 bg-white/95 p-6 shadow-sm transition-all hover:border-primary hover:shadow-md"
               >
                 <h3 className="font-semibold text-lg text-gray-900 mb-2">{faq.title}</h3>
                 <p className="text-gray-600 text-sm line-clamp-1">{faq.content.substring(0, 80)}...</p>

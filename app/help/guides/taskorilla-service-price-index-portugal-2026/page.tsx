@@ -223,12 +223,17 @@ export default function TspiPortugal2026Page() {
           </p>
         </section>
 
-        <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-6 md:p-8">
+        <section className="mt-6 rounded-2xl border border-primary-200 bg-primary-50/60 p-6 md:p-8">
           <h2 className="text-xl font-semibold text-slate-900 mb-3">Disclaimer</h2>
-          <p className="text-slate-700 leading-7">
-            This guide is for informational purposes only. Taskorilla does not set or enforce pricing. All
-            services are independently agreed between users and providers. Users and providers are responsible for
-            their own tax, legal, and regulatory compliance.
+          <p className="flex items-start gap-2.5 text-slate-700 leading-7">
+            <span className="mt-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700 text-[11px] font-bold">
+              i
+            </span>
+            <span>
+              This guide is for informational purposes only. Taskorilla does not set or enforce pricing. All
+              services are independently agreed between users and providers. Users and providers are responsible for
+              their own tax, legal, and regulatory compliance.
+            </span>
           </p>
         </section>
       </div>

@@ -15,14 +15,15 @@ export default function FAQPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <section className="bg-gradient-to-br from-primary to-accent text-white py-12 px-4">
-        <div className="container mx-auto max-w-4xl">
-          <Link href="/help" className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-6 transition-colors">
+      <section className="bg-[#F8F9FA] py-12 px-4 relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_45%),radial-gradient(circle_at_bottom_left,rgba(249,115,22,0.10),transparent_40%)]" />
+        <div className="container mx-auto max-w-4xl relative z-10">
+          <Link href="/help" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors">
             <ArrowLeft className="w-5 h-5" />
             {t('help.backToHelpCenter')}
           </Link>
-          <h1 className="text-4xl font-bold mb-4">{t('help.faqTitle')}</h1>
-          <p className="text-xl opacity-90 mb-6">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">{t('help.faqTitle')}</h1>
+          <p className="text-xl text-gray-600 mb-6">
             {t('help.faqSubtitle')}
           </p>
           <HelpSearchBar placeholder={t('help.searchFaqs')} />

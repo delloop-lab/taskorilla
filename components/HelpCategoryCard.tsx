@@ -27,7 +27,7 @@ export default function HelpCategoryCard({
 
   return (
     <Link href={href}>
-      <div className="group bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-primary hover:shadow-lg transition-all duration-300 h-full">
+      <div className="group h-full rounded-2xl border border-slate-200 bg-white/95 p-6 shadow-sm transition-all duration-300 hover:border-primary hover:shadow-md">
         <div className="flex items-start gap-4">
           <div className="text-4xl">{icon}</div>
           <div className="flex-1">

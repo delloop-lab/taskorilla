@@ -388,7 +388,7 @@ export default function GuidePage() {
           {accordionSections.map((item, idx) => (
             <div
               key={idx}
-              className="border border-gray-200 rounded-lg overflow-hidden hover:border-primary/30 transition-colors print:border-gray-300 print:[break-inside:avoid] print:[page-break-inside:avoid]"
+              className="overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-sm transition-colors hover:border-primary/30 print:border-gray-300 print:[break-inside:avoid] print:[page-break-inside:avoid]"
             >
               <h3 className="hidden print:block text-base font-bold text-gray-900 px-0 py-2">
                 {item.title}
@@ -431,7 +431,7 @@ export default function GuidePage() {
       {accordionSections.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
           <aside className="hidden lg:block lg:col-span-3 print:hidden">
-            <div className="sticky top-24 border border-slate-200 rounded-lg bg-slate-50 p-4">
+            <div className="sticky top-24 rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs uppercase tracking-wide text-slate-600 font-semibold mb-3">Table of Contents</p>
               <nav className="space-y-2">
                 {accordionSections.map((item) => (
@@ -451,7 +451,7 @@ export default function GuidePage() {
               <section
                 id={sectionIdFromTitle(item.title)}
                 key={idx}
-                className="border border-slate-200 rounded-lg overflow-hidden print:border-gray-300 print:[break-inside:avoid] print:[page-break-inside:avoid]"
+                className="overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-sm print:border-gray-300 print:[break-inside:avoid] print:[page-break-inside:avoid]"
               >
                 <div className="px-5 py-4 bg-white border-b border-slate-200">
                   <h3 className="text-lg font-semibold text-slate-900 font-serif">{item.title}</h3>
@@ -487,26 +487,29 @@ export default function GuidePage() {
   return (
     <div className="min-h-screen bg-gray-50 print:bg-white">
       {/* Header */}
-      <section className={`${isInstitutionalPricingGuide ? 'bg-[#1B365D]' : 'bg-gradient-to-br from-primary to-accent'} text-white py-8 px-4 print:hidden`}>
-        <div className="container mx-auto max-w-6xl">
-          <Link href="/help/guides" className="inline-flex items-center gap-2 text-white/90 hover:text-white mb-4 transition-colors">
+      <section className={`${isInstitutionalPricingGuide ? 'bg-[#1B365D] text-white' : 'bg-[#F8F9FA] text-gray-900 relative overflow-hidden'} py-8 px-4 print:hidden`}>
+        {!isInstitutionalPricingGuide && (
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_45%),radial-gradient(circle_at_bottom_left,rgba(249,115,22,0.10),transparent_40%)]" />
+        )}
+        <div className={`container mx-auto max-w-6xl ${isInstitutionalPricingGuide ? '' : 'relative z-10'}`}>
+          <Link href="/help/guides" className={`inline-flex items-center gap-2 mb-4 transition-colors ${isInstitutionalPricingGuide ? 'text-white/90 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}>
             <ArrowLeft className="w-5 h-5" />
             {backToGuidesText}
           </Link>
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-sm bg-white/20 px-3 py-1 rounded-full">
+            <span className={`text-sm px-3 py-1 rounded-full ${isInstitutionalPricingGuide ? 'bg-white/20' : 'bg-slate-100 text-slate-700 border border-slate-200'}`}>
               {translatedGuide.category}
             </span>
-            {!isInstitutionalPricingGuide && <span className="text-sm opacity-75">{minReadText}</span>}
+            {!isInstitutionalPricingGuide && <span className="text-sm text-gray-600">{minReadText}</span>}
           </div>
-          <h1 className="text-4xl font-bold">{translatedGuide.title}</h1>
+          <h1 className={`text-4xl font-bold ${isInstitutionalPricingGuide ? 'text-white' : 'text-gray-900'}`}>{translatedGuide.title}</h1>
         </div>
       </section>
 
       {/* Guide Content */}
       <section className="py-12 px-4 print:py-0 print:px-0">
         <div className="container mx-auto max-w-6xl">
-          <div className="bg-white rounded-lg shadow-md p-8 mb-8 print:shadow-none print:rounded-none print:p-0 print:mb-0">
+          <div className="mb-8 rounded-2xl border border-slate-200 bg-white/95 p-8 shadow-sm print:mb-0 print:rounded-none print:border-0 print:bg-white print:p-0 print:shadow-none">
             <div className={`mb-8 flex print:hidden ${isInstitutionalPricingGuide ? 'justify-between items-center gap-4' : 'justify-end'}`}>
               <button
                 type="button"
@@ -517,7 +520,7 @@ export default function GuidePage() {
                   }
                   window.print()
                 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-slate-50"
               >
                 <Download className="w-4 h-4" />
                 {downloadPdfText}
@@ -553,7 +556,7 @@ export default function GuidePage() {
 
           {/* Related FAQs */}
           {relatedFAQs.length > 0 && (
-            <div className="bg-white rounded-lg shadow-md p-8 print:hidden">
+            <div className="rounded-2xl border border-slate-200 bg-white/95 p-8 shadow-sm print:hidden">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
                 {relatedFaqsText}
               </h2>
