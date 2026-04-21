@@ -56,6 +56,7 @@ export default function TaskDetailPage() {
   const [showHowBidsWork, setShowHowBidsWork] = useState(false)
   const lastPendingBidUpdatedAtRef = useRef<string | null>(null)
   const [acceptingBidId, setAcceptingBidId] = useState<string | null>(null)
+  const [rejectingBidId, setRejectingBidId] = useState<string | null>(null)
   const [acceptBidStatus, setAcceptBidStatus] = useState<string | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
   const [reviewRating, setReviewRating] = useState('5')
@@ -1122,6 +1123,100 @@ export default function TaskDetailPage() {
     } finally {
       setAcceptingBidId(null)
     }
+  }
+
+  const handleRejectBid = async (bidId: string) => {
+    if (!user || !task || task.created_by !== user.id || rejectingBidId) return
+
+    const rejectedBid = bids.find((b) => b.id === bidId)
+    if (!rejectedBid || rejectedBid.status !== 'pending') return
+
+    setModalState({
+      isOpen: true,
+      type: 'confirm',
+      title: t('taskDetail.rejectBidTitle'),
+      message: t('taskDetail.rejectBidConfirm'),
+      onConfirm: async () => {
+        setRejectingBidId(bidId)
+        try {
+          const { error: rejectErr } = await supabase
+            .from('bids')
+            .update({ status: 'rejected' })
+            .eq('id', bidId)
+            .eq('task_id', taskId)
+            .eq('status', 'pending')
+          if (rejectErr) throw rejectErr
+
+          // Add progress update so both sides can see this moderation action in the timeline.
+          try {
+            const bidderName = rejectedBid.user?.full_name?.split(' ')[0] || 'Helper'
+            const taskerName = task?.user?.full_name?.split(' ')[0] || 'Task owner'
+            const progressMessage = t('taskDetail.progressBidRejected')
+              .replace('{tasker}', taskerName)
+              .replace(/\{bidder\}/g, bidderName)
+              .replace('{amount}', formatEuro(rejectedBid.amount, true))
+
+            const { error: err1 } = await supabase
+              .from('task_progress_updates')
+              .insert({
+                task_id: taskId,
+                user_id: user.id,
+                message: progressMessage,
+                update_type: 'bid_rejected',
+              })
+
+            if (err1 && (err1.message?.includes('update_type') || err1.code === '42703')) {
+              await supabase
+                .from('task_progress_updates')
+                .insert({
+                  task_id: taskId,
+                  user_id: user.id,
+                  message: progressMessage,
+                })
+            }
+          } catch (progressError) {
+            console.error('Error adding bid rejection progress update:', progressError)
+          }
+
+          // Notify the bidder by email.
+          if (rejectedBid.user?.email) {
+            try {
+              await fetch('/api/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  type: 'bid_rejected',
+                  bidderEmail: rejectedBid.user.email,
+                  bidderName: rejectedBid.user?.full_name || rejectedBid.user.email || 'User',
+                  taskTitle: task?.title || '',
+                  taskId,
+                }),
+              })
+            } catch (emailErr) {
+              console.error('Error sending bid rejected email:', emailErr)
+            }
+          }
+
+          await loadTask()
+          await loadBids()
+          setModalState({
+            isOpen: true,
+            type: 'success',
+            title: t('taskDetail.rejectBidSuccessTitle'),
+            message: t('taskDetail.rejectBidSuccessMessage'),
+          })
+        } catch (err: any) {
+          setModalState({
+            isOpen: true,
+            type: 'error',
+            title: t('messages.error'),
+            message: err.message || t('taskDetail.rejectBidError'),
+          })
+        } finally {
+          setRejectingBidId(null)
+        }
+      },
+    })
   }
 
   const handleReleaseBid = async () => {
@@ -3842,6 +3937,12 @@ export default function TaskDetailPage() {
                 onChange={(e) => setBidMessage(e.target.value)}
                 placeholder={t('taskDetail.priceJustificationPlaceholder')}
               />
+              <p className={`mt-1 text-xs ${bidMessage.trim().length < 50 ? 'text-red-600' : 'text-gray-500'}`}>
+                {t('taskDetail.bidMessageCharacters').replace('{count}', String(bidMessage.trim().length))}
+                {bidMessage.trim().length < 50
+                  ? ` ${t('taskDetail.bidMessageMoreRequired').replace('{count}', String(50 - bidMessage.trim().length))}`
+                  : ''}
+              </p>
             </div>
             <button
               type="submit"
@@ -4245,15 +4346,25 @@ export default function TaskDetailPage() {
                       {format(new Date(bid.created_at), 'MMM d, yyyy h:mm a')}
                     </p>
                   </div>
-                  <div className="ml-4 flex flex-shrink-0 flex-wrap items-center justify-end gap-2">
+                  <div className="mt-2 sm:mt-0 ml-0 sm:ml-4 flex w-full sm:w-auto flex-shrink-0 flex-row flex-wrap items-center justify-start sm:justify-end gap-2">
                     {isTaskOwner && task.status === 'open' && bid.status === 'pending' && (
+                      <>
                       <button
                         onClick={() => handleAcceptBid(bid.id)}
-                        disabled={Boolean(acceptingBidId)}
-                        className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                        disabled={Boolean(acceptingBidId) || Boolean(rejectingBidId)}
+                        className="bg-green-600 text-white px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
                       >
                         {acceptingBidId === bid.id ? t('taskDetail.accepting') : acceptingBidId ? t('taskDetail.pleaseWait') : t('taskDetail.acceptBid')}
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRejectBid(bid.id)}
+                        disabled={Boolean(acceptingBidId) || Boolean(rejectingBidId)}
+                        className="bg-red-600 text-white px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
+                      >
+                        {rejectingBidId === bid.id ? t('taskDetail.rejectingBid') : rejectingBidId ? t('taskDetail.pleaseWait') : t('taskDetail.rejectBid')}
+                      </button>
+                      </>
                     )}
                     {canEditBid && bid.id === myPendingBid?.id && (
                       <>
@@ -4277,7 +4388,7 @@ export default function TaskDetailPage() {
                     {canSeeBidDetails(bid) && user && bid.user_id && (
                       <button
                         onClick={() => handleStartConversation(bid.user_id!)}
-                        className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700 whitespace-nowrap"
+                        className="bg-primary-600 text-white px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium hover:bg-primary-700 whitespace-nowrap"
                       >
                         {t('taskDetail.message')}
                       </button>
@@ -4632,6 +4743,12 @@ export default function TaskDetailPage() {
                 onChange={(e) => setEditBidMessage(e.target.value)}
                 placeholder={t('taskDetail.priceJustificationPlaceholder')}
               />
+              <p className={`mt-1 text-xs ${editBidMessage.trim().length < 50 ? 'text-red-600' : 'text-gray-500'}`}>
+                {t('taskDetail.bidMessageCharacters').replace('{count}', String(editBidMessage.trim().length))}
+                {editBidMessage.trim().length < 50
+                  ? ` ${t('taskDetail.bidMessageMoreRequired').replace('{count}', String(50 - editBidMessage.trim().length))}`
+                  : ''}
+              </p>
             </div>
             <div className="flex gap-2 justify-end pt-2">
               <button

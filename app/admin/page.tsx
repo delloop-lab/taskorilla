@@ -1884,6 +1884,26 @@ export default function SuperadminDashboard() {
     return rendered
   }
 
+  function getBidEmailNoticeLabel(log: any): string | null {
+    const metadata = log?.metadata || {}
+    const templateType = String(metadata?.template_type || '')
+    const isBidNoticeTemplate =
+      templateType === 'tasker_bid_received' ||
+      templateType === 'tasker_bid_reminder'
+    if (log?.email_type !== 'template_email' || !isBidNoticeTemplate) {
+      return null
+    }
+
+    const sendKind = String(metadata?.send_kind || '')
+    const reminderKind = String(metadata?.reminder_kind || '')
+    const scheduledSend = metadata?.scheduled_send === true
+
+    if (templateType === 'tasker_bid_reminder') return 'Weekly reminder'
+    if (sendKind === 'immediate_bid_event') return 'New bid event'
+    if (reminderKind === 'weekly' || scheduledSend) return 'Weekly reminder'
+    return 'Bid notice'
+  }
+
   function getUserIdByEmailOrName(email?: string | null, name?: string | null): string | null {
     if (email) {
       const matchByEmail = users.find((u) => u.email?.toLowerCase() === email.toLowerCase())
@@ -4439,9 +4459,9 @@ export default function SuperadminDashboard() {
                   className="bg-orange-50 p-4 rounded-lg border border-orange-200 text-left hover:bg-orange-100 transition-colors"
                 >
                   <p className="text-sm text-gray-600 mb-1">Total Bids</p>
-                  <p className="text-3xl font-bold text-orange-600">{latestRealBids.length}</p>
+                  <p className="text-3xl font-bold text-orange-600">{realBids.length}</p>
                   <p className="text-xs text-gray-500 mt-1">
-                    {bidStatusCounts.accepted} accepted ({latestRealBids.length > 0 ? ((bidStatusCounts.accepted / latestRealBids.length) * 100).toFixed(1) : 0}%)
+                    {bidStatusCounts.accepted} accepted ({realBids.length > 0 ? ((bidStatusCounts.accepted / realBids.length) * 100).toFixed(1) : 0}%)
                   </p>
                   <p className="text-xs text-orange-700 mt-2 font-medium">
                     {showBidsDrilldown ? 'Hide bid records' : 'Click to view bid records'}
@@ -4453,7 +4473,7 @@ export default function SuperadminDashboard() {
               <div className="mb-8 border border-orange-200 rounded-lg overflow-hidden">
                 <div className="bg-orange-50 px-4 py-3 border-b border-orange-200">
                   <h3 className="font-semibold text-orange-900">Bid Records</h3>
-                  <p className="text-xs text-orange-700 mt-1">Showing latest bid per helper per task.</p>
+                  <p className="text-xs text-orange-700 mt-1">Showing all bid records (real tasks only).</p>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -4468,7 +4488,7 @@ export default function SuperadminDashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {latestRealBids.map((bid) => {
+                      {realBids.map((bid) => {
                         const task = taskById.get(bid.task_id)
                         const bidder = userById.get(bid.user_id)
                         return (
@@ -5934,6 +5954,11 @@ export default function SuperadminDashboard() {
                               <span className="inline-block max-w-[22ch] truncate align-bottom" title={log.email_type || '-'}>
                                 {log.email_type || '-'}
                               </span>
+                              {getBidEmailNoticeLabel(log) && (
+                                <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 bg-indigo-100 text-indigo-800 text-[10px] font-bold rounded">
+                                  {getBidEmailNoticeLabel(log)}
+                                </span>
+                              )}
                               {isPreBidImage && (
                                 <span className="ml-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded">
                                   📷 IMAGE PRE-BID
@@ -7499,6 +7524,11 @@ export default function SuperadminDashboard() {
                               {log.email_type}
                             </span>
                           </span>
+                          {getBidEmailNoticeLabel(log) && (
+                            <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 bg-indigo-100 text-indigo-800 text-[10px] font-bold rounded whitespace-nowrap">
+                              {getBidEmailNoticeLabel(log)}
+                            </span>
+                          )}
                         </td>
                         <td className="border px-2 sm:px-4 py-2 text-xs sm:text-sm text-red-600 hidden xl:table-cell">
                           <div className="truncate max-w-[150px]" title={log.error_message || '-'}>{log.error_message || '-'}</div>

@@ -27,8 +27,80 @@ const debugWarn = (...args: any[]) => isDev && console.warn(...args)
 // Keep first browse load smaller for faster initial render.
 // Revert by changing this value back to 50.
 const BROWSE_INITIAL_LIMIT = 20
+const DAILY_RANDOM_SEED_VERSION = 2
 
 type FilterType = 'all' | 'open' | 'my_tasks' | 'new' | 'my_bids'
+
+const getLocalDayKey = () => {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+const hashStringToSeed = (value: string) => {
+  let hash = 0
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(i)
+    hash |= 0
+  }
+  return hash >>> 0
+}
+
+const createSeededRandom = (seed: number) => {
+  let t = seed || 1
+  return () => {
+    t += 0x6d2b79f5
+    let x = Math.imul(t ^ (t >>> 15), t | 1)
+    x ^= x + Math.imul(x ^ (x >>> 7), x | 61)
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+const shuffleWithSeed = <T,>(items: T[], seedSource: string): T[] => {
+  const shuffled = [...items]
+  const random = createSeededRandom(hashStringToSeed(seedSource))
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(random() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
+const applyDailyOpenRealTaskRandomization = (
+  tasks: any[],
+  activeFilter: FilterType
+) => {
+  if (activeFilter !== 'all' || tasks.length <= 1) return tasks
+
+  const eligibleIndexes: number[] = []
+  const eligibleTasks: any[] = []
+
+  tasks.forEach((task, index) => {
+    const isOpen = task?.status === 'open'
+    const isSample = task?.is_sample_task === true
+    if (isOpen && !isSample) {
+      eligibleIndexes.push(index)
+      eligibleTasks.push(task)
+    }
+  })
+
+  if (eligibleTasks.length <= 1) return tasks
+
+  const dayKey = getLocalDayKey()
+  const shuffledEligibleTasks = shuffleWithSeed(
+    eligibleTasks,
+    `tasks-all-open-real-full-${eligibleTasks.length}-${dayKey}-v${DAILY_RANDOM_SEED_VERSION}`
+  )
+
+  const reordered = [...tasks]
+  eligibleIndexes.forEach((index, i) => {
+    reordered[index] = shuffledEligibleTasks[i]
+  })
+
+  return reordered
+}
 
 function getSkeletonCardCount() {
   if (typeof window === 'undefined') return 8
@@ -968,6 +1040,10 @@ function TasksPageContent() {
         }
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       })
+
+      // Daily discoverability mix:
+      // on the All tab, randomly reorder all real/open tasks only.
+      tasksWithProfiles = applyDailyOpenRealTaskRandomization(tasksWithProfiles, activeFilter)
       
       // Final check before updating state
       const processEnd = performance.now()

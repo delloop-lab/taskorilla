@@ -632,22 +632,26 @@ function ProfilePageContent() {
         return
       }
 
-      // Validate bio is required and at least 50 characters
+      // Bio requirement: mandatory for helpers, optional for taskers.
       const trimmedBio = bio.trim()
-      if (!trimmedBio) {
-        setErrorMessage('Bio is required')
-        return
-      }
-      if (trimmedBio.length < 50) {
-        setErrorMessage('Bio must be at least 50 characters long')
-        return
+      if (isHelper) {
+        if (!trimmedBio) {
+          setErrorMessage('Bio is required')
+          return
+        }
+        if (trimmedBio.length < 50) {
+          setErrorMessage('Bio must be at least 50 characters long')
+          return
+        }
       }
 
       // Apply the same contact/off-platform block used in task messaging.
-      const bioCheck = checkForContactInfo(trimmedBio, { allowPaymentTerms: true })
-      if (!bioCheck.isClean) {
-        setErrorMessage(BIO_CONTACT_BLOCK_MESSAGE)
-        return
+      if (trimmedBio) {
+        const bioCheck = checkForContactInfo(trimmedBio, { allowPaymentTerms: true })
+        if (!bioCheck.isClean) {
+          setErrorMessage(BIO_CONTACT_BLOCK_MESSAGE)
+          return
+        }
       }
 
       const trimmedCountryValue = country.trim()
@@ -1623,8 +1627,8 @@ function ProfilePageContent() {
             {/* Bio - Always visible for all users */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('profile.bio')} <span className="text-red-500">*</span>
-                <span className="text-xs text-gray-500 ml-2">{t('profile.bioMinimum')}</span>
+                {t('profile.bio')} {isHelper && <span className="text-red-500">*</span>}
+                {isHelper && <span className="text-xs text-gray-500 ml-2">{t('profile.bioMinimum')}</span>}
               </label>
               {editing ? (
                 <div>
@@ -1632,14 +1636,20 @@ function ProfilePageContent() {
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
                     rows={4}
-                    required
-                    minLength={50}
+                    required={isHelper}
+                    minLength={isHelper ? 50 : undefined}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                     placeholder={t('profile.bioPlaceholder')}
                   />
-                  <p className={`mt-1 text-xs ${bio.trim().length < 50 ? 'text-red-600' : 'text-gray-500'}`}>
-                    {t('profile.bioCharacters').replace('{count}', bio.trim().length.toString())}{bio.trim().length < 50 && ` ${t('profile.bioMoreRequired').replace('{count}', (50 - bio.trim().length).toString())}`}
-                  </p>
+                  {isHelper ? (
+                    <p className={`mt-1 text-xs ${bio.trim().length < 50 ? 'text-red-600' : 'text-gray-500'}`}>
+                      {t('profile.bioCharacters').replace('{count}', bio.trim().length.toString())}{bio.trim().length < 50 && ` ${t('profile.bioMoreRequired').replace('{count}', (50 - bio.trim().length).toString())}`}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-xs text-gray-500">
+                      {t('profile.bioCharacters').replace('{count}', bio.trim().length.toString())}
+                    </p>
+                  )}
                   {bioRestrictionMessage && (
                     <p className="mt-1 text-xs text-red-600 font-medium">
                       {bioRestrictionMessage}
