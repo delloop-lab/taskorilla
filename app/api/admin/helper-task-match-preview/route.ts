@@ -250,6 +250,18 @@ export async function GET(request: NextRequest) {
           console.error('[helper-task-match-preview] fallback feedback read failed:', feedbackError.message)
         }
       }
+    } else if (supabaseAdmin) {
+      // Merge a service-role read as well to avoid any RLS/caching blind spots.
+      const retry = await supabaseAdmin
+        .from('helper_match_feedback')
+        .select('id, helper_id, reason, notes, created_at')
+        .eq('task_type_key', taskTypeKey)
+        .eq('feedback', 'exclude')
+      if (!retry.error && retry.data) {
+        feedbackRows = [...(feedbackRows || []), ...retry.data]
+      } else if (retry.error) {
+        console.error('[helper-task-match-preview] fallback feedback merge failed:', retry.error.message)
+      }
     }
 
     // Safety net: include helper exclusions saved against this exact task ID,
@@ -273,6 +285,18 @@ export async function GET(request: NextRequest) {
         if (taskFeedbackError) {
           console.error('[helper-task-match-preview] fallback task-specific feedback read failed:', taskFeedbackError.message)
         }
+      }
+    } else if (supabaseAdmin) {
+      // Merge service-role read here too for consistency.
+      const retry = await supabaseAdmin
+        .from('helper_match_feedback')
+        .select('id, helper_id, reason, notes, created_at')
+        .eq('task_id', taskId)
+        .eq('feedback', 'exclude')
+      if (!retry.error && retry.data) {
+        taskFeedbackRows = [...(taskFeedbackRows || []), ...retry.data]
+      } else if (retry.error) {
+        console.error('[helper-task-match-preview] fallback task-specific feedback merge failed:', retry.error.message)
       }
     }
 

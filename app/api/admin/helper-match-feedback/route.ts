@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { buildTaskTypeKey } from '@/lib/helper-match-feedback'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient(request)
+    const hasServiceRole =
+      !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      !!process.env.SUPABASE_SERVICE_ROLE_KEY
+    const supabaseAdmin = hasServiceRole
+      ? createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+          process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+        )
+      : null
     const body = await request.json().catch(() => null)
 
     const taskId = body?.taskId as string | undefined
@@ -72,7 +82,8 @@ export async function POST(request: NextRequest) {
       // Clear both scopes used by preview/send:
       // 1) task_type_key exclusions (cross-task type)
       // 2) task_id exclusions (task-specific safety-net rows)
-      const { error: clearByTypeError } = await supabase
+      const db = supabaseAdmin ?? supabase
+      const { error: clearByTypeError } = await db
         .from('helper_match_feedback')
         .delete()
         .eq('helper_id', helperId)
@@ -83,7 +94,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: clearByTypeError.message }, { status: 500 })
       }
 
-      const { error: clearByTaskError } = await supabase
+      const { error: clearByTaskError } = await db
         .from('helper_match_feedback')
         .delete()
         .eq('helper_id', helperId)
@@ -97,7 +108,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, action: 'cleared', taskTypeKey })
     }
 
-    const { error: upsertError } = await supabase
+    const db = supabaseAdmin ?? supabase
+    const { error: upsertError } = await db
       .from('helper_match_feedback')
       .upsert(
         {
@@ -118,7 +130,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify persistence immediately so the UI can surface a concrete failure reason.
-    const { data: persistedRow, error: persistedReadError } = await supabase
+    const { data: persistedRow, error: persistedReadError } = await db
       .from('helper_match_feedback')
       .select('id, helper_id, task_type_key, feedback, reason, notes, created_at')
       .eq('helper_id', helperId)

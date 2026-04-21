@@ -49,6 +49,44 @@ function withFoundingBadges(currentBadges: string[] | null | undefined, tasker: 
   return next
 }
 
+function getFullNameValidationMessage(value: string): string | null {
+  const trimmed = value.trim()
+  if (!trimmed) return 'Full Name is required.'
+
+  // Full Name must be personal first + last name only.
+  const parts = trimmed.split(/\s+/).filter(Boolean)
+  if (parts.length !== 2) {
+    return 'Please enter only First Name and Last Name in Full Name.'
+  }
+
+  const normalized = trimmed.toLowerCase()
+  const companyIndicators = [
+    'ltd',
+    'llc',
+    'inc',
+    'corp',
+    'company',
+    'co.',
+    'gmbh',
+    's.a.',
+    'sa',
+    'lda',
+    'unipessoal',
+    'empresa',
+  ]
+  if (companyIndicators.some((term) => normalized.includes(term))) {
+    return 'Company names are not allowed in Full Name. Please use the Company Name field.'
+  }
+
+  // Allow letters (including accents), apostrophes and hyphens only.
+  const namePartPattern = /^[A-Za-zÀ-ÖØ-öø-ÿ'-]{2,}$/
+  if (!parts.every((part) => namePartPattern.test(part))) {
+    return 'Full Name must contain only letters and include first and last name.'
+  }
+
+  return null
+}
+
 function ProfilePageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -142,6 +180,7 @@ function ProfilePageContent() {
     totalTasks: number
   }>({ tasks: [], totalPaid: 0, totalTasks: 0 })
   const [paymentsExpanded, setPaymentsExpanded] = useState(false)
+  const fullNameValidationMessage = getFullNameValidationMessage(fullName)
   
   // Share and QR code state
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)
@@ -573,6 +612,12 @@ function ProfilePageContent() {
       setErrorMessage('Full name is required')
       return
     }
+
+      const fullNameError = getFullNameValidationMessage(fullName)
+      if (fullNameError) {
+        setErrorMessage(fullNameError)
+        return
+      }
 
     try {
       setErrorMessage(null)
@@ -1263,14 +1308,24 @@ function ProfilePageContent() {
                 {t('profile.fullName')} <span className="text-red-500">*</span>
               </label>
               {editing ? (
-                <input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                  placeholder={t('profile.fullNamePlaceholder')}
-                />
+                <>
+                  <input
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${
+                      fullNameValidationMessage ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder={t('profile.fullNamePlaceholder')}
+                  />
+                  <p className="mt-1 text-xs text-amber-700">
+                    Use only First Name and Last Name. Company names belong in the Company Name field.
+                  </p>
+                  {fullNameValidationMessage && (
+                    <p className="mt-1 text-xs text-red-600">{fullNameValidationMessage}</p>
+                  )}
+                </>
               ) : (
                 <input
                   type="text"

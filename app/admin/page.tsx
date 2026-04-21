@@ -2297,21 +2297,34 @@ export default function SuperadminDashboard() {
       const refreshed = await previewHelperTaskMatch(taskId)
       const refreshedHelper = (refreshed?.matches || []).find((m: any) => m.id === helperId)
       if (action === 'exclude' && refreshedHelper && !refreshedHelper.isExcluded) {
-        const savedKey = typeof data?.taskTypeKey === 'string' ? data.taskTypeKey : 'unknown'
-        const previewKey = typeof refreshed?.taskTypeKey === 'string' ? refreshed.taskTypeKey : 'unknown'
-        setPreviewError(
-          `This helper did not persist as unsuitable after refresh. helperId=${helperId}, savedKey=${savedKey}, previewKey=${previewKey}`
-        )
+        // Retry once to avoid false negatives from a near-immediate read-after-write race.
+        await new Promise((resolve) => setTimeout(resolve, 300))
+        const retryRefreshed = await previewHelperTaskMatch(taskId)
+        const retryHelper = (retryRefreshed?.matches || []).find((m: any) => m.id === helperId)
+        if (retryHelper && !retryHelper.isExcluded) {
+          console.warn('[helper-match-feedback] exclusion not visible after retry refresh', {
+            helperId,
+            savedKey: typeof data?.taskTypeKey === 'string' ? data.taskTypeKey : 'unknown',
+            previewKey: typeof retryRefreshed?.taskTypeKey === 'string' ? retryRefreshed.taskTypeKey : 'unknown',
+          })
+        }
       }
       if (action === 'clear' && refreshedHelper && refreshedHelper.isExcluded) {
-        const savedKey = typeof data?.taskTypeKey === 'string' ? data.taskTypeKey : 'unknown'
-        const previewKey = typeof refreshed?.taskTypeKey === 'string' ? refreshed.taskTypeKey : 'unknown'
-        setPreviewError(
-          `This helper is still marked unsuitable after refresh. helperId=${helperId}, savedKey=${savedKey}, previewKey=${previewKey}`
-        )
+        // Retry once to avoid false negatives from a near-immediate read-after-write race.
+        await new Promise((resolve) => setTimeout(resolve, 300))
+        const retryRefreshed = await previewHelperTaskMatch(taskId)
+        const retryHelper = (retryRefreshed?.matches || []).find((m: any) => m.id === helperId)
+        if (retryHelper && retryHelper.isExcluded) {
+          console.warn('[helper-match-feedback] clear not visible after retry refresh', {
+            helperId,
+            savedKey: typeof data?.taskTypeKey === 'string' ? data.taskTypeKey : 'unknown',
+            previewKey: typeof retryRefreshed?.taskTypeKey === 'string' ? retryRefreshed.taskTypeKey : 'unknown',
+          })
+        }
       }
       router.refresh()
     } catch (error: any) {
+      setPreviewError(error.message || 'Failed to update helper match feedback.')
       setSendMatchesMessage(error.message || 'Failed to update helper match feedback.')
     } finally {
       setUpdatingMatchFeedbackHelperId(null)
