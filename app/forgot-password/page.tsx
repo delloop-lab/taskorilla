@@ -10,20 +10,29 @@ export default function ForgotPassword() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [rateLimitHint, setRateLimitHint] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
+    setRateLimitHint(null)
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/auth/callback/reset-password`,
       })
 
       if (error) {
         console.error('Password reset error:', error)
-        setError(error.message || 'An error occurred. Please try again.')
+        const rawMessage = error.message || 'An error occurred. Please try again.'
+        const normalized = rawMessage.toLowerCase()
+        if (normalized.includes('rate limit') || normalized.includes('too many requests')) {
+          setError('Too many reset attempts were made recently.')
+          setRateLimitHint('Please wait 15-60 minutes before trying again. Then submit only one reset request and use the newest email link.')
+        } else {
+          setError(rawMessage)
+        }
         return
       }
 
@@ -89,6 +98,11 @@ export default function ForgotPassword() {
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}
+            </div>
+          )}
+          {rateLimitHint && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded text-sm">
+              {rateLimitHint}
             </div>
           )}
           <div>

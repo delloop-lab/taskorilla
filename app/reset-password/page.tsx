@@ -22,7 +22,40 @@ function ResetPasswordContent() {
   // Check if user has a valid session from the reset link
   useEffect(() => {
     const checkSession = async () => {
-      // Check for error params first
+      // Check hash tokens FIRST — Supabase sends the real access_token in the
+      // URL hash fragment which server-side routes cannot read. If valid recovery
+      // tokens are present they take priority over any error query params that
+      // our callback may have added because it couldn't see the hash.
+      const hash = window.location.hash
+      if (hash) {
+        const hashParams = new URLSearchParams(hash.substring(1))
+        const accessToken = hashParams.get('access_token')
+        const refreshToken = hashParams.get('refresh_token')
+        const hashType = hashParams.get('type')
+
+        if (accessToken && hashType === 'recovery') {
+          const { data, error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || '',
+          })
+
+          if (data.session && !sessionError) {
+            // Clean up URL so password/token are not visible
+            window.history.replaceState(null, '', window.location.pathname)
+            setSessionError(false)
+            setCheckingSession(false)
+            return
+          } else {
+            console.error('Session error from hash tokens:', sessionError)
+            setError('Failed to verify reset link. Please try again.')
+            setSessionError(true)
+            setCheckingSession(false)
+            return
+          }
+        }
+      }
+
+      // Check for error params (only after hash check, so hash tokens win)
       const errorParam = searchParams.get('error')
       const errorDescription = searchParams.get('error_description')
       if (errorParam || errorDescription) {
@@ -32,36 +65,19 @@ function ResetPasswordContent() {
         return
       }
 
-      // Check URL hash for tokens (Supabase sends tokens in hash fragment)
-      const hash = window.location.hash
-      if (hash) {
-        // Parse hash parameters
-        const hashParams = new URLSearchParams(hash.substring(1))
-        const accessToken = hashParams.get('access_token')
-        const refreshToken = hashParams.get('refresh_token')
-        const type = hashParams.get('type')
-        
-        if (accessToken && type === 'recovery') {
-          // Set the session using the tokens from the hash
-          const { data, error: sessionError } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken || '',
-          })
-          
-          if (data.session && !sessionError) {
-            // Clear the hash from URL for cleaner display
-            window.history.replaceState(null, '', window.location.pathname)
-            setSessionError(false)
-            setCheckingSession(false)
-            return
-          } else {
-            console.error('Session error:', sessionError)
-            setError('Failed to verify reset link. Please try again.')
-            setSessionError(true)
-            setCheckingSession(false)
-            return
-          }
+      // Handle PKCE/code-based recovery links as a fallback for older templates
+      // that may still redirect directly to /reset-password.
+      const codeParam = searchParams.get('code')
+      if (codeParam) {
+        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(codeParam)
+        if (data.session && !exchangeError) {
+          const nextUrl = `${window.location.pathname}?mode=recovery`
+          window.history.replaceState(null, '', nextUrl)
+          setSessionError(false)
+          setCheckingSession(false)
+          return
         }
+        console.error('Code exchange error:', exchangeError)
       }
 
       // Check if we already have a valid session

@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
   const nextParam = requestUrl.searchParams.get('next')
   const nextAfterCode = getSafeInternalPath(nextParam, '/tasks')
   const nextAfterSignup = getSafeInternalPath(nextParam, '/profile?setup=required')
+  const wantsResetPassword = nextAfterCode === '/reset-password'
 
   const cookieStore = await cookies()
   
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
     const { data: exchangeData, error } = await supabase.auth.exchangeCodeForSession(code)
     
     if (!error) {
-      const isRecoveryFlow = type === 'recovery' || nextAfterCode === '/reset-password'
+      const isRecoveryFlow = type === 'recovery' || wantsResetPassword
       if (!isRecoveryFlow) {
         const exchangeUserId =
           exchangeData?.user?.id || exchangeData?.session?.user?.id || null
@@ -85,13 +86,13 @@ export async function GET(request: NextRequest) {
         }
       }
       // If this is a recovery flow, redirect to reset-password
-      if (nextAfterCode === '/reset-password') {
+      if (wantsResetPassword) {
         return NextResponse.redirect(new URL('/reset-password?mode=recovery', requestUrl.origin))
       }
       return NextResponse.redirect(new URL(nextAfterCode, requestUrl.origin))
     } else {
       console.error('Code exchange error:', error)
-      if (nextAfterCode === '/reset-password') {
+      if (wantsResetPassword) {
         return NextResponse.redirect(
           new URL('/reset-password?error=invalid_token&error_description=' + encodeURIComponent(error.message), requestUrl.origin)
         )
@@ -147,6 +148,28 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Handle password recovery token links that arrive as `token` (not token_hash/code)
+  if (token && type === 'recovery') {
+    const verifyPayload: any = {
+      type: 'recovery',
+      token,
+    }
+    if (email) {
+      verifyPayload.email = email
+    }
+
+    const { error } = await supabase.auth.verifyOtp(verifyPayload)
+
+    if (!error) {
+      return NextResponse.redirect(new URL('/reset-password?mode=recovery', requestUrl.origin))
+    } else {
+      console.error('Password recovery token error:', error)
+      return NextResponse.redirect(
+        new URL('/reset-password?error=invalid_token&error_description=' + encodeURIComponent(error.message), requestUrl.origin)
+      )
+    }
+  }
+
   // Handle password recovery flow
   if (token_hash && type === 'recovery') {
     const { error } = await supabase.auth.verifyOtp({
@@ -167,6 +190,24 @@ export async function GET(request: NextRequest) {
 
   // Handle OTP token_hash (other auth flows, like login)
   if (token_hash && type) {
+    // Some recovery links arrive as token_hash with a non-"recovery" type.
+    // If caller explicitly asked for reset-password, always treat this as recovery.
+    if (wantsResetPassword || type === 'recovery') {
+      const { error } = await supabase.auth.verifyOtp({
+        type: 'recovery',
+        token_hash,
+      })
+
+      if (!error) {
+        return NextResponse.redirect(new URL('/reset-password?mode=recovery', requestUrl.origin))
+      } else {
+        console.error('Recovery token_hash verification error:', error)
+        return NextResponse.redirect(
+          new URL('/reset-password?error=invalid_token&error_description=' + encodeURIComponent(error.message), requestUrl.origin)
+        )
+      }
+    }
+
     const { error } = await supabase.auth.verifyOtp({
       // For token_hash flows we only support email-based OTP right now
       // Supabase expects an EmailOtpType here (e.g. 'magiclink' or 'signup')
@@ -216,6 +257,19 @@ export async function GET(request: NextRequest) {
         new URL('/auth/auth-code-error?error=' + encodeURIComponent(error.message), requestUrl.origin)
       )
     }
+  }
+
+  // No token params — Supabase may have already verified the token and set the
+  // session cookie before redirecting here. Check for a live session and handle
+  // the recovery case so the user lands on /reset-password instead of an error.
+  if (wantsResetPassword) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      return NextResponse.redirect(new URL('/reset-password?mode=recovery', requestUrl.origin))
+    }
+    return NextResponse.redirect(
+      new URL('/reset-password?error=invalid_token&error_description=Your+password+reset+link+has+expired.+Please+request+a+new+one.', requestUrl.origin)
+    )
   }
 
   // No valid token provided
