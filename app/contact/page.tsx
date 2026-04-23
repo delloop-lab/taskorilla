@@ -185,27 +185,25 @@ function TeeSlotCaptcha({ onValidChange }: TeeSlotCaptchaProps) {
         key={reelIndex}
         type="button"
         onClick={() => handleTileClick(reelIndex)}
-        className="flex flex-col items-center justify-center rounded-2xl border px-2 py-3 text-center text-xs font-medium transition-all border-gray-200 bg-gray-50 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+        className="relative flex items-center justify-center rounded-2xl border w-full aspect-square text-center transition-all border-gray-200 bg-gray-50 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
         aria-label={isPt ? 'Rolo do captcha' : 'Captcha slot reel'}
       >
-        <div className="relative w-14 h-16 flex items-center justify-center overflow-hidden rounded-2xl bg-white">
-          {isSelectedWrong && (
-            <span className="absolute inset-0 z-10 flex items-center justify-center text-3xl font-bold text-red-500 pointer-events-none">
-              ×
-            </span>
-          )}
-          {isTeeSymbol ? (
-            <img
-              src="/images/taskorilla-mascot.png"
-              alt="Tee the Taskorilla mascot"
-              className="h-10 w-auto object-contain"
-              loading="lazy"
-              decoding="async"
-            />
-          ) : (
-            <span className="text-2xl leading-none">{icon}</span>
-          )}
-        </div>
+        {isSelectedWrong && (
+          <span className="absolute inset-0 z-10 flex items-center justify-center text-3xl font-bold text-red-500 pointer-events-none">
+            ×
+          </span>
+        )}
+        {isTeeSymbol ? (
+          <img
+            src="/images/taskorilla-mascot.png"
+            alt="Tee the Taskorilla mascot"
+            className="w-4/5 h-4/5 object-contain"
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <span className="text-4xl leading-none">{icon}</span>
+        )}
       </button>
     )
   }
@@ -232,7 +230,7 @@ function TeeSlotCaptcha({ onValidChange }: TeeSlotCaptchaProps) {
           {teeRevealed && !localError ? (
             <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700">
               <span className="text-xs leading-none">✓</span>
-              <span>{isPt ? 'Perfeito, está tudo certo!' : 'Great, you&apos;re good to go!'}</span>
+              <span>{isPt ? 'Perfeito, está tudo certo!' : "Great, you're good to go!"}</span>
             </span>
           ) : localError ? (
             <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-red-700 max-w-[220px]">
@@ -259,7 +257,15 @@ export default function ContactPage() {
   const [captchaValid, setCaptchaValid] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState<string | null>(null)
+  const [ticketRef, setTicketRef] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const generateTicketRef = (): string => {
+    const now = new Date()
+    const datePart = now.toISOString().slice(0, 10).replace(/-/g, '')
+    const randPart = Math.random().toString(36).toUpperCase().slice(2, 6)
+    return `TKT-${datePart}-${randPart}`
+  }
 
   // Prefill contact details for logged-in users
   useEffect(() => {
@@ -316,6 +322,8 @@ export default function ContactPage() {
 
     setSubmitting(true)
     try {
+      const ref = generateTicketRef()
+
       const escapeHtml = (text: string) =>
         text
           .replace(/&/g, '&amp;')
@@ -327,6 +335,9 @@ export default function ContactPage() {
       const safeMessage = escapeHtml(message).replace(/\n/g, '<br />')
 
       const htmlMessage = `
+        <p style="background:#f0f4ff;border-left:4px solid #4f46e5;padding:8px 12px;margin-bottom:12px;font-size:13px;">
+          <strong>Ticket Reference:</strong> <span style="font-family:monospace;font-size:14px;color:#4f46e5;">${ref}</span>
+        </p>
         <p><strong>New contact form submission from Taskorilla.com</strong></p>
         <p><strong>Name:</strong> ${escapeHtml(firstName)} ${escapeHtml(lastName)}</p>
         <p><strong>Email:</strong> <a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></p>
@@ -343,7 +354,7 @@ export default function ContactPage() {
           type: 'admin_email',
           recipientEmail: 'tee@taskorilla.com',
           recipientName: 'Tee at Taskorilla',
-          subject: `Contact form: ${subject}`,
+          subject: `[${ref}] Contact form: ${subject}`,
           message: htmlMessage,
         }),
       })
@@ -353,6 +364,7 @@ export default function ContactPage() {
         throw new Error(data.error || (isPt ? 'Falha ao enviar a mensagem. Tente novamente.' : 'Failed to send message. Please try again.'))
       }
 
+      setTicketRef(ref)
       setSuccess(isPt ? 'Obrigado! O Tee recebeu a sua mensagem e irá responder em breve.' : 'Thanks! Tee has received your message and will get back to you shortly.')
       setFirstName('')
       setLastName('')
@@ -406,8 +418,15 @@ export default function ContactPage() {
                 </div>
               )}
               {success && (
-                <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-                  {success}
+                <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 space-y-1">
+                  <p>{success}</p>
+                  {ticketRef && (
+                    <p className="text-xs text-emerald-800">
+                      {isPt ? 'Referência do seu pedido:' : 'Your reference number:'}{' '}
+                      <span className="font-mono font-semibold tracking-wide">{ticketRef}</span>
+                      {' '}— {isPt ? 'guarde este número para acompanhar o seu pedido.' : 'keep this handy when following up.'}
+                    </p>
+                  )}
                 </div>
               )}
 

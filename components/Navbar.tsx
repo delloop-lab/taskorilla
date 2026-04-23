@@ -734,14 +734,14 @@ export default function Navbar() {
               {t('navbar.price')}
             </Link>
             {/* Language Switcher */}
-            <div className="flex items-center border border-gray-300 rounded-md overflow-hidden bg-white">
+            <div className="flex items-center border border-gray-300 rounded-md bg-white">
               <button
                 onClick={(e) => {
                   e.preventDefault()
                   e.stopPropagation()
                   setLanguage('en')
                 }}
-                className={`px-2 py-1.5 text-xs font-semibold transition-colors ${
+                className={`min-w-[28px] px-2 py-1.5 text-xs font-semibold transition-colors rounded-l-md ${
                   language === 'en'
                     ? 'bg-orange-200 text-gray-900'
                     : 'text-gray-700 bg-white hover:bg-gray-50'
@@ -757,7 +757,7 @@ export default function Navbar() {
                   e.stopPropagation()
                   setLanguage('pt')
                 }}
-                className={`px-2 py-1.5 text-xs font-semibold transition-colors ${
+                className={`min-w-[28px] px-2 py-1.5 text-xs font-semibold transition-colors rounded-r-md ${
                   language === 'pt'
                     ? 'bg-orange-200 text-gray-900'
                     : 'text-gray-700 bg-white hover:bg-gray-50'
@@ -897,14 +897,14 @@ export default function Navbar() {
           {/* Mobile Menu Button */}
           <div className="md:hidden ml-auto flex w-full items-center justify-end space-x-3 pr-3">
             {/* Language Switcher - Mobile (visible outside menu) */}
-            <div className="flex items-center border border-gray-300 rounded-md overflow-hidden mr-2 bg-white">
+            <div className="flex items-center border border-gray-300 rounded-md mr-2 bg-white">
               <button
                 onClick={(e) => {
                   e.preventDefault()
                   e.stopPropagation()
                   setLanguage('en')
                 }}
-                className={`px-2 py-1 text-xs font-semibold transition-colors ${
+                className={`min-w-[28px] px-2 py-1 text-xs font-semibold transition-colors rounded-l-md ${
                   language === 'en'
                     ? 'bg-orange-200 text-gray-900'
                     : 'text-gray-700 bg-white hover:bg-gray-50'
@@ -920,7 +920,7 @@ export default function Navbar() {
                   e.stopPropagation()
                   setLanguage('pt')
                 }}
-                className={`px-2 py-1 text-xs font-semibold transition-colors ${
+                className={`min-w-[28px] px-2 py-1 text-xs font-semibold transition-colors rounded-r-md ${
                   language === 'pt'
                     ? 'bg-orange-200 text-gray-900'
                     : 'text-gray-700 bg-white hover:bg-gray-50'

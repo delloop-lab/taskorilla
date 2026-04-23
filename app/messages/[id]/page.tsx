@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Message, Conversation } from '@/lib/types'
@@ -30,6 +30,8 @@ export default function ConversationPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [otherParticipant, setOtherParticipant] = useState<any>(null)
   const [task, setTask] = useState<any>(null)
+  /** Bids on the linked task — used so taskers can message helpers who bid even before first chat message. */
+  const [bidsForTask, setBidsForTask] = useState<Array<{ user_id: string; status: string }>>([])
   const [currentUserPaused, setCurrentUserPaused] = useState(false)
   const [otherUserPaused, setOtherUserPaused] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -143,7 +145,12 @@ export default function ConversationPage() {
             ? (data.participant1_id === user.id ? data.participant2_id : data.participant1_id)
             : data.participant2_id
 
-          const [participantResult, participant1Result, taskResult] = await Promise.all([
+          const taskId = data.task_id
+          const bidsPromise = taskId
+            ? supabase.from('bids').select('user_id, status').eq('task_id', taskId)
+            : Promise.resolve({ data: [] as { user_id: string; status: string }[] | null, error: null })
+
+          const [participantResult, participant1Result, taskResult, bidsResult] = await Promise.all([
             supabase
               .from('profiles')
               .select('id, email, full_name, avatar_url, is_paused')
@@ -156,18 +163,22 @@ export default function ConversationPage() {
                   .eq('id', data.participant1_id)
                   .single()
               : Promise.resolve({ data: null }),
-            data.task_id
+            taskId
               ? supabase
                   .from('tasks')
                   .select('id, title, status, payment_status, created_by, assigned_to')
-                  .eq('id', data.task_id)
+                  .eq('id', taskId)
                   .single()
-              : Promise.resolve({ data: null })
+              : Promise.resolve({ data: null }),
+            bidsPromise,
           ])
 
           setOtherParticipant(participantResult.data)
           setOtherUserPaused(participantResult.data?.is_paused === true)
           setTask(taskResult.data)
+          setBidsForTask(
+            !bidsResult.error && Array.isArray(bidsResult.data) ? (bidsResult.data as { user_id: string; status: string }[]) : []
+          )
 
           if (!isParticipant) {
             setIsAdminViewing(true)
@@ -368,6 +379,18 @@ export default function ConversationPage() {
   )
   const isTaskerView = Boolean(user?.id && task?.created_by === user.id)
 
+  const helperHasQualifyingBid = useMemo(() => {
+    const helperId = otherParticipant?.id
+    if (!helperId || bidsForTask.length === 0) return false
+    const allowed = new Set(['pending', 'accepted'])
+    return bidsForTask.some(
+      (b) => b.user_id === helperId && allowed.has(String(b.status || '').toLowerCase())
+    )
+  }, [bidsForTask, otherParticipant?.id])
+
+  const taskerBlockedUntilHelperEngages =
+    !canShareContact && isTaskerView && !helperFirstMessageExists && !helperHasQualifyingBid
+
   const getInlineBlockedMessage = (rawContent: string): string => {
     const issues = detectContentIssues(rawContent, { allowPaymentTerms: true })
     const labels: string[] = []
@@ -399,8 +422,8 @@ export default function ConversationPage() {
     }
 
     const timeout = setTimeout(() => {
-      // Tasker cannot send the first pre-bid message.
-      if (!canShareContact && isTaskerView && !helperFirstMessageExists) {
+      // Tasker cannot send the first pre-bid message unless the helper has bid (or sent first message).
+      if (taskerBlockedUntilHelperEngages) {
         setInlineFeedback({
           tone: 'error',
           text: t('messages.inlineTaskerWaitHelperStart'),
@@ -440,7 +463,7 @@ export default function ConversationPage() {
     newMessage,
     canShareContact,
     currentUserPaused,
-    helperFirstMessageExists,
+    taskerBlockedUntilHelperEngages,
     isAdminViewing,
     isLockedTaskConversation,
     isTaskerView,
@@ -498,8 +521,8 @@ export default function ConversationPage() {
       return
     }
 
-    // Tasker cannot initiate pre-bid chat; helper must send first.
-    if (!canShareContact && isTaskerView && !helperFirstMessageExists) {
+    // Tasker cannot initiate pre-bid chat unless helper has sent first message or has an active bid.
+    if (taskerBlockedUntilHelperEngages) {
       setInlineFeedback({
         tone: 'error',
         text: t('messages.inlineTaskerWaitHelperStart'),
