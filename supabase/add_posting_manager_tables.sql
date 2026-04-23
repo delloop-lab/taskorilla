@@ -25,6 +25,10 @@ CREATE TABLE IF NOT EXISTS posting_groups (
 ALTER TABLE posting_groups
   ADD COLUMN IF NOT EXISTS facebook_post_mode TEXT;
 
+-- Admin-controlled flag for groups/pages where posting is no longer supported
+ALTER TABLE posting_groups
+  ADD COLUMN IF NOT EXISTS is_unusable BOOLEAN NOT NULL DEFAULT FALSE;
+
 CREATE TABLE IF NOT EXISTS posting_templates (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   template_name TEXT NOT NULL,

@@ -12,6 +12,8 @@ export interface PostingGroup {
   created_at: string
   // Facebook-specific metadata (e.g. whether group allows ads or only comments)
   facebook_post_mode?: string | null
+  // True when admins mark this group/page as no longer usable for posting
+  is_unusable?: boolean | null
 }
 
 export interface PostingPost {

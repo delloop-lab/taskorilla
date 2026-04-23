@@ -50,8 +50,20 @@ export default function AdminPostingManager() {
   const [templateModalOpen, setTemplateModalOpen] = useState(false)
   const [commentModalOpen, setCommentModalOpen] = useState(false)
   const [selectedGroup, setSelectedGroup] = useState<PostingGroup | null>(null)
+  const [commentSortDir, setCommentSortDir] = useState<'asc' | 'desc'>('asc')
+  const truncateGroupName = (name: string) => (name.length > 25 ? `${name.slice(0, 25)}...` : name)
 
   const loading = groupsLoading || postsLoading || templatesLoading || commentsLoading
+  const isTruthyFlag = (value: unknown): boolean => {
+    if (value === true) return true
+    if (value === 1) return true
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase()
+      return normalized === 'true' || normalized === 't' || normalized === '1' || normalized === 'yes'
+    }
+    return false
+  }
+  const isGroupUnusable = (group: PostingGroup) => isTruthyFlag(group.is_unusable)
 
   const metaByGroupId: Record<string, GroupPostingMeta> = useMemo(() => {
     const result: Record<string, GroupPostingMeta> = {}
@@ -62,12 +74,17 @@ export default function AdminPostingManager() {
   }, [groups, posts])
 
   const commentOnlyGroups = useMemo(
-    () => groups.filter((g) => g.facebook_post_mode === 'Comments accepted'),
+    () => groups.filter((g) => g.facebook_post_mode === 'Comments accepted' && !isGroupUnusable(g)),
     [groups]
   )
 
   const regularGroups = useMemo(
-    () => groups.filter((g) => g.facebook_post_mode !== 'Comments accepted'),
+    () => groups.filter((g) => g.facebook_post_mode !== 'Comments accepted' && !isGroupUnusable(g)),
+    [groups]
+  )
+
+  const unusableGroups = useMemo(
+    () => groups.filter((g) => isGroupUnusable(g)),
     [groups]
   )
 
@@ -78,6 +95,28 @@ export default function AdminPostingManager() {
     }
     return result
   }, [commentOnlyGroups, comments])
+
+  const sortedCommentOnlyGroups = useMemo(() => {
+    const rank = (group: PostingGroup): number => {
+      const stats = commentStatsByGroupId[group.id]
+      const total = stats?.totalThisWeek ?? 0
+      const canComment = stats?.canComment ?? true
+      const statusColor = getCommentStatusColor(total, canComment)
+      // waiting (worst) -> high volume -> ok this week
+      if (!canComment) return 0
+      if (statusColor === 'orange') return 1
+      return 2
+    }
+
+    return [...commentOnlyGroups].sort((a, b) => {
+      const aRank = rank(a)
+      const bRank = rank(b)
+      if (aRank !== bRank) {
+        return commentSortDir === 'asc' ? aRank - bRank : bRank - aRank
+      }
+      return a.name.localeCompare(b.name)
+    })
+  }, [commentOnlyGroups, commentStatsByGroupId, commentSortDir])
 
   const handleSaveGroup = async (payload: any) => {
     if (payload.id) {
@@ -144,6 +183,7 @@ export default function AdminPostingManager() {
         days_between_posts: g.days_between_posts,
         description: g.description,
         notes: g.notes,
+        is_unusable: !!g.is_unusable,
         created_at: g.created_at,
       }))
     )
@@ -199,6 +239,7 @@ export default function AdminPostingManager() {
           days_between_posts: Number(row.days_between_posts) || 0,
           description: row.description || null,
           notes: row.notes || null,
+          is_unusable: row.is_unusable === 'true',
           created_at: row.created_at || new Date().toISOString(),
           id: row.id || undefined,
         } as any)
@@ -236,9 +277,9 @@ export default function AdminPostingManager() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="h-[calc(100vh-3rem)] flex flex-col">
       {/* Sticky page header for Posting Manager (title, buttons, CSV controls) */}
-      <div className="sticky top-0 z-30 bg-gray-50 pb-3 space-y-3">
+      <div className="sticky top-0 z-30 bg-gray-50 pt-1 pb-6 space-y-4 border-b border-gray-200">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Taskorilla Posting Manager</h1>
@@ -329,42 +370,68 @@ export default function AdminPostingManager() {
         </div>
       </div>
 
-      {loading && (
-        <div className="text-sm text-gray-500">Loading groups, posts and templates...</div>
-      )}
+      <div className="flex-1 min-h-0 overflow-y-auto pt-4 space-y-6 pr-1">
+        {loading && (
+          <div className="text-sm text-gray-500">Loading groups, posts and templates...</div>
+        )}
 
-      <DashboardTable
-        groups={regularGroups}
-        metaByGroupId={metaByGroupId}
-        filterPlatform={filterPlatform}
-        setFilterPlatform={setFilterPlatform}
-        highlightedGroupIds={highlightedDuplicateGroupIds}
-        onNewPost={(group) => {
-          setSelectedGroup(group)
-          setNewPostModalOpen(true)
-        }}
-        onViewHistory={(group) => {
-          setSelectedGroup(group)
-          setHistoryModalOpen(true)
-        }}
-        onEditGroup={(group) => {
-          setEditingGroup(group)
-          setGroupModalOpen(true)
-        }}
-        onDeleteGroup={async (group) => {
-          if (
-            window.confirm(
-              `Delete group "${group.name}" and all its posts?\n\nThis cannot be undone.`
-            )
-          ) {
-            await deleteGroup(group.id)
-            await refreshGroups()
-          }
-        }}
-      />
+        <DashboardTable
+          groups={regularGroups}
+          metaByGroupId={metaByGroupId}
+          filterPlatform={filterPlatform}
+          setFilterPlatform={setFilterPlatform}
+          highlightedGroupIds={highlightedDuplicateGroupIds}
+          onNewPost={(group) => {
+            setSelectedGroup(group)
+            setNewPostModalOpen(true)
+          }}
+          onViewHistory={(group) => {
+            setSelectedGroup(group)
+            setHistoryModalOpen(true)
+          }}
+          onEditGroup={(group) => {
+            setEditingGroup(group)
+            setGroupModalOpen(true)
+          }}
+          onDeleteGroup={async (group) => {
+            if (
+              window.confirm(
+                `Delete group "${group.name}" and all its posts?\n\nThis cannot be undone.`
+              )
+            ) {
+              await deleteGroup(group.id)
+              await refreshGroups()
+            }
+          }}
+          onMarkUnusable={async (group) => {
+            if (
+              !window.confirm(
+                `Mark "${group.name}" as unusable?\n\nIt will be moved out of active posting and can be restored later.`
+              )
+            ) {
+              return
+            }
+            try {
+              const updatedGroup = await updateGroup(group.id, { is_unusable: true })
+              await refreshGroups()
+              if (!isGroupUnusable(updatedGroup)) {
+                window.alert(
+                  'The group did not persist as unusable in the database. Please run the SQL migration for is_unusable and verify DB permissions.'
+                )
+              }
+            } catch (err: any) {
+              console.error('Failed to mark group as unusable', err)
+              window.alert(
+                err?.message?.includes('is_unusable')
+                  ? 'Could not mark as unusable. Please run the SQL migration to add the is_unusable column, then try again.'
+                  : err?.message || 'Could not mark group as unusable.'
+              )
+            }
+          }}
+        />
 
-      {commentOnlyGroups.length > 0 && (
-        <div className="mt-6 space-y-3">
+        {commentOnlyGroups.length > 0 && (
+          <div className="mt-6 space-y-3">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-lg font-semibold text-gray-900">Comment Posting</h2>
             <button
@@ -391,12 +458,22 @@ export default function AdminPostingManager() {
                     <th className="px-4 py-2 text-left font-semibold text-gray-700">
                       Total comments (last 7 days)
                     </th>
-                    <th className="px-4 py-2 text-left font-semibold text-gray-700">Status</th>
+                    <th
+                      className="px-4 py-2 text-left font-semibold text-gray-700 cursor-pointer select-none"
+                      onClick={() =>
+                        setCommentSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+                      }
+                    >
+                      Status
+                      <span className="ml-1 text-[11px] text-gray-400">
+                        {commentSortDir === 'asc' ? '▲' : '▼'}
+                      </span>
+                    </th>
                     <th className="px-4 py-2 text-right font-semibold text-gray-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
-                  {commentOnlyGroups.map((group, index) => {
+                  {sortedCommentOnlyGroups.map((group, index) => {
                     const stats = commentStatsByGroupId[group.id]
                     const total = stats?.totalThisWeek ?? 0
                     const canComment = stats?.canComment ?? true
@@ -418,20 +495,21 @@ export default function AdminPostingManager() {
                             {group.platform}
                           </span>
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="px-4 py-2 whitespace-nowrap max-w-[220px]">
                           <div className="flex flex-col">
                             {group.url ? (
                               <a
                                 href={group.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 font-medium truncate max-w-xs"
+                                className="text-blue-600 hover:text-blue-800 font-medium truncate block"
+                                title={group.name}
                               >
-                                {group.name}
+                                {truncateGroupName(group.name)}
                               </a>
                             ) : (
-                              <span className="font-medium text-gray-900 truncate max-w-xs">
-                                {group.name}
+                              <span className="font-medium text-gray-900 truncate block" title={group.name}>
+                                {truncateGroupName(group.name)}
                               </span>
                             )}
                             {stats?.lastCommentNotes && (
@@ -506,6 +584,37 @@ export default function AdminPostingManager() {
                               type="button"
                               onClick={async () => {
                                 if (
+                                  !window.confirm(
+                                    `Mark "${group.name}" as unusable?\n\nIt will be moved to Unusable Groups and can be restored later.`
+                                  )
+                                ) {
+                                  return
+                                }
+                                try {
+                                  const updatedGroup = await updateGroup(group.id, { is_unusable: true })
+                                  await refreshGroups()
+                                  if (!isGroupUnusable(updatedGroup)) {
+                                    window.alert(
+                                      'The group did not persist as unusable in the database. Please run the SQL migration for is_unusable and verify DB permissions.'
+                                    )
+                                  }
+                                } catch (err: any) {
+                                  console.error('Failed to mark group as unusable', err)
+                                  window.alert(
+                                    err?.message?.includes('is_unusable')
+                                      ? 'Could not mark as unusable. Please run the SQL migration to add the is_unusable column, then try again.'
+                                      : err?.message || 'Could not mark group as unusable.'
+                                  )
+                                }
+                              }}
+                              className="px-2.5 py-1 rounded-md text-xs font-medium border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                            >
+                              Unusable
+                            </button>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (
                                   window.confirm(
                                     `Delete group "${group.name}" and all its comments?\n\nThis cannot be undone.`
                                   )
@@ -527,8 +636,108 @@ export default function AdminPostingManager() {
               </table>
             </div>
           </div>
+          </div>
+        )}
+
+        <div className="mt-6 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-lg font-semibold text-gray-900">Unusable Groups</h2>
+            <span className="text-xs text-gray-500">
+              {unusableGroups.length} group{unusableGroups.length === 1 ? '' : 's'} marked as unusable
+            </span>
+          </div>
+          <div className="bg-white shadow rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-2 py-2 text-left font-semibold text-gray-700 w-10">#</th>
+                    <th className="px-4 py-2 text-left font-semibold text-gray-700">Platform</th>
+                    <th className="px-4 py-2 text-left font-semibold text-gray-700">Group / Page</th>
+                    <th className="px-4 py-2 text-right font-semibold text-gray-700">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 bg-white">
+                  {unusableGroups.map((group, index) => (
+                    <tr key={group.id} className="hover:bg-gray-50">
+                      <td className="px-2 py-2 whitespace-nowrap text-gray-500 text-right tabular-nums w-10">
+                        {index + 1}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-gray-900">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-medium border border-blue-100">
+                          {group.platform}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2">
+                        <div className="flex flex-col">
+                          {group.url ? (
+                            <a
+                              href={group.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 font-medium truncate max-w-xs"
+                            >
+                              {group.name}
+                            </a>
+                          ) : (
+                            <span className="font-medium text-gray-900 truncate max-w-xs">
+                              {group.name}
+                            </span>
+                          )}
+                          {group.notes && (
+                            <span className="text-xs text-gray-500 line-clamp-1">{group.notes}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const updatedGroup = await updateGroup(group.id, { is_unusable: false })
+                                await refreshGroups()
+                                if (isGroupUnusable(updatedGroup)) {
+                                  window.alert(
+                                    'The group did not persist as active in the database. Please verify DB permissions and column availability.'
+                                  )
+                                }
+                              } catch (err: any) {
+                                console.error('Failed to restore group to active', err)
+                                window.alert(err?.message || 'Could not restore group to active.')
+                              }
+                            }}
+                            className="px-2.5 py-1 rounded-md text-xs font-medium border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                          >
+                            Restore to Active
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingGroup(group)
+                              setGroupModalOpen(true)
+                            }}
+                            className="px-2.5 py-1 rounded-md text-xs font-medium border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {unusableGroups.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">
+                      No unusable groups yet. Use "Unusable" in the active lists to move a group/page here.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-      )}
+      </div>
 
       <GroupFormModal
         open={groupModalOpen}
