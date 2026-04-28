@@ -487,6 +487,8 @@ export default function Navbar() {
   const findHelpersLabel = translatedFindHelpers === 'navbar.findHelpers'
     ? (language === 'pt' ? 'Encontrar Ajudantes' : 'Find Helpers')
     : translatedFindHelpers
+  const tasksMenuLabel = t('navbar.tasksMenu')
+  const helpersMenuLabel = t('navbar.helpersMenu')
 
   if (loading) {
     return (
@@ -561,15 +563,17 @@ export default function Navbar() {
                 setTasksMenuTimeout(timeout)
               }}
             >
-              <Link
-                href="/tasks"
+              <button
+                type="button"
                 className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1"
+                aria-haspopup="menu"
+                aria-expanded={tasksMenuOpen}
               >
-                {t('navbar.browseTasks')}
+                {helpersMenuLabel}
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
-              </Link>
+              </button>
               {tasksMenuOpen && (
                 <>
                   {/* Invisible bridge area to make it easier to move mouse to submenu */}
@@ -592,22 +596,22 @@ export default function Navbar() {
                     }}
                   >
                     <Link
-                      href="/tasks"
+                      href="/helpers"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
-                      {t('navbar.browseTasks')}
+                      {t('navbar.browseAllHelpers')}
+                    </Link>
+                    <Link
+                      href="/professionals"
+                      className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
+                    >
+                      {t('navbar.browseProfessionals')}
                     </Link>
                     <Link
                       href="/become-a-helper"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
-                      {t('navbar.howToEarn')}
-                    </Link>
-                    <Link
-                      href="/help"
-                      className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
-                    >
-                      {t('navbar.taskerGuidelines')}
+                      {t('navbar.howItWorks')}
                     </Link>
                   </div>
                 </>
@@ -635,15 +639,17 @@ export default function Navbar() {
                 setHelpersMenuTimeout(timeout)
               }}
             >
-              <Link
-                href="/tasks/new"
+              <button
+                type="button"
                 className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1"
+                aria-haspopup="menu"
+                aria-expanded={helpersMenuOpen}
               >
-                {t('navbar.postTasks')}
+                {tasksMenuLabel}
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
-              </Link>
+              </button>
               {helpersMenuOpen && (
                 <>
                   {/* Invisible bridge area to make it easier to move mouse to submenu */}
@@ -689,10 +695,10 @@ export default function Navbar() {
                     </button>
                     ) : (
                     <Link
-                      href="/helpers"
+                      href="/tasks"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
-                      {t('navbar.browseAllHelpers')}
+                      {t('navbar.browseTasks')}
                     </Link>
                     )}
                     {userPaused ? (
@@ -700,22 +706,16 @@ export default function Navbar() {
                       onClick={() => { setHelpersMenuOpen(false); setShowPausedModal(true) }}
                       className="block w-full text-left px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
-                      {t('navbar.browseProfessionals')}
+                      {t('navbar.howItWorks')}
                     </button>
                     ) : (
                     <Link
-                      href="/professionals"
-                      className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
-                    >
-                      {t('navbar.browseProfessionals')}
-                    </Link>
-                    )}
-                    <Link
-                      href="/help"
+                      href="/help/guides/quick-start-for-taskers"
                       className="block px-4 py-3.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-600 border-l-2 border-transparent hover:border-primary-600 transition-all duration-200 font-medium"
                     >
                       {t('navbar.howItWorks')}
                     </Link>
+                    )}
                   </div>
                 </>
               )}
@@ -1036,7 +1036,7 @@ export default function Navbar() {
                 onClick={() => setMobileExpandedSection((prev) => (prev === 'helpers' ? null : 'helpers'))}
                 className={`w-full flex items-center justify-between text-sm font-semibold text-slate-800 uppercase tracking-wide rounded-xl px-3 py-2 bg-white border border-slate-200 shadow-sm ${mobileExpandedSection === 'helpers' ? 'mb-2' : 'mb-0'}`}
               >
-                <span>{t('navbar.postTasks')}</span>
+                <span>{tasksMenuLabel}</span>
                 <svg className={`w-4 h-4 transition-transform ${mobileExpandedSection === 'helpers' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -1068,11 +1068,11 @@ export default function Navbar() {
                   </button>
                   ) : (
                   <Link
-                    href="/helpers"
+                    href="/tasks"
                     className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    {t('navbar.browseAllHelpers')}
+                    {t('navbar.browseTasks')}
                   </Link>
                   )}
                   {userPaused ? (
@@ -1080,24 +1080,17 @@ export default function Navbar() {
                     onClick={() => { setMobileMenuOpen(false); setShowPausedModal(true) }}
                     className="mobile-drawer-link block w-full text-left text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                   >
-                    {t('navbar.browseProfessionals')}
+                    {t('navbar.howItWorks')}
                   </button>
                   ) : (
                   <Link
-                    href="/professionals"
-                    className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    {t('navbar.browseProfessionals')}
-                  </Link>
-                  )}
-                  <Link
-                    href="/help"
+                    href="/help/guides/quick-start-for-taskers"
                     className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {t('navbar.howItWorks')}
                   </Link>
+                  )}
                 </>
               )}
             </div>
@@ -1109,7 +1102,7 @@ export default function Navbar() {
                 onClick={() => setMobileExpandedSection((prev) => (prev === 'tasks' ? null : 'tasks'))}
                 className={`w-full flex items-center justify-between text-sm font-semibold text-slate-800 uppercase tracking-wide rounded-xl px-3 py-2 bg-white border border-slate-200 shadow-sm ${mobileExpandedSection === 'tasks' ? 'mb-2' : 'mb-0'}`}
               >
-                <span>{t('navbar.browseTasks')}</span>
+                <span>{helpersMenuLabel}</span>
                 <svg className={`w-4 h-4 transition-transform ${mobileExpandedSection === 'tasks' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -1117,25 +1110,25 @@ export default function Navbar() {
               {mobileExpandedSection === 'tasks' && (
                 <>
                   <Link
-                    href="/tasks"
+                    href="/helpers"
                     className="mobile-drawer-link block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    {t('navbar.browseTasks')}
+                    {t('navbar.browseAllHelpers')}
+                  </Link>
+                  <Link
+                    href="/professionals"
+                    className="block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {t('navbar.browseProfessionals')}
                   </Link>
                   <Link
                     href="/become-a-helper"
                     className="block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    {t('navbar.howToEarn')}
-                  </Link>
-                  <Link
-                    href="/help"
-                    className="block text-slate-700 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    {t('navbar.taskerGuidelines')}
+                    {t('navbar.howItWorks')}
                   </Link>
                 </>
               )}

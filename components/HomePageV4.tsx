@@ -69,26 +69,25 @@ export default function HomePageV4() {
                   Post a task for free and get offers from trusted local helpers. Pay them only when the job is done.
                 </p>
               </div>
-              <div className="flex flex-col items-center justify-center gap-3 pt-1 sm:flex-row sm:items-stretch sm:justify-start">
+              <div className="flex flex-col items-center justify-center gap-3 pt-1 sm:flex-row sm:items-stretch sm:justify-start sm:flex-nowrap">
                 <Link href="#service-cards-grid">
-                  <Button size="lg" className="w-full sm:w-auto min-w-[220px]">
+                  <Button size="lg" className="w-full sm:w-auto sm:min-w-[138px] lg:min-w-[165px] sm:px-3 sm:py-2 sm:text-sm whitespace-nowrap">
                     Post a Task
                   </Button>
                 </Link>
-                <Link href="/tasks" className="sm:hidden">
+                <Link href="/tasks">
                   <Button
                     size="lg"
-                    variant="outline"
-                    className="w-full sm:w-auto min-w-[220px] bg-white border-gray-300 text-foreground hover:bg-gray-100"
+                    className="w-full sm:w-auto sm:min-w-[138px] lg:min-w-[165px] sm:px-3 sm:py-2 sm:text-sm whitespace-nowrap bg-[#FD9212] text-white hover:bg-[#e6820f]"
                   >
                     <span>{language === 'pt' ? 'Ver Tarefas' : 'Browse Tasks'}</span>
                   </Button>
                 </Link>
-                <Link href="/become-a-helper" className="hidden sm:block">
+                <Link href="/become-a-helper">
                   <Button
                     size="lg"
                     variant="outline"
-                    className="w-full sm:w-auto min-w-[220px] bg-white border-gray-300 text-foreground hover:bg-gray-100"
+                    className="w-full sm:w-auto sm:min-w-[138px] lg:min-w-[165px] sm:px-3 sm:py-2 sm:text-sm whitespace-nowrap bg-white border-gray-300 text-foreground hover:bg-gray-100"
                   >
                     <span>{language === 'pt' ? 'Ganhe Dinheiro como Ajudante' : 'Earn Money as a Helper'}</span>
                   </Button>

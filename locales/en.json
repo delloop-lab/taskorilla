@@ -315,6 +315,8 @@
     "pendingReviews": "Pending Reviews",
     "postTask": "Post a Task",
     "postTasks": "Post Tasks",
+    "tasksMenu": "TASKS",
+    "helpersMenu": "HELPERS",
     "price": "PRICING",
     "profile": "Profile",
     "signup": "Sign Up Free",
@@ -333,7 +335,7 @@
   },
   "serviceGrid": {
     "title": "What do you need help with?",
-    "subtitle": "Tap a card to start — we'll prefill your task for you.",
+    "subtitle": "Tap a card to start or create a custom task",
     "customTask": {
       "title": "I need help with...",
       "subtitle": "Create your own custom task and details."

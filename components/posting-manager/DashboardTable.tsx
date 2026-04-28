@@ -31,15 +31,21 @@ export default function DashboardTable({
 }: Props) {
   const truncateGroupName = (name: string) => (name.length > 25 ? `${name.slice(0, 25)}...` : name)
   const platforms = ['All', 'Facebook', 'Instagram', 'LinkedIn', 'X', 'Threads', 'WhatsApp']
+  const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'nextAllowed' | 'status'>('name')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
   const filtered = useMemo(
     () =>
-      groups.filter((g) =>
-        filterPlatform === 'All' ? true : g.platform === filterPlatform
-      ),
-    [groups, filterPlatform]
+      groups.filter((g) => {
+        const matchesPlatform = filterPlatform === 'All' ? true : g.platform === filterPlatform
+        const matchesSearch =
+          searchTerm.trim() === ''
+            ? true
+            : g.name.toLowerCase().includes(searchTerm.trim().toLowerCase())
+        return matchesPlatform && matchesSearch
+      }),
+    [groups, filterPlatform, searchTerm]
   )
 
   const statusRank = (group: PostingGroup): number => {
@@ -117,7 +123,15 @@ export default function DashboardTable({
     <div className="bg-white shadow rounded-lg overflow-hidden relative">
       <div className="px-4 py-3 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white">
         <h2 className="text-lg font-semibold text-gray-900">Posting Manager</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <label className="text-xs font-medium text-gray-500">Search</label>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Group / Page"
+            className="border border-gray-300 rounded-md text-sm px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 w-40"
+          />
           <label className="text-xs font-medium text-gray-500">Filter platform</label>
           <select
             value={filterPlatform}

@@ -315,6 +315,8 @@
     "pendingReviews": "Avaliações Pendentes",
     "postTask": "Publicar Tarefa",
     "postTasks": "Publicar Tarefas",
+    "tasksMenu": "TAREFAS",
+    "helpersMenu": "AJUDANTES",
     "price": "CUSTO",
     "profile": "Perfil",
     "signup": "Criar Conta Grátis",
@@ -333,7 +335,7 @@
   },
   "serviceGrid": {
     "title": "Com que precisa de ajuda?",
-    "subtitle": "Toque num cartão para começar — vamos pré-preencher a sua tarefa.",
+    "subtitle": "Toque num cartão para começar ou criar uma tarefa personalizada",
     "customTask": {
       "title": "Preciso de ajuda com...",
       "subtitle": "Crie a sua própria tarefa personalizada e detalhes."

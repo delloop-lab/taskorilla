@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { PostingPlatform, PostingTemplate } from '@/lib/postingManagerTypes'
 import { supabase } from '@/lib/supabase'
 import { MediaPreview } from './MediaPreview'
@@ -30,6 +30,22 @@ export default function TemplateManagementModal({
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [uploadingMedia, setUploadingMedia] = useState(false)
+  /** Blob URL for immediate preview while upload runs; revoked on success/unmount */
+  const [localMediaPreview, setLocalMediaPreview] = useState<{
+    url: string
+    isVideo: boolean
+  } | null>(null)
+  const [uploadFeedback, setUploadFeedback] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const revokeLocalPreview = useCallback(() => {
+    setLocalMediaPreview((prev) => {
+      if (prev?.url.startsWith('blob:')) {
+        URL.revokeObjectURL(prev.url)
+      }
+      return null
+    })
+  }, [])
 
   useEffect(() => {
     if (!open) {
@@ -39,12 +55,17 @@ export default function TemplateManagementModal({
       setPostText('')
       setMediaUrl('')
       setNotes('')
+      revokeLocalPreview()
+      setUploadFeedback(null)
     }
-  }, [open])
+  }, [open, revokeLocalPreview])
 
   if (!open) return null
 
   const startEdit = (tpl: PostingTemplate) => {
+    revokeLocalPreview()
+    setUploadFeedback(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
     setEditing(tpl)
     setTemplateName(tpl.template_name)
     setPlatform((tpl.platform as PostingPlatform) || 'Facebook')
@@ -60,6 +81,9 @@ export default function TemplateManagementModal({
     setPostText('')
     setMediaUrl('')
     setNotes('')
+    revokeLocalPreview()
+    setUploadFeedback(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -87,6 +111,15 @@ export default function TemplateManagementModal({
 
   const handleMediaFileChange = async (file: File | null) => {
     if (!file) return
+    setUploadFeedback(null)
+    revokeLocalPreview()
+
+    const blobUrl = URL.createObjectURL(file)
+    setLocalMediaPreview({
+      url: blobUrl,
+      isVideo: file.type.startsWith('video/'),
+    })
+
     setUploadingMedia(true)
     try {
       const {
@@ -94,8 +127,11 @@ export default function TemplateManagementModal({
         error: authError,
       } = await supabase.auth.getUser()
       if (authError || !user) {
-        // Silent failure in UI; log for debugging
+        const msg =
+          'You must be logged in to upload media. Sign in again, then try the upload once more.'
         console.error('You must be logged in to upload media for templates', authError)
+        setUploadFeedback(msg)
+        window.alert(msg)
         return
       }
 
@@ -112,15 +148,29 @@ export default function TemplateManagementModal({
 
       if (uploadError) {
         console.error('Error uploading template media', uploadError)
+        const msg =
+          uploadError.message ||
+          'Upload failed. Check that the Supabase "images" bucket exists and your account can upload to storage.'
+        setUploadFeedback(msg)
+        window.alert(msg)
         return
       }
 
       const { data } = supabase.storage.from('images').getPublicUrl(filePath)
       if (data.publicUrl) {
         setMediaUrl(data.publicUrl)
+        setUploadFeedback('Media uploaded. It will be saved when you add or update the template.')
+        revokeLocalPreview()
+      } else {
+        const msg = 'Upload finished but no public URL was returned. Check storage bucket settings.'
+        setUploadFeedback(msg)
+        window.alert(msg)
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Unexpected error uploading template media', err)
+      const msg = err instanceof Error ? err.message : 'Unexpected error while uploading.'
+      setUploadFeedback(msg)
+      window.alert(msg)
     } finally {
       setUploadingMedia(false)
     }
@@ -197,13 +247,18 @@ export default function TemplateManagementModal({
                   <label className="block text-xs font-medium text-gray-600">
                     Media URL (image / video)
                   </label>
-                  {mediaUrl && (
+                  {(mediaUrl || localMediaPreview) && (
                     <button
                       type="button"
-                      onClick={() => setMediaUrl('')}
+                      onClick={() => {
+                        setMediaUrl('')
+                        revokeLocalPreview()
+                        setUploadFeedback(null)
+                        if (fileInputRef.current) fileInputRef.current.value = ''
+                      }}
                       className="text-[11px] px-2 py-0.5 rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
                     >
-                      Remove image
+                      Remove media
                     </button>
                   )}
                 </div>
@@ -220,25 +275,53 @@ export default function TemplateManagementModal({
                   Or upload image / video
                 </label>
                 <input
+                  ref={fileInputRef}
                   type="file"
                   accept="image/*,video/*"
                   onChange={(e) => {
                     const file = e.target.files?.[0] ?? null
                     void handleMediaFileChange(file)
-                    // allow selecting same file again later
-                    e.target.value = ''
                   }}
                   className="block w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
                 {uploadingMedia && (
-                  <p className="mt-1 text-[11px] text-gray-500">Uploading media...</p>
+                  <p className="mt-1 text-[11px] text-gray-500">Uploading to storage...</p>
+                )}
+                {uploadFeedback && !uploadingMedia && (
+                  <p
+                    className={`mt-1 text-[11px] ${
+                      uploadFeedback.startsWith('Media uploaded')
+                        ? 'text-emerald-700'
+                        : 'text-red-600'
+                    }`}
+                  >
+                    {uploadFeedback}
+                  </p>
                 )}
               </div>
-              {mediaUrl && (
+              {(localMediaPreview || mediaUrl) && (
                 <div>
                   <div className="text-[11px] text-gray-500 mb-1">Preview</div>
                   <div className="border border-gray-200 rounded-md bg-gray-50 p-2 flex items-center justify-center max-h-48 overflow-hidden min-h-[120px]">
-                    <MediaPreview url={mediaUrl} />
+                    {localMediaPreview ? (
+                      localMediaPreview.isVideo ? (
+                        <video
+                          src={localMediaPreview.url}
+                          controls
+                          playsInline
+                          className="max-h-44 w-full object-contain rounded"
+                        />
+                      ) : (
+                        <div
+                          role="img"
+                          aria-label="Selected file preview"
+                          className="max-h-44 w-full min-h-[120px] rounded bg-gray-100 bg-center bg-no-repeat bg-contain"
+                          style={{ backgroundImage: `url(${localMediaPreview.url})` }}
+                        />
+                      )
+                    ) : (
+                      <MediaPreview url={mediaUrl} />
+                    )}
                   </div>
                 </div>
               )}
@@ -312,6 +395,16 @@ export default function TemplateManagementModal({
                     </button>
                   </div>
                   <div className="text-xs text-gray-700 line-clamp-2">{tpl.post_text}</div>
+                  {tpl.post_media_url && (
+                    <div className="mt-1 flex items-center gap-2">
+                      <div className="h-12 w-12 shrink-0 rounded border border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center">
+                        <MediaPreview url={tpl.post_media_url} className="max-h-12 max-w-12 object-cover" />
+                      </div>
+                      <span className="text-[10px] text-gray-500 truncate" title={tpl.post_media_url}>
+                        Media attached
+                      </span>
+                    </div>
+                  )}
                   {tpl.notes && (
                     <div className="text-[11px] text-gray-500 line-clamp-1">Notes: {tpl.notes}</div>
                   )}
