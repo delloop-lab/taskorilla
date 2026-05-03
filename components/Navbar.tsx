@@ -726,13 +726,6 @@ export default function Navbar() {
             >
               {t('navbar.help')}
             </Link>
-            {/* Pricing Link */}
-            <Link
-              href="/pricing"
-              className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium"
-            >
-              {t('navbar.price')}
-            </Link>
             {/* Language Switcher */}
             <div className="flex items-center border border-gray-300 rounded-md bg-white">
               <button
@@ -1134,7 +1127,7 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Support + Pricing links (match desktop top-level links) */}
+            {/* Support link (match desktop top-level help) */}
             <div className="px-4 py-1">
               <Link
                 href="/help"
@@ -1142,13 +1135,6 @@ export default function Navbar() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {t('navbar.help')}
-              </Link>
-              <Link
-                href="/pricing"
-                className="mobile-drawer-link mt-1 block text-slate-800 hover:text-primary-700 hover:bg-primary-50/70 px-4 py-2.5 rounded-xl text-sm font-semibold border border-slate-200 bg-white shadow-sm transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t('navbar.price')}
               </Link>
             </div>
 
