@@ -29,6 +29,29 @@ const debugWarn = (...args: any[]) => isDev && console.warn(...args)
 const BROWSE_INITIAL_LIMIT = 20
 const DAILY_RANDOM_SEED_VERSION = 2
 
+const TASK_CARD_SELECT = `
+  id,
+  title,
+  description,
+  budget,
+  status,
+  created_by,
+  assigned_to,
+  category,
+  category_id,
+  sub_category_id,
+  location,
+  created_at,
+  latitude,
+  longitude,
+  required_skills,
+  required_professions,
+  hidden_by_admin,
+  archived,
+  willing_to_help,
+  is_sample_task
+`
+
 type FilterType = 'all' | 'open' | 'my_tasks' | 'new' | 'my_bids'
 
 const getLocalDayKey = () => {
@@ -593,10 +616,19 @@ function TasksPageContent() {
       let error: any = null
       let totalMatchingCount: number | null = null
       
-      // Use fast RPC function for simple 'open' filter (bypasses RLS for speed)
+      // Use a narrow card query for simple 'open' filter so large inline image data
+      // never blocks the browse list from rendering.
       if (activeFilter === 'open' && hasNoExtraFilters) {
-        debugLog(`⏱️ [${thisVersion}] Using fast RPC function for open tasks`)
-        const result = await supabase.rpc('get_open_tasks', { task_limit: queryLimit })
+        debugLog(`⏱️ [${thisVersion}] Using narrow query for open tasks`)
+        const result = await supabase
+          .from('tasks')
+          .select(TASK_CARD_SELECT)
+          .eq('status', 'open')
+          .eq('hidden_by_admin', false)
+          .eq('archived', false)
+          .is('assigned_to', null)
+          .order('created_at', { ascending: false })
+          .limit(queryLimit)
         tasksData = result.data
         error = result.error
 
@@ -604,7 +636,7 @@ function TasksPageContent() {
           // Include locked tasks in browse so task volume remains visible.
           const lockedResult = await supabase
             .from('tasks')
-            .select('*')
+            .select(TASK_CARD_SELECT)
             .eq('status', 'locked')
             .eq('hidden_by_admin', false)
             .order('created_at', { ascending: false })
@@ -629,13 +661,13 @@ function TasksPageContent() {
           }
         }
         
-        // Fallback to regular query if RPC fails (function might not exist yet)
+        // Legacy fallback for older deployed clients/schema-cache edge cases.
         if (error && error.code === 'PGRST202') {
-          debugLog(`⏱️ [${thisVersion}] RPC function not found, falling back to regular query`)
+          debugLog(`⏱️ [${thisVersion}] Query shape unavailable, falling back to regular query`)
           error = null
           const fallbackResult = await supabase
             .from('tasks')
-            .select('*', { count: 'exact' })
+            .select(TASK_CARD_SELECT, { count: 'exact' })
             .or('status.eq.open,status.eq.locked')
             .eq('hidden_by_admin', false)
             .order('created_at', { ascending: false })
@@ -648,7 +680,7 @@ function TasksPageContent() {
         }
       } else {
         // Build regular query for other filters
-        let query = supabase.from('tasks').select('*')
+        let query = supabase.from('tasks').select(TASK_CARD_SELECT)
         let countQuery = supabase.from('tasks').select('id', { count: 'exact', head: true })
         
         // Apply essential filters first (most selective)
@@ -767,12 +799,18 @@ function TasksPageContent() {
       const categoryIds = Array.from(new Set(tasksData.flatMap(t => [t.category_id, t.sub_category_id]).filter(Boolean)))
       const taskIds = tasksData.map(t => t.id)
       
-      const [categoriesResult, tagsResult, bidsResult] = await Promise.all([
+      const [categoriesResult, tagsResult, bidsResult, imageUrlsResult] = await Promise.all([
         categoryIds.length > 0 
           ? supabase.from('categories').select('*').in('id', categoryIds)
           : Promise.resolve({ data: [] }),
         supabase.from('task_tags').select('task_id, tag_id, tags(*)').in('task_id', taskIds),
-        supabase.from('bids').select('task_id, id, status').in('task_id', taskIds)
+        supabase.from('bids').select('task_id, id, status').in('task_id', taskIds),
+        supabase
+          .from('tasks')
+          .select('id, image_url')
+          .in('id', taskIds)
+          .not('image_url', 'is', null)
+          .not('image_url', 'like', 'data:%')
       ])
       
       const relatedDataEnd = performance.now()
@@ -788,6 +826,9 @@ function TasksPageContent() {
       const categoriesData = categoriesResult.data || []
       const taskTagsData = tagsResult.data || []
       const bidsData = bidsResult.data || []
+      const safeImageUrls = new Map(
+        (imageUrlsResult.data || []).map((row: any) => [row.id, row.image_url])
+      )
       
       // Process data — only count active bids (not rejected or withdrawn)
       const bidsByTaskId: Record<string, number> = {}
@@ -828,6 +869,7 @@ function TasksPageContent() {
         
         return {
           ...task,
+          image_url: safeImageUrls.get(task.id) || null,
           category_obj: categoryObj || undefined,
           sub_category_obj: subCategoryObj || undefined,
           tags: tags,
